@@ -4,7 +4,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *	  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -12,18 +12,28 @@
  *
  */
 metadata {
-	definition(name: "Qubino Flush Dimmer 0-10V", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"generic-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Configuration"
+		capability "Energy Meter"
 		capability "Health Check"
+		capability "Power Meter"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
 		capability "Switch Level"
 
+		// Qubino Flush Dimmer - ZMNHDD
+		// Raw Description zw:Ls type:1101 mfr:0159 prod:0001 model:0051 ver:3.08 zwv:4.38 lib:03 cc:5E,5A,73,98 sec:86,72,27,25,26,32,31,71,60,85,8E,59,70 secOut:26 role:05 ff:9C00 ui:9C00 epc:2
+		fingerprint mfr: "0159", prod: "0001", model: "0051", deviceJoinName: "Qubino Dimmer"
+
+		// Qubino DIN Dimmer
+		// Raw Description: zw:Ls type:1101 mfr:0159 prod:0001 model:0052 ver:3.01 zwv:4.24 lib:03 cc:5E,5A,73,98 sec:86,72,27,25,26,32,71,85,8E,59,70 secOut:26 role:05 ff:9C00 ui:9C00
+		fingerprint mfr: "0159", prod: "0001", model: "0052", deviceJoinName: "Qubino Dimmer"
+
 		// Qubino Flush Dimmer 0-10V - ZMNHVD
 		// Raw Description: zw:L type:1100 mfr:0159 prod:0001 model:0053 ver:2.04 zwv:4.34 lib:03 cc:5E,86,5A,72,73,27,25,26,85,8E,59,70 ccOut:20,26 role:05 ff:9C00 ui:9C00
-		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer"
+		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"generic-dimmer"
 	}
 
 	tiles(scale: 2) {
@@ -47,9 +57,15 @@ metadata {
 			state "level", label: '${currentValue} %', unit: "%", backgroundColor: "#ffffff"
 		}
 
-		main(["switch"])
-		details(["switch", "level", "refresh"])
+		valueTile("power", "device.power", width: 2, height: 2) {
+			state "default", label: '${currentValue} W'
+		}
+		valueTile("energy", "device.energy", width: 2, height: 2) {
+			state "default", label: '${currentValue} kWh'
+		}
 
+		main(["switch"])
+		details(["switch", "level", "power", "energy", "refresh"])
 	}
 
 	preferences {
@@ -127,12 +143,10 @@ private getINPUT_TYPE_MONO_STABLE_SWITCH() {0}
 private getINPUT_TYPE_BI_STABLE_SWITCH() {1}
 private getINPUT_TYPE_POTENTIOMETER() {2}
 private getINPUT_TYPE_TEMPERATURE_SENSOR() {3}
-private getINPUT_TYPE_ILLUMINATION_SENSOR() {4}
-private getINPUT_TYPE_GENERAL_PURPOSE_SENSOR() {5}
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	// Preferences template begin
 	state.currentPreferencesState = [:]
@@ -151,7 +165,7 @@ def installed() {
 
 def updated() {
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	// Preferences template begin
 	parameterMap.each {
@@ -201,46 +215,26 @@ private syncConfiguration() {
 	sendHubCommand(commands)
 }
 
-def getCommandClassVersions() {
-	[
-		0x20:1, // Basic
-		0x25:1, // Switch Binary
-		0x26:3, // Switch Multilevel
-		0x27:1, // Switch All
-		0x59:1, // Association Grp Info
-		0x5A:1, // Device Reset Locally
-		0x70:2, // Configuration
-		0x72:2, // Manufacturer Specific
-		0x73:1, // Powerlevel
-		0x85:2, // Association
-		0x86:1, // Version
-		0x8E:2  // Multi Channel Association
-	]
-}
-
 def configure() {
 	def commands = []
-
+	log.debug "configure"
 	/*
 		Association Groups:
 		Group 1: Lifeline group (reserved for communication with the primary gateway (hub))
-		Group 2: Basic on/off (status change report for I1 input)
-		Group 3: Start level change/stop (status change report for I1 input). Working only when the Parameter no. 1 is set to mono stable switch type.
-		Group 4: Multilevel set (status change report of the Flush Dimmer 0-10V). Working only when the Parameter no. 1 is set to mono stable switch type.
-		Group 5: Multilevel sensor report (status change report of the analogue sensor)
+		Group 2: Basic on/off (status change report for the input)
+		Group 3: Start level change/stop (status change report for the input). Working only when the Parameter no. 1 is set to mono stable switch type.
+		Group 4: Multilevel set (status change report of dimmer). Working only when the Parameter no. 1 is set to mono stable switch type.
 		Group 6: Multilevel sensor report (status change report of the temperature sensor)
 	*/
-	commands << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.multiChannelV3.multiChannelEndPointGet().format()
-	commands + refresh()
+	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
+	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
+	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
+	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
+	commands << zwave.multiChannelV3.multiChannelEndPointGet()
+	commands + getRefreshCommands()
 
-	response(delayBetween(commands, 100))
+	encapCommands(commands)
 }
 
 def parse(String description) {
@@ -322,20 +316,6 @@ private notNullCheck(value) {
 	return value != null
 }
 
-private encap(cmd, endpoint = null) {
-	if (cmd) {
-		if (endpoint) {
-			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
-		}
-
-		if (zwaveInfo.zw.endsWith("s")) {
-			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		} else {
-			cmd.format()
-		}
-	}
-}
-
 private isPreferenceChanged(preference) {
 	if (notNullCheck(settings."$preference.key")) {
 		if (preference.type == "boolRange") {
@@ -353,165 +333,17 @@ private isPreferenceChanged(preference) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
-	log.info "MultiChannelEndPointReport: ${cmd}"
-	response([
-		refresh()
-	])
-}
-
-def getChildId(deviceNetworkId) {
-    def split = deviceNetworkId?.split(":")
-    return (split.length > 1) ? split[1] as Integer : null
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
 	log.debug "Multichannel command ${cmd}" + (ep ? " from endpoint $ep" : "")
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
-        log.debug "BasicReport: ${cmd}"
-        dimmerEvents(cmd)
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
-    def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
-
-    if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
-        log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-        [response(zwave.switchMultilevelV3.switchMultilevelGet().format())]
-    } else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
-        log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
-        dimmerEvents(cmd)
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
-    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
-        log.debug "SwitchMultilevelReport: ${cmd}"
-        dimmerEvents(cmd)
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
-    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
-        log.debug "SwitchMultilevelSet: ${cmd}"
-        dimmerEvents(cmd)
-    }
-}
-
-private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
-    createDimmerEvents(cmd.value)
-}
-
-private createDimmerEvents(cmdValue){
-    def value = (cmdValue ? "on" : "off")
-    def result = [createEvent(name: "switch", value: value)]
-    if (cmdValue && cmdValue <= 100) {
-        result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
-    }
-    return result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
-    log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
-    def result = []
-    def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
-    log.debug "----------input1SwitchType: ${input1SwitchType}"
-
-    if (input1SwitchType == INPUT_TYPE_GENERAL_PURPOSE_SENSOR && ep == 2) {
-        log.debug "General purpose sensor is handled with 0-100 level values"
-        def roundedVal = Math.round(cmd.scaledSensorValue)
-        createDimmerEvents(roundedVal)
-    } else if (ep == 2)  {
-        def map = [:]
-        switch (cmd.sensorType) {
-            case 1:
-                map.name = "temperature"
-                def cmdScale = cmd.scale == 1 ? "F" : "C"
-                map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-                map.unit = getTemperatureScale()
-                break
-            case 3:
-                map.name = "illuminance"
-                map.value = cmd.scaledSensorValue.toInteger().toString()
-                map.unit = "lux"
-                map.isStateChange = true
-                break;
-            default:
-                map.descriptionText = cmd.toString()
-        }
-        log.debug "SensorMultilevelReport, ${map}, ${map.name}, ${map.value}, ${map.unit}"
-        handleChildEvent(map)
-        result << createEvent(map)
-    }
-}
-
-def handleChildEvent(map) {
-    def childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics[map.name].childDni
-    log.debug "handleChildEvent / find child device: ${childDni}"
-    def childDevice = childDevices.find { it.deviceNetworkId == childDni }
-
-    if(!childDevice) {
-        log.debug "handleChildEvent / creating a child device"
-        def childComponentLabel	= childDeviceSpecifics[map.name].componentLabel
-        def childDthName		= childDeviceSpecifics[map.name].childDthName
-        def childDthNamespace 	= childDeviceSpecifics[map.name].childDthNamespace
-
-        createChildDevice(childDthNamespace.toString(), childDthName.toString(), childDni.toString(), childComponentLabel.toString())
-        childDevice = childDevices.find { it.deviceNetworkId == childDni }
-    }
-    log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
-    childDevice?.sendEvent(map)
-}
-
-def getChildDeviceSpecifics() {
-    [
-        "temperature" : [componentLabel: "Qubino Temperature Sensor", childDni:2, childDthName: "Child Temperature Sensor", childDthNamespace: "qubino"],
-        "illuminance" : [componentLabel: "Qubino Illuminance Sensor", childDni:3, childDthName: "Child Illuminance Sensor", childDthNamespace: "smartthings"]
-    ]
-}
-
-def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel) {
-    try {
-        String deviceNetworkId = "${device.deviceNetworkId}:" + childDni
-        log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}"
-        def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
-            [
-                completedSetup: true,
-                label: childComponentLabel,
-                isComponent: false
-            ])
-        log.debug "createChildDevice: ${childDevice}"
-        childDevice
-    } catch(Exception e) {
-        log.debug "Exception: ${e}"
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStartLevelChange cmd) {
-	log.debug "SwitchMultilevelStartLevelChange: ${cmd}"
-	[:]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
-	log.debug "SwitchMultilevelStopLevelChange: ${cmd}"
-	[:]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.debug "manufacturerId: $cmd.manufacturerId"
-	log.debug "manufacturerName: $cmd.manufacturerName"
-	log.debug "productId: $cmd.productId"
-	log.debug "productTypeId: $cmd.productTypeId"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	updateDataValue("manufacturer", cmd.manufacturerName)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
+	log.info "MultiChannelEndPointReport: ${cmd}"
+	response([
+			refresh()
+	])
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -520,25 +352,143 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
+	log.debug "BasicReport: ${cmd}"
+	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
+	log.debug "BasicSet: ${cmd}"
+	def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
+
+	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
+		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
+		[response(zwave.switchMultilevelV3.switchMultilevelGet().format())]
+	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
+		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
+		dimmerEvents(cmd)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
+	log.debug "SwitchMultilevelReport: ${cmd}"
+	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
+	log.debug "SwitchMultilevelSet: ${cmd}"
+	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+	log.debug "MeterReport: ${cmd}"
+	handleMeterReport(cmd)
+}
+
+def handleMeterReport(cmd) {
+	if (cmd.meterType == 1) {
+		if (cmd.scale == 0) {
+			log.debug("createEvent energy")
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+		} else if (cmd.scale == 1) {
+			log.debug("createEvent energy kVAh")
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+		} else if (cmd.scale == 2) {
+			log.debug("createEvent power")
+			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+		}
+	}
+}
+
+private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
+	createDimmerEvents(cmd.value)
+}
+
+private createDimmerEvents(cmdValue){
+	def value = (cmdValue ? "on" : "off")
+	def result = [createEvent(name: "switch", value: value)]
+	if (cmdValue && cmdValue <= 100) {
+		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
+	}
+	return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
+	log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
+	def result = []
+
+	def map = [:]
+	switch (cmd.sensorType) {
+		case 1:
+			map.name = "temperature"
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+			break
+		default:
+			map.descriptionText = cmd.toString()
+	}
+	log.debug "SensorMultilevelReport, ${map}, ${map.name}, ${map.value}, ${map.unit}"
+	handleChildEvent(map)
+	result << createEvent(map)
+}
+
+def handleChildEvent(map) {
+	def childDni = "${device.deviceNetworkId}:" + 2
+	log.debug "handleChildEvent / find child device: ${childDni}"
+	def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+	if(!childDevice) {
+		log.debug "handleChildEvent / creating a child device"
+		def childComponentLabel	= "Qubino Temperature Sensor"
+		def childDthName		= "Child Temperature Sensor"
+		def childDthNamespace 	= "qubino"
+
+		createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel)
+		childDevice = childDevices.find { it.deviceNetworkId == childDni }
+	}
+	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
+	childDevice?.sendEvent(map)
+}
+
+def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel) {
+	try {
+		log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}"
+		def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
+				[
+					completedSetup: true,
+					label: childComponentLabel,
+					isComponent: false
+				])
+		log.debug "createChildDevice: ${childDevice}"
+		childDevice
+	} catch(Exception e) {
+		log.debug "Exception: ${e}"
+	}
+}
+
 def on() {
-	delayBetween([
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.switchMultilevelV3.switchMultilevelGet().format()
-	], 5000)
+	encapCommands([
+			zwave.basicV1.basicSet(value: 0xFF),
+			zwave.switchMultilevelV3.switchMultilevelGet()
+	], 3000)
 }
 
 def off() {
-	delayBetween([
-			zwave.basicV1.basicSet(value: 0x00).format(),
-			zwave.switchMultilevelV3.switchMultilevelGet().format()
-	], 5000)
+	encapCommands([
+			zwave.basicV1.basicSet(value: 0x00),
+			zwave.switchMultilevelV3.switchMultilevelGet()
+	], 3000)
 }
 
 def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
-	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV3.switchMultilevelGet().format()], 5000)
+	encapCommands([
+			zwave.basicV1.basicSet(value: level),
+			zwave.switchMultilevelV3.switchMultilevelGet()
+	], 3000)
 }
 
 def setLevel(value, duration) {
@@ -547,8 +497,10 @@ def setLevel(value, duration) {
 	def level = Math.max(Math.min(valueaux, 99), 0)
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	def getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
-	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
-				  zwave.switchMultilevelV3.switchMultilevelGet().format()], getStatusDelay)
+	encapCommands([
+			zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration),
+			zwave.switchMultilevelV3.switchMultilevelGet()
+	], getStatusDelay)
 }
 
 /**
@@ -560,32 +512,61 @@ def ping() {
 
 def refresh() {
 	log.debug "refresh"
+	refreshChild()
+	encapCommands(getRefreshCommands())
+}
+
+def getRefreshCommands() {
 	def commands = []
+	commands << zwave.basicV1.basicGet()
 
-	commands << zwave.basicV1.basicGet().format()
-	commands << zwave.switchMultilevelV3.switchMultilevelGet().format()
-	commands << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format()
-
-	delayBetween(commands, 100)
+	if(isFlushDimmer() || isDINDimmer()) {
+		commands << zwave.meterV2.meterGet(scale: 0)
+		commands << zwave.meterV2.meterGet(scale: 2)
+	}
+	commands
 }
 
 private refreshChild() {
+	// refresh a child temperature sensor (if available)
+	if(childDevices){
+		def childDni = "${device.deviceNetworkId}:2"
+		def childDevice = childDevices.find { it.deviceNetworkId == childDni }
 
-    // refresh a child temperature sensor (if available)
-    def childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics["temperature"].childDni
-    def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+		if (childDevice != null) {
+			sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
+		}
+	}
+}
 
-    if (childDevice != null) {
-        sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
-    }
+private encapCommands(commands, delay=200) {
+	delayBetween(commands.collect{ encap(it) }, delay)
+}
 
-    // refresh a child illuminance sensor (if available)
-    childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics["illuminance"].childDni
-    childDevice = childDevices.find { it.deviceNetworkId == childDni }
+private encap(cmd, endpoint = null) {
+	if (cmd) {
+		if (endpoint) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
+		}
 
-    if (childDevice != null) {
-        sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format())
-    }
+		if (zwaveInfo.zw.endsWith("s")) {
+			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		} else {
+			cmd.format()
+		}
+	}
+}
+
+private isFlushDimmer(){
+	zwaveInfo.mfr.equals("0159") && zwaveInfo.model.equals("0051")
+}
+
+private isDINDimmer(){
+	zwaveInfo.mfr.equals("0159") && zwaveInfo.model.equals("0052")
+}
+
+private isFlushDimmer010V(){
+	zwaveInfo.mfr.equals("0159") && zwaveInfo.model.equals("0053")
 }
 
 private getParameterMap() {[
@@ -595,21 +576,11 @@ private getParameterMap() {[
 		values: [
 			0: "Default value - Mono-stable switch type (push button) – button quick press turns between previous set dimmer value and zero)",
 			1: "Bi-stable switch type ",
-			2: "Potentiometer (Flush Dimmer 0-10V  is using set value the last received from potentiometer or from z-wave controller)",
-			3: "0-10V Temperature sensor (regulated output)",
-			4: "0-10V Illumination sensor (regulated output)",
-			5: "0-10V General purpose sensor (regulated output)"
+			2: "Potentiometer (Flush Dimmer 0-10V is using set value the last received from potentiometer or from z-wave controller)",
+			3: "0-10V Temperature sensor (regulated output)"
 		],
-		description: "Set input based on device type (switch, potentiometer, 0-10V sensor,..)." +
-			"After parameter change to value 3, 4 or 5 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
-	],
-	[
-		name: "Auto or manual selection", key: "autoOrManualSelection", type: "boolean",
-		parameterNumber: 52, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: "Default value - Manual",
-		optionActive: 1, activeDescription: "Auto",
-		description: "This parameter is influencing on the software only when the value of parameter number 'Input 1 switch type' is set to value 3, 4 or 5. " +
-			"In manual mode regulation (how the input influence on output) is disabled. "
+		description: "Set input based on device type (switch, potentiometer, temperature sensor,..)." +
+			"After parameter change to value 3 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
 	],
 	[
 		name: "Input I1 Sensor reporting", key: "inputI1SensorReporting", type: "range",
@@ -629,35 +600,27 @@ private getParameterMap() {[
 			"Valid only if input is set as mono-stable (push button)."
 	],
 	[
-		name: "Unsecure / Secure Inclusion", key: "unsecure/SecureInclusion", type: "boolean",
-		parameterNumber: 250, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: "Default value - Unsecure Inclusion",
-		optionActive: 1, activeDescription: "Secure Inclusion",
-		description: "A Flush dimmer supports secure and unsecure inclusion." +
-			"Even if the controller does not support security command classes, a dimmer could be included as unsecure and keep all the functionality."
-	],
-	[
 		name: "Saving the state of the device after a power failure", key: "savingTheStateOfTheDeviceAfterAPowerFailure", type: "boolean",
 		parameterNumber: 30, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: "Default value - Flush Dimmer 0-10V module saves its state before power failure (it returns to the last position saved before a power failure)",
-		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to &amp;amp;amp;amp;amp;amp;amp;quot;off&amp;amp;amp;amp;amp;amp;amp;quot; position",
+		optionInactive: 0, inactiveDescription: "Default value - dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
+		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to off position",
 		description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
 	],
 	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
 		parameterNumber: 65, size: 2, defaultValue: 100,
 		range: "50..255",
-		description: "Set value means time of moving the Flush Dimmer 0-10V between min. and max. dimming values by short press of push button I1 or controlled through UI (BasicSet). " +
+		description: "Set value means time of moving the dimmer between min. and max. dimming values by short press of push button or controlled through UI (BasicSet). " +
 			"100 (Default value) = 1s, " +
 			"50 - 255 = 500 - 2550 milliseconds (2,55s), step is 10 milliseconds"
 	],
 	[
 		name: "Dimming time when key pressed", key: "dimmingTimeWhenKeyPressed", type: "range",
 		parameterNumber: 66, size: 2, defaultValue: 3,
-		range: "1..255",
-		description: "Time of moving the Flush Dimmer 0-10V between min. and max dimming values by continues hold of push button I1 or associated device. " +
-			"3 seconds (Default value), " +
-			"1 - 255 seconds"
+			range: "1..255",
+			description: "Time of moving the dimmer between min. and max dimming values by continues hold of push button I1 or associated device. " +
+				"3 seconds (Default value), " +
+				"1 - 255 seconds"
 	],
 	[
 		name: "Dimming duration", key: "dimmingDuration", type: "range",
