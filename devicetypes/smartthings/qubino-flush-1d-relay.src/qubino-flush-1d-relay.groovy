@@ -39,7 +39,7 @@ metadata {
 		details(["switch", "refresh"])
 	}
 
-    preferences {
+	preferences {
 	parameterMap.each {
 		input (
 			title: it.name,
@@ -161,9 +161,6 @@ def configure() {
 
 
 def initialize() {
-	if (!childDevices) {
-		addChild()
-	}
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
@@ -250,148 +247,6 @@ def refresh() {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
 	delayBetween(commands)
-}
-
-private addChild() {
-		try {
-			String childDni = "${device.deviceNetworkId}:2"
-
-			def value = settings."enable/DisableEndpointI2OrSelectNotificationTypeAndEvent" as String
-			String name = dthName(value)
-
-			addChildDevice(name, childDni, device.getHub().getId(), [
-					completedSetup: true,
-					label: componentLabel,
-					isComponent: false
-			])
-		} catch (Exception e) {
-			log.debug "Excep: ${e} "
-		}
-}
-
-def dthName(def number) {
-	dthNames.find { it['number'] == number }?.get('dthName')
-}
-
-def getDthNames() {
-	def map =
-	//Number 0 - endpoit disabled. Default value
-		[
-			[number: "6", dthName: "Child Smoke Alarm"],
-			[number: "2", dthName: "Child CO Alarm"],
-			[number: "3", dthName: "Child CO2 Alarm"],
-			[number: "5", dthName: "Child Heat Alarm"],
-			[number: "4", dthName: "Child Water Sensor"],
-			[number: "1", dthName: "Child Motion Sensor"]
-		]
-	map
-}
-
-def createChildEvent(cmd) {
-	log.debug ("Creating child event: ${cmd}")
-	def map = [:]
-
-	if (cmd.hasProperty("notificationType")) {
-		if (cmd.notificationType == 0x01) { // Smoke Alarm
-			map.name = "smoke"
-			switch (cmd.event) {
-				case 0x02:
-					map.value = "detected"
-					map.descriptionText = "$device.displayName detected smoke"
-					break
-				case 0x00:
-					map.value = "clear"
-					map.descriptionText = "$device.displayName detected no smoke"
-					break
-			}
-		} else if (cmd.notificationType == 0x02) { // CO Alarm
-			map.name = "carbonMonoxide"
-			switch (cmd.event) {
-				case 0x02:
-					map.value = "detected"
-					map.descriptionText = "$device.displayName detected CO"
-					break
-				case 0x00:
-					map.value = "clear"
-					map.descriptionText = "$device.displayName detected no CO"
-					break
-			}
-		} else if (cmd.notificationType == 0x03) { // C02 Alarm
-			map.name = "carbonDioxide"
-			switch (cmd.event) {
-				case 0x02:
-					map.value = "detected"
-					map.descriptionText = "$device.displayName detected CO2"
-					break
-				case 0x00:
-					map.value = "clear"
-					map.descriptionText = "$device.displayName detected no CO2"
-					break
-			}
-		} else if (cmd.notificationType == 0x04) { // Overheat Alarm
-			map.name = "temperatureAlarm"
-			switch (cmd.event) {
-				case 0x00:
-					map.value = "cleared"
-					map.descriptionText = "$device.displayName heat is clear"
-					break
-				case 0x02:
-					map.value = "heat"
-					map.descriptionText = "$device.displayName heat was detected!"
-					break
-			}
-		} else if (cmd.notificationType == 0x05) { // Water Alarm
-			map.name = "water"
-			switch (cmd.event) {
-				case 0x02:
-					map.value = "wet"
-					map.descriptionText = "$device.displayName detected water"
-					break
-				case 0x00:
-					map.value = "dry"
-					map.descriptionText = "$device.displayName detected no water"
-					break
-			}
-		} else if (cmd.notificationType == 0x07) { // Home Security
-			map.name = "motion"
-			if (cmd.event == 0x00) {
-				map.value = "inactive"
-				map.descriptionText = "$device.displayName detected no motion"
-			} else if (cmd.event == 0x07 || cmd.event == 0x08) {
-				map.value = "active"
-				map.descriptionText = "$device.displayName detected motion"
-			}
-		}
-	} else if (cmd.hasProperty("sensorType")) {
-		switch (cmd.sensorType) {
-			case 0x01:
-				log.debug ("cmd: ${cmd}")
-				map.name = "temperature"
-				def cmdScale = cmd.scale == 1 ? "F" : "C"
-				map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-				map.unit = getTemperatureScale()
-				break
-		}
-	}
-
-	if (doesChildDeviceExist(componentLabel)) {
-		log.debug("Found device: ${componentLabel}")
-	} else {
-		log.debug ("Adding child")
-		addChild()
-	}
-	sendEventToChild(map)
-}
-
-def sendEventToChild(event) {
-	def childDni = "${device.deviceNetworkId}:2"
-	def child = childDevices.find { it.deviceNetworkId == childDni }
-	log.debug "Sending event: ${event} to child: ${child}"
-	child?.sendEvent(event)
-}
-
-private refreshChild() {
-	sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
 }
 //Preferences part
 
@@ -498,65 +353,6 @@ private getParameterMap() {[
 		optionInactive: 0, inactiveDescription: "mono-stable switch type (push button)",
 		optionActive: 1, activeDescription: " bi-stable switch type ",
 		description: "Defines the type of switch connected to Input 1 "
-	],
-	[
-		name: " Activate / deactivate functions ALL ON/ALL OFF", key: "activate/DeactivateFunctionsAllOn/AllOff", type: "enum",
-		parameterNumber: 10, size: 2, defaultValue: 255,
-		values: [
-			255: "ALL ON active, ALL OFF active",
-			0: "ALL ON is not active ALL OFF is not active",
-			1: "ALL ON is not active ALL OFF active",
-			2: "ALL ON active ALL OFF is not active"
-		],
-		description: "Support to activate / deactivate functions ALL ON/ALL OFF Flush 1D relay module responds to commands ALL ON / ALL OFF that may be sent by the main controller or by other controller belonging to the system.  "
-	],
-	[
-		name: "Enable / Disable Endpoint I2 or select the Notification Type and the Notification Event", key: "enable/DisableEndpointI2OrSelectNotificationTypeAndEvent", type: "enum",
-		parameterNumber: 100, size: 1, defaultValue: 0,
-		values: [
-			1: "Motion Detection",
-			2: "Carbon Monoxide",
-			3: "Carbon Dioxide",
-			4: "Water Alarm",
-			5: "Heat Alarm",
-			6: "Smoke Alarm",
-			0: "2nd endpoint disabled"
-		],
-		description: "Support Enable / Disable Endpoint I2 or select Notification Type and Event Enabling I2, means that Endpoint (I2) will be present on UI. Disabling it will result in hiding the endpoint according to the parameter set value. Additionally, a Notification Type and Event can be selected for the endpoint.   NOTE: After parameter change module has to be reincluded into the network for the setting to take effect! "
-	],
-	[
-		name: "Automatic turning off output after set time ", key: "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-		parameterNumber: 11, size: 2, defaultValue: 0,
-		range: "1..32535", disableValue: 0, 
-		description: "Turns off the output after set time. " +
-						"0 Default value - Auto OFF disabled, " +
-						"1 second - 32535 seconds Auto OFF enabled with define time, step is 1 second"
-	],
-	[
-		name: "Temperature sensor offset settings", key: "temperatureSensorOffsetSettings", type: "unknown",
-		parameterNumber: 110, size: 2, defaultValue: 32536,
-		description: "Defines temperature sensor offset settings Set value is added or subtracted to actual measured value by sensor. "
-	],
-	[
-		name: "Automatic turning on output after set time ", key: "automaticTurningOnOutputAfterSetTime", type: "boolRange",
-		parameterNumber: 12, size: 2, defaultValue: 0,
-		range: "1..32535", disableValue: 0, 
-		description: "Turns on the output after set time." +
-						"0 (Default value) - Auto ON disabled, " +
-						"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
-	],
-	[
-		name: "Digital temperature sensor reporting", key: "digitalTemperatureSensorReporting", type: "boolRange",
-		parameterNumber: 120, size: 1, defaultValue: 5,
-		range: "1..127", disableValue: 0, 
-		description: "Defines the digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. "
-	],
-	[
-		name: "Automatic turning off / on seconds or milliseconds selection", key: "automaticTurningOff/OnSecondsOrMillisecondsSelection", type: "boolean",
-		parameterNumber: 15, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: " seconds selected",
-		optionActive: 1, activeDescription: "milliseconds selected",
-		description: "Support automatic turning off / on seconds or milliseconds selection NOTE: This parameter is valid for both, turning on and turning off parameters. "
 	],
 	[
 		name: "Input 2 contact type", key: "input2ContactType", type: "boolean",
