@@ -135,6 +135,7 @@ def setupHealthCheck() {
 def installed() {
 	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
+	state.setColor = [red: null, green: null, blue: null]
 	setupHealthCheck()
 }
 
@@ -247,13 +248,20 @@ def zwaveEvent(switchcolorv3.SwitchColorReport cmd) {
 		result << createEvent(name: "color", value: hexColor)
 		// Send the color as hue and saturation
 		def hsv = rgbToHSV(*colors)
-		result << createEvent(name: "hue", value: hsv.hue)
-		result << createEvent(name: "saturation", value: hsv.saturation)
-		// Reset the values
-		RGB_NAMES.collect { state.colorReceived[it] = null}
+		if (state.setColor.red == state.colorReceived.red && state.setColor.green == state.colorReceived.green && state.setColor.blue == state.colorReceived.blue) {
+			unschedule()
+			result << createEvent(name: "hue", value: hsv.hue)
+			result << createEvent(name: "saturation", value: hsv.saturation)
+		} else {
+			runIn(2, "sendColorQueryCommands", [overwrite: true])
+		}
 	}
 
 	result
+}
+
+private sendColorQueryCommands() {
+	sendHubCommand(commands(queryAllColors()))
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -324,6 +332,7 @@ def setColor(value) {
 		return
 	}
 
+	state.setColor = [red: myred, green: mygreen, blue: myblue]
 	cmds << zwave.switchColorV3.switchColorSet(red: myred, green: mygreen, blue: myblue)
 	cmds << zwave.basicV1.basicGet()
 
