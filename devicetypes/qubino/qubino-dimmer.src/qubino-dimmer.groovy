@@ -187,16 +187,46 @@ def configure() {
 	log.debug "configure"
 	/*
 		Association Groups:
-		Group 1: Lifeline group (reserved for communication with the primary gateway (hub))
+
+		Flush Dimmer:
+
+		Group 1: Lifeline group (reserved for communication with the  hub).
+		Group 2: BasicSetKey1 (status change report for I1 input), up to 16 nodes.
+		Group 3: DimmerStartStopKey1 (status change report for I1 input), up to 16 nodes.
+		Group 4: DimmerSetKey1 (status change report of the Flush Dimmer) up to 16 nodes
+		Group 5: BasicSetKey2 (status change report for I2 input) up to 16 nodes.
+		Group 6: NotificationKey2 (status change report for I2 input) up to 16 nodes.
+		Group 7: BinarySensorKey2 (status change report for I2 input) up to 16 nodes.
+		Group 8: BasicSetKey3 (status change report for I3 input) up to 16 nodes.
+		Group 9: NotificationKey3 (status change report for I3 input) up to 16 nodes.
+		Group 10: BinarySensorKey3 (status change report for I3 input) up to 16 nodes.
+		Group 11: TempReport (external temperature sensor report)
+
+		Flush Dimmer 0-10V:
+
+		Group 1: Lifeline group (reserved for communication with the hub)
 		Group 2: Basic on/off (status change report for the input)
-		Group 3: Start level change/stop (status change report for the input). Working only when the Parameter no. 1 is set to mono stable switch type.
+		Group 3: Start level change/stop (status change report for the input).
+				 Working only when the Parameter no. 1 is set to mono stable switch type.
 		Group 4: Multilevel set (status change report of dimmer). Working only when the Parameter no. 1 is set to mono stable switch type.
+		Group 5: Multilevel sensor report (status change report of the analogue sensor).
 		Group 6: Multilevel sensor report (status change report of the temperature sensor)
+
+
+		Qubino DIN Dimmer:
+
+		Group 1: Lifeline group (reserved for communication with the hub).
+		Group 2: Basic on/off (status change report for output), up to 16 nodes.
+		Group 3: Start level change/stop (status change report for I1 input).
+		Group 4: Multilevel set (status change report of the output).
+		Group 5: Multilevel sensor report (external temperature sensor report).
+
 	*/
 	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
+	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands + getRefreshCommands()
@@ -400,8 +430,12 @@ def handleChildEvent(map) {
 
 	if(!childDevice) {
 		log.debug "handleChildEvent / creating a child device"
-		childDevice = createChildDevice("qubino","Child Temperature Sensor", childDni,
-				"Qubino Temperature Sensor")
+		childDevice = createChildDevice(
+				"qubino",
+				"Child Temperature Sensor",
+				childDni,
+				"Qubino Temperature Sensor"
+		)
 	}
 	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
 	childDevice?.sendEvent(map)
@@ -424,17 +458,31 @@ def createChildDevice(childDthNamespace, childDthName, childDni, childComponentL
 }
 
 def on() {
-	encapCommands([
-			zwave.basicV1.basicSet(value: 0xFF),
-			zwave.switchMultilevelV3.switchMultilevelGet()
-	], 3000)
+	def commands = [
+		zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF, dimmingDuration: 0x00),
+		zwave.switchMultilevelV3.switchMultilevelGet()
+	]
+
+	if(supportsPowerMeter()){
+		commands << zwave.meterV2.meterGet(scale: 0)
+		commands << zwave.meterV2.meterGet(scale: 2)
+	}
+
+	encapCommands(commands, 3000)
 }
 
 def off() {
-	encapCommands([
-			zwave.basicV1.basicSet(value: 0x00),
-			zwave.switchMultilevelV3.switchMultilevelGet()
-	], 3000)
+	def commands = [
+		zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00, dimmingDuration: 0x00),
+		zwave.switchMultilevelV3.switchMultilevelGet()
+	]
+
+	if(supportsPowerMeter()){
+		commands << zwave.meterV2.meterGet(scale: 0)
+		commands << zwave.meterV2.meterGet(scale: 2)
+	}
+
+	encapCommands(commands, 3000)
 }
 
 def setLevel(value, duration = null) {
@@ -442,18 +490,20 @@ def setLevel(value, duration = null) {
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
 	def getStatusDelay = 3000
+	def dimmingDuration
 
 	def commands = []
 
 	if(duration == null) {
-		commands << zwave.basicV1.basicSet(value: level)
+		dimmingDuration = 0
 	} else {
-		def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
+		dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 		getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
-		commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 	}
 
+	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 	commands << zwave.switchMultilevelV3.switchMultilevelGet()
+
 	encapCommands(commands, getStatusDelay)
 }
 
@@ -511,6 +561,10 @@ private encap(cmd, endpoint = null) {
 	}
 }
 
+private supportsPowerMeter() {
+	return isDINDimmer() || isFlushDimmer()
+}
+
 private isFlushDimmer(){
 	zwaveInfo.mfr.equals("0159") && zwaveInfo.model.equals("0051")
 }
@@ -535,15 +589,6 @@ private getParameterMap() {[
 		],
 		description: "Set input based on device type (switch, potentiometer, temperature sensor,..)." +
 			"After parameter change to value 3 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
-	],
-	[
-		name: "Input I1 Sensor reporting", key: "inputI1SensorReporting", type: "range",
-		parameterNumber: 140, size: 2, defaultValue: 5,
-		range: "1..10000",
-		description: "If analogue sensor is connected, module reports measured value on change defined by this parameter. " +
-			"0 Reporting disabled, " +
-			"5 (Default value) = 0,5 change, " +
-			"1 - 10000 = 0,1 - 1000 step is 0,1"
 	],
 	[
 		name: "Enable/Disable Double click function", key: "enable/DisableDoubleClickFunction", type: "boolean",
