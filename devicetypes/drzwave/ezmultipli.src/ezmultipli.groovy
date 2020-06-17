@@ -136,6 +136,7 @@ def installed() {
 	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
 	state.setColor = [red: null, green: null, blue: null]
+	state.colorQueryFailures = 0
 	setupHealthCheck()
 }
 
@@ -252,8 +253,16 @@ def zwaveEvent(switchcolorv3.SwitchColorReport cmd) {
 			unschedule()
 			result << createEvent(name: "hue", value: hsv.hue)
 			result << createEvent(name: "saturation", value: hsv.saturation)
+			state.colorQueryFailures = 0
 		} else {
-			runIn(2, "sendColorQueryCommands", [overwrite: true])
+			if (++state.colorQueryFailures >= 6) {
+				sendHubCommand(commands([
+						zwave.switchColorV3.switchColorSet(red: state.setColor.red, green: state.setColor.green, blue: state.setColor.blue),
+						queryAllColors()
+				]))
+			} else {
+				runIn(2, "sendColorQueryCommands", [overwrite: true])
+			}
 		}
 	}
 
