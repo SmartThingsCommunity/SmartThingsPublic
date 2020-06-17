@@ -14,7 +14,7 @@ metadata {
 		// 	description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
     }
     
-    definition (name: "RM3250ZB Sinope Load Controller", namespace: "Sinope Technologies", author: "Sinope Technologies", , ocfDeviceType: "oic.d.switch") {
+    definition (name: "RM3250ZB Sinope Load Controller", namespace: "Sinope Technologies", author: "Sinope Technologies", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-ZigBee_Switch_Power") {
 
         capability "Refresh"
         capability "Switch"        
