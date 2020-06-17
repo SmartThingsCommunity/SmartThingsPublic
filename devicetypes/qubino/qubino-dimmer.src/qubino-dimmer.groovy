@@ -72,64 +72,31 @@ metadata {
 		// Preferences template begin
 		parameterMap.each {
 			input (
-					title: it.name,
-					description: it.description,
-					type: "paragraph",
-					element: "paragraph"
+				title: it.name, description: it.description, type: "paragraph",	element: "paragraph"
 			)
 
 			switch(it.type) {
-				case "boolRange":
-					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
-					)
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
-					)
-					break
 				case "boolean":
 					input(
-							type: "paragraph",
-							element: "paragraph",
-							description: "Option enabled: ${it.activeDescription}\n" +
+						type: "paragraph", element: "paragraph",
+						description: "Option enabled: ${it.activeDescription}\n" +
 									"Option disabled: ${it.inactiveDescription}"
 					)
 					input(
-							name: it.key,
-							type: "bool",
-							title: "Enable",
-							defaultValue: it.defaultValue == it.activeOption,
-							required: false
+						name: it.key, type: "bool",	title: "Enable", required: false,
+						defaultValue: it.defaultValue == it.activeOption
 					)
 					break
 				case "enum":
 					input(
-							name: it.key,
-							title: "Select",
-							type: "enum",
-							options: it.values,
-							defaultValue: it.defaultValue,
-							required: false
+						name: it.key, title: "Select", type: "enum", required: false, options: it.values,
+						defaultValue: it.defaultValue
 					)
 					break
 				case "range":
 					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+						name: it.key, type: "number", title: "Set value (range ${it.range})", range: it.range, required: false,
+						defaultValue: it.defaultValue
 					)
 					break
 			}
@@ -174,7 +141,7 @@ def updated() {
 			state.currentPreferencesState."$it.key".status = "syncPending"
 			if (it.type == "boolRange") {
 				def preferenceName = it.key + "Boolean"
-				if (notNullCheck(settings."$preferenceName")) {
+				if (settings."$preferenceName" != null) {
 					if (!settings."$preferenceName") {
 						state.currentPreferencesState."$it.key".status = "disablePending"
 					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
@@ -196,23 +163,23 @@ private readConfigurationFromTheDevice() {
 	def commands = []
 	parameterMap.each {
 		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
-		commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+		commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 	}
-	sendHubCommand(commands)
+	sendHubCommand(encapCommands(commands))
 }
 
 private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".status == "syncPending") {
-			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
-			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+			commands += zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size)
+			commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 		} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
-			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size))
-			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+			commands += zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size)
+			commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 		}
 	}
-	sendHubCommand(commands)
+	sendHubCommand(encapCommands(commands))
 }
 
 def configure() {
@@ -304,7 +271,7 @@ private getCommandValue(preference) {
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
-			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			return settings."$parameterKeyBoolean" == null || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
 		case "range":
 			return settings."$parameterKey"
 		default:
@@ -312,12 +279,8 @@ private getCommandValue(preference) {
 	}
 }
 
-private notNullCheck(value) {
-	return value != null
-}
-
 private isPreferenceChanged(preference) {
-	if (notNullCheck(settings."$preference.key")) {
+	if (settings."$preference.key" != null) {
 		if (preference.type == "boolRange") {
 			def boolName = preference.key + "Boolean"
 			if (state.currentPreferencesState."$preference.key".status == "disabled") {
@@ -363,7 +326,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
 
 	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		[response(zwave.switchMultilevelV3.switchMultilevelGet().format())]
+		response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
 	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
 		dimmerEvents(cmd)
@@ -401,10 +364,7 @@ def handleMeterReport(cmd) {
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
-	createDimmerEvents(cmd.value)
-}
-
-private createDimmerEvents(cmdValue){
+	def cmdValue = cmd.value
 	def value = (cmdValue ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmdValue && cmdValue <= 100) {
@@ -440,12 +400,8 @@ def handleChildEvent(map) {
 
 	if(!childDevice) {
 		log.debug "handleChildEvent / creating a child device"
-		def childComponentLabel	= "Qubino Temperature Sensor"
-		def childDthName		= "Child Temperature Sensor"
-		def childDthNamespace 	= "qubino"
-
-		createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel)
-		childDevice = childDevices.find { it.deviceNetworkId == childDni }
+		childDevice = createChildDevice("qubino","Child Temperature Sensor", childDni,
+				"Qubino Temperature Sensor")
 	}
 	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
 	childDevice?.sendEvent(map)
@@ -481,26 +437,24 @@ def off() {
 	], 3000)
 }
 
-def setLevel(value) {
-	log.debug "setLevel >> value: $value"
-	def valueaux = value as Integer
-	def level = Math.max(Math.min(valueaux, 99), 0)
-	encapCommands([
-			zwave.basicV1.basicSet(value: level),
-			zwave.switchMultilevelV3.switchMultilevelGet()
-	], 3000)
-}
-
-def setLevel(value, duration) {
+def setLevel(value, duration = null) {
 	log.debug "setLevel >> value: $value, duration: $duration"
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
-	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-	def getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
-	encapCommands([
-			zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration),
-			zwave.switchMultilevelV3.switchMultilevelGet()
-	], getStatusDelay)
+	def getStatusDelay = 3000
+
+	def commands = []
+
+	if(duration == null) {
+		commands << zwave.basicV1.basicSet(value: level)
+	} else {
+		def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
+		getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
+		commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
+	}
+
+	commands << zwave.switchMultilevelV3.switchMultilevelGet()
+	encapCommands(commands, getStatusDelay)
 }
 
 /**
@@ -534,7 +488,7 @@ private refreshChild() {
 		def childDevice = childDevices.find { it.deviceNetworkId == childDni }
 
 		if (childDevice != null) {
-			sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
+			sendHubCommand(encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)))
 		}
 	}
 }
@@ -586,7 +540,7 @@ private getParameterMap() {[
 		name: "Input I1 Sensor reporting", key: "inputI1SensorReporting", type: "range",
 		parameterNumber: 140, size: 2, defaultValue: 5,
 		range: "1..10000",
-		description: "Input I1 Sensor reporting If analogue sensor is connected, module reports measured value on change defined by this parameter. " +
+		description: "If analogue sensor is connected, module reports measured value on change defined by this parameter. " +
 			"0 Reporting disabled, " +
 			"5 (Default value) = 0,5 change, " +
 			"1 - 10000 = 0,1 - 1000 step is 0,1"
@@ -596,7 +550,7 @@ private getParameterMap() {[
 		parameterNumber: 21, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
 		optionActive: 1, activeDescription: "Double click enabled",
-		description: "If Double click function is enabled, a fast double click on the push button will set dimming power at maximum dimming value. " +
+		description: "If enabled, a fast double-click on the push button will set the dimming level to its max. " +
 			"Valid only if input is set as mono-stable (push button)."
 	],
 	[
@@ -604,13 +558,13 @@ private getParameterMap() {[
 		parameterNumber: 30, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "Default value - dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
 		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to off position",
-		description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
+		description: "Set whether the device stores or does not store the last output level in the event of a power outage."
 	],
 	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
 		parameterNumber: 65, size: 2, defaultValue: 100,
 		range: "50..255",
-		description: "Set value means time of moving the dimmer between min. and max. dimming values by short press of push button or controlled through UI (BasicSet). " +
+		description: "The time it takes for the dimmer to transition between min and max brightness after a short press of the button or when controlled through the UI" +
 			"100 (Default value) = 1s, " +
 			"50 - 255 = 500 - 2550 milliseconds (2,55s), step is 10 milliseconds"
 	],
@@ -618,7 +572,7 @@ private getParameterMap() {[
 		name: "Dimming time when key pressed", key: "dimmingTimeWhenKeyPressed", type: "range",
 		parameterNumber: 66, size: 2, defaultValue: 3,
 			range: "1..255",
-			description: "Time of moving the dimmer between min. and max dimming values by continues hold of push button I1 or associated device. " +
+			description: "The time it takes for the dimmer to transition between min and max brightness when push button I1 or other associated device is held continuously" +
 				"3 seconds (Default value), " +
 				"1 - 255 seconds"
 	],
@@ -626,7 +580,7 @@ private getParameterMap() {[
 		name: "Dimming duration", key: "dimmingDuration", type: "range",
 		parameterNumber: 68, size: 1, defaultValue: 0,
 		range: "0..127",
-		description: "This parameter is used with association group 3. The Duration field MUST specify the time that the transition should take from the current value to the new target value. " +
+		description: "The Duration field MUST specify the time that the transition should take from the current value to the new target value. " +
 			"A supporting device SHOULD respect the specified Duration value. " +
 			"0 (Default value) - dimming duration according to parameter: 'Dimming time when key pressed'," +
 			"1 to 127 seconds"
