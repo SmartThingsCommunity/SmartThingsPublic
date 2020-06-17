@@ -146,6 +146,15 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
     return [:]
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChannelAssociationReport cmd) {
+	logging(cmd, 2)
+    if (cmd.groupingIdentifier == 1) {
+        if ([0,zwaveHubNodeId,0] == cmd.nodeId) state."associationMC${cmd.groupingIdentifier}" = true
+        else state."associationMC${cmd.groupingIdentifier}" = false
+    }
+    return [:]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
     logging("SensorBinaryReport: $cmd", 2)
     def children = childDevices
@@ -365,20 +374,22 @@ def update_needed_settings() {
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
 	
-    if(!state.association1 || state.association1 == "" || state.association1 != 1){
+    /*if(!state.association1 || state.association1 == "" || state.association1 != 1){
        logging("Setting association group 1", 1)
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: [])
        cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
+    }*/
+    if(!state.associationMC1) {
+       log.debug "Adding MultiChannel association group 1"
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: [])
+       cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,0])
+       cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
     }
     if(!state.association4 || state.association4 == "" || state.association4 != 1){
        logging("Setting association group 4", 1)
        cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
-    }
-    if(!state.association6 || state.association6 == "" || state.association6 != 1){
-       logging("Setting association group 6", 1)
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:6, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:6)
     }
 
     configuration.Value.each {
