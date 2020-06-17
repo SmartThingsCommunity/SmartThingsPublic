@@ -55,15 +55,6 @@ metadata {
 			input (title: it.name, description: it.description, type: "paragraph", element: "paragraph")
 
 			switch(it.type) {
-				case "boolRange":
-					input(name: it.key + "Boolean", type: "bool", title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue, required: false
-					)
-					input(name: it.key, type: "number", title: "Set value (range ${it.range})", defaultValue: it.defaultValue,
-							range: it.range, required: false
-					)
-					break
 				case "boolean":
 					input(type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" +
 							"Option disabled: ${it.inactiveDescription}"
@@ -72,9 +63,6 @@ metadata {
 					break
 				case "enum":
 					input(name: it.key, title: "Select", type: "enum", options: it.values, defaultValue: it.defaultValue, required: false)
-					break
-				case "range":
-					input(name: it.key, type: "number", title: "Set value (range ${it.range})", defaultValue: it.defaultValue, range: it.range, required: false)
 					break
 			}
 		}
@@ -92,13 +80,9 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			def preferenceName = it.key + "Boolean"
-			settings."$preferenceName" = true
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
+		def preferenceName = it.key + "Boolean"
+		settings."$preferenceName" = true
+		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
 }
@@ -112,18 +96,6 @@ def updated() {
 		if (isPreferenceChanged(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
-			if (it.type == "boolRange") {
-				def preferenceName = it.key + "Boolean"
-				if (settings."$preferenceName" != null) {
-					if (!settings."$preferenceName") {
-						state.currentPreferencesState."$it.key".status = "disablePending"
-					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-						state.currentPreferencesState."$it.key".status = "syncPending"
-					}
-				} else {
-					state.currentPreferencesState."$it.key".status = "syncPending"
-				}
-			}
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
@@ -159,12 +131,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (settings."$key" == preferenceValue) {
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
@@ -189,11 +155,6 @@ private getCommandValue(preference) {
 	switch (preference.type) {
 		case "boolean":
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" == null || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
-		case "range":
-			return settings."$parameterKey"
 		default:
 			return Integer.parseInt(settings."$parameterKey")
 	}
@@ -201,18 +162,7 @@ private getCommandValue(preference) {
 
 private isPreferenceChanged(preference) {
 	if (settings."$preference.key" != null) {
-		def value = state.currentPreferencesState."$preference.key"
-		switch (preference.type) {
-			case "boolRange":
-				def boolName = preference.key + "Boolean"
-				if (state.currentPreferencesState."$preference.key".status == "disabled") {
-					return settings."$boolName"
-				} else {
-					return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
-				}
-			default:
-				return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
-		}
+		return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
 	} else {
 		return false
 	}
@@ -305,6 +255,29 @@ private createMeterEventMap(cmd) {
 	eventMap
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
+	log.debug "SensorMultilevelReport ${cmd}" + (ep ? " from endpoint $ep" : "")
+	def result = []
+
+	def map = [:]
+	switch (cmd.sensorType) {
+		case 1:
+			map.name = "temperature"
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+			break
+		default:
+			map.descriptionText = cmd.toString()
+	}
+	def child = childDevices.find { it.deviceNetworkId == state.temperatureSensorDni }
+	if (!child) {
+		addChildTemperatureSensor()
+	}
+	child?.sendEvent(map)
+	createEvent(map)
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 	log.warn "Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
 }
@@ -333,19 +306,6 @@ private onOffCmd(value, endpoint = 1) {
 	])
 }
 
-private refreshAll(includeMeterGet = true) {
-
-	def endpoints = [1]
-
-	childDevices.each {
-		def switchId = getSwitchId(it.deviceNetworkId)
-		if (switchId != null) {
-			endpoints << switchId
-		}
-	}
-	sendHubCommand refresh(endpoints,includeMeterGet)
-}
-
 def childRefresh(deviceNetworkId, includeMeterGet = true) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
@@ -369,7 +329,11 @@ def refresh(endpoints = [1], includeMeterGet = true) {
 }
 
 private resetAll() {
-	childDevices.each { childReset(it.deviceNetworkId) }
+	childDevices.each {
+		if (it.deviceNetworkId != state.temperatureSensorDni) {
+			childReset(it.deviceNetworkId)
+		}
+	}
 	sendHubCommand reset()
 }
 
@@ -422,6 +386,20 @@ private addChildSwitches(numberOfSwitches) {
 		} catch(Exception e) {
 			log.warn "Exception: ${e}"
 		}
+	}
+}
+
+private addChildTemperatureSensor() {
+	try {
+		String childDni = "${device.deviceNetworkId}:${state.numberOfSwitches + 1}"
+		state.temperatureSensorDni = childDni
+		addChildDevice("qubino", "Child Temperature Sensor", childDni, device.getHub().getId(), [
+				completedSetup	: true,
+				label			: "Qubino Temperature Sensor",
+				isComponent		: false
+		])
+	} catch(Exception e) {
+		log.warn "Exception: ${e}"
 	}
 }
 
