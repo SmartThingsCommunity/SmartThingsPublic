@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Flush 1D Relay", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition(name: "Qubino Flush 1D Relay", namespace: "qubino", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Health Check"
@@ -49,24 +49,6 @@ metadata {
 		)
 
 		switch(it.type) {
-			case "boolRange":
-				input(
-					name: it.key + "Boolean", 
-					type: "bool",
-					title: "Enable",
-					description: "If you disable this option, it will overwrite setting below.",
-					defaultValue: it.defaultValue != it.disableValue,
-					required: false
-				)
-				input(
-					name: it.key, 
-					type: "number",
-					title: "Set value (range ${it.range})",
-					defaultValue: it.defaultValue,
-					range: it.range,
-					required: false
-				)
-				break
 			case "boolean":
 				input(
 					type: "paragraph",
@@ -108,13 +90,13 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(refresh())
 	state.currentPreferencesState = [:]
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
+		if (getPreferenceValue(it) == it.disableValue) {
 			state.currentPreferencesState."$it.key".status = "disablePending"
 		} else {
 			state.currentPreferencesState."$it.key".status = "synced"
@@ -128,18 +110,6 @@ def updated() {
 		if (isPreferenceChanged(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
-			if (it.type == "boolRange") {
-				def preferenceName = it.key + "Boolean"
-				if (notNullCheck(settings."$preferenceName")) {
-					if (!settings."$preferenceName") {
-						state.currentPreferencesState."$it.key".status = "disablePending"
-					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-						state.currentPreferencesState."$it.key".status = "syncPending"
-					}
-				} else {
-					state.currentPreferencesState."$it.key".status = "syncPending"
-				}
-			}
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
@@ -207,21 +177,33 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.debug "manufacturerId:   $cmd.manufacturerId, manufacturerName: $cmd.manufacturerName, productId:        $cmd.productId, productTypeId:    $cmd.productTypeId"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	updateDataValue("manufacturer", cmd.manufacturerName)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug("Commands: ${cmd}")
 	[:]
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
+	log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
+	def result = []
+
+	def map = [:]
+	switch (cmd.sensorType) {
+		case 1:
+			map.name = "temperature"
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+			break
+		default:
+			map.descriptionText = cmd.toString()
+	}
+	log.debug "SensorMultilevelReport, ${map}, ${map.name}, ${map.value}, ${map.unit}"
+	handleChildEvent(map)
+	result << createEvent(map)
+}
+
 def on() {
-    log.debug "on"
+	log.debug "on"
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0xFF).format(),
 			zwave.basicV1.basicGet().format()
@@ -229,7 +211,7 @@ def on() {
 }
 
 def off() {
-    log.debug "off"
+	log.debug "off"
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0x00).format(),
 			zwave.basicV1.basicGet().format()
@@ -241,13 +223,77 @@ def ping() {
 }
 
 def refresh() {
+	refreshChild()
 	def commands = []
 	commands << zwave.basicV1.basicGet().format()
-	if (getDataValue("MSR") == null) {
-		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	}
 	delayBetween(commands)
 }
+
+def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel) {
+	try {
+		log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}"
+		def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
+				[
+					completedSetup: true,
+					label: childComponentLabel,
+					isComponent: false
+				])
+		log.debug "createChildDevice: ${childDevice}"
+		childDevice
+	} catch(Exception e) {
+		log.debug "Exception: ${e}"
+	}
+}
+
+private refreshChild() {
+	if(childDevices){
+		def childDni = "${device.deviceNetworkId}:2"
+		def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+		if (childDevice != null) {
+			sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
+		}
+	}
+}
+
+def handleChildEvent(map) {
+	def childDni = "${device.deviceNetworkId}:" + 2
+	log.debug "handleChildEvent / find child device: ${childDni}"
+	def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+	if(!childDevice) {
+		log.debug "handleChildEvent / creating a child device"
+		def childComponentLabel	= "Qubino Temperature Sensor"
+		def childDthName		= "Child Temperature Sensor"
+		def childDthNamespace 	= "qubino"
+
+		createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel)
+		childDevice = childDevices.find { it.deviceNetworkId == childDni }
+	}
+	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
+	childDevice?.sendEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+	log.debug "MeterReport: ${cmd}"
+	handleMeterReport(cmd)
+}
+
+def handleMeterReport(cmd) {
+	if (cmd.meterType == 1) {
+		if (cmd.scale == 0) {
+			log.debug("createEvent energy")
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+		} else if (cmd.scale == 1) {
+			log.debug("createEvent energy kVAh")
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+		} else if (cmd.scale == 2) {
+			log.debug("createEvent power")
+			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+		}
+	}
+}
+
 //Preferences part
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -258,12 +304,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (settings."$key" == preferenceValue) {
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
@@ -287,9 +327,6 @@ private getCommandValue(preference) {
 	switch (preference.type) {
 		case "boolean":
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
 		case "range":
 			return settings."$parameterKey"
 		default:
@@ -298,24 +335,11 @@ private getCommandValue(preference) {
 }
 
 private isPreferenceChanged(preference) {
-	if (notNullCheck(settings."$preference.key")) {
-		if (preference.type == "boolRange") {
-			def boolName = preference.key + "Boolean"
-			if (state.currentPreferencesState."$preference.key".status == "disabled") {
-				return settings."$boolName"
-			} else {
-				return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
-			}
-		} else {
-			return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
-		}
+	if (settings."$preference.key" != null) {
+		return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
 	} else {
 		return false
 	}
-}
-
-private notNullCheck(value) {
-	return value != null
 }
 
 private encap(cmd, endpoint = null) {
@@ -336,8 +360,8 @@ private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".status == "syncPending") {
-            commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
-		    commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
+			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 		} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
 			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size))
 			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
@@ -373,6 +397,6 @@ private getParameterMap() {[
 		parameterNumber: 63, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "When system is turned off the output is 0V (NC).",
 		optionActive: 1, activeDescription: "When system is turned off the output is 230V or 24V (NO).",
-		description: "Support output Switch selection Set value means the type of the device that is connected to the output. The device type can be normally open (NO) or normally close (NC).  "
+		description: "Set the type of device connected to the output"
 	]	
 ]}
