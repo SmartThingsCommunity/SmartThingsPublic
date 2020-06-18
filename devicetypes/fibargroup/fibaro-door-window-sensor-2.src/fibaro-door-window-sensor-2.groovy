@@ -139,10 +139,16 @@ def updated() {
 	}
 
 	def currentTemperature = device.currentValue("temperature")
-	def temperatureHigh = settings.temperatureHigh ? new BigDecimal(settings.temperatureHigh) : null
-	def temperatureLow = settings.temperatureLow ? new BigDecimal(settings.temperatureLow) : null
-	if ((temperatureHigh != null && (currentTemperature < temperatureHigh)) || (temperatureLow != null && (currentTemperature > temperatureLow) )) {
-		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
+	def alarmCleared = device.currentValue("temperatureAlarm") == "cleared"
+	def alarmFreeze = device.currentValue("temperatureAlarm") == "freeze"
+	def alarmHeat = device.currentValue("temperatureAlarm") == "heat"
+	def temperatureHigh = (settings.temperatureHigh ? new BigDecimal(settings.temperatureHigh) : null) * 0.1
+	def temperatureLow = (settings.temperatureLow ? new BigDecimal(settings.temperatureLow) : null) * 0.1
+	if (!alarmCleared) {
+		if ((temperatureHigh != null && (currentTemperature < temperatureHigh) && !alarmFreeze) ||
+			(temperatureLow != null && (currentTemperature > temperatureLow) && !alarmHeat)) {
+			sendEvent(name: "temperatureAlarm", value: "cleared")
+			}
 	}
 
 	syncStart()
