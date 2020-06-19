@@ -120,11 +120,7 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
+		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	readConfigurationFromTheDevice()
 	// Preferences template end
@@ -139,18 +135,6 @@ def updated() {
 		if (isPreferenceChanged(it) && !excludeParameterFromSync(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
-			if (it.type == "boolRange") {
-				def preferenceName = it.key + "Boolean"
-				if (settings."$preferenceName" != null) {
-					if (!settings."$preferenceName") {
-						state.currentPreferencesState."$it.key".status = "disablePending"
-					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-						state.currentPreferencesState."$it.key".status = "syncPending"
-					}
-				} else {
-					state.currentPreferencesState."$it.key".status = "syncPending"
-				}
-			}
 		} else if (state.currentPreferencesState."$it.key".value == null) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
@@ -287,12 +271,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		if (settings."$key" == preferenceValue) {
 			state.currentPreferencesState."$key".value = settings."$key"
 			state.currentPreferencesState."$key".status = "synced"
-		} else if (preference.type == "boolRange") {
-			if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-				state.currentPreferencesState."$key".status = "disabled"
-			} else {
-				runIn(5, "syncConfiguration", [overwrite: true])
-			}
 		} else {
 			state.currentPreferencesState."$key"?.status = "syncPending"
 			runIn(5, "syncConfiguration", [overwrite: true])
@@ -318,9 +296,6 @@ private getCommandValue(preference) {
 	switch (preference.type) {
 		case "boolean":
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" == null || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
 		case "range":
 			return settings."$parameterKey"
 		default:
@@ -330,16 +305,7 @@ private getCommandValue(preference) {
 
 private isPreferenceChanged(preference) {
 	if (settings."$preference.key" != null) {
-		if (preference.type == "boolRange") {
-			def boolName = preference.key + "Boolean"
-			if (state.currentPreferencesState."$preference.key".status == "disabled") {
-				return settings."$boolName"
-			} else {
-				return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
-			}
-		} else {
-			return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
-		}
+		return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
 	} else {
 		return false
 	}
