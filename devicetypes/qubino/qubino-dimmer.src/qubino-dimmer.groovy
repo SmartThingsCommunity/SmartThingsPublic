@@ -136,7 +136,7 @@ def updated() {
 
 	// Preferences template begin
 	parameterMap.each {
-		if (isPreferenceChanged(it)) {
+		if (isPreferenceChanged(it) && !excludeParameterFromSync(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
 			if (it.type == "boolRange") {
@@ -151,12 +151,36 @@ def updated() {
 					state.currentPreferencesState."$it.key".status = "syncPending"
 				}
 			}
-		} else if (!state.currentPreferencesState."$it.key".value) {
+		} else if (state.currentPreferencesState."$it.key".value == null) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
 	}
 	syncConfiguration()
 	// Preferences template end
+}
+
+def excludeParameterFromSync(preference){
+	def exclude = false
+	if (preference.key == "input1SwitchType") {
+		// Only Flush Dimmer 0-10V supports all input types:
+		// 0 - MONO_STABLE_SWITCH,
+		// 1 - BI_STABLE_SWITCH,
+		// 2 - TYPE_POTENTIOMETER,
+		// 3 - TEMPERATURE_SENSO.
+		if (supportsMonoAndBiStableSwitchOnly() && (preference.value == INPUT_TYPE_POTENTIOMETER || preference.value == INPUT_TYPE_TEMPERATURE_SENSOR)){
+			exclude = true
+		}
+	} else if (preference.key == "inputsSwitchTypes" || preference.key == "enable/DisableAdditionalSwitch") {
+		// Only Flush Dimmer supports this parameter
+		if (isDINDimmer() || isFlushDimmer010V()) {
+			exclude = true
+		}
+	}
+
+	if (exclude) {
+		log.warn "Preference no ${preference.parameterNumber} - ${preference.key} is not supported by this device"
+	}
+	return exclude
 }
 
 private readConfigurationFromTheDevice() {
@@ -190,17 +214,12 @@ def configure() {
 
 		Flush Dimmer:
 
-		Group 1: Lifeline group (reserved for communication with the  hub).
+		Group 1: Lifeline group (reserved for communication with the hub).
 		Group 2: BasicSetKey1 (status change report for I1 input), up to 16 nodes.
 		Group 3: DimmerStartStopKey1 (status change report for I1 input), up to 16 nodes.
 		Group 4: DimmerSetKey1 (status change report of the Flush Dimmer) up to 16 nodes
 		Group 5: BasicSetKey2 (status change report for I2 input) up to 16 nodes.
 		Group 6: NotificationKey2 (status change report for I2 input) up to 16 nodes.
-		Group 7: BinarySensorKey2 (status change report for I2 input) up to 16 nodes.
-		Group 8: BasicSetKey3 (status change report for I3 input) up to 16 nodes.
-		Group 9: NotificationKey3 (status change report for I3 input) up to 16 nodes.
-		Group 10: BinarySensorKey3 (status change report for I3 input) up to 16 nodes.
-		Group 11: TempReport (external temperature sensor report)
 
 		Flush Dimmer 0-10V:
 
@@ -544,7 +563,11 @@ private refreshChild() {
 }
 
 private encapCommands(commands, delay=200) {
-	delayBetween(commands.collect{ encap(it) }, delay)
+	if (commands.size() > 0) {
+		delayBetween(commands.collect{ encap(it) }, delay)
+	} else {
+		[]
+	}
 }
 
 private encap(cmd, endpoint = null) {
@@ -559,6 +582,10 @@ private encap(cmd, endpoint = null) {
 			cmd.format()
 		}
 	}
+}
+
+private supportsMonoAndBiStableSwitchOnly() {
+	return isDINDimmer() || isFlushDimmer()
 }
 
 private supportsPowerMeter() {
@@ -589,6 +616,25 @@ private getParameterMap() {[
 		],
 		description: "Set input based on device type (switch, potentiometer, temperature sensor,..)." +
 			"After parameter change to value 3 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
+	],
+	[
+			name: "Input 2 switch type (applies to Qubino Flush Dimmer only)", key: "inputsSwitchTypes", type: "enum",
+			parameterNumber: 2, size: 1, defaultValue: 0,
+			values: [
+					0: "Default value - push button (momentary)",
+					1: "on/off toggle switch"
+			],
+			description: "Select between push-button (momentary) and on/off toggle switch types. Both inputs must work the same way."
+	],
+	[
+			name: "Enable/Disable the 3-way switch/additional switch (applies to Qubino Flush Dimmer only)", key: "enable/DisableAdditionalSwitch", type: "enum",
+			parameterNumber: 20, size: 1, defaultValue: 0,
+			values: [
+					0: "Default value - single push-button (connected to l1)",
+					1: "3-way switch (connected to l1 and l2)",
+					2: "additional switch (connected to l2)",
+			],
+			description: "Dimming is done by using a push-button or a switch, connected to l1 (by default). If the 3-way switch option is set, dimming can be controlled by a push-button or a switch connected to l1 and l2."
 	],
 	[
 		name: "Enable/Disable Double click function", key: "enable/DisableDoubleClickFunction", type: "boolean",
