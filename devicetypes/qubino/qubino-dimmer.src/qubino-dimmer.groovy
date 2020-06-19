@@ -351,13 +351,6 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
-	log.info "MultiChannelEndPointReport: ${cmd}"
-	response([
-			refresh()
-	])
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles other Z-Wave commands that are not supported here
 	log.debug "Command: ${cmd}"
@@ -375,7 +368,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
 
 	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
+		response(zwave.switchMultilevelV3.switchMultilevelGet())
 	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
 		dimmerEvents(cmd)
