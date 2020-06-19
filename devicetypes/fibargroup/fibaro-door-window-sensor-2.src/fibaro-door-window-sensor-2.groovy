@@ -142,8 +142,8 @@ def updated() {
 	def alarmCleared = device.currentValue("temperatureAlarm") == "cleared"
 	def alarmFreeze = device.currentValue("temperatureAlarm") == "freeze"
 	def alarmHeat = device.currentValue("temperatureAlarm") == "heat"
-	def temperatureHigh = (settings.temperatureHigh ? new BigDecimal(settings.temperatureHigh) : null) * 0.1
-	def temperatureLow = (settings.temperatureLow ? new BigDecimal(settings.temperatureLow) : null) * 0.1
+	def temperatureHigh = (settings.temperatureHigh ? new BigDecimal(settings.temperatureHigh) * 0.1 : null)
+	def temperatureLow =  (settings.temperatureLow  ? new BigDecimal(settings.temperatureLow)  * 0.1 : null)
 	if (!alarmCleared) {
 		if ((temperatureHigh != null && (currentTemperature < temperatureHigh) && !alarmFreeze) ||
 			(temperatureLow != null && (currentTemperature > temperatureLow) && !alarmHeat)) {
