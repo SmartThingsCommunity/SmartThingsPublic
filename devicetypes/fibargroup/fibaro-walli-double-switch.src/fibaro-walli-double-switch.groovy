@@ -64,24 +64,6 @@ metadata {
 			)
 
 			switch(it.type) {
-				case "boolRange":
-					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
-					)
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
-					)
-					break
 				case "boolean":
 					input(
 							type: "paragraph",
@@ -133,11 +115,7 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
+        state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
 }
@@ -152,14 +130,6 @@ def updated() {
 			state.currentPreferencesState."$it.key".status = "syncPending"
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
-		}
-		if (it.type == "boolRange") {
-			def preferenceName = it.key + "Boolean"
-			if (!settings."$preferenceName") {
-				state.currentPreferencesState."$it.key".status = "disablePending"
-			} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-				state.currentPreferencesState."$it.key".status = "syncPending"
-			}
 		}
 	}
 	syncConfiguration()
@@ -195,12 +165,9 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
-		// boolean and boolRange values are strings in the UI
+		// boolean values are returned as strings from the UI preferences
 		case "boolean":
 			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" ==  'true' ? settings."$parameterKey" : preference.disableValue
 		default:
 			// to deal with numbers and number as string it's needed to wrap it in quotes and then parse
 			return Integer.parseInt("${settings."$parameterKey"}")
@@ -258,12 +225,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (settings."$key" == preferenceValue) {
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
