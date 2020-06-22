@@ -195,13 +195,15 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
+		// boolean and boolRange values are strings in the UI
 		case "boolean":
-			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
+			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			return settings."$parameterKeyBoolean" ==  'true' ? settings."$parameterKey" : preference.disableValue
 		default:
-			return Integer.parseInt(settings."$parameterKey")
+			// to deal with numbers and number as string it's needed to wrap it in quotes and then parse
+			return Integer.parseInt("${settings."$parameterKey"}")
 	}
 }
 
@@ -381,10 +383,7 @@ def childOnOff(deviceNetworkId, value) {
 private onOffCmd(value, endpoint = 1) {
 	delayBetween([
 		encap(zwave.basicV1.basicSet(value: value), endpoint),
-		encap(zwave.basicV1.basicGet(), endpoint),
-		"delay 3000",
-		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-		encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+		encap(zwave.basicV1.basicGet(), endpoint)
 	])
 }
 
