@@ -165,12 +165,13 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
-		// boolean values are returned as strings from the UI preferences
 		case "boolean":
-			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
+            // boolean values are returned as strings from the UI preferences
+            return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
+        case "range":
+            return settings."$parameterKey"
 		default:
-			// to deal with numbers and number as string it's needed to wrap it in quotes and then parse
-			return Integer.parseInt("${settings."$parameterKey"}")
+            return Integer.parseInt(settings."$parameterKey")
 	}
 }
 
