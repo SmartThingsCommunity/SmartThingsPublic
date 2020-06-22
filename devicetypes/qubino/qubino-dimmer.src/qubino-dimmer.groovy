@@ -569,9 +569,9 @@ private getParameterMap() {[
 		parameterNumber: 1, size: 1, defaultValue: 0,
 		values: [
 			0: "Default value - Mono-stable switch type (push button) – button quick press turns between previous set dimmer value and zero)",
-			1: "Bi-stable switch type ",
-			2: "Potentiometer (Flush Dimmer 0-10V is using set value the last received from potentiometer or from z-wave controller)",
-			3: "0-10V Temperature sensor (regulated output)"
+			1: "Bi-stable switch type (on/off toggle switch)",
+			2: "Potentiometer (applies to Flush Dimmer 0-10V only, dimmer is using set value the last received from potentiometer or from z-wave controller)",
+			3: "0-10V Temperature sensor (regulated output, applies to Flush Dimmer 0-10V only)"
 		],
 		description: "Set input based on device type (switch, potentiometer, temperature sensor,..)." +
 			"After parameter change to value 3 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
@@ -580,8 +580,8 @@ private getParameterMap() {[
 			name: "Input 2 switch type (applies to Qubino Flush Dimmer only)", key: "inputsSwitchTypes", type: "enum",
 			parameterNumber: 2, size: 1, defaultValue: 0,
 			values: [
-					0: "Default value - push button (momentary)",
-					1: "on/off toggle switch"
+					0: "Default value - Mono-stable switch type (push button) – button quick press turns between previous set dimmer value and zero)",
+					1: "Bi-stable switch type (on/off toggle switch)"
 			],
 			description: "Select between push-button (momentary) and on/off toggle switch types. Both inputs must work the same way."
 	],

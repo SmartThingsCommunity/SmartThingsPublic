@@ -14,7 +14,6 @@
  */
 metadata {
 	definition(name: "Child Temperature Sensor", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid: "generic-temperature-measurement", ocfDeviceType: "oic.d.thermostat") {
-		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
 		capability "Sensor"
