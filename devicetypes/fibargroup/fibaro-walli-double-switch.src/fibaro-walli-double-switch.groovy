@@ -115,7 +115,7 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-        state.currentPreferencesState."$it.key".status = "synced"
+		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
 }
@@ -166,12 +166,12 @@ private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
 		case "boolean":
-            // boolean values are returned as strings from the UI preferences
-            return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
-        case "range":
-            return settings."$parameterKey"
+		// boolean values are returned as strings from the UI preferences
+			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
+		case "range":
+			return settings."$parameterKey"
 		default:
-            return Integer.parseInt(settings."$parameterKey")
+			return Integer.parseInt(settings."$parameterKey")
 	}
 }
 
