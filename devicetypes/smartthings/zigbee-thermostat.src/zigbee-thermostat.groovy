@@ -360,7 +360,7 @@ def getBatteryPercentage(rawValue) {
 }
 
 def getVoltageRange() {
-	if (isDanfossAlly) {
+	if (isDanfossAlly()) {
 		// Danfoss Ally's volage ranges: 2.4V - 0%, 3.2V - 100% (for some types of batteries it will be 3.4V - 100%)
 		[minVolts: 2.4, maxVolts: 3.2]
 	} else {
