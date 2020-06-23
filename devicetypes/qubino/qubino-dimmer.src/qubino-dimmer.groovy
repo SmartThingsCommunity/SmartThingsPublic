@@ -410,7 +410,7 @@ def handleChildEvent(map) {
 		log.debug "handleChildEvent / creating a child device"
 		childDevice = createChildDevice(
 				"qubino",
-				"Child Temperature Sensor",
+				"Qubino Temperature Sensor",
 				childDni,
 				"Qubino Temperature Sensor"
 		)
