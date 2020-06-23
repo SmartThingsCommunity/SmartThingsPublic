@@ -26,12 +26,15 @@ metadata {
 				attributeState "chime", label: 'off', action: 'chime.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#ff0000"
 			}
 		}
+		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
+			state "default", label: '', action: "alarm.off", icon: "st.secondary.off"
+		}
 		standardTile("off", "device.chime", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "chime.off", icon: "st.secondary.off"
 		}
 
 		main "chime"
-		details(["chime", "off"])
+		details(["chime", "alarm", "off"])
 	}
 }
 
@@ -50,5 +53,17 @@ def on() {
 }
 
 def chime() {
+	on()
+}
+
+def strobe() {
+	on()
+}
+
+def siren() {
+	on()
+}
+
+def both() {
 	on()
 }
