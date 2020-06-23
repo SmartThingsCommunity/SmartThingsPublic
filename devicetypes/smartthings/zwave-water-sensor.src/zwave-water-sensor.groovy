@@ -82,6 +82,11 @@ def updated() {
 def configure() {
 	if (isAeotec()) {
 		def commands = []
+		commands << encap(zwave.associationV2.associationSet(groupingIdentifier:3, nodeId: [zwaveHubNodeId]))
+		commands << encap(zwave.associationV2.associationSet(groupingIdentifier:4, nodeId: [zwaveHubNodeId]))
+		// send basic sets to devices in groups 3 and 4 when water is detected
+		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x58, scaledConfigurationValue: 1, size: 1))
+		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x59, scaledConfigurationValue: 1, size: 1))
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
