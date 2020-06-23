@@ -34,7 +34,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019",  manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX Thermostat" //LUX KONOz Thermostat
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX Thermostat" //LUX KONOz Thermostat
 		fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela Thermostat" //Umbrela UTee
 		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019 //Danfoss Thermostat
 	}
@@ -346,8 +346,8 @@ def getBatteryPercentage(rawValue) {
 		result.descriptionText = "${device.displayName} is powered by external source."
 	} else {
 		def volts = rawValue / 10
-		def minVolts = 5
-		def maxVolts = 6.5
+		def minVolts = voltageRange.minVolts
+		def maxVolts = voltageRange.maxVolts
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
 		if (roundedPct < 0) {
@@ -357,6 +357,15 @@ def getBatteryPercentage(rawValue) {
 	}
 
 	return result
+}
+
+def getVoltageRange() {
+	if (isDanfossAlly()) {
+		// Danfoss Ally's volage ranges: 2.4V - 0%, 3.2V - 100% (for some types of batteries it will be 3.4V - 100%)
+		[minVolts: 2.4, maxVolts: 3.2]
+	} else {
+		[minVolts: 5, maxVolts: 6.5]
+	}
 }
 
 def getTemperature(value) {
