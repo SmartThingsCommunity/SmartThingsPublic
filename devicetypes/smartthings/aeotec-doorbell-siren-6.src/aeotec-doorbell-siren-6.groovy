@@ -225,8 +225,8 @@ def setOnChild(deviceDni) {
 	resetActiveSound()
 	sendHubCommand encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(deviceDni))
 	state.lastTriggeredSound = channelNumber(deviceDni)
-	setActiveSound(state.lastTriggeredSound) 
-	}
+	setActiveSound(state.lastTriggeredSound)
+}
 
 def setOffChild(deviceDni) {
 	sendHubCommand encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(deviceDni))
@@ -249,11 +249,8 @@ def resetActiveSound() {
 def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	if(soundId >= 3 || soundId <= 5) {
-		child?.sendEvent(name: "chime", value: "on", displayed: false)
-	} else {
-		child?.sendEvent(name: "alarm", value: "both", displayed: false)
-	}
+	child?.sendEvent(name: "chime", value: "on", displayed: false)
+	child?.sendEvent(name: "alarm", value: "both", displayed: false)
 }
 
 def keepChildrenOnline() {
