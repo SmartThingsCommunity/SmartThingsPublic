@@ -67,7 +67,7 @@ metadata {
 			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 		}
 		section {
-			input("garageSensor", "enum", title: "Use on garage door", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
+			input("garageSensor", "boolean", title: "Use on garage door", defaultValue: false, required: false, displayDuringSetup: false)
 		}
 	}
 
@@ -234,7 +234,7 @@ private List<Map> parseAxis(List<Map> attrData) {
 
 	log.debug "parseAxis -- ${xyzResults}"
 
-	if (garageSensor == "Yes")
+	if (garageSensor == "Yes" || gargeSensor == true) // garageSensor was changed from an enum to a boolean
 		results += garageEvent(xyzResults.z)
 
 	def value = "${xyzResults.x},${xyzResults.y},${xyzResults.z}"
@@ -259,7 +259,7 @@ private List<Map> parseIasMessage(String description) {
 private List<Map> translateZoneStatus(ZoneStatus zs) {
 	List<Map> results = []
 
-	if (garageSensor != "Yes") {
+	if (garageSensor != "Yes" || garageSensor != true) {
 		def value = zs.isAlarm1Set() ? 'open' : 'closed'
 		log.debug "Contact: ${device.displayName} value = ${value}"
 		def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
