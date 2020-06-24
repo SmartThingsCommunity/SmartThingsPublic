@@ -14,9 +14,9 @@
  */
 metadata {
 	definition (name: "Geeni Bulb", namespace: "Christmom3", author: "ERIKA HOLCOMB", cstHandler: true) {
-		capability "Geolocation"
-		capability "Samsung TV"
-		capability "webrtc"
+		capability "Color"
+		capability "Color Control"
+		capability "Color Mode"
 	}
 
 
@@ -32,85 +32,31 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'latitude' attribute
-	// TODO: handle 'longitude' attribute
-	// TODO: handle 'method' attribute
-	// TODO: handle 'accuracy' attribute
-	// TODO: handle 'altitudeAccuracy' attribute
-	// TODO: handle 'heading' attribute
-	// TODO: handle 'speed' attribute
-	// TODO: handle 'lastUpdateTime' attribute
-	// TODO: handle 'volume' attribute
-	// TODO: handle 'mute' attribute
-	// TODO: handle 'pictureMode' attribute
-	// TODO: handle 'soundMode' attribute
-	// TODO: handle 'switch' attribute
-	// TODO: handle 'messageButton' attribute
-	// TODO: handle 'sdpAnswer' attribute
-	// TODO: handle 'talkback' attribute
-	// TODO: handle 'supportedFeatures' attribute
-	// TODO: handle 'audioOnly' attribute
-	// TODO: handle 'stunUrl' attribute
+	// TODO: handle 'colorValue' attribute
+	// TODO: handle 'hue' attribute
+	// TODO: handle 'saturation' attribute
+	// TODO: handle 'color' attribute
+	// TODO: handle 'colorMode' attribute
 
 }
 
 // handle commands
-def volumeUp() {
-	log.debug "Executing 'volumeUp'"
-	// TODO: handle 'volumeUp' command
+def setColorValue() {
+	log.debug "Executing 'setColorValue'"
+	// TODO: handle 'setColorValue' command
 }
 
-def volumeDown() {
-	log.debug "Executing 'volumeDown'"
-	// TODO: handle 'volumeDown' command
+def setHue() {
+	log.debug "Executing 'setHue'"
+	// TODO: handle 'setHue' command
 }
 
-def setVolume() {
-	log.debug "Executing 'setVolume'"
-	// TODO: handle 'setVolume' command
+def setSaturation() {
+	log.debug "Executing 'setSaturation'"
+	// TODO: handle 'setSaturation' command
 }
 
-def mute() {
-	log.debug "Executing 'mute'"
-	// TODO: handle 'mute' command
-}
-
-def unmute() {
-	log.debug "Executing 'unmute'"
-	// TODO: handle 'unmute' command
-}
-
-def setPictureMode() {
-	log.debug "Executing 'setPictureMode'"
-	// TODO: handle 'setPictureMode' command
-}
-
-def setSoundMode() {
-	log.debug "Executing 'setSoundMode'"
-	// TODO: handle 'setSoundMode' command
-}
-
-def on() {
-	log.debug "Executing 'on'"
-	// TODO: handle 'on' command
-}
-
-def off() {
-	log.debug "Executing 'off'"
-	// TODO: handle 'off' command
-}
-
-def showMessage() {
-	log.debug "Executing 'showMessage'"
-	// TODO: handle 'showMessage' command
-}
-
-def sdpOffer() {
-	log.debug "Executing 'sdpOffer'"
-	// TODO: handle 'sdpOffer' command
-}
-
-def end() {
-	log.debug "Executing 'end'"
-	// TODO: handle 'end' command
+def setColor() {
+	log.debug "Executing 'setColor'"
+	// TODO: handle 'setColor' command
 }
