@@ -272,8 +272,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	}
 	def child = childDevices.find { it.deviceNetworkId == state.temperatureSensorDni }
 	if (!child) {
-		addChildTemperatureSensor()
-		child = childDevices.find { it.deviceNetworkId == state.temperatureSensorDni }
+		child = addChildTemperatureSensor()
 	}
 	child?.sendEvent(map)
 	createEvent(map)
@@ -394,11 +393,12 @@ private addChildTemperatureSensor() {
 	try {
 		String childDni = "${device.deviceNetworkId}:${state.numberOfSwitches + 1}"
 		state.temperatureSensorDni = childDni
-		addChildDevice("qubino", "Child Temperature Sensor", childDni, device.getHub().getId(), [
+		def childDevice = addChildDevice("qubino", "Child Temperature Sensor", childDni, device.getHub().getId(), [
 				completedSetup	: true,
 				label			: "Qubino Temperature Sensor",
 				isComponent		: false
 		])
+		childDevice
 	} catch(Exception e) {
 		log.warn "Exception: ${e}"
 	}
