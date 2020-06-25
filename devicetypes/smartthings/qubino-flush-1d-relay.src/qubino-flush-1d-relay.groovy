@@ -42,46 +42,26 @@ metadata {
 	preferences {
 	parameterMap.each {
 		input (
-			title: it.name,
-			description: it.description,
-			type: "paragraph",
-			element: "paragraph"
+			title: it.name, description: it.description, type: "paragraph", element: "paragraph"
 		)
 
 		switch(it.type) {
 			case "boolean":
 				input(
-					type: "paragraph",
-					element: "paragraph",
-					description: "Option enabled: ${it.activeDescription}\n" + 
-						"Option disabled: ${it.inactiveDescription}" 
+					type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" + "Option disabled: ${it.inactiveDescription}" 
 				)
 				input(
-					name: it.key, 
-					type: "boolean",
-					title: "Enable",
-					defaultValue: it.defaultValue == it.activeOption,
-					required: false
+					name: it.key, type: "boolean", title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false
 				)
 				break
 			case "enum":
 				input(
-					name: it.key, 
-					title: "Select",
-					type: "enum",
-					options: it.values,
-					defaultValue: it.defaultValue,
-					required: false
+					name: it.key, title: "Select", type: "enum", options: it.values, defaultValue: it.defaultValue, required: false
 				)
 				break
 			case "range":
 				input(
-					name: it.key, 
-					type: "number",
-					title: "Set value (range ${it.range})",
-					defaultValue: it.defaultValue,
-					range: it.range,
-					required: false
+					name: it.key, type: "number", title: "Set value (range ${it.range})", defaultValue: it.defaultValue, range: it.range, required: false
 				)
 				break
 		}
@@ -119,13 +99,12 @@ def updated() {
 
 def configure() {
 	def commands = []
-	commands << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format()
-	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId]).format()
+	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format() // Lifeline group (reserved for communication with the primary gateway (hub)), 1 node allowed.
+	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format() // Basic on/off (status change report for Q1 load), up to 16 nodes.
+	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format() // Basic on/off (status change report for I2 input) up to 16 nodes.
+	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format() // Binary sensor (status change report for I2 input) up to 16 nodes.
+	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format() // Notification report (status change report for I2 input) up to 16 nodes.
+	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId]).format() // Multilevel sensor report (external temperature sensor report – sensor sold separately), up to 16 nodes.
 	delayBetween(commands, 500)
 }
 
@@ -205,16 +184,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 def on() {
 	log.debug "on"
 	delayBetween([
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.basicV1.basicGet().format()
+			encap(zwave.basicV1.basicSet(value: 0xFF), 1),
+			encap(zwave.basicV1.basicGet(), 1)
 	])
 }
 
 def off() {
 	log.debug "off"
 	delayBetween([
-			zwave.basicV1.basicSet(value: 0x00).format(),
-			zwave.basicV1.basicGet().format()
+			encap(zwave.basicV1.basicSet(value: 0x00), 1),
+			encap(zwave.basicV1.basicGet(), 1)
 	])
 }
 
@@ -225,7 +204,7 @@ def ping() {
 def refresh() {
 	refreshChild()
 	def commands = []
-	commands << zwave.basicV1.basicGet().format()
+	commands << encap(zwave.basicV1.basicGet())
 	delayBetween(commands)
 }
 
@@ -263,13 +242,9 @@ def handleChildEvent(map) {
 
 	if(!childDevice) {
 		log.debug "handleChildEvent / creating a child device"
-		def childComponentLabel	= "Qubino Temperature Sensor"
-		def childDthName		= "Child Temperature Sensor"
-		def childDthNamespace 	= "qubino"
-
-		createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel)
-		childDevice = childDevices.find { it.deviceNetworkId == childDni }
+		childDevice = createChildDevice("qubino", "Child Temperature Sensor", childDni, "Qubino Temperature Sensor")
 	}
+	
 	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
 	childDevice?.sendEvent(map)
 }
