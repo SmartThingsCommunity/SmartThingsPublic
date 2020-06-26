@@ -15,6 +15,7 @@ metadata {
     definition (name: "Gentle Wake Up Controller", namespace: "smartthings", author: "SmartThings") {
         capability "Switch"
         capability "Timed Session"
+        capability "stgentlewakeup.progress"
 
         attribute "percentComplete", "number"
 
@@ -123,12 +124,17 @@ def stopDimming() {
 def controllerEvent(eventData) {
     sendEvent(eventData)
     if (eventData.name == "sessionStatus") {
-    	if (eventData.value == "running") {
+        if (eventData.value == "running") {
             //Set Switch to ON to support Samsung Connect
             sendEvent(name: "switch", value: "on")
-    	} else {
+        } else {
             // Set Switch to OFF to support Samsung Connect
             sendEvent(name: "switch", value: "off")
         }
+    } else if (eventData.name == "percentComplete") {
+        eventData.name = "stgentlewakeup.progress.percentComplete"
+        eventData.value = Math.round(eventData.value)
+        eventData.unit = "%"
+        sendEvent(eventData)
     }
 }
