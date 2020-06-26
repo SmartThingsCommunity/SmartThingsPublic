@@ -244,13 +244,14 @@ def resetActiveSound() {
 		sendHubCommand(onOffCmd(0x00))
 	}
 	sendEvent([name: "alarm", value: "off"])
+	sendEvent([name: "chime", value: "off"])
 }
 
 def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent(name: "chime", value: "on", displayed: false)
-	child?.sendEvent(name: "alarm", value: "both", displayed: false)
+	child?.sendEvent(name: "chime", value: "on")
+	child?.sendEvent(name: "alarm", value: "both")
 }
 
 def keepChildrenOnline() {
