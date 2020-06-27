@@ -1,0 +1,31 @@
+{
+  "name": "Precipitation",
+  "attributes": {
+    "percentPrecip": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "IntegerPercent",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "%"
+            ],
+            "default": "%"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
+    }
+  },
+  "commands": {
+  }
+}
