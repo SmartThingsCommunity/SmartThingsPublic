@@ -48,6 +48,14 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWBulb51AU", deviceJoinName: "AOne Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K" //AOne Smart Tuneable GLS Lamp
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWCLBulb50AU", deviceJoinName: "AOne Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K" //AOne Smart Tuneable Candle Lamp
 
+		//CWD
+		// raw description "01 0104 010C 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Ecct-A001", deviceJoinName: "CWD Light" //model: "E27 Colour Tuneable", brand: "Collingwood"
+		// raw description "01 0104 010C 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Bcct-A001", deviceJoinName: "CWD Light" //model: "BC Colour Tuneable", brand: "Collingwood"
+		// raw description "01 0104 010C 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.M350cct-A001", deviceJoinName: "CWD Light" //model: "GU10 Colour Tuneable", brand: "Collingwood"
+
 		// Commercial Electric
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Light", vid: "generic-color-temperature-bulb-2700K-5000K" //Commercial Electric Can Tunable White
 
