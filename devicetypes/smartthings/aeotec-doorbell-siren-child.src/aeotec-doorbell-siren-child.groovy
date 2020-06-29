@@ -20,15 +20,18 @@ metadata {
 
 	}
 	tiles {
-		multiAttributeTile(name: "chime", type: "generic", width: 6, height: 4) {
+		multiAttributeTile(name: "chime", type: "generic", width: 6, height: 2) {
 			tileAttribute("device.chime", key: "PRIMARY_CONTROL") {
 				attributeState "off", label: 'chime', action: 'chime.chime', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
 				attributeState "chime", label: 'off', action: 'chime.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#ff0000"
 			}
 		}
-		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
-			state "default", label: '', action: "alarm.off", icon: "st.secondary.off"
-		}
+		multiAttributeTile(name: "alarm", type: "generic", width: 6, height: 2) {
+			tileAttribute("device.alarm", key: "PRIMARY_CONTROL") {
+				attributeState "off", label: 'off', action: 'alarm.siren', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
+				attributeState "both", label: 'alarm', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#ff0000"
+			}
+		}}
 		standardTile("off", "device.chime", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "chime.off", icon: "st.secondary.off"
 		}
