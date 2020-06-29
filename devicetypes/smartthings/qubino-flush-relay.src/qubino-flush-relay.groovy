@@ -193,17 +193,6 @@ def switchEvents(physicalgraph.zwave.Command cmd) {
 	sendEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
-	log.debug"MeterReport: ${cmd}"
-	def result = []
-	if (cmd.scale == 0) {
-		result << createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-	} else if (cmd.scale == 2) {
-		result << createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
-	}
-	return result
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
 	log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
 	def result = []
