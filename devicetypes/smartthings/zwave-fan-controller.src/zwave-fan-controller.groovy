@@ -125,7 +125,7 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 		def fanLevel = 0
 
 		// The GE, Honeywell, and Leviton 3-Speed Fan Controller treat 33 as medium, so account for that
-		if (isLeviton4Speed()) {
+		if (maxSupportedSpeeds == 4) {
 			fanLevel = getValueFor4SpeedDevice(rawLevel)
 		} else {
 			fanLevel = getValueFor3SpeedDevice(rawLevel)
@@ -201,19 +201,19 @@ def lowerFanSpeed() {
 }
 
 def low() {
-	setLevel(isLeviton4Speed() ? 25 : 32)
+	setLevel(100 / maxSupportedSpeeds)
 }
 
 def medium() {
-	setLevel(isLeviton4Speed() ? 50 : 66)
+	setLevel(200 / maxSupportedSpeeds)
 }
 
 def high() {
-	setLevel(isLeviton4Speed() ? 75 : 99)
+	setLevel(300 / maxSupportedSpeeds)
 }
 
 def max() {
-	setLevel(99)
+	setLevel(400 / maxSupportedSpeeds)
 }
 
 def refresh() {
@@ -249,6 +249,14 @@ def getValueFor4SpeedDevice(rawLevel) {
 		return 3
 	} else if (76 <= rawLevel && rawLevel <= 100) {
 		return 4
+	}
+}
+
+def getMaxSupportedSpeeds() {
+	if (isLeviton4Speed()) {
+		return 4
+	} else {
+		return 3
 	}
 }
 
