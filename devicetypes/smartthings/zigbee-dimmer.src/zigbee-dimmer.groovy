@@ -41,6 +41,14 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05 ,1000, FEDC", outClusters: "000A, 0019", manufacturer: "Aurora", model: "FWG125Bulb50AU", deviceJoinName: "Aurora Light" //Aurora Dimmable Filament Vintage G125
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05 ,1000, FEDC", outClusters: "000A, 0019", manufacturer: "Aurora", model: "FWA60Bulb50AU", deviceJoinName: "Aurora Light" //Aurora Dimmable Filament Vintage GLS
 
+		//CWD
+		// raw description "01 0104 0101 01 09 0000 0003 0004 0005 0006 0008 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Edim-A001", deviceJoinName: "CWD Light" //model: "E27 dim", brand: "Collingwood"
+		// raw description "01 0104 0101 01 09 0000 0003 0004 0005 0006 0008 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Bdim-A001", deviceJoinName: "CWD Light" //model: "BC dim", brand: "Collingwood"
+		// raw description "01 0104 0101 01 09 0000 0003 0004 0005 0006 0008 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.M350dim-A001", deviceJoinName: "CWD Light" //model: "GU10 dim", brand: "Collingwood"
+
 		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WW 806lm", deviceJoinName: "IKEA Light" // raw description 01 0104 0101 01 07 0000 0003 0004 0005 0006 0008 1000 04 0005 0019 0020 1000 //IKEA TRÅDFRI LED Bulb
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WW clear 250lm", deviceJoinName: "IKEA Light" //raw desc: 01 0104 0101 01 07 0000 0003 0004 0005 0006 0008 1000 04 0005 0019 0020 1000 //IKEA TRÅDFRI LED Bulb
@@ -107,7 +115,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1A-AC2", deviceJoinName: "Sengled Light" //Sengled DownLight
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N13A", deviceJoinName: "Sengled Light" //Sengled Extra Bright Soft White
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N14A", deviceJoinName: "Sengled Light" //Sengled Extra Bright Daylight
-                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E21-N13A", deviceJoinName: "Sengled Light" //Sengled Soft White
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E21-N13A", deviceJoinName: "Sengled Light" //Sengled Soft White
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E21-N14A", deviceJoinName: "Sengled Light" //Sengled Daylight
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-U21U31", deviceJoinName: "Sengled Light" //Sengled Element Touch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05, FC01", outClusters: "0019", manufacturer: "sengled", model: "E13-A21", deviceJoinName: "Sengled Light" //Sengled LED Flood Light
