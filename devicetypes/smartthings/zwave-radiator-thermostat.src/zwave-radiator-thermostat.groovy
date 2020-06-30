@@ -225,7 +225,7 @@ def setThermostatMode(String mode) {
 
 	[
 			secure(zwave.thermostatModeV2.thermostatModeSet(mode: modeValue)),
-			"delay 2000",
+			"delay 5000",
 			secure(zwave.thermostatModeV2.thermostatModeGet())
 	]
 }
