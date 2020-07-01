@@ -281,7 +281,7 @@ def handleChildEvent(map) {
 
 	if(!childDevice) {
 		log.debug "handleChildEvent / creating a child device"
-		childDevice = createChildDevice("smartthings", "Qubino Temperature Sensor", childDni, "Qubino Temperature Sensor")
+		childDevice = createChildDevice("qubino", "Qubino Temperature Sensor", childDni, "Qubino Temperature Sensor")
 	}
 	
 	log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
