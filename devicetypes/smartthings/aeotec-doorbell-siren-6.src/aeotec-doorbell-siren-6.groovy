@@ -152,7 +152,8 @@ def ping() {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	if (cmd.value == 0) {
 		keepChildrenOnline()
-		sendEvent(name: "alarm", value: "off", displayed: false)
+		sendEvent(name: "alarm", value: "off")
+		sendEvent(name: "chime", value: "off")
 	}
 }
 
@@ -205,6 +206,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 0x01: //ON
 				if (state.lastTriggeredSound == 1) {
 					createEvent([name: "alarm", value: "both"])
+					createEvent([name: "chime", value: "chime"])
 				} else {
 					setActiveSound(state.lastTriggeredSound)
 				}
@@ -250,7 +252,8 @@ def resetActiveSound() {
 def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent([name: "chime", value: "chime"])
+	child?.sendEvent(name: "chime", value: "on")
+	child?.sendEvent(name: "alarm", value: "both")
 }
 
 def keepChildrenOnline() {
@@ -261,6 +264,7 @@ def keepChildrenOnline() {
 		def soundNumber = i
 		String childDni = "${device.deviceNetworkId}:$soundNumber"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
-		child?.sendEvent(name: "chime", value: "off", displayed: false)
+		child?.sendEvent(name: "chime", value: "off")
+		child?.sendEvent(name: "alarm", value: "off")
 	}
 }
