@@ -27,7 +27,7 @@ metadata {
 		command "raiseFanSpeed"
 		command "lowerFanSpeed"
 
-		fingerprint mfr: "001D", prod: "0038", model: "0002", deviceJoinName: "Leviton Fan" //Leviton 4-Speed Fan Controller
+		fingerprint mfr: "001D", prod: "0038", model: "0002", deviceJoinName: "Leviton Fan", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Fan_Controller_4_Speed" //Leviton 4-Speed Fan Controller
 		fingerprint mfr: "001D", prod: "1001", model: "0334", deviceJoinName: "Leviton Fan" //Leviton 3-Speed Fan Controller
 		fingerprint mfr: "0063", prod: "4944", model: "3034", deviceJoinName: "GE Fan" //GE In-Wall Smart Fan Control
 		fingerprint mfr: "0063", prod: "4944", model: "3131", deviceJoinName: "GE Fan" //GE In-Wall Smart Fan Control
@@ -125,7 +125,7 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 		def fanLevel = 0
 
 		// The GE, Honeywell, and Leviton 3-Speed Fan Controller treat 33 as medium, so account for that
-		if (maxSupportedSpeeds == 4) {
+		if (has4Speeds()) {
 			fanLevel = getValueFor4SpeedDevice(rawLevel)
 		} else {
 			fanLevel = getValueFor3SpeedDevice(rawLevel)
@@ -201,19 +201,19 @@ def lowerFanSpeed() {
 }
 
 def low() {
-	setLevel(100 / maxSupportedSpeeds)
+	setLevel(has4Speeds() ? 25 : 32)
 }
 
 def medium() {
-	setLevel(200 / maxSupportedSpeeds)
+	setLevel(has4Speeds() ? 50 : 66)
 }
 
 def high() {
-	setLevel(300 / maxSupportedSpeeds)
+	setLevel(has4Speeds() ? 75 : 99)
 }
 
 def max() {
-	setLevel(400 / maxSupportedSpeeds)
+	setLevel(99)
 }
 
 def refresh() {
@@ -227,8 +227,7 @@ def ping() {
 def getValueFor3SpeedDevice(rawLevel) {
 	if (rawLevel == 0) {
 		return 0
-	}
-	if (1 <= rawLevel && rawLevel <= 32) {
+	} else if (1 <= rawLevel && rawLevel <= 32) {
 		return 1
 	} else if (33 <= rawLevel && rawLevel <= 66) {
 		return 2
@@ -240,8 +239,7 @@ def getValueFor3SpeedDevice(rawLevel) {
 def getValueFor4SpeedDevice(rawLevel) {
 	if (rawLevel == 0) {
 		return 0
-	}
-	if (1 <= rawLevel && rawLevel <= 25) {
+	} else if (1 <= rawLevel && rawLevel <= 25) {
 		return 1
 	} else if (26 <= rawLevel && rawLevel <= 50) {
 		return 2
@@ -252,11 +250,11 @@ def getValueFor4SpeedDevice(rawLevel) {
 	}
 }
 
-def getMaxSupportedSpeeds() {
+def has4Speeds() {
 	if (isLeviton4Speed()) {
-		return 4
+		return true
 	} else {
-		return 3
+		return false
 	}
 }
 
