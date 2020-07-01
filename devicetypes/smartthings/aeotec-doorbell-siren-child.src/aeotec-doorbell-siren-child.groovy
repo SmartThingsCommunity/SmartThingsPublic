@@ -31,7 +31,7 @@ metadata {
 				attributeState "off", label: 'off', action: 'alarm.siren', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
 				attributeState "both", label: 'alarm', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#ff0000"
 			}
-		}}
+		}
 		standardTile("off", "device.chime", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "chime.off", icon: "st.secondary.off"
 		}
