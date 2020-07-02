@@ -74,7 +74,7 @@ def installed() {
 	if (!childDevices) {
 		addChildSwitches(state.numberOfSwitches)
 	}
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -175,7 +175,7 @@ def parse(String description) {
 	} else if (description != "updated") {
 		def cmd = zwave.parse(description)
 		if (cmd) {
-			result = zwaveEvent(cmd, null)
+			result = zwaveEvent(cmd)
 		}
 	}
 	log.debug "parsed '${description}' to ${result.inspect()}"
