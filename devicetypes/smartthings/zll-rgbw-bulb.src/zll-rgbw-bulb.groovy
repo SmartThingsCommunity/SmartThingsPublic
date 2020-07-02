@@ -228,7 +228,8 @@ def setColorTemperature(value) {
 }
 
 def setLevel(value, rate = null) {
-	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh() //adding refresh because of ZLL bulb not conforming to send-me-a-report
+	//adding refresh because of ZLL bulb not conforming to send-me-a-report
+	zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : []) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 private getScaledHue(value) {
