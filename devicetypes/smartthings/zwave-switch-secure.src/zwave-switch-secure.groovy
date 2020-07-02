@@ -26,6 +26,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0103", model: "008B", deviceJoinName: "Aeon Switch" //Aeon Labs Nano Switch
 		fingerprint mfr: "027A", prod: "A000", model: "A001", deviceJoinName: "Zooz Switch" //Zooz ZEN26 Switch
 		fingerprint mfr: "0152", prod: "A003", model: "A002", deviceJoinName: "iTec Switch" //iTec Home Light Switch
+		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet" //Leviton Tamper Resistant Outlet ZW15R
 	}
 
 	simulator {
