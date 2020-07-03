@@ -124,11 +124,10 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 
 		def fanLevel = 0
 
-		// The GE, Honeywell, and Leviton 3-Speed Fan Controller treat 33 as medium, so account for that
 		if (has4Speeds()) {
-			fanLevel = getValueFor4SpeedDevice(rawLevel)
+			fanLevel = getFanSpeedFor4SpeedDevice(rawLevel)
 		} else {
-			fanLevel = getValueFor3SpeedDevice(rawLevel)
+			fanLevel = getFanSpeedFor3SpeedDevice(rawLevel)
 		}
 		result << createEvent(name: "fanSpeed", value: fanLevel)
 	}
@@ -224,7 +223,8 @@ def ping() {
 	refresh()
 }
 
-def getValueFor3SpeedDevice(rawLevel) {
+def getFanSpeedFor3SpeedDevice(rawLevel) {
+	// The GE, Honeywell, and Leviton 3-Speed Fan Controller treat 33 as medium, so account for that
 	if (rawLevel == 0) {
 		return 0
 	} else if (1 <= rawLevel && rawLevel <= 32) {
@@ -236,7 +236,7 @@ def getValueFor3SpeedDevice(rawLevel) {
 	}
 }
 
-def getValueFor4SpeedDevice(rawLevel) {
+def getFanSpeedFor4SpeedDevice(rawLevel) {
 	if (rawLevel == 0) {
 		return 0
 	} else if (1 <= rawLevel && rawLevel <= 25) {
@@ -251,11 +251,7 @@ def getValueFor4SpeedDevice(rawLevel) {
 }
 
 def has4Speeds() {
-	if (isLeviton4Speed()) {
-		return true
-	} else {
-		return false
-	}
+	isLeviton4Speed()
 }
 
 def isLeviton4Speed() {
