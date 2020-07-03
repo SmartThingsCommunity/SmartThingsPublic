@@ -16,15 +16,16 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Access Token initialization code is derived from Trent Foley's excellent Tesla Connect SmartThings Smart App
+ *  Access Token initialization code is derived from Trent Foley's excellent Tesla Connect SmartThings Smart App:
  *     https://github.com/trentfoley/SmartThingsPublic/blob/master/smartapps/trentfoley/tesla-connect.src/tesla-connect.groovy 
  *
  */
 def version() {
-    return "v0.2.7e.20200527"
+    return "v0.2.8e.20200702"
 }
 
 /* 
+ *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iframe for Hubitat. 
  *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
  *	02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
  *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
@@ -75,6 +76,7 @@ preferences {
     page(name: "pagePwPreferences")
     page(name: "pageDevicesToControl")
     page(name: "triggerRestrictions")
+    page(name: "pageCustomizeGwTile")
 }
 
 private pageMain() {
@@ -92,8 +94,13 @@ private pageMain() {
         }
         
          section("Powerwall Connections") {
-            href "pageConnections", title: "Account Information..", description: "", required: false, image:
-               "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
+            if (hubIsSt()) {
+                href "pageConnections", title: "Account Information..", description: "", required: false, image:
+                 "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
+            } else {  
+                href "pageConnections", title: "Tesla Account and/or Powerwall Gateway Information..", description: "", required: false, image:
+                 "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
+            }
         }
 
         section("Preferences") {
@@ -167,7 +174,7 @@ def getConnectionMethodStatus() {
         statusStr = "Use Remote Tesla Account Server Only"
     } else {
         if (connectionMethod == "Use Local Gateway Only") {
-            statusStr = connectionMethod.toString() + ".\n Note: A Tesla Server connection is also required for all Powerwall Manager capabilities."
+            statusStr = connectionMethod.toString() + ".\n Note: A Tesla Server connection is required for full Powerwall Manager capabilities."
         } else {
            statusStr = connectionMethod.toString()
         }
@@ -186,29 +193,53 @@ def pageConnectionMethod() {
         
 def pageConnections() {
     dynamicPage(name: "pageConnections", title:"Choose how to connect to the Powerwall.", install: false, uninstall: false) {
-        def statusString
+        String statusString
         if (!hubIsSt()) {
-           section("Connection Method") {
+           section("Connection Method:") {
                statusString = getConnectionMethodStatus()
                href "pageConnectionMethod", title: "${statusString}", description: ""
             }
         }
-
         if (!connectionMethod || connectionMethod != "Use Local Gateway Only") {
             statusString = getTeslaServerStatus()
-            section("Tesla Server") {
+            section("Enter Tesla Server Account Information:") {
                href "teslaAccountInfo", title: "${statusString}", description: ""
             }
         }
         if (connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") {
             statusString = getLocalGwStatus()
-            section("Gateway Status") {
+            section("Enter Gateway Address:") {
                href "gatewayAccountInfo", title: "${statusString}", description: ""
+            }
+            if (statusString.take(22)=="Local Gateway Verified") {
+               section("Customize Gateway Dashboard Tile:") {
+                   statusString = "Height: ${tileHeight?.toLong() ?: 517} (default 517 pixels)\n" +                
+                                      "Width:  ${tileWidth?.toLong() ?: 460} (default 460 pixels)\n" + 
+                                      "Scale:  ${tileScale?.toFloat() ?: 0.81} (default 0.81)\n\n"  + 
+                                       getTileStr(0.5) +   
+                   "\n&#8226To view this attribute tile on your dashboard, you may need to first visit the gateway URL in your dashboard browser " +
+                   "and accept the self-signed certificate exception." +
+                   "\n&#8226Add to .css to remove extra tile padding: #tile-XX .tile-contents, #tile-XX .tile-primary {padding: 0;}"
+                    section("Customize Gateway Dashboard Tile:") {
+                        href "pageCustomizeGwTile", title: "${statusString}", description: ""
+
+                    }
+               }
             }
         }
     }
 }
 
+def pageCustomizeGwTile() {
+    dynamicPage(name: "pageCustomizeGwTile", title:"Customize Gateway Dashboard Tile:", install: false, uninstall: false) {
+         section("") {
+                  input("tileHeight", "number", title: "Tile Height (default 517 pixels)", defaultValue: 517, required: false )
+                  input("tileWidth", "number", title: "Tile Width (default 460 pixels)", defaultValue: 460, required: false )
+                  input("tileScale", "decimal", title: "Tile Scale (default 0.81)", defaultValue: 0.81, required: false )   
+              }
+    }
+}
+        
 def getTeslaServerStatus() {
     try {
         def messageStr
@@ -252,29 +283,24 @@ def getLocalGwStatus() {
                    contentType: 'application/json',
                    ignoreSSLIssues: true 
                 ]
-            
                 httpGet(requestParameters) {
                   resp -> 
-                   log.debug "response data was ${resp.data} "
-                   //def data = resp.json
-                   // log.debug "${data}"          
-                  // localConnectionValid = true
+                   log.debug "response data was ${resp.data} "       
                    messageStr = "Local Gateway Verified:\n" +
                        "Connected at ${gatewayAddress}\n"+
                        "Site Name: ${resp.data.site_name.toString()}\n" +
-                       "Gateway time zone: ${resp.data.timezone.toString()}"
+                       "Gateway time zone: ${resp.data.timezone.toString()}\n"
                    state.foundGateway = true
                 }
-                log.debug "${messageStr}"
+                //log.debug "${messageStr}"
         }
        return messageStr
 
     } catch (Exception e) {
         log.error e
-           return "Unknown error accessing local gateway"
+        return "Error accessing local gateway:\n${e}"
     }
 }
-
 
 def pageNotifications() {
     dynamicPage(name: "pageNotifications", title: "Notification Preferences", install: false, uninstall: false) {
@@ -1246,6 +1272,13 @@ def initialize() {
     unschedule()
     setSchedules()
 
+    if (state.foundGateway) {
+        //log.debug "calling tile update..."
+        runIn (10, createDashboardTile)
+    } else {
+        log.debug "Gateway not connected"
+    }
+    
     if (pollingPeriod == "5 minutes") {
         runEvery5Minutes(processMain)
     } else if (pollingPeriod == "30 minutes") {
@@ -1279,6 +1312,17 @@ private createDeviceForPowerwall() {
         log.debug "device for Powerwall exists"
         pwDevice.initialize()
     }
+}
+
+def createDashboardTile() {
+   def pwDevice = getPwDevice()
+   log.debug "creating/updating tile..."
+   if (pwDevice) {
+      String tileStr = getTileStr(tileScale?.toFloat()) 
+      pwDevice.sendEvent(name: "pwTile", value: tileStr)
+   } else {
+       log.warn "Unable to update Dashboard tile. Powerwall device does not exist."
+   }
 }
 
 def updateIfChanged(device, attr, value, delta = null) {
@@ -1448,6 +1492,17 @@ def processSiteResponse(response, callData) {
     }
 }
 
+def getTileStr(def zoomLevel) {
+    long width = tileWidth?.toLong() ?: 460
+    long height = tileHeight?.toLong() ?: 517  
+    float frameScale = zoomLevel?.toFloat() ?: 0.81
+    String innerDivStyle = "overflow: hidden; transform: scale(${frameScale}); transform-origin: 0 0; border: none; padding: 0; margin: 0;" 
+    String outerDivStyle = "height: ${(height*frameScale).toLong()}px; width: ${width-16}px; overflow: hidden; border: none; padding: 0; margin: 0;"     
+    String iframeStyle   = "height: ${height}px; width: ${width}px; border: none; scrollbar-width: none; overflow: hidden; border: none; padding: 0; margin: 0;"  
+    //log.debug "inner: ${innerDivStyle} + outer: ${outerDivStyle} iframe: ${iframeStyle}"
+    return "<div style = '$outerDivStyle'><div style = '$innerDivStyle'><iframe style='${iframeStyle}' scrolling='no' src='http://${gatewayAddress}'></iframe></div></div>"  
+}
+
 def processGwAggregatesResponse(response, callData) {
     //log.debug "${callData}"
     if (logLevel == "debug" | logLevel == "trace") {
@@ -1465,9 +1520,7 @@ def processGwAggregatesResponse(response, callData) {
         updateIfChanged(child, "solarPower", data.solar.instant_power.toInteger(), 100)
         updateIfChanged(child, "powerwallPower", data.battery.instant_power.toInteger(), 100)
     } else {
-        
-       log.debug "error"
-         log.debug "${data}"   
+        log.debug "Error procesing gateway aggregate data. Data is ${data}"
     }       
 }
 
@@ -1491,8 +1544,7 @@ def processGwSoeResponse(response, callData) {
         //runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
         runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: null]])
     } else { 
-        log.debug "error"
-        log.debug "${data}"   
+        log.debug "Error procesing gateway soe data. Data is: ${data}"
     }  
 }
 
@@ -1504,8 +1556,7 @@ def processGwOperationResponse(response, callData) {
         log.debug "${data}" 
         def child = getPwDevice()
     } else { 
-       log.debug "error"
-       log.debug "${data}"   
+        log.debug "Error procesing gateway operation data. Data is: ${data}"
     }     
 }
 
@@ -1522,8 +1573,7 @@ def processGwSiteNameResponse(response, callData) {
         updateIfChanged(child, "siteName", data.site_name.toString())
 
     } else {
-       log.debug "error"
-         log.debug "${data}"   
+        log.debug "Error procesing gateway sitename data. Data is: ${data}"
     }      
 }
 
@@ -1664,6 +1714,17 @@ def requestSiteData(data) {
     }
 }
 
+def requestLocalGwData() {
+    httpAsyncGet(gatewayAddress, 'processGwAggregatesResponse', "/api/meters/aggregates", tryCount)
+    httpAsyncGet(gatewayAddress, 'processGwSoeResponse', "/api/system_status/soe", tryCount)
+    httpAsyncGet(gatewayAddress, 'processGwSiteNameResponse', "/api/site_info/site_name", tryCount)
+            
+    // Authenticate...
+    //   httpAsyncGet(gatewayAddress, 'processGwOperationResponse', "/api/operation", tryCount)
+    //   /api/system/update/status - version...
+    //   /api/operation
+    //   /api/system_status/grid_status   
+}
 def requestPwData(data) {
     if (!state?.lastPwRequestTime || now() - state.lastPwRequestTime > 1000) {
         def tryCount = data?.attempt ?: 1
@@ -1672,18 +1733,12 @@ def requestPwData(data) {
             httpAuthAsyncGet('processPowerwallResponse', "/api/1/powerwalls/${state.pwId}", tryCount)
         }
         if ((connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") && state.foundGateway && gatewayAddress) {
-           httpAsyncGet(gatewayAddress, 'processGwAggregatesResponse', "/api/meters/aggregates", tryCount)
-           httpAsyncGet(gatewayAddress, 'processGwSoeResponse', "/api/system_status/soe", tryCount)
-           httpAsyncGet(gatewayAddress, 'processGwSiteNameResponse', "/api/site_info/site_name", tryCount)
-            
-          // Authenticate...
-          //httpAsyncGet(gatewayAddress, 'processGwOperationResponse', "/api/operation", tryCount)
-          //https://192.168.1.106/api/system/update/status - version...
-          // https://192.168.1.106/api/operation
-          // api/system_status/grid_status
-
-        }
-        
+            if (connectionMethod == "Use Local Gateway Only" ) {
+               requestLocalGwData()
+            } else {
+               runIn (60, requestLocalGwData) //stagger data
+            }
+        } 
         state.lastPwRequestTime = now()
     }
 }
