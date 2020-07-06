@@ -48,6 +48,8 @@ metadata {
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Door Lock" //Schlage Connected Keypad Lever Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0468", deviceJoinName: "Schlage Door Lock" //BE468ZP //Schlage Connect Smart Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0469", deviceJoinName: "Schlage Door Lock" //BE469ZP //Schlage Connect Smart Deadbolt Door Lock
+		fingerprint mfr:"003B", prod:"0004", model:"2109", deviceJoinName: "Schlage Door Lock" //Schlage Keypad Deadbolt JBE109
+		fingerprint mfr:"003B", prod:"0004", model:"6109", deviceJoinName: "Schlage Door Lock" //Schlage Keypad Lever JFE109
 		// Yale
 		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Door Lock" // YRD120 //Yale Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Door Lock" // YRD220, YRD240 //Yale Touchscreen Deadbolt Door Lock
