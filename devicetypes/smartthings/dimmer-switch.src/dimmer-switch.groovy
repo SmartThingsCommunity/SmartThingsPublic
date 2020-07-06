@@ -22,9 +22,9 @@ metadata {
 		capability "Health Check"
 		capability "Light"
 
-		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer"
-		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer"
-		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer"
+		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE Dimmer Switch" //GE In-Wall Smart Dimmer
+		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE Dimmer Switch" //GE In-Wall Smart Dimmer
+		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Dimmer Switch" //GE Plug-In Smart Dimmer
 	}
 
 	simulator {
@@ -46,7 +46,7 @@ metadata {
 	}
 
 	preferences {
-		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
+		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator on... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
 	}
 
 	tiles(scale: 2) {

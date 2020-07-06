@@ -2,7 +2,6 @@ defaults: &defaults
   working_directory: ~/SmartThingsCommunity/SmartThingsPublic
   docker:
     - image: smartthings-docker-build.jfrog.io/releng/build-common:latest
-      command: /sbin/init
       auth:
         username: $ARTIFACTORY_USERNAME
         password: $ARTIFACTORY_PASSWORD
@@ -27,7 +26,13 @@ jobs:
     steps:
       - checkout
       - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_STAGE"
-      - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace
+      - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL_STAGE" --stacktrace
+  deploy-accept:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_ACCEPT"
+      - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL_ACCEPT" --stacktrace
 workflows:
   version: 2
   deploy:
@@ -45,3 +50,9 @@ workflows:
           filters:
             branches:
               only: staging
+      - deploy-accept:
+          requires:
+            - build
+          filters:
+            branches:
+              only: acceptance

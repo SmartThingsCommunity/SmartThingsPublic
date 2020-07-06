@@ -47,7 +47,7 @@
         command		"updateZwaveParam"
         command		"test"
 
-		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B"
+		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	simulator {
@@ -96,8 +96,8 @@
 		}
 
 		//this will display a temperature tile for the DS18B20 sensor
-		//main(["contact", "temperature"])						//COMMENT ME OUT IF NO TEMP INSTALLED
-		//details(["contact", "temperature", "battery"])			//COMMENT ME OUT IF NO TEMP INSTALLED
+		//main(["contact", "temperature"])//COMMENT ME OUT IF NO TEMP INSTALLED
+		//details(["contact", "temperature", "battery"])	//COMMENT ME OUT IF NO TEMP INSTALLED
         
         //this will hide the temperature tile if the DS18B20 sensor is not installed
 		main(["contact"])										//UNCOMMENT ME IF NO TEMP INSTALLED
@@ -149,6 +149,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x30: 2, 0x31: 2]) // can specify command class versions here like in zwave.parse
 	log.debug ("Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}")
 	if (encapsulatedCommand) {

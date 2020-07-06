@@ -31,8 +31,9 @@ metadata {
 		capability "Health Check"
 		capability "Battery"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe", deviceJoinName: "Orvibo Water Leak Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029", deviceJoinName: "Orvibo Water Leak Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001", manufacturer: "HEIMAN", model: "WaterSensor-N", deviceJoinName: "HEIMAN Water Leak Sensor" //HEIMAN Water Leakage Sensor (HS3WL-E)
 	}
 
 	simulator {
@@ -112,11 +113,11 @@ def refresh() {
 
 def installed(){
 	log.debug "call installed()"
-	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
 	def configCmds = []

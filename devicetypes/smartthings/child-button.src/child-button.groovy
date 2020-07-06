@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Button", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Child Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Button"
 		capability "Holdable Button"
 		capability "Sensor"

@@ -27,10 +27,10 @@ metadata {
 
 		command "reset"
 
-		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60"
-		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // US
-		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // EU
-		fingerprint mfr: "0159", prod: "0007", model: "0052", deviceJoinName: "Qubino Smart Meter"
+		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60", deviceJoinName: "Aeon Energy Monitor"
+		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Aeon Energy Monitor" // US //Home Energy Meter (Gen5)
+		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Aeon Energy Monitor" // EU //Home Energy Meter (Gen5)
+		fingerprint mfr: "0159", prod: "0007", model: "0052", deviceJoinName: "Qubino Energy Monitor" //Qubino Smart Meter
 	}
 
 	// simulator metadata
@@ -184,7 +184,7 @@ def configure() {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		cmd.format()

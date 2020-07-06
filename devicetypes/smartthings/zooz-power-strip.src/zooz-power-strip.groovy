@@ -27,7 +27,7 @@ metadata {
 		capability "Sensor"
 		capability "Configuration"
 
-		fingerprint manufacturer: "015D", prod: "0651", model: "F51C", deviceJoinName: "Zooz ZEN 20 Power Strip"
+		fingerprint manufacturer: "015D", prod: "0651", model: "F51C", deviceJoinName: "Zooz Outlet" //Zooz ZEN 20 Power Strip
 	}
 
 	tiles {
@@ -92,6 +92,14 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
@@ -198,9 +206,14 @@ private void onOffCmd(value, endpoint = null) {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..5) {
-		addChildDevice("Zooz Power Strip Outlet", "${device.deviceNetworkId}-ep${i}", null,
-				[completedSetup: true, label: "${device.displayName} (CH${i})",
-				 isComponent: true, componentName: "ch$i", componentLabel: "Channel $i"])
+		addChildDevice("Zooz Power Strip Outlet",
+				"${device.deviceNetworkId}-ep${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} (CH${i})",
+				 isComponent: true,
+				 componentName: "ch$i",
+				 componentLabel: "Channel $i"])
 	}
 }
 

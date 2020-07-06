@@ -43,8 +43,8 @@ metadata {
 		command "eco" // Command does not exist in "Thermostat Mode"
 		command "updateWeather"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Ki ZigBee Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro ORLÉANS Convector"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Thermostat" //Stelpro Ki ZigBee Thermostat
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro Thermostat" //Stelpro ORLÉANS Convector
 	}
 
 	// simulator metadata
@@ -418,7 +418,7 @@ def validateOperatingStateBugfix(map) {
 	if (state.rawSetpoint != null && state.rawTemp != null) {
 		def oldVal = map.value
 
-		if (state.rawSetpoint <= state.rawTemp) {
+		if (state.rawSetpoint <= state.rawTemp || device.currentValue("thermostatMode") == "off") {
 			map.value = "idle"
 		} else {
 			map.value = "heating"
@@ -429,6 +429,7 @@ def validateOperatingStateBugfix(map) {
 			map.data = [correctedValue: true]
 		}
 	}
+
 	map
 }
 

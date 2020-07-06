@@ -16,7 +16,7 @@ metadata {
 		capability "Illuminance Measurement"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", deviceId: "0106", inClusters: "0000,0001,0003,0009,0400"
+		fingerprint profileId: "0104", deviceId: "0106", inClusters: "0000,0001,0003,0009,0400", deviceJoinName: "Illuminance Sensor"
 	}
 
 	// simulator metadata

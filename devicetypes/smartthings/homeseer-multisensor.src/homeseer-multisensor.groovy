@@ -20,7 +20,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		fingerprint deviceId: "0x2101", inClusters: "0x60,0x31,0x70,0x84,0x85,0x80,0x72,0x77,0x86"
+		fingerprint deviceId: "0x2101", inClusters: "0x60,0x31,0x70,0x84,0x85,0x80,0x72,0x77,0x86", deviceJoinName: "HomeSeer Multipurpose Sensor"
 	}
 
 	simulator {
@@ -69,7 +69,7 @@ metadata {
 	}
 
 	preferences {
-		input "intervalMins", "number", title: "Multisensor report  (minutes)", description: "Minutes between temperature/illuminance readings", defaultValue: 20, required: false, displayDuringSetup: true
+		input "intervalMins", "number", title: "Report Interval", description: "How often the device should report in minutes", defaultValue: 20, required: false, displayDuringSetup: true
 	}
 }
 

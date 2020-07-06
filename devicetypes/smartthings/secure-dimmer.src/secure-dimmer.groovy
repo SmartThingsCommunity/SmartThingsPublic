@@ -19,7 +19,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint deviceId: "0x11", inClusters: "0x98"
+		fingerprint deviceId: "0x11", inClusters: "0x98", deviceJoinName: "Dimmer Switch"
 	}
 
 	simulator {

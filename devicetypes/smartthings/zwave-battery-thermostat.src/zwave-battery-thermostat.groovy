@@ -35,9 +35,9 @@ metadata {
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
 
-		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80"
-		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Z-Wave Thermostat"
-		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "GoControl Z-Wave Thermostat"
+		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80", deviceJoinName: "Thermostat"
+		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Thermostat" //Linear Z-Wave Thermostat
+		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "GoControl Thermostat" //GoControl Z-Wave Thermostat
 	}
 
 	tiles {
@@ -484,14 +484,16 @@ def updateSetpoints() {
 def updateSetpoints(data) {
 	def cmds = []
 	if (data.targetHeatingSetpoint) {
-		cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointSet(
-					setpointType: 1, scale: state.scale, precision: state.precision, scaledValue: data.targetHeatingSetpoint).format())
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: state.scale,
+				precision: state.precision, scaledValue: data.targetHeatingSetpoint)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	}
 	if (data.targetCoolingSetpoint) {
-		cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointSet(
-					setpointType: 2, scale: state.scale, precision: state.precision, scaledValue: data.targetCoolingSetpoint).format())
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: state.scale,
+				precision: state.precision, scaledValue: data.targetCoolingSetpoint)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
 	}
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1000)
 }
 
 // thermostatSetpoint is not displayed by any tile as it can't be predictable calculated due to

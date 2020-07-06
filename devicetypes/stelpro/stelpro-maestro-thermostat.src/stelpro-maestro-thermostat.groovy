@@ -43,9 +43,9 @@ metadata {
 		command "parameterSetting"
 		command "updateWeather"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "MaestroStat", deviceJoinName: "Stelpro Maestro Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro ORLÉANS Fan Heater", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Sonoma Style Fan Heater", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "MaestroStat", deviceJoinName: "Stelpro Thermostat" //Stelpro Maestro Thermostat
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro Thermostat", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat" //Stelpro ORLÉANS Fan Heater
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Thermostat", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat" //Stelpro Sonoma Style Fan Heater
 	}
 
 	// simulator metadata

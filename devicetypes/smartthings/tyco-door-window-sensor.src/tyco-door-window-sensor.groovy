@@ -25,10 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA", deviceJoinName: "Tyco Open/Closed Sensor"
 	}
 
 	simulator {
@@ -36,8 +33,7 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -98,7 +94,7 @@ def parse(String description) {
 	def result = map ? createEvent(map) : null
 
     if (description?.startsWith('enroll request')) {
-    	List cmds = enrollResponse()
+        List cmds = zigbee.enrollResponse()
         log.debug "enroll response: ${cmds}"
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
@@ -253,7 +249,7 @@ def refresh()
 
 	]
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
@@ -274,15 +270,6 @@ def configure() {
     return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
-def enrollResponse() {
-	log.debug "Sending enroll response"
-    [
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
-
-    ]
-}
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
