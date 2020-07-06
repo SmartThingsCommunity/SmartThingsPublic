@@ -58,6 +58,9 @@ metadata {
 		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Recessed Door Sensor 7
 		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Recessed Door Sensor 7
 		fingerprint mfr: "0109", prod: "2022", model: "2201", deviceJoinName: "Vision Open/Closed Sensor" //AU //Vision Recessed Door Sensor
+		fingerprint mfr: "0371", prod: "0002", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0102", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0202", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor" //AU //Aeotec Door/Window Sensor 7 Pro
 	}
 
 	// simulator metadata
