@@ -140,7 +140,7 @@ def parse(String description) {
         }
     } else if (map.name == "temperature") {
         if (tempOffset) {
-            map.value = (int) map.value + (int) tempOffset
+            map.value = map.value + tempOffset
             map.unit = getTemperatureScale()
         }
         map.descriptionText = getTemperatureScale() == 'C' ? "${ device.displayName } was ${ map.value }°C" : "${ device.displayName } was ${ map.value }°F"
