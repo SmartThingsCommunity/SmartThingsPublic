@@ -56,8 +56,7 @@ metadata {
 			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input(title: "Outdoor Temperature", description: 	"To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing)." +
-					"Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input(title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing). Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
 			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
@@ -307,12 +306,12 @@ def parse(String description) {
 				} else {
 					map.value = "heating"
 				}
-				map.displayed = false
+
 				// If the user want to see each of the Idle and Heating events in the event history,
 				// Otherwise don't show them more frequently than 5 minutes.
-				if (settings.heatdetails == "Yes" ||
+				if (settings.heatdetails == "No" ||
 						!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
-					map.displayed = true
+					map.displayed = false
 				}
 				map = validateOperatingStateBugfix(map)
 				// Check to see if this was changed, if so make sure we have the correct heating setpoint

@@ -53,8 +53,7 @@ metadata {
 			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input(title: "Outdoor Temperature", description: 	"To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing)." +
-					"Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input(title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing). Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
 			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
@@ -366,12 +365,12 @@ def zwaveEvent(thermostatoperatingstatev1.ThermostatOperatingStateReport cmd) {
 	if (operatingState) {
 		map.name = "thermostatOperatingState"
 		map.value = operatingState
-		map.displayed = false
+
 		// If the user want to see each of the Idle and Heating events in the event history,
 		// Otherwise don't show them more frequently than 5 minutes.
-		if (settings.heatdetails == "Yes" ||
+		if (settings.heatdetails == "No" ||
 				!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
-			map.displayed = true
+			map.displayed = false
 		}
 	} else {
 		log.trace "${device.displayName} sent invalid operating state $value"
@@ -559,4 +558,26 @@ def fanCirculate() {
 
 def setThermostatFanMode() {
 	log.trace "${device.displayName} does not support fan mode"
+}
+
+/**
+ * Checks if the time elapsed from the provided timestamp is greater than the number of senconds provided
+ *
+ * @param timestamp: The timestamp
+ *
+ * @param seconds: The number of seconds
+ *
+ * @returns true if elapsed time is greater than number of seconds provided, else false
+ */
+private Boolean secondsPast(timestamp, seconds) {
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (now() - timestamp) > (seconds * 1000)
 }
