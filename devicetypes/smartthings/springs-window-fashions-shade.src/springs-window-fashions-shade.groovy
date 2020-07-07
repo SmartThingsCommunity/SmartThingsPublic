@@ -282,7 +282,7 @@ def checkLevel() {
     if (state.levelChecks != null && state.levelChecks < 5) {
         state.levelChecks += 1
         runIn(5, "checkLevel")
-        response(zwave.switchMultilevelV1.switchMultilevelGet())
+        sendHubCommand(zwave.switchMultilevelV1.switchMultilevelGet())
     } else {
         unschedule("checkLevel")
     }
