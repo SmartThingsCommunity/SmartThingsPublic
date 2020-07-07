@@ -61,6 +61,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston Switch" //Minoston Smart On/Off Switch
 		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
 		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
+		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
 	}
 
 	// simulator metadata
