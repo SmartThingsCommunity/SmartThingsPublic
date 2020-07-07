@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Water/Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition(name: "Z-Wave Water/Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-leak-5", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Water Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -101,6 +101,7 @@ def configure() {
 
 def parse(String description) {
 	def results = []
+
 	if (description.startsWith("Err")) {
 		results += createEvent(descriptionText: description, displayed: true)
 	} else {
@@ -109,12 +110,15 @@ def parse(String description) {
 			results += zwaveEvent(cmd)
 		}
 	}
+
 	log.debug "parse() result ${results.inspect()}"
+
 	return results
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand()
+
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -151,17 +155,20 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%", isStateChange: true]
 	state.lastbatt = now()
+
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
 		map.descriptionText = "$device.displayName battery is low!"
 	} else {
 		map.value = cmd.batteryLevel
 	}
+
 	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def map = [:]
+
 	switch (cmd.sensorType) {
 		case 0x01:
 			map.name = "temperature"
@@ -176,6 +183,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 		default:
 			map.descriptionText = cmd.toString()
 	}
+
 	createEvent(map)
 }
 
@@ -184,13 +192,16 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def result = createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05))
 	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01))
+
 	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
 		cmds += ["delay 1000",
 				 secure(zwave.batteryV1.batteryGet()),
 				 "delay 2000"
 		]
 	}
+
 	cmds += secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+
 	[result, response(cmds)]
 }
 
