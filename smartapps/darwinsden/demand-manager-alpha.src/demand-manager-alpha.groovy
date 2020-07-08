@@ -27,9 +27,10 @@
  */
  
 def version() {
-    return "v0.3.2e.20200527"
+    return "v0.3.3e.20200708"
 }
 /*   
+ *	08-Jul-2020 >>> v0.3.3e.20200708 - Corrected ComEd and Griddy API issue due to previous Hubitat compatibility update
  *	27-May-2020 >>> v0.3.2e.20200527 - Additional Hubitat compatibility updates.
  *	10-Jan-2020 >>> v0.3.1e.20200111 - Initial basic cross-platform support for Hubitat.
  *	16-Oct-2019 >>> v0.2.4e.20191016 - Added support for multiple thermostats and updated watchdog to only notify once on issue occurrence and resolution.
@@ -1020,7 +1021,7 @@ private httpAsyncGet (handlerMethod, String url, String path, query=null) {
         log.debug "Async get for: ${path}"
         def requestParameters = [uri: url, path: path, query: query, contentType: 'application/json']
         // def requestParameters = [uri: url, path: path, body: body]
-        asynchttp_v1.get(handlerMethod, requestParameters)
+        //asynchttp_v1.get(handlerMethod, requestParameters)
         if(hubIsSt()) {
             include 'asynchttp_v1'
             asynchttp_v1.get(handlerMethod, requestParameters)
@@ -1037,7 +1038,12 @@ private httpAsyncPost (handlerMethod, Map body = [:], String url, String path) {
     try {
         log.debug "Async post to: ${path}"
         def requestParameters = [uri: url, path: path, body: body, contentType: 'application/json']
-        asynchttp_v1.post(handlerMethod, requestParameters)
+        if(hubIsSt()) {
+            include 'asynchttp_v1'
+            asynchttp_v1.post(handlerMethod, requestParameters) 
+        } else {
+            asynchttpPost(handlerMethod, requestParameters) 
+        }
     } 
     catch (e) {
        log.error "Http Post failed: ${e}"
