@@ -25,8 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		capability "Switch Level"
-
+		//zw:L type:1107 mfr:0159 prod:0003 model:0052 ver:1.01 zwv:4.05 lib:03 cc:5E,86,72,5A,73,20,27,25,26,32,60,85,8E,59,70 ccOut:20,26 epc:2
 		fingerprint mfr: "0159", prod: "0003", model: "0052", deviceJoinName: "Qubino Window Treatment"
 	}
 
@@ -41,10 +40,10 @@ metadata {
 			}
 		}
 		valueTile("shadeLevel", "device.level", width: 4, height: 1) {
-			state "level", label: 'Shade is ${currentValue}% up', defaultState: true
+			state "shadeLevel", label: 'Shade is ${currentValue}% up', defaultState: true
 		}
 		controlTile("levelSliderControl", "device.level", "slider", width:2, height: 1, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
+			state "shadeLevel", action:"switch level.setLevel"
 		}
 		valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
@@ -138,12 +137,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
 		handleConfigurationChange(cmd)
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
@@ -250,7 +243,7 @@ def setLevel(level) {
 
 def setShadeLevel(level) {
 	log.debug "Setting shade level: ${level}"
-	def currentLevel = Integer.parseInt(device.currentState("level").value)
+	def currentLevel = Integer.parseInt(device.currentState("shadeLevel").value)
 	state.blindsLastCommand = currentLevel > level ? "opening" : "closing"
 	state.shadeTarget = level
 	encap(zwave.switchMultilevelV3.switchMultilevelSet(value: Math.min(0x63, level)))
@@ -266,13 +259,11 @@ def setSlats(level) {
 }
 
 def refresh() {
-	sendHubCommand([
-			encap(zwave.switchMultilevelV3.switchMultilevelGet())
-	])
+	encap(zwave.switchMultilevelV3.switchMultilevelGet())
 }
 
 def ping() {
-	refresh()
+	response(refresh())
 }
 
 def configure() {
@@ -317,7 +308,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 		} else {
 			[
 					createEvent([name: "windowShade", value: "unknown"]),
-					createEvent([name: "level", value: 0]),
 					createEvent([name: "shadeLevel", value: 0])
 			]
 		}
@@ -348,7 +338,6 @@ private shadeEvent(value) {
 		shadeValue = "partially open"
 	}
 	events += createEvent([name: "windowShade", value: shadeValue])
-	events += createEvent([name: "level", value: value != 0x63 ? value : 100])
 	events += createEvent([name: "shadeLevel", value: value != 0x63 ? value : 100])
 
 	events
@@ -370,7 +359,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 			events += createEvent(eventMap)
 			if (cmd.scaledMeterValue) {
 				events += createEvent([name: "windowShade", value: state.blindsLastCommand])
-				events += [createEvent([name: "level", value: state.shadeTarget, displayed: false]), createEvent([name: "shadeLevel", value: state.shadeTarget, displayed: false])]
+				events += createEvent([name: "shadeLevel", value: state.shadeTarget, displayed: false])
 			} else {
 				events += response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
 			}
@@ -460,13 +449,13 @@ private getParameterMap() {[
 						0: "Shutter mode",
 						1: "Venetian mode (up/down and slate rotation)"
 				],
-				description: "By setting this parameter to 2 the device enters the calibration mode. The parameter relevant only if the device is set to work in positioning mode (parameter 151 set to 1, 2 or 4)."
+				description: "Set the device's operating mode."
 		],
 		[
 				name: "Slats tilting full turn time", key: "slatsTiltingFullTurnTime", type: "range",
 				parameterNumber: 72, size: 2, defaultValue: 150,
 				range: "0..32767",
-				description: "This parameter defines the time necessary for slats to make full turn (180 degrees). 100 = 1 second "
+				description: "Specify the time required to rotate the slats 180 degrees. (100 = 1 second)"
 		],
 		[
 				name: "Slats position", key: "slatsPosition", type: "enum",
@@ -481,13 +470,13 @@ private getParameterMap() {[
 				name: "Motor moving up/down time", key: "motorMovingUp/DownTime", type: "range",
 				parameterNumber: 74, size: 2, defaultValue: 0,
 				range: "0..32767",
-				description: "This parameter defines Shutter motor moving time of complete opening or complete closing. Please check manual for full reference."
+				description: "Set the amount of time it takes to completely open or close shutter. Check manual for more detailed guidance."
 		],
 		[
 				name: "Motor operation detection", key: "motorOperationDetection", type: "range",
 				parameterNumber: 76, size: 1, defaultValue: 30,
 				range: "0..127",
-				description: "Power threshold to be interpreted when motor reach the limit switch."
+				description: "Power usage threshold which will be interpreted as motor reaching the limit switch."
 		],
 		[
 				name: "Forced Shutter calibration", key: "forcedShutterCalibration", type: "enum",
