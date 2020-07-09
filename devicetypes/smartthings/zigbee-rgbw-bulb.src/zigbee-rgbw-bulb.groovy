@@ -83,7 +83,7 @@ metadata {
 		
         //Ajax Online
 		fingerprint profileId: "0104", deviceId: "0102", inClusters: "0006, 0008, 0300", deviceJoinName: "Ajax RGBCCT" 
-        fingerprint manufacturer: "Ajax Online", model: "Ajax RGBCCT", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+        fingerprint manufacturer: "Ajaxonline", model: "AJ-RGBCCT 5 in 1", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
         
     }
 
