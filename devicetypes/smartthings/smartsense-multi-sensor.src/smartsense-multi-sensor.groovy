@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Multi_Sensor") {
+	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Multi_Sensor") {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -165,7 +165,7 @@ def parse(String description) {
 	} else if (maps[0].name == "temperature") {
 		def map = maps[0]
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = map.value + tempOffset
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
