@@ -12,20 +12,19 @@
  *
  */
 metadata {
-	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
 		capability "Switch"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Light"
 
-		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer "
-		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer "
-		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer "
-		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
+		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE Dimmer Switch" //GE In-Wall Smart Dimmer
+		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE Dimmer Switch" //GE In-Wall Smart Dimmer
+		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Dimmer Switch" //GE Plug-In Smart Dimmer
 	}
 
 	simulator {
@@ -47,15 +46,15 @@ metadata {
 	}
 
 	preferences {
-		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
+		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator on... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -83,6 +82,13 @@ metadata {
 	}
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(refresh())
+}
+
 def updated(){
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -102,11 +108,20 @@ def updated(){
     }
 }
 
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x26: 1,  // SwitchMultilevel
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+	]
+}
+
 def parse(String description) {
 	def result = null
 	if (description != "updated") {
 		log.debug "parse() >> zwave.parse($description)"
-		def cmd = zwave.parse(description, [0x20: 1, 0x26: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -140,7 +155,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
 	}
 	return result
 }
@@ -173,6 +188,16 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 	[createEvent(name:"switch", value:"on"), response(zwave.switchMultilevelV1.switchMultilevelGet().format())]
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
@@ -201,7 +226,6 @@ def setLevel(value) {
 	} else {
 		sendEvent(name: "switch", value: "off")
 	}
-	sendEvent(name: "level", value: level, unit: "%")
 	delayBetween ([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
@@ -213,10 +237,6 @@ def setLevel(value, duration) {
 	def getStatusDelay = duration < 128 ? (duration*1000)+2000 : (Math.round(duration / 60)*60*1000)+2000
 	delayBetween ([zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
 				   zwave.switchMultilevelV1.switchMultilevelGet().format()], getStatusDelay)
-}
-
-def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 /**

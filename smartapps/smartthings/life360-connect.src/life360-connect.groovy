@@ -23,7 +23,9 @@ definition(
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/life360.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/life360@2x.png",
     oauth: [displayName: "Life360", displayLink: "Life360"],
-    singleInstance: true
+    singleInstance: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"

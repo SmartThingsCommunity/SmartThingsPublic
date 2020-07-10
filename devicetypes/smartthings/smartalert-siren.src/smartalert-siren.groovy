@@ -16,15 +16,17 @@
  *  Date: 2013-03-05
  */
 metadata {
-	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
 		capability "Alarm"
+		capability "Health Check"
 
 		command "test"
 
-		fingerprint deviceId: "0x1100", inClusters: "0x26,0x71"
+		fingerprint deviceId: "0x1100", inClusters: "0x26,0x71", deviceJoinName: "Siren"
+		fingerprint mfr:"0084", prod:"0313", model:"010B", deviceJoinName: "FortrezZ Siren" //FortrezZ Siren Strobe Alarm
 	}
 
 	simulator {
@@ -66,6 +68,16 @@ metadata {
 		main "alarm"
 		details(["alarm","strobe","siren","test","off"])
 	}
+}
+
+def installed() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def updated() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def on() {
@@ -124,8 +136,7 @@ def parse(String description) {
 	return result
 }
 
-def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def switchValue = cmd.value ? "on" : "off"
 	def alarmValue
 	if (cmd.value == 0) {
@@ -146,6 +157,13 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
+def createEvents(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	zwave.basicV1.basicGet().format()
 }

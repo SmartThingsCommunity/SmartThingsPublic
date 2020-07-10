@@ -26,7 +26,8 @@ definition(
 		description: "Receive notifications when anything happens in your home.",
 		category: "Convenience",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact.png",
-		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png"
+		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/window_contact@2x.png",
+		pausable: true
 )
 
 preferences {

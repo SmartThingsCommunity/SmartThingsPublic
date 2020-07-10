@@ -1,5 +1,7 @@
+import groovy.json.JsonOutput
+
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -11,18 +13,18 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
 metadata {
-    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings",
+            runLocally: true, minHubCoreVersion: '000.025.00032', executeCommandsLocally: true) {
         capability "Tone"
         capability "Actuator"
         capability "Presence Sensor"
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
+        capability "Health Check"
 
-        fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019",
-                        manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "Arrival Sensor"
+        fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019", manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "SmartThings Presence Sensor"
     }
 
     preferences {
@@ -40,7 +42,7 @@ metadata {
 
     tiles {
         standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
-            state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
+            state "present", labelIcon:"st.presence.tile.present", backgroundColor:"#00a0dc"
             state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
         }
         standardTile("beep", "device.beep", decoration: "flat") {
@@ -56,11 +58,17 @@ metadata {
 }
 
 def updated() {
+    stopTimer()
     startTimer()
 }
 
+def installed() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+}
+
 def configure() {
-    def cmds = zigbee.configureReporting(0x0001, 0x0020, 0x20, 20, 20, 0x01)
+    def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
     log.debug "configure -- cmds: ${cmds}"
     return cmds
 }
@@ -152,16 +160,19 @@ private handlePresenceEvent(present) {
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
-    schedule("0 * * * * ?", checkPresenceCallback)
+    // Unlike stopTimer, only schedule this when running in the cloud since the hub will take care presence detection
+    // when it is running locally
+    runEvery1Minute("checkPresenceCallback", [forceForLocallyExecuting: false])
 }
 
 private stopTimer() {
     log.debug "Stopping periodic timer"
-    unschedule()
+    // Always unschedule to handle the case where the DTH was running in the cloud and is now running locally
+    unschedule("checkPresenceCallback", [forceForLocallyExecuting: true])
 }
 
 def checkPresenceCallback() {
-    def timeSinceLastCheckin = (now() - state.lastCheckin) / 1000
+    def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
     def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
     log.debug "Sensor checked in ${timeSinceLastCheckin} seconds ago"
     if (timeSinceLastCheckin >= theCheckInterval) {

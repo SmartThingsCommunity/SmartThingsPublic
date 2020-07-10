@@ -30,18 +30,20 @@ metadata {
 		attribute "WakeUp", "string"
 		attribute "WirelessConfig", "string"
 				
-		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x31, 0x70, 0x84, 0x7A"
-		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,31,71"
-		fingerprint mfr:"0109", prod:"2002", model:"0205"  // not using deviceJoinName because it's sold under different brand names
+		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x31, 0x70, 0x84, 0x7A", deviceJoinName: "Motion Sensor"
+		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,31,71", deviceJoinName: "Motion Sensor"
+		fingerprint mfr:"0109", prod:"2002", model:"0205", deviceJoinName: "Motion Sensor"// not using deviceJoinName because it's sold under different brand names
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 3, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
 		}
 
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -53,7 +55,7 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:"%"
 		}
 
@@ -72,7 +74,7 @@ def configure() {
 	log.debug "configure()"
 	def cmds = []
 
-	if (state.sec != 1) {
+	if (!isSecured()) {
 		// secure inclusion may not be complete yet
 		cmds << "delay 1000"
 	}
@@ -315,7 +317,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if (state.sec == 0) {  // default to secure
+	if (!isSecured()) {  // default to secure
 		cmd.format()
 	} else {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -324,4 +326,12 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+private isSecured() {
+	if (zwaveInfo && zwaveInfo.zw) {
+		return zwaveInfo.zw.contains("s")
+	} else {
+		return state.sec == 1
+	}
 }

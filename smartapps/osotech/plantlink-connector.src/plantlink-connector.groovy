@@ -27,7 +27,8 @@ definition(
     category:  "Convenience",
     iconUrl:   "https://dashboard.myplantlink.com/images/apple-touch-icon-76x76-precomposed.png",
     iconX2Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-120x120-precomposed.png",
-    iconX3Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-152x152-precomposed.png"
+    iconX3Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-152x152-precomposed.png",
+    pausable: true
 ) {
     appSetting "client_id"
     appSetting "client_secret"

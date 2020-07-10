@@ -32,7 +32,7 @@ metadata {
 			command "reset$n"
 		}
 
-		fingerprint deviceId: "0x1001", inClusters: "0x25,0x32,0x27,0x70,0x85,0x72,0x86,0x60", outClusters: "0x82"
+		fingerprint deviceId: "0x1001", inClusters: "0x25,0x32,0x27,0x70,0x85,0x72,0x86,0x60", outClusters: "0x82", deviceJoinName: "Aeon Outlet"
 	}
 
 	// simulator metadata
@@ -58,33 +58,35 @@ metadata {
 	}
 
 	// tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-		}
-		valueTile("power", "device.power", decoration: "flat") {
+	tiles(scale: 2){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc")
+				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")
+			}
+ 		}
+		valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-		valueTile("energy", "device.energy", decoration: "flat") {
+		valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
 		(1..4).each { n ->
-			standardTile("switch$n", "switch$n", canChangeIcon: true) {
-				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
+				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				state "off", label: '${name}', action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
-			valueTile("power$n", "power$n", decoration: "flat") {
+			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
 			}
-			valueTile("energy$n", "energy$n", decoration: "flat") {
+			valueTile("energy$n", "energy$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} kWh'
 			}
 		}
@@ -122,6 +124,14 @@ def endpointEvent(endpoint, map) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		if (encapsulatedCommand.commandClassId == 0x32) {

@@ -6,11 +6,15 @@ Works with:
 
 * [OSRAM Lightify LED On/Off/Dim](https://shop.smartthings.com/#!/products/osram-led-smart-bulb-on-off-dim)
 * [WeMo LED Bulb](https://support.smartthings.com/hc/en-us/articles/204259040-Belkin-WeMo-LED-Bulb-F7C033-)
+* [Leviton Lumina Dimming Wall Switch](https://home.leviton.com/products/lumina-rf-decora-0-10v-wall-switch-dimmer/)
+* [Aurora] (https://auroralighting.com/au/ProductDetail/AU-A1ZB120)
+* [Aurora Dimmer AU-A1ZB320](https://auroralighting.com/gb/ProductDetail/AU-A1ZB320)
 
 ## Table of contents
 
 * [Capabilities](#capabilities)
 * [Health](#device-health)
+* [Troubleshooting](#troubleshooting)
 * [Battery](#battery-specification)
 
 ## Capabilities
@@ -21,6 +25,8 @@ Works with:
 * **Switch** - can detect state (possible values: on/off)
 * **Switch Level** - represents current light level, usually 0-100 in percent
 * **Health Check** - indicates ability to get device health notifications
+* **Light** - represents that a Device has commands on() and off()
+
 
 ## Device Health
 

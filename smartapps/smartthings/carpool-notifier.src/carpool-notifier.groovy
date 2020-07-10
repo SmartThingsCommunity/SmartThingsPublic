@@ -33,7 +33,8 @@ definition(
     description: "Send notifications to your carpooling buddies when you arrive to pick them up. If the person you are picking up is home, and has been for 5 minutes or more, they will get a notification when you arrive.",
     category: "Green Living",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Family/App-IMadeIt.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Family/App-IMadeIt@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Family/App-IMadeIt@2x.png",
+    pausable: true
 )
 
 preferences {

@@ -16,7 +16,7 @@
 */
 
 metadata {
-	definition (name: "Z-Wave Plus Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Plus Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
 		capability "Contact Sensor"
 		capability "Configuration"
 		capability "Battery"
@@ -29,16 +29,16 @@ metadata {
 		attribute "WakeUp", "string"
 		attribute "WirelessConfig", "string"
 
-		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x70, 0x84, 0x7A"
-		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,71"
-		fingerprint mfr:"0109", prod:"2001", model:"0106"  // not using deviceJoinName because it's sold under different brand names
+		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x70, 0x84, 0x7A", deviceJoinName: "Open/Closed Sensor"
+		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,71", deviceJoinName: "Open/Closed Sensor"
+		fingerprint mfr:"0109", prod:"2001", model:"0106", deviceJoinName: "Open/Closed Sensor"// not using deviceJoinName because it's sold under different brand names
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
 			}
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {

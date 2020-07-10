@@ -34,19 +34,20 @@
  * @return none
  */
  metadata {
-	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {      
+	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 		//capability 	"Temperature Measurement"  //UNCOMMENT ME IF TEMP INSTALLED      
 		capability 	"Contact Sensor"
 		capability 	"Sensor"
 		capability 	"Battery"
-        capability 	"Configuration"
+		capability 	"Configuration"
+		capability  "Health Check"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
         command		"updateZwaveParam"
         command		"test"
 
-		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B"
+		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	simulator {
@@ -67,8 +68,8 @@
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -85,7 +86,7 @@
 		}
         standardTile("tamper", "device.alarm") {
 			state("secure", label:'secure',    icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#53a7c0")
+			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -95,8 +96,8 @@
 		}
 
 		//this will display a temperature tile for the DS18B20 sensor
-		//main(["contact", "temperature"])						//COMMENT ME OUT IF NO TEMP INSTALLED
-		//details(["contact", "temperature", "battery"])			//COMMENT ME OUT IF NO TEMP INSTALLED
+		//main(["contact", "temperature"])//COMMENT ME OUT IF NO TEMP INSTALLED
+		//details(["contact", "temperature", "battery"])	//COMMENT ME OUT IF NO TEMP INSTALLED
         
         //this will hide the temperature tile if the DS18B20 sensor is not installed
 		main(["contact"])										//UNCOMMENT ME IF NO TEMP INSTALLED
@@ -104,11 +105,28 @@
 	}
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x30: 1,  // Sensor Binary
+		0x31: 2,  // Sensor MultiLevel
+		0x56: 1,  // Crc16Encap
+		0x60: 3,  // Multi-Channel
+		0x70: 2,  // Configuration
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x84: 1,  // WakeUp
+		0x9C: 1   // Sensor Alarm
+	]
+}
+
 // Parse incoming device messages to generate events 
 def parse(String description)
 {
 	def result = []
-	def cmd = zwave.parse(description, [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x56: 1, 0x60: 3])
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result += zwaveEvent(cmd)
 	}
@@ -118,7 +136,7 @@ def parse(String description)
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 {
-	def versions = [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x60: 3]
+	def versions = commandClassVersions
 	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
@@ -131,6 +149,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x30: 2, 0x31: 2]) // can specify command class versions here like in zwave.parse
 	log.debug ("Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}")
 	if (encapsulatedCommand) {
@@ -266,6 +292,9 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
  */
 def configure() {
 	log.debug "Configuring Device..."
+	// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 1, size: 2).format()
 	// send associate to group 3 to get sensor data reported only to hub

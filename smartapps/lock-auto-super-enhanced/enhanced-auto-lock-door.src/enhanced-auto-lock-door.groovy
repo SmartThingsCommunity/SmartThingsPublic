@@ -5,25 +5,38 @@ definition(
     description: "Automatically locks a specific door after X minutes when closed  and unlocks it when open after X seconds.",
     category: "Safety & Security",
     iconUrl: "http://www.gharexpert.com/mid/4142010105208.jpg",
-    iconX2Url: "http://www.gharexpert.com/mid/4142010105208.jpg"
+    iconX2Url: "http://www.gharexpert.com/mid/4142010105208.jpg",
+    pausable: true
 )
 
 preferences{
-    section("Select the door lock:") {
-        input "lock1", "capability.lock", required: true
-    }
-    section("Select the door contact sensor:") {
-        input "contact", "capability.contactSensor", required: true
-    }   
-    section("Automatically lock the door when closed...") {
-        input "minutesLater", "number", title: "Delay (in minutes):", required: true
-    }
-    section("Automatically unlock the door when open...") {
-        input "secondsLater", "number", title: "Delay (in seconds):", required: true
-    }
-    section( "Notifications" ) {
-        input("recipients", "contact", title: "Send notifications to", required: false) {
-            input "phoneNumber", "phone", title: "Warn with text message (optional)", description: "Phone Number", required: false
+    page name: "mainPage", install: true, uninstall: true
+}
+
+def mainPage() {
+    dynamicPage(name: "mainPage") {
+        section("Select the door lock:") {
+            input "lock1", "capability.lock", required: true
+        }
+        section("Select the door contact sensor:") {
+            input "contact", "capability.contactSensor", required: true
+        }
+        section("Automatically lock the door when closed...") {
+            input "minutesLater", "number", title: "Delay (in minutes):", required: true
+        }
+        section("Automatically unlock the door when open...") {
+            input "secondsLater", "number", title: "Delay (in seconds):", required: true
+        }
+        if (location.contactBookEnabled || phoneNumber) {
+            section("Notifications") {
+                input("recipients", "contact", title: "Send notifications to", required: false) {
+                    input "phoneNumber", "phone", title: "Warn with text message (optional)", description: "Phone Number", required: false
+                }
+            }
+        }
+        section([mobileOnly:true]) {
+            label title: "Assign a name", required: false
+            mode title: "Set for specific mode(s)"
         }
     }
 }

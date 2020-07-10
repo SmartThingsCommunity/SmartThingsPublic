@@ -20,7 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 
-		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98'
+		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98', deviceJoinName: "Danalock Door Lock"
 	}
 
 	simulator {
@@ -31,24 +31,26 @@ metadata {
 		reply "988100620100,delay 4200,9881006202": "command: 9881, payload: 00 62 03 00 00 06 FE FE"
 	}
 
-	tiles {
-		standardTile("toggle", "device.lock", width: 2, height: 2) {
-			state "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#79b821", nextState:"unlocking"
-			state "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
-			state "unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
-			state "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#79b821"
-			state "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"toggle", type: "generic", width: 6, height: 4){
+			tileAttribute("device.lock", key: "PRIMARY_CONTROL") {
+				attributeState("locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00a0dc", nextState:"unlocking")
+				attributeState("unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking")
+				attributeState("unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking")
+				attributeState("locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00a0dc")
+				attributeState("unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff")
+			}
 		}
-		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'lock', action:"lock.lock", icon:"st.locks.lock.locked", nextState:"locking"
 		}
-		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'unlock', action:"lock.unlock", icon:"st.locks.lock.unlocked", nextState:"unlocking"
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -58,6 +60,21 @@ metadata {
 }
 
 import physicalgraph.zwave.commands.doorlockv1.*
+
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x62: 1,  // Door Lock
+		0x71: 2,  // Alarm
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x8A: 1,  // Time
+		0x85: 2,  // Association
+		0x98: 1   // Security 0
+	]
+}
 
 def parse(String description) {
 	def result = null
@@ -74,7 +91,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x8A: 1 ])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -84,7 +101,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x62: 1, 0x71: 2, 0x80: 1, 0x8A: 1, 0x85: 2, 0x98: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
