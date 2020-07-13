@@ -89,7 +89,7 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-		parameterMap().findAll { (it.num as Integer) != 54 }.each {
+		parameterMap().each {
 			input(
 				title: "${it.num}. ${it.title}",
 				description: it.descr,
@@ -101,7 +101,7 @@ metadata {
 			input(
 				name: it.key,
 				title: null,
-				description: "Default: $descrDefVal",
+				description: "$descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
