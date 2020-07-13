@@ -13,8 +13,6 @@
  *
  */
 
-import java.lang.Math
-
 metadata {
 	definition (name: "Qubino Flush Shutter", namespace: "qubino", author: "SmartThings", ocfDeviceType: "oic.d.blind", mcdSync: true) {
 		capability "Window Shade"
