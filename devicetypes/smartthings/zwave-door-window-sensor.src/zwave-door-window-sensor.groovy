@@ -172,10 +172,13 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else if (cmd.notificationType == 0x07) {
 		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice door/window sensors
 			result << sensorValueEvent(cmd.v1AlarmLevel)
+		} else if (cmd.event == 0x00) {
+			result << createEvent(name: "tamper", value: "clear")
 		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
 			result << sensorValueEvent(1)
 		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
+			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 			if (!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
@@ -370,4 +373,8 @@ def retypeBasedOnMSR() {
 // this is present in zwave-motion-sensor.groovy DTH too
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
