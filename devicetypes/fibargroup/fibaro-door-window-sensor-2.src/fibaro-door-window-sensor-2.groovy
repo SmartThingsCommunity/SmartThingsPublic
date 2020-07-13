@@ -101,7 +101,7 @@ metadata {
 			input (
 				name: it.key,
 				title: null,
-				description: "$DescrDefVal",
+				description: "$descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
