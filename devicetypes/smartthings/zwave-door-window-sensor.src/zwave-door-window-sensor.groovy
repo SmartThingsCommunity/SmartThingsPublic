@@ -123,6 +123,7 @@ def installed() {
 	// this is the nuclear option because the device often goes to sleep before we can poll it
 	sendEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
 	sendEvent(name: "battery", unit: "%", value: 100)
+	sendEvent(name: "tamper", value: "clear")
 	response(initialPoll())
 }
 
