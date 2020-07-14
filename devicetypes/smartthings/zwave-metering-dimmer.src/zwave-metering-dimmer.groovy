@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
+	definition(name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
@@ -32,19 +32,28 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32", deviceJoinName: "Dimmer Switch"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Micro Smart Dimmer 2E
-		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Dimmer Switch"  //US //Aeotec Smart Dimmer 6
-		fingerprint mfr:"0086", prod:"0003", model:"0063", deviceJoinName: "Aeotec Dimmer Switch" //EU //Aeotec Smart Dimmer 6
-		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Nano Dimmer
-		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Nano Dimmer
-		fingerprint mfr:"0086", prod:"0203", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //AU //Aeotec Nano Dimmer
-		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Dimmer Switch" //GoControl Plug-in Dimmer
-		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Dimmer Switch" //Qubino Mini Dimmer ZMNHHD1
-		fingerprint mfr:"031E", prod:"0001", model:"0001", deviceJoinName: "Inovelli Dimmer Switch" //Inovelli Dimmer LZW31-SN
+		fingerprint mfr: "0086", prod: "0003", model: "001B", deviceJoinName: "Aeotec Dimmer Switch"
+		//Aeotec Micro Smart Dimmer 2E
+		fingerprint mfr: "0086", prod: "0103", model: "0063", deviceJoinName: "Aeotec Dimmer Switch"
+		//US //Aeotec Smart Dimmer 6
+		fingerprint mfr: "0086", prod: "0003", model: "0063", deviceJoinName: "Aeotec Dimmer Switch"
+		//EU //Aeotec Smart Dimmer 6
+		fingerprint mfr: "0086", prod: "0103", model: "006F", deviceJoinName: "Aeotec Dimmer Switch"
+		//Aeotec Nano Dimmer
+		fingerprint mfr: "0086", prod: "0003", model: "006F", deviceJoinName: "Aeotec Dimmer Switch"
+		//Aeotec Nano Dimmer
+		fingerprint mfr: "0086", prod: "0203", model: "006F", deviceJoinName: "Aeotec Dimmer Switch"
+		//AU //Aeotec Nano Dimmer
+		fingerprint mfr: "014F", prod: "5044", model: "3533", deviceJoinName: "GoControl Dimmer Switch"
+		//GoControl Plug-in Dimmer
+		fingerprint mfr: "0159", prod: "0001", model: "0055", deviceJoinName: "Qubino Dimmer Switch"
+		//Qubino Mini Dimmer ZMNHHD1
+		fingerprint mfr: "031E", prod: "0001", model: "0001", deviceJoinName: "Inovelli Dimmer Switch"
+		//Inovelli Dimmer LZW31-SN
 	}
 
 	simulator {
-		status "on":  "command: 2603, payload: FF"
+		status "on": "command: 2603, payload: FF"
 		status "off": "command: 2603, payload: 00"
 		status "09%": "command: 2603, payload: 09"
 		status "10%": "command: 2603, payload: 0A"
@@ -54,11 +63,11 @@ metadata {
 
 		for (int i = 0; i <= 10000; i += 1000) {
 			status "power  ${i} W": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-				scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
+					scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
 		}
 		for (int i = 0; i <= 100; i += 10) {
 			status "energy	${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-				scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
+					scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
 		}
 
 		["FF", "00", "09", "0A", "21", "42", "63"].each { val ->
@@ -67,33 +76,59 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
+				attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+				attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
 			}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"switch level.setLevel"
+			tileAttribute("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action: "switch level.setLevel"
 			}
 		}
 		valueTile("power", "device.power", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
+			state "default", label: '${currentValue} W'
 		}
 		valueTile("energy", "device.energy", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
+			state "default", label: '${currentValue} kWh'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'reset kWh', action:"reset"
+			state "default", label: 'reset kWh', action: "reset"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
+
+		main(["switch", "power", "energy"])
+		details(["switch", "power", "energy", "refresh", "reset"])
 	}
 
-	main(["switch","power","energy"])
-	details(["switch", "power", "energy", "refresh", "reset"])
+	preferences {
+		section {
+			input(
+					title: "Settings Available For Aeotec Nano Dimmer Only",
+					type: "paragraph",
+					element: "paragraph"
+			)
+			input(
+					title: "Set the MIN brightness level (Aeotec Nano Dimmer Only):",
+					description: "Set the min brightness level that the load can reach to.",
+					name: "minDimmingLevel",
+					type: "number",
+					range: "0..99",
+					defaultValue: 0
+			)
+			input(
+					title:  "Set the MAX brightness level (Aeotec Nano Dimmer Only):",
+					description: "Set the max brightness level that the load can reach to.",
+					name: "maxDimmingLevel",
+					type: "number",
+					range: "0..99",
+					defaultValue: 99
+			)
+		}
+	}
 }
 
 def getCommandClassVersions() {
@@ -114,7 +149,13 @@ def installed() {
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	response(refresh())
+
+	def additionalCmds = []
+	if (isAeotecNanoDimmer()) {
+		additionalCmds = getConfigurationCommands()
+	}
+
+	response([refresh(), additionalCmds].flatten())
 }
 
 // parse events into attributes
@@ -229,6 +270,14 @@ def setLevel(level, rate = null) {
 
 def configure() {
 	log.debug "configure()"
+
+	if (isAeotecNanoDimmer()) {
+		state.configured = false
+		state.minDimmingLevel = false
+		state.maxDimmingLevel = false
+		response(getConfigurationCommands())
+	}
+
 	def result = []
 
 	log.debug "Configure zwaveInfo: "+zwaveInfo
@@ -268,6 +317,64 @@ def meterReset() {
 def normalizeLevel(level) {
 	// Normalize level between 1 and 100.
 	level == 99 ? 100 : level
+}
+
+
+def getAeotecNanoDimmerDefaults() {
+	[1: 0,
+	 2: 99
+	]
+}
+
+def getConfigurationCommands() {
+	def result = []
+
+		Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[1]
+		Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[2]
+
+		if (!state.minDimmingLevel) {
+			state.minDimmingLevel = aeotecNanoDimmerDefaults[1]
+		}
+		if (!state.maxDimmingLevel) {
+			state.maxDimmingLevel = aeotecNanoDimmerDefaults[2]
+		}
+
+		if (!state.configured || (minDimmingLevel != state.minDimmingLevel || maxDimmingLevel != state.maxDimmingLevel)) {
+			state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+
+			if (!state.minLevelConfigured || minDimmingLevel != state.minDimmingLevel) {
+				state.minLevelConfigured = false
+				result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
+				result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
+			}
+			if (!state.maxLevelConfigured || maxDimmingLevel != state.maxDimmingLevel) {
+				state.maxLevelConfigured = false
+				result << encap(zwave.configurationV1.configurationSet(parameterNumber: 132, size: 1, scaledConfigurationValue: maxDimmingLevel))
+				result << encap(zwave.configurationV1.configurationGet(parameterNumber: 132))
+			}
+		}
+
+	return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+	if (isAeotecNanoDimmer()) {
+		if (cmd.parameterNumber == 131) {
+			state.minDimmingLevel = scaledConfigurationValue
+			state.minLevelConfigured = true
+		} else if (cmd.parameterNumber == 132) {
+			state.maxDimmingLevel = scaledConfigurationValue
+			state.maxLevelConfigured = true
+		}
+
+		if (state.minLevelConfigured && state.maxLevelConfigured) {
+			state.configured = true
+		}
+
+		log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
+	}
+
+	return [:]
 }
 
 /*
@@ -318,4 +425,8 @@ private encap(physicalgraph.zwave.Command cmd) {
 
 private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
+}
+
+private isAeotecNanoDimmer() {
+	zwaveInfo?.mfr?.equals("0086") && zwaveInfo?.model?.equals("006F")
 }
