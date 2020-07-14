@@ -215,6 +215,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 0x00: //OFF
 				resetActiveSound()
 				createEvent([name: "tamper", value: "clear"])
+				createEvent([name: "alarm", value: "off"])
 				break
 		}
 	}
