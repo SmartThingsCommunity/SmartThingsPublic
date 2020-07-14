@@ -94,6 +94,32 @@ metadata {
 
 	main(["switch","power","energy"])
 	details(["switch", "power", "energy", "refresh", "reset"])
+
+	preferences {
+			section {
+				input(
+						title: "Settings Available For Aeotec Nano Dimmer Only",
+						type: "paragraph",
+						element: "paragraph"
+				)
+				input(
+						title: "Set the MIN brightness level (Aeotec Nano Dimmer Only):",
+						description: "Set the min brightness level that the load can reach to.",
+						name: "minDimmingLevel",
+						type: "number",
+						range: "0..99",
+						defaultValue: 0
+				)
+				input(
+						title:  "Set the MAX brightness level (Aeotec Nano Dimmer Only):",
+						description: "Set the max brightness level that the load can reach to.",
+						name: "maxDimmingLevel",
+						type: "number",
+						range: "0..99",
+						defaultValue: 99
+				)
+			}
+	}
 }
 
 def getCommandClassVersions() {
@@ -114,7 +140,13 @@ def installed() {
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	response(refresh())
+
+	def additionalCmds = []
+	if (isAeotecNanoDimmer()) {
+		additionalCmds = getConfigurationCommands()
+	}
+
+	response([refresh(), additionalCmds].flatten())
 }
 
 // parse events into attributes
@@ -229,6 +261,14 @@ def setLevel(level, rate = null) {
 
 def configure() {
 	log.debug "configure()"
+
+	if (isAeotecNanoDimmer()) {
+		state.configured = false
+		state.minDimmingLevel = false
+		state.maxDimmingLevel = false
+		response(getConfigurationCommands())
+	}
+
 	def result = []
 
 	log.debug "Configure zwaveInfo: "+zwaveInfo
@@ -268,6 +308,62 @@ def meterReset() {
 def normalizeLevel(level) {
 	// Normalize level between 1 and 100.
 	level == 99 ? 100 : level
+}
+
+def getAeotecNanoDimmerDefaults() {
+	[1:0,
+	2:99
+	]
+}
+
+def getConfigurationCommands() {
+	def result = []
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[1]
+	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[2]
+
+	if (!state.minDimmingLevel) {
+		state.minDimmingLevel = aeotecNanoDimmerDefaults[1]
+	}
+	if (!state.maxDimmingLevel) {
+		state.maxDimmingLevel = aeotecNanoDimmerDefaults[2]
+	}
+
+	if (!state.configured || (minDimmingLevel != state.minDimmingLevel || maxDimmingLevel != state.maxDimmingLevel)) {
+		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+
+		if (!state.minLevelConfigured || minDimmingLevel != state.minDimmingLevel) {
+			state.minLevelConfigured = false
+			result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
+			result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
+		}
+		if (!state.maxLevelConfigured || maxDimmingLevel != state.maxDimmingLevel) {
+			state.maxLevelConfigured = false
+			result << encap(zwave.configurationV1.configurationSet(parameterNumber: 132, size: 1, scaledConfigurationValue: maxDimmingLevel))
+			result << encap(zwave.configurationV1.configurationGet(parameterNumber: 132))
+		}
+	}
+
+	return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+	if (isAeotecNanoDimmer()) {
+		if (cmd.parameterNumber == 131) {
+			state.minDimmingLevel = scaledConfigurationValue
+			state.minLevelConfigured = true
+		} else if (cmd.parameterNumber == 132) {
+			state.maxDimmingLevel = scaledConfigurationValue
+			state.maxLevelConfigured = true
+		}
+
+		if (state.minLevelConfigured && state.maxLevelConfigured) {
+			state.configured = true
+		}
+
+		log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
+	}
+
+	return [:]
 }
 
 /*
@@ -318,4 +414,8 @@ private encap(physicalgraph.zwave.Command cmd) {
 
 private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
+}
+
+private isAeotecNanoDimmer() {
+	zwaveInfo?.mfr?.equals("0086") && zwaveInfo?.model?.equals("006F")
 }
