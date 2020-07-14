@@ -69,7 +69,10 @@ def parse(String description) {
     def powerDiv = 1
     def energyDiv = 100
 
-    if (event && event.name != "switch") {
+    if (event?.name == "switch" && description?.startsWith("catchall: ")) {
+        log.info "Ignoring default response with description $description"
+        return [:]
+    } else if (event) {
         log.info "event enter:$event"
         if (event.name== "power") {
             event.value = event.value/powerDiv
@@ -80,15 +83,6 @@ def parse(String description) {
         }
         log.info "event outer:$event"
         sendEvent(event)
-    } else if (event.name == "switch") {
-        log.info "event enter:$event"
-        if (isOnOffStateChanged(event)) {
-            log.info "event outer:$event"
-            sendEvent(event)
-        } else {
-            log.info "Ignoring duplicated event outer:$event"
-            [:]
-        }
     } else {
         List result = []
         def descMap = zigbee.parseDescriptionAsMap(description)
@@ -155,7 +149,6 @@ def refresh() {
 }
 
 def configure() {
-    state.someEvent = [:]
     // this device will send instantaneous demand and current summation delivered every 1 minute
     sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting"
@@ -163,15 +156,4 @@ def configure() {
     	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
            zigbee.electricMeasurementPowerConfig(1, 600, 1) 
-}
-
-def isOnOffStateChanged(Map event) {
-    if (state.someEvent.get(event.name) != event.value) {
-        // When the device reports new On/Off status then create event
-        state.someEvent = [(event.name) : (event.value)]
-        return true
-    } else if (state.someEvent.get(event.name) == event.value) {
-        // When state has not changed then ignore
-        return false
-    }
 }
