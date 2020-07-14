@@ -369,9 +369,8 @@ def zwaveEvent(thermostatoperatingstatev1.ThermostatOperatingStateReport cmd) {
 
 		// If the user want to see each of the Idle and Heating events in the event history,
 		// Otherwise don't show them more frequently than 5 minutes.
-		if ((settings.heatdetails == "No" ||
-				!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) &&
-				device.currentState("thermostatOperatingState").value == map.value) {
+		if (settings.heatdetails == "No" ||
+				!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
 			map.displayed = false
 		}
 	} else {
