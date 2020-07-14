@@ -153,7 +153,19 @@ def configure() {
     sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting"
     return refresh() +
-    	   zigbee.onOffConfig() +
-           zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
-           zigbee.electricMeasurementPowerConfig(1, 600, 1) 
+            zigbee.onOffConfig() +
+            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
+            zigbee.electricMeasurementPowerConfig(1, 600, 1) +
+            additionalConfig
 }
+
+private getAdditionalConfig() {
+    if (isDawon()) {
+        zigbee.simpleMeteringPowerConfig()
+    }
+}
+
+private isDawon() {
+    device.getDataValue("manufacturer") == "DAWON_DNS"
+}
+>>>>>>> Added additional metering configuration for Dawon devices
