@@ -78,15 +78,20 @@ metadata {
 }
 
 def installed() {
-        createChildDevices()
-        updateDataValue("onOff", "catchall")
-        refresh()
+	createChildDevices()
+	updateDataValue("onOff", "catchall")
+	refresh()
 }
 
 def updated() {
-        log.debug "updated()"
-        updateDataValue("onOff", "catchall")
-        refresh()
+	log.debug "updated()"
+	updateDataValue("onOff", "catchall")
+	for (child in childDevices) {
+		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId)) { //parent DNI has changed after rejoin
+			child.setDeviceNetworkId("${device.deviceNetworkId}:${getChildEndpoint(child.deviceNetworkId)}")
+		}
+	}
+	refresh()
 }
 
 def parse(String description) {
@@ -120,7 +125,7 @@ def parse(String description) {
 private void createChildDevices() {
 	def x = getChildCount()
 	for (i in 2..x) {
-		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:${i}", device.hubId,
 			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
 	}
 }
@@ -162,12 +167,12 @@ def refresh() {
 	if (isOrvibo()) {
 		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
 	} else {
-	        def cmds = zigbee.onOffRefresh()
-	        def x = getChildCount()
-	        for (i in 2..x) {
-	        	cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
-	        }
-	        return cmds
+		def cmds = zigbee.onOffRefresh()
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
+		}
+		return cmds
 	}
 }
 
@@ -204,17 +209,17 @@ def configure() {
 	if (isOrvibo()) {
 		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
 		def cmds = zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
-        	cmds += refresh()
-       		return cmds
+		cmds += refresh()
+		return cmds
 	} else {
 		//other devices supported by this DTH in the future
-	        def cmds = zigbee.onOffConfig(0, 120)
-	        def x = getChildCount()
-	        for (i in 2..x) {
-	        	cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
-	        }
-	        cmds += refresh()
-	        return cmds
+		def cmds = zigbee.onOffConfig(0, 120)
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
+		}
+		cmds += refresh()
+		return cmds
 	}
 }
 
