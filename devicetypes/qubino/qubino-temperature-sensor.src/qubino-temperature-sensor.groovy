@@ -13,7 +13,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Temperature Sensor", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid: "generic-temperature-measurement", ocfDeviceType: "oic.d.thermostat") {
+	definition(name: "Qubino Temperature Sensor", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Qubino_Temperature_Sensor", ocfDeviceType: "oic.d.thermostat") {
 		capability "Health Check"
 		capability "Refresh"
 		capability "Sensor"
