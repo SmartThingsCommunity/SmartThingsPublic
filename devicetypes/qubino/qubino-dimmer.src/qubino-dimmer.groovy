@@ -114,7 +114,7 @@ private getINPUT_TYPE_TEMPERATURE_SENSOR() {3}
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	setInitialConfiguration()
+
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -176,19 +176,6 @@ private readConfigurationFromTheDevice() {
 	sendHubCommand(encapCommands(commands))
 }
 
-private setInitialConfiguration() {
-	// 1% is default Minimum dimming value for dimmers,
-	// when device is set to 1% - it turns off and device does not send any level reports
-	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
-	// Still, for users it will relatively be 1-100% on the UI and device will report it.
-
-	def commands = []
-	// Parameter no. 60 – Minimum dimming value
-	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
-
-	sendHubCommand(encapCommands(commands))
-}
-
 private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
@@ -246,6 +233,13 @@ def configure() {
 	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands + getRefreshCommands()
+
+	// 1% is default Minimum dimming value for dimmers,
+	// when device is set to 1% - it turns off and device does not send any level reports
+	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
+	// Still, for users it will relatively be 1-100% on the UI and device will report it.
+	// Parameter no. 60 – Minimum dimming value
+	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
 
 	encapCommands(commands)
 }
