@@ -66,15 +66,16 @@ def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
+    def descMap = zigbee.parseDescriptionAsMap(description)
     def powerDiv = 1
     def energyDiv = 100
 
-    if (event?.name == "switch" && description?.startsWith("catchall: ")) {
-        log.info "Ignoring default response with description $description"
-        return [:]
-    } else if (event) {
+    if (event) {
         log.info "event enter:$event"
-        if (event.name== "power") {
+        if (event.name == "switch" && !descMap.isClusterSpecific && descMap.commandInt == 0x0B) {
+            log.info "Ignoring default response with desc map: $descMap"
+            return [:]
+        } else if (event.name== "power") {
             event.value = event.value/powerDiv
             event.unit = "W"
         } else if (event.name== "energy") {
@@ -85,7 +86,6 @@ def parse(String description) {
         sendEvent(event)
     } else {
         List result = []
-        def descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "Desc Map: $descMap"
 
         List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
