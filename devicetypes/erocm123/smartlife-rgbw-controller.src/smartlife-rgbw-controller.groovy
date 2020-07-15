@@ -218,7 +218,7 @@ def updated()
 private void createChildDevices() {
     if (p1Child && !childExists("ep01")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep01", null, [completedSetup: true, label: "${device.label} - Program 1",
-            isComponent: true, componentName: "ep01", componentLabel: "Program 1"
+            isComponent: false
         ])
     } else if (!p1Child && childExists("ep01")) {
         log.debug "Trying to delete child device ep01. If this fails it is likely that there is an App using the child device in question."
@@ -228,7 +228,7 @@ private void createChildDevices() {
     }
     if (p2Child && !childExists("ep02")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep02", null, [completedSetup: true, label: "${device.label} - Program 2",
-            isComponent: true, componentName: "ep02", componentLabel: "Program 2"
+            isComponent: false
         ])
     } else if (!p2Child && childExists("ep02")) {
         log.debug "Trying to delete child device ep02. If this fails it is likely that there is an App using the child device in question."
@@ -238,7 +238,7 @@ private void createChildDevices() {
     }
     if (p3Child && !childExists("ep03")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep03", null, [completedSetup: true, label: "${device.label} - Program 3",
-            isComponent: true, componentName: "ep03", componentLabel: "Program 3"
+            isComponent: false
         ])
     } else if (!p3Child && childExists("ep03")) {
         log.debug "Trying to delete child device ep03. If this fails it is likely that there is an App using the child device in question."
@@ -248,7 +248,7 @@ private void createChildDevices() {
     }
     if (p4Child && !childExists("ep04")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep04", null, [completedSetup: true, label: "${device.label} - Program 4",
-            isComponent: true, componentName: "ep04", componentLabel: "Program 4"
+            isComponent: false
         ])
     } else if (!p4Child && childExists("ep04")) {
         log.debug "Trying to delete child device ep04. If this fails it is likely that there is an App using the child device in question."
@@ -258,7 +258,7 @@ private void createChildDevices() {
     }
     if (p5Child && !childExists("ep05")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep05", null, [completedSetup: true, label: "${device.label} - Program 5",
-            isComponent: true, componentName: "ep05", componentLabel: "Program 5"
+            isComponent: false
         ])
     } else if (!p5Child && childExists("ep05")) {
         log.debug "Trying to delete child device ep05. If this fails it is likely that there is an App using the child device in question."
@@ -268,7 +268,7 @@ private void createChildDevices() {
     }
     if (p6Child && !childExists("ep06")) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep06", null, [completedSetup: true, label: "${device.label} - Program 6",
-            isComponent: true, componentName: "ep06", componentLabel: "Program 6"
+            isComponent: false
         ])
     } else if (!p6Child && childExists("ep06")) {
         log.debug "Trying to delete child device ep06. If this fails it is likely that there is an App using the child device in question."
@@ -278,7 +278,7 @@ private void createChildDevices() {
     }
     if (rChild && !childExists("ep07")) {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep07", null, [completedSetup: true, label: "${device.label} - Red Channel",
-            isComponent: true, componentName: "ep07", componentLabel: "Red Channel"
+            isComponent: false
         ])
     } else if (!rChild && childExists("ep07")) {
         log.debug "Trying to delete child device ep07. If this fails it is likely that there is an App using the child device in question."
@@ -288,7 +288,7 @@ private void createChildDevices() {
     }
     if (gChild && !childExists("ep08")) {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep08", null, [completedSetup: true, label: "${device.label} - Green Channel",
-            isComponent: true, componentName: "ep08", componentLabel: "Green Channel"
+            isComponent: false
         ])
     } else if (!gChild && childExists("ep08")) {
         log.debug "Trying to delete child device ep08. If this fails it is likely that there is an App using the child device in question."
@@ -298,7 +298,7 @@ private void createChildDevices() {
     }
     if (bChild && !childExists("ep09")) {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep09", null, [completedSetup: true, label: "${device.label} - Blue Channel",
-            isComponent: true, componentName: "ep09", componentLabel: "Blue Channel"
+            isComponent: false
         ])
     } else if (!bChild && childExists("ep09")) {
         log.debug "Trying to delete child device ep09. If this fails it is likely that there is an App using the child device in question."
@@ -308,7 +308,7 @@ private void createChildDevices() {
     }
     if (w1Child && !childExists("ep10")) {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep10", null, [completedSetup: true, label: "${device.label} - White1 Channel",
-            isComponent: true, componentName: "ep10", componentLabel: "White1 Channel"
+            isComponent: false
         ])
     } else if (!w1Child && childExists("ep10")) {
         log.debug "Trying to delete child device ep10. If this fails it is likely that there is an App using the child device in question."
@@ -318,7 +318,7 @@ private void createChildDevices() {
     }
     if (w2Child && !childExists("ep11")) {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep11", null, [completedSetup: true, label: "${device.label} - White2 Channel",
-            isComponent: true, componentName: "ep11", componentLabel: "White2 Channel"
+            isComponent: false
         ])
     } else if (!w2Child && childExists("ep11")) {
         log.debug "Trying to delete child device ep11. If this fails it is likely that there is an App using the child device in question."

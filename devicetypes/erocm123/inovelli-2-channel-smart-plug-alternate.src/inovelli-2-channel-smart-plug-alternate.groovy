@@ -275,7 +275,7 @@ private void createChildDevices() {
     try {
         for (i in 1..2) {
             addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
-                isComponent: false, componentName: "ep$i", componentLabel: "Channel $i"
+                isComponent: false
             ])
         }
     } catch (e) {

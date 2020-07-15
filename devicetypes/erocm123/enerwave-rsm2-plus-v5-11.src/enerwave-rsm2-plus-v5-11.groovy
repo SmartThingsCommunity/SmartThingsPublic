@@ -522,7 +522,7 @@ private void createChildDevices() {
         for (i in 1..2) {
 	       addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null,
 		      [completedSetup: true, label: "${device.displayName} (R${i})",
-		      isComponent: false, componentName: "ep$i", componentLabel: "Relay $i"])
+		      isComponent: false])
         }
     } catch (e) {
 	    runIn(2, "sendAlert")

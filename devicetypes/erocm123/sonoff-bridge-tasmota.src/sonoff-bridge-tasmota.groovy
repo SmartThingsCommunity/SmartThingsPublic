@@ -129,7 +129,7 @@ metadata {
 private void createChildDevices() {
     if (cdt01 && cdt01 != "Disabled" && !childExists("ep01")) {
         addChildDevice(cdt01, "${device.deviceNetworkId}-ep01", null, [completedSetup: true, label: "${device.label} - Child Device 1",
-            isComponent: false, componentName: "ep01", componentLabel: "Child Device 1"
+            isComponent: false
         ])
     } else if ((!cdt01 || cdt01 == "Disabled") && childExists("ep01")) {
         log.debug "Trying to delete child device ep01. If this fails it is likely that there is an App using the child device in question."

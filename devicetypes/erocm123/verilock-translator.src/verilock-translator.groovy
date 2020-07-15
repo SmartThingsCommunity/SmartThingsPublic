@@ -90,7 +90,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
         log.debug "Child not found for endpoint. Creating one now"
         childDevice = addChildDevice("Lockable Door/Window Child Device", "${device.deviceNetworkId}-ep${ep}", null,
                 [completedSetup: true, label: "${device.displayName} Window ${ep}",
-                isComponent: false, componentName: "ep$ep", componentLabel: "Window $ep"])
+                isComponent: false])
     }
 
     childDevice.sendEvent(name: evtName, value: evtValue)

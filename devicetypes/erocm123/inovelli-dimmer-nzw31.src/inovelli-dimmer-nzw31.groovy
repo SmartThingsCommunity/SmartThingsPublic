@@ -149,7 +149,7 @@ def initialize() {
     try {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep8", null,
                 [completedSetup: true, label: "${device.displayName} (Default Local Level)",
-                isComponent: true, componentName: "ep8", componentLabel: "Default Local Level"])
+                isComponent: false])
     } catch (e) {
         runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
     }
@@ -168,7 +168,7 @@ def initialize() {
     try {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep9", null,
                 [completedSetup: true, label: "${device.displayName} (Default Z-Wave Level)",
-                isComponent: true, componentName: "ep9", componentLabel: "Default Z-Wave Level"])
+                isComponent: false])
     } catch (e) {
         runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
     }
@@ -187,7 +187,7 @@ def initialize() {
     try {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep101", null,
                 [completedSetup: true, label: "${device.displayName} (Disable Local Control)",
-                isComponent: true, componentName: "ep101", componentLabel: "Disable Local Control"])
+                isComponent: false])
     } catch (e) {
         runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
     }

@@ -556,7 +556,7 @@ private void createChildDevices() {
         for (i in 1..2) {
             addChildDevice("Metering Switch Child Device", "${device.deviceNetworkId}-ep${i}", null,
                 [completedSetup: true, label: "${device.displayName} (Q${i})",
-                isComponent: false, componentName: "ep$i", componentLabel: "Output $i"])
+                isComponent: false])
         }
     } catch (e) {
         log.debug e

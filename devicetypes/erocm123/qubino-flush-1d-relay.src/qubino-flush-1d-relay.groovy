@@ -517,7 +517,7 @@ private void createChildDevices() {
         for (i in 2..2) {
             addChildDevice("Contact Sensor Child Device", "${device.deviceNetworkId}-i${i}", null,
                 [completedSetup: true, label: "${device.displayName} (i${i})",
-                isComponent: true, componentName: "i$i", componentLabel: "Input $i"])
+                isComponent: false])
         }
     } catch (e) {
         runIn(2, "sendAlert")

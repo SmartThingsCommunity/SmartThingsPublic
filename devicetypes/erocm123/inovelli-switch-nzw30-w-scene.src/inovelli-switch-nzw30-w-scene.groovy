@@ -265,7 +265,7 @@ def initialize() {
     try {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep101", null,
                 [completedSetup: true, label: "${device.displayName} (Disable Local Control)",
-                isComponent: true, componentName: "ep101", componentLabel: "Disable Local Control"])
+                isComponent: false])
     } catch (e) {
         runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
     }

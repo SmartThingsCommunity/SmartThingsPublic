@@ -496,7 +496,7 @@ private void createChildDevices() {
      try {
 	       addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep1", null,
 		      [completedSetup: true, label: "${device.displayName} Light",
-		      isComponent: false, componentName: "ep1", componentLabel: "Light"])
+		      isComponent: false])
     } catch (e) {
         state.alertMessage = "Child device creation failed. Please make sure that the \"Switch Child Device\" is installed and published."
 	    runIn(2, "sendAlert")
