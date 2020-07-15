@@ -308,8 +308,8 @@ def parse(String description) {
 					map.value = "heating"
 				}
 
-				// If the user wants to see each of the Idle and Heating events in the event history,
-				// otherwise don't show them more frequently than 5 minutes.
+				// If the user does not want to see the Idle and Heating events in the event history,
+				// don't show them. Otherwise, don't show them more frequently than 5 minutes.
 				if (settings.heatdetails == "No" ||
 						!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
 					map.displayed = false
