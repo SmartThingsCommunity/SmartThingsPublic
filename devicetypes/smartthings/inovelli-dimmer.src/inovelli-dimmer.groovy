@@ -1,0 +1,599 @@
+/*	Copyright 2020 SmartThings
+*
+*	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+*	in compliance with the License. You may obtain a copy of the License at:
+*
+*		http://www.apache.org/licenses/LICENSE-2.0
+*
+*	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+*	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+*	for the specific language governing permissions and limitations under the License.
+*
+*	Inovelli Dimmer
+*
+*	Copyright 2020 SmartThings
+*
+*/
+metadata {
+	definition (name: "Inovelli Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave", mcdSync: true) {
+		capability "Actuator"
+		capability "Configuration"
+		capability "Energy Meter"
+		capability "Health Check"
+		capability "Refresh"
+		capability "Sensor"
+		capability "Switch"
+		capability "Switch Level"
+		capability "Power Meter"
+
+		fingerprint mfr:"031E", prod:"0001", model:"0001", deviceJoinName: "Inovelli Dimmer Switch", vid: "SmartThings-smartthings-Inovelli_Dimmer"//Inovelli Dimmer LZW31-SN
+	}
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+		}
+		valueTile("power", "device.power", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+		}
+		valueTile("energy", "device.energy", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+		}
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+	}
+
+	main(["switch","power","energy"])
+	details(["switch", "power", "energy", "refresh"])
+
+	preferences {
+		// Preferences template begin
+		parameterMap.each {
+			input (
+				title: it.name,
+				description: it.description,
+				type: "paragraph",
+				element: "paragraph"
+			)
+
+			switch(it.type) {
+				case "boolRange":
+					input(
+						name: it.key + "Boolean",
+						type: "bool",
+						title: "Enable",
+						description: "If you disable this option, it will overwrite setting below.",
+						defaultValue: it.defaultValue != it.disableValue,
+						required: false
+					)
+					input(
+						name: it.key,
+						type: "number",
+						title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue,
+						range: it.range,
+						required: false
+					)
+					break
+				case "boolean":
+					input(
+						type: "paragraph",
+						element: "paragraph",
+						description: "Option enabled: ${it.activeDescription}\n" +
+							"Option disabled: ${it.inactiveDescription}"
+					)
+					input(
+						name: it.key,
+						type: "bool",
+						title: "Enable",
+						defaultValue: it.defaultValue == it.activeOption,
+						required: false
+					)
+					break
+				case "enum":
+					input(
+						name: it.key,
+						title: "Select",
+						type: "enum",
+						options: it.values,
+						defaultValue: it.defaultValue,
+						required: false
+					)
+					break
+				case "range":
+					input(
+						name: it.key,
+						type: "number",
+						title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue,
+						range: it.range,
+						required: false
+					)
+					break
+			}
+		}
+		// Preferences template end
+	}
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	// Preferences template begin
+	state.currentPreferencesState = [:]
+	parameterMap.each {
+		state.currentPreferencesState."$it.key" = [:]
+		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
+		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
+			state.currentPreferencesState."$it.key".status = "disablePending"
+		} else {
+			state.currentPreferencesState."$it.key".status = "synced"
+		}
+	}
+	readConfigurationFromTheDevice();
+// Preferences template end
+	createChildDevice("smartthings", "Child Color Selection", "${device.deviceNetworkId}:" + 3, "LEDColorConfiguration", "LEDColorConfiguration")
+}
+
+def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Preferences template begin
+	parameterMap.each {
+		if (isPreferenceChanged(it)) {
+			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
+			state.currentPreferencesState."$it.key".status = "syncPending"
+			if (it.type == "boolRange") {
+				def preferenceName = it.key + "Boolean"
+
+				if (isNotNull(settings."$preferenceName")) {
+					if (!settings."$preferenceName") {
+						state.currentPreferencesState."$it.key".status = "disablePending"
+					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
+						state.currentPreferencesState."$it.key".status = "syncPending"
+					}
+				} else {
+					state.currentPreferencesState."$it.key".status = "syncPending"
+				}
+			}
+		} else if (state.currentPreferencesState."$it.key".value == null) {
+			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
+		}
+	}
+	syncConfiguration()
+	// Preferences template end
+
+	response(refresh())
+}
+
+private readConfigurationFromTheDevice() {
+	def commands = []
+	parameterMap.each {
+		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
+		commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+	}
+	sendHubCommand(commands)
+}
+
+private syncConfiguration() {
+	def commands = []
+	log.debug"syncConfiguration ${settings}"
+	parameterMap.each {
+		if (state.currentPreferencesState."$it.key".status == "syncPending") {
+			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
+			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+		} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
+			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size))
+			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+		}
+	}
+	sendHubCommand(commands)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	// Preferences template begin
+	log.debug "Configuration report: ${cmd}"
+	def preference = parameterMap.find( {it.parameterNumber == cmd.parameterNumber} )
+	def key = preference.key
+	def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
+	log.debug"settings.key ${settings."$key"} preferenceValue ${preferenceValue}"
+
+	if(state.currentPreferencesState."$key".status == "reverseSyncPending"){
+		log.debug "reverseSyncPending"
+		state.currentPreferencesState."$key".value = preferenceValue
+		state.currentPreferencesState."$key".status = "synced"
+	} else {
+		if (preferenceValue instanceof String && settings."$key" == preferenceValue.toBoolean()) {
+			state.currentPreferencesState."$key".value = settings."$key"
+			state.currentPreferencesState."$key".status = "synced"
+		} else if(preferenceValue instanceof Integer && settings."$key" == preferenceValue){
+			state.currentPreferencesState."$key".value = settings."$key"
+			state.currentPreferencesState."$key".status = "synced"
+		} else if (preference.type == "boolRange") {
+			log.debug"${state.currentPreferencesState."$key".status}"
+			if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
+				state.currentPreferencesState."$key".status = "disabled"
+			} else {
+				runIn(5, "syncConfiguration", [overwrite: true])
+			}
+		} else {
+			state.currentPreferencesState."$key"?.status = "syncPending"
+			if(cmd.parameterNumber == 13){
+				state.currentPreferencesState."$key".value = preferenceValue
+				state.currentPreferencesState."$key".status = "synced"
+				handleLEDPreferenceEvent(cmd)
+			}
+			runIn(5, "syncConfiguration", [overwrite: true])
+		}
+	}
+	// Preferences template end
+}
+
+private getPreferenceValue(preference, value = "default") {
+	def integerValue = value == "default" ? preference.defaultValue : value.intValue()
+	switch (preference.type) {
+		case "enum":
+			return String.valueOf(integerValue)
+		case "boolean":
+			return String.valueOf(preference.optionActive == integerValue)
+		default:
+			return integerValue
+	}
+}
+
+private getCommandValue(preference) {
+	def parameterKey = preference.key
+	log.debug"settings parameter key ${settings."$parameterKey"} ${preference} "
+	switch (preference.type) {
+		case "boolean":
+			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
+		case "boolRange":
+			def parameterKeyBoolean = parameterKey + "Boolean"
+			return !isNotNull(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+		case "range":
+			return settings."$parameterKey"
+		default:
+			return Integer.parseInt(settings."$parameterKey")
+	}
+}
+
+private isNotNull(value) {
+	return value != null
+}
+
+private isPreferenceChanged(preference) {
+	if (isNotNull(settings."$preference.key")) {
+		if (preference.type == "boolRange") {
+			def boolName = preference.key + "Boolean"
+			if (state.currentPreferencesState."$preference.key".status == "disabled") {
+				return settings."$boolName"
+			} else {
+				return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
+			}
+		} else {
+			return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
+		}
+	} else {
+		return false
+	}
+}
+
+def parse(String description) {
+	def result = null
+	if (description != "updated") {
+		def cmd = zwave.parse(description)
+		if (cmd) {
+			result = zwaveEvent(cmd)
+			log.debug("'$description' parsed to $result")
+		} else {
+			log.debug("Couldn't zwave.parse '$description'")
+		}
+	}
+	log.debug "parsed '${description}' to ${result.inspect()}"
+	result
+}
+
+def handleLEDPreferenceEvent(cmd){
+	def hueState = [name: "hue", value: "${Math.round(zwaveValueToHuePercent(cmd.scaledConfigurationValue))}"]
+	def childDni = "${device.deviceNetworkId}:" + 3
+	def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+	childDevice?.sendEvent(hueState)
+	childDevice?.sendEvent(name:"saturation", value:"100")
+}
+
+def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel, childComponentName) {
+	try {
+		log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}, ${childComponentName}"
+		def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
+			[ completedSetup: true,
+			  label: childComponentLabel,
+			  isComponent: true,
+			  componentName : childComponentName,
+			  componentLabel: childComponentLabel
+			])
+		childDevice
+	} catch(Exception e) {
+		log.debug "Exception: ${e}"
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
+	dimmerEvents(cmd)
+}
+
+def dimmerEvents(physicalgraph.zwave.Command cmd) {
+	log.debug "dimmer events ${cmd}"
+	def map = [name : "switch", value : cmd.value ? "on" : "off", descriptionText : "$device.displayName was turned $cmd.value"]
+	def switchEvent = createEvent(map)
+	def result = [switchEvent]
+	if (cmd.value) {
+		map = [name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%"]
+		result << createEvent(map)
+	}
+	if (switchEvent.isStateChange) {
+		result << response(["delay 3000", zwave.meterV3.meterGet(scale: 2).format()])
+	}
+	return result
+}
+
+def on() {
+	encapSequence([
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.basicV1.basicGet()
+	], 5000)
+}
+
+def off() {
+	encapSequence([
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.basicV1.basicGet()
+	], 5000)
+}
+
+def setLevel(level){
+	log.debug"setLevel"
+	if(level > 99) level = 99
+	encapSequence([
+		zwave.basicV1.basicSet(value: level),
+		zwave.switchMultilevelV1.switchMultilevelGet()
+	], 5000)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
+	def map = [:]
+	if (cmd.meterType == 1 && cmd.scale == 0){
+		map = [name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
+	} else if(cmd.meterType == 1 && cmd.scale == 2){
+		map = [name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
+	}
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "${cmd}"
+	[:]
+}
+
+def childSetColor(deviceNetworkId, value) {
+	def id = deviceNetworkId?.split(":")[1] as Integer
+	sendHubCommand setColorCmd(value, id)
+}
+
+def setColorCmd(value, id) {
+	if (value.hue == null || value.saturation == null) return
+	def ledColor = Math.round(huePercentToZwaveValue(value.hue))
+	encapSequence([
+		zwave.configurationV2.configurationSet(scaledConfigurationValue: ledColor, parameterNumber: 13, size: 2),
+		zwave.configurationV2.configurationGet(parameterNumber: 13)
+	], 5000)
+}
+
+private huePercentToZwaveValue(value){
+	return value<=2?0:(value>=98?255:value/100*255)
+}
+
+private zwaveValueToHuePercent(value){
+	return value<=2?0:(value>=254?100:value/255*100)
+}
+
+def childRefresh(deviceNetworkId) {
+	def id = deviceNetworkId?.split(":")[1] as Integer
+	sendHubCommand refresh()
+}
+
+def refresh() {
+	encapSequence([
+		zwave.basicV1.basicGet(),
+		zwave.meterV3.meterGet(scale: 0)
+	], 5000)
+}
+
+/*
+* Security encapsulation support:
+*/
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	if (encapsulatedCommand) {
+		log.debug "Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}"
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract Secure command from $cmd"
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		log.debug "Parsed Crc16Encap into: ${encapsulatedCommand}"
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract CRC16 command from $cmd"
+	}
+}
+
+private secEncap(physicalgraph.zwave.Command cmd) {
+	log.debug "encapsulating command using Secure Encapsulation, command: $cmd"
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	log.debug "encapsulating command using CRC16 Encapsulation, command: $cmd"
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private encap(cmd, endpoint = null) {
+	if (cmd) {
+		if (endpoint) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
+		}
+
+		if (zwaveInfo.zw.endsWith("s")) {
+			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		} else {
+			cmd.format()
+		}
+	}
+}
+
+private encapSequence(cmds, Integer delay=250) {
+	delayBetween(cmds.collect{ encap(it) }, delay)
+}
+
+private getParameterMap() {[
+	[
+		name: "Dimming Speed", key: "dimmingSpeed", type: "range",
+		parameterNumber: 1, size: 1, defaultValue: 3,
+		range: "1..100",
+		description: "How fast or slow the light turns on when you hold the switch (ie: dimming from 10-20%, 80-60%, etc). Example of how the values work: 0 - Instant On, 1 = 1 second, 100 = 100 seconds. This parameter can be set without a HUB from the Configuration Button. Finally, if you are using a,dumb switch in a 3-Way setting, this parameter will not work if you manually press the dumb switch (it will only work if you press the smart switch)."
+	],
+	[
+		name: "Default Level (Z-Wave)", key: "defaultLevel(Z-Wave)", type: "range",
+		parameterNumber: 10, size: 1, defaultValue: 0,
+		range: "1..100",
+		description: "Default dim level for the switch when powered on via a Z-Wave command. This is useful if you'd like your switch to turn on to a certain level when remotely controlling the switch during certain times. For example, you could have your switch only turn on to 10% brightness during the hours of 10pm - 6am when you remotely control it. Example of how the values work: 0 = Switch will return to level it was prior to being off, 1 = 1%, 100 = 100%. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "Power On State", key: "powerOnState", type: "range",
+		parameterNumber: 11, size: 1, defaultValue: 0,
+		range: "0..101",
+		description: "When power is restored, the switch reverts to either On, Off, or Last Level. Example of how the values work: 0 = Off, 1-100 = Specific % On, 101 = Returns to Level before Power Outage. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "Association Behavior", key: "associationBehavior", type: "enum",
+		parameterNumber: 12, size: 1, defaultValue: 15,
+		values: [
+			1: "Local",
+			2: "3-Way",
+			3: "3-Way + Local",
+			4: "Z-Wave HUB",
+			5: "Z-Wave HUB + Local",
+			6: "Z-Wave HUB + 3-Way",
+			7: "Z-Wave HUB + Local",
+			8: "Timer",
+			9: "Timer + Local",
+			10: "Timer + 3-Way",
+			11: "Timer + Local",
+			12: "Timer + Z-Wave HUB",
+			13: "Timer + Local",
+			14: "Timer + Z-Wave HUB",
+			15: "All"
+		],
+		description: "When should the switch send commands to associated devices."
+	],
+	[
+		name: "LED Indicator Color", key: "ledIndicatorColor", type: "range",
+		parameterNumber: 13, size: 2, defaultValue: 170,
+		range: "0..255",
+		description: "This will set the default color of the LED Bar. This is calculated by using a hue color circle (Value / 255 * 360). See website for more info. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "LED Indicator Intensity", key: "ledIndicatorIntensity", type: "range",
+		parameterNumber: 14, size: 1, defaultValue: 5,
+		range: "0..10",
+		description: "This will set the intensity of the LED bar (ie: how bright it is). Example of how the values work: 0 = Off, 1 = Low, 5 = Medium, 10 = High. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "LED Indicator Intensity (When Off)", key: "ledIndicatorIntensity(WhenOff)", type: "range",
+		parameterNumber: 15, size: 1, defaultValue: 1,
+		range: "0..10",
+		description: "This is the intensity of the LED bar when the switch is off. Example of how the values work: 0 = Off, 1 = Low, 5 = Medium, 10 = High. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "LED Indicator Timeout", key: "ledIndicatorTimeout", type: "range",
+		parameterNumber: 17, size: 1, defaultValue: 3,
+		range: "1..10",
+		description: "Changes the amount of time the RGB Bar shows the Dim level if the LED Bar has been disabled. Example of how the values work: 0 = Always off, 1 = 1 second after level is adjusted, 10 = 10 seconds after level is adjusted."
+	],
+	[
+		name: "Active Power Alerts", key: "activePowerAlerts", type: "boolRange",
+		parameterNumber: 18, size: 1, defaultValue: 10,
+		range: "1..100", disableValue: 0,
+		description: "The power level change that will result in a new power report being sent (% of previous report). Example of how the values work: 0 = Disabled, 10 = 10% of previous report, 100 = 100% of previous report."
+	],
+	[
+		name: "Periodic Power + Energy Reports", key: "periodicPower+EnergyReports", type: "range",
+		parameterNumber: 19, size: 2, defaultValue: 3600,
+		range: "0..32767",
+		description: "Time period between consecutive power and energy reports being sent (in seconds). Example of how the values work: 0 = 0 seconds, 1 = 1 second, 32767 = 32767 seconds. The timer resets after every report is sent."
+	],
+	[
+		name: "Dimming Speed (Z-Wave)", key: "dimmingSpeed(Z-Wave)", type: "range",
+		parameterNumber: 2, size: 1, defaultValue: 101,
+		range: "101",
+		description: "How fast or slow the light turns dim when you adjust the switch remotely (ie: dimming from 10-20%, 80-60%, etc). Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
+	],
+	[
+		name: "Energy Reports", key: "energyReports", type: "boolRange",
+		parameterNumber: 20, size: 1, defaultValue: 10,
+		range: "1..100", disableValue: 0,
+		description: "The energy level change that will result in a new energy report being sent (% of previous report). Example of how the values work: 0 = Disabled, 10 = 10% of previous report, 100 = 100% of previous report."
+	],
+	[
+		name: "Ramp Rate", key: "rampRate", type: "range",
+		parameterNumber: 3, size: 1, defaultValue: 101,
+		range: "101",
+		description: "How fast or slow the light turns on when you press the switch 1x to bring from On to Off or Off to On. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
+	],
+	[
+		name: "Ramp Rate (Z-Wave)", key: "rampRate(Z-Wave)", type: "range",
+		parameterNumber: 4, size: 1, defaultValue: 101,
+		range: "101",
+		description: "How fast or slow the light turns on when you bring your switch from On to Off or Off to On remotely. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
+	],
+	[
+		name: "Invert Switch", key: "invertSwitch", type: "boolean",
+		parameterNumber: 7, size: 1, defaultValue: 0,
+		optionInactive: 0, inactiveDescription: "Disabled",
+		optionActive: 1, activeDescription: "Enabled",
+		description: "Inverts the switch (Tap Down = On, Tap Up = Off). Example of how the values work: 0 = Disabled, 1 = Enabled. This parameter can be set without a HUB from the Configuration Button."
+	],
+	[
+		name: "Auto Off Timer", key: "autoOffTimer", type: "boolRange",
+		parameterNumber: 8, size: 2, defaultValue: 0,
+		range: "1..32767", disableValue: 0,
+		description: "Automatically turns the switch off after x amount of seconds. Example of how the values work: 0 = Disabled, 1 = 1 second, 32767 = 32767 seconds."
+	],
+	[
+		name: "Default Level (Local)", key: "defaultLevel(Local)", type: "range",
+		parameterNumber: 9, size: 1, defaultValue: 0,
+		range: "1..100",
+		description: "Default dim level for the switch when pressed locally (at the switch). This is useful if you'd like your switch to turn on to a certain level when manually pressing the switch during certain times. For example, you could have your switch turn on to 10% brightness during the hours of 10pm - 6am when you manually press it. Example of how the values work: 0 = Switch will return to level it was prior to being off, 1 = 1%, 100 = 100%. This parameter can be set without a HUB from the Configuration Button."
+	]
+]}
