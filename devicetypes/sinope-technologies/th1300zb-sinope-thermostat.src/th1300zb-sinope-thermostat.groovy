@@ -1,6 +1,6 @@
 /**
 Copyright Sinopé Technologies
-1.3.0
+1.3.1
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +21,12 @@ metadata {
 			input("FloorSensorTypeParam", "enum", title:"Probe type (Default: 10k)", 
 				description: "Choose floor sensors probe. The floor sensor provided with the thermostats are 10K.", options: ["10k", "12k"], multiple: false, required: false)
 
-			input("FloorMaxAirTemperatureParam", "number", title:"Ambient limit (5C to 36C / 41F to 96)", range: "5..96",
-				description: "The maximum ambient temperature limit when in floor control mode.", required: false)
-			input("FloorLimitMinParam", "number", title:"Floor low limit (5C to 34C / 41F to 93F)", range: "5..93", 
-				description: "The minimum temperature limit of the floor when in ambient control mode.", required: false)
-			input("FloorLimitMaxParam", "number", title:"Floor high limit (7C to 36C / 45F to 96F)", range: "7..96", 
-				description: "The maximum temperature limit of the floor when in ambient control mode.", required: false)
+			input("FloorMaxAirTemperatureParam", "number", title:"Ambient limit in Celsius (5C to 36C)", range: "5..36",
+				description: "The maximum ambient temperature limit in Celsius when in floor control mode.", required: false)
+			input("FloorLimitMinParam", "number", title:"Floor low limit in Celsius (5C to 34C)", range: "5..34", 
+				description: "The minimum temperature limit in Celsius of the floor when in ambient control mode.", required: false)
+			input("FloorLimitMaxParam", "number", title:"Floor high limit in Celsius (7C to 36C)", range: "7..36", 
+				description: "The maximum temperature limit of the floor in Celsius when in ambient control mode.", required: false)
 			// input("AuxLoadParam", "number", title:"Auxiliary load value (Default: 0)", range:("0..65535"),
 			// 	description: "Enter the power in watts of the heating element connected to the auxiliary output.", required: false)
 			input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
@@ -155,6 +155,14 @@ def updated() {
         
         runEvery15Minutes(refresh_misc)
 
+        if(KbdLockParam == "Lock" || KbdLockParam == '0'){
+            traceEvent(settings.logFilter,"device lock",settings.trace)
+			cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x01)
+        }
+        else{
+            traceEvent(settings.logFilter,"device unlock",settings.trace)
+			cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x00)
+        }
         if(AirFloorModeParam == "Floor" || AirFloorModeParam == '1'){//Floor mode
             traceEvent(settings.logFilter,"Set to Floor mode",settings.trace)
             cmds += zigbee.writeAttribute(0xFF01, 0x0105, 0x30, 0x0002)
@@ -196,15 +204,15 @@ def updated() {
         if(FloorMaxAirTemperatureParam){
         	def MaxAirTemperatureValue
 			traceEvent(settings.logFilter,"FloorMaxAirTemperature param. scale: ${state?.scale}, Param value: ${FloorMaxAirTemperatureParam}",settings.trace)
-        	if(state?.scale == 'F')
+        	if(FloorMaxAirTemperatureParam >= 41)
             {
-            	MaxAirTemperatureValue = fahrenheitToCelsius(FloorMaxAirTemperatureParam).toInteger()
+            	MaxAirTemperatureValue = checkTemperature(FloorMaxAirTemperatureParam)//check if the temperature is between the maximum and minimum
+            	MaxAirTemperatureValue = fahrenheitToCelsius(MaxAirTemperatureValue).toInteger()
             }
             else//state?.scale == 'C'
             {
             	MaxAirTemperatureValue = FloorMaxAirTemperatureParam.toInteger()
             }
-            MaxAirTemperatureValue = checkTemperature(MaxAirTemperatureValue)//check if the temperature is between the maximum and minimum
             MaxAirTemperatureValue =  MaxAirTemperatureValue * 100
             cmds += zigbee.writeAttribute(0xFF01, 0x0108, 0x29, MaxAirTemperatureValue)
         }
@@ -216,15 +224,15 @@ def updated() {
         if(FloorLimitMinParam){
         	def FloorLimitMinValue
 			traceEvent(settings.logFilter,"FloorLimitMin param. scale: ${state?.scale}, Param value: ${FloorLimitMinParam}",settings.trace)
-            if(state?.scale == 'F')
+            if(FloorLimitMinParam >= 41)
             {
-            	FloorLimitMinValue = fahrenheitToCelsius(FloorLimitMinParam).toInteger()
+            	FloorLimitMinValue = checkTemperature(FloorLimitMinParam)//check if the temperature is between the maximum and minimum
+            	FloorLimitMinValue = fahrenheitToCelsius(FloorLimitMinValue).toInteger()
             }
         	else//state?.scale == 'C'
             {
             	FloorLimitMinValue = FloorLimitMinParam.toInteger()
             }
-            FloorLimitMinValue = checkTemperature(FloorLimitMinValue)//check if the temperature is between the maximum and minimum
             FloorLimitMinValue =  FloorLimitMinValue * 100
             cmds += zigbee.writeAttribute(0xFF01, 0x0109, 0x29, FloorLimitMinValue)
         }
@@ -236,15 +244,15 @@ def updated() {
         if(FloorLimitMaxParam){
         	def FloorLimitMaxValue
 			traceEvent(settings.logFilter,"FloorLimitMax param. scale: ${state?.scale}, Param value: ${FloorLimitMaxParam}",settings.trace)
-            if(state?.scale == 'F')
+            if(FloorLimitMaxParam >= 45)
             {
-            	FloorLimitMaxValue = fahrenheitToCelsius(FloorLimitMaxParam).toInteger()
+            	FloorLimitMaxValue = checkTemperature(FloorLimitMaxParam)//check if the temperature is between the maximum and minimum
+            	FloorLimitMaxValue = fahrenheitToCelsius(FloorLimitMaxValue).toInteger()
             }
             else//state?.scale == 'C'
             {
             	FloorLimitMaxValue = FloorLimitMaxParam.toInteger()
             }
-            FloorLimitMaxValue = checkTemperature(FloorLimitMaxValue)//check if the temperature is between the maximum and minimum
             FloorLimitMaxValue =  FloorLimitMaxValue * 100
             cmds += zigbee.writeAttribute(0xFF01, 0x010A, 0x29, FloorLimitMaxValue)
         }
