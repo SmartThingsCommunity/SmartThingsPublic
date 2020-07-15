@@ -141,12 +141,14 @@ def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	def additionalCmds = []
+	def results = []
+	results << refresh()
+
 	if (isAeotecNanoDimmer()) {
-		additionalCmds = getConfigurationCommands()
+		results << getConfigurationCommands()
 	}
 
-	response([refresh(), additionalCmds].flatten())
+	response(results)
 }
 
 // parse events into attributes
@@ -311,21 +313,22 @@ def normalizeLevel(level) {
 }
 
 def getAeotecNanoDimmerDefaults() {
-	[1:0,
-	2:99
+	[
+		min: 0,
+		max: 99
 	]
 }
 
 def getConfigurationCommands() {
 	def result = []
-	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[1]
-	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[2]
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[min]
+	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[max]
 
 	if (!state.minDimmingLevel) {
-		state.minDimmingLevel = aeotecNanoDimmerDefaults[1]
+		state.minDimmingLevel = aeotecNanoDimmerDefaults[min]
 	}
 	if (!state.maxDimmingLevel) {
-		state.maxDimmingLevel = aeotecNanoDimmerDefaults[2]
+		state.maxDimmingLevel = aeotecNanoDimmerDefaults[max]
 	}
 
 	if (!state.configured || (minDimmingLevel != state.minDimmingLevel || maxDimmingLevel != state.maxDimmingLevel)) {
