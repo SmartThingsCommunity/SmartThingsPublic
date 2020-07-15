@@ -223,6 +223,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def clearTamper() {
 	sendEvent(name: "tamper", value: "clear")
+	sendEvent(name: "alarm", value: "off")
 }
 
 def setOnChild(deviceDni) {
