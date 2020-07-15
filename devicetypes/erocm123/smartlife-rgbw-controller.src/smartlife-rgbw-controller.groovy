@@ -1458,7 +1458,7 @@ Default: Previous
 <Value type="text" byteSize="1" index="custom" label="Custom Color in Hex" min="" max="" value="" setting_type="preference" fw="">
 <Help>
 Use a 10 digit hex value rrggbbw1w2 (ie for white1 channel = 100% and red channel = 100% ff0000ff00)
-If \"Custom\" is chosen above as the default color, default level does not apply.
+If "Custom" is chosen above as the default color, default level does not apply.
 </Help>
 </Value>
 <Value type="number" byteSize="1" index="level" label="Default Level" min="1" max="100" value="" setting_type="preference" fw="">
