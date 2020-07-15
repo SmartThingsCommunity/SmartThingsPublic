@@ -114,7 +114,7 @@ private getINPUT_TYPE_TEMPERATURE_SENSOR() {3}
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
+	setInitialConfiguration()
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -173,6 +173,19 @@ private readConfigurationFromTheDevice() {
 		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
 		commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 	}
+	sendHubCommand(encapCommands(commands))
+}
+
+private setInitialConfiguration() {
+	// 1% is default Minimum dimming value for dimmers,
+	// when device is set to 1% - it turns off and device does not send any level reports
+	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
+	// Still, for users it will relatively be 1-100% on the UI and device will report it.
+
+	def commands = []
+	// Parameter no. 60 – Minimum dimming value
+	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
+
 	sendHubCommand(encapCommands(commands))
 }
 
@@ -334,7 +347,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
 
 	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		response(zwave.switchMultilevelV3.switchMultilevelGet())
+		sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
 	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
 		dimmerEvents(cmd)
