@@ -89,18 +89,19 @@ metadata {
 			required: false 
 		)
 		
-		parameterMap().findAll{(it.num as Integer) != 54}.each {
+		parameterMap().each {
 			input (
 				title: "${it.num}. ${it.title}",
 				description: it.descr,
 				type: "paragraph",
 				element: "paragraph"
 			)
-			
+			def defVal = it.def as Integer
+			def descrDefVal = it.options ? it.options.get(defVal) : defVal
 			input (
 				name: it.key,
 				title: null,
-				description: "Default: $it.def" ,
+				description: "$descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
