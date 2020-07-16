@@ -145,7 +145,7 @@ def updated() {
 	results << refresh()
 
 	if (isAeotecNanoDimmer()) {
-		results << getConfigurationCommands()
+		results << getAeotecNanoDimmerConfigurationCommands()
 	}
 
 	response(results)
@@ -268,7 +268,7 @@ def configure() {
 		state.configured = false
 		state.minDimmingLevel = false
 		state.maxDimmingLevel = false
-		response(getConfigurationCommands())
+		response(getAeotecNanoDimmerConfigurationCommands())
 	}
 
 	def result = []
@@ -319,7 +319,7 @@ def getAeotecNanoDimmerDefaults() {
 	]
 }
 
-def getConfigurationCommands() {
+def getAeotecNanoDimmerConfigurationCommands() {
 	def result = []
 	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[min]
 	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[max]
