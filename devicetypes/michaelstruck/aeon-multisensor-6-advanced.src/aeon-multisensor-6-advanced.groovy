@@ -1,10 +1,12 @@
 /**
  *  Aeon Multisensor 6 (Advanced)
- *  Version 1.0.2 (12/15/17)
+ *  Version 1.0.4 (1/9/18)
  *
  *	Version 1.0.0 (7/7/16) @erocm123 Initial release
  *	Version 1.0.1 (12/3/17) - Michael Struck update. Fixed refresh issues, reformatted interface
  *  Version 1.0.2 (12/15/17) - Added color coding to UV index based on data here: https://en.wikipedia.org/wiki/Ultraviolet_index
+ *	Version 1.0.3 (1/1/18) - Updated for released firmware
+ *  Version 1.0.4 (1/9/18) - Updated with various fixes from @erocm123
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort and @erocm123
  *
@@ -381,9 +383,13 @@ def convertParam(number, value) {
         case 41:
             //Parameter difference between firmware versions
         	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
-                if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08") {
+                if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08" || device.currentValue("currentFirmware") == "1.09") { 
                     (value * 256) + 2
-                } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU") {
+                } else if (device.currentValue("currentFirmware") == "1.10") { 
+					(value * 65536) + 512
+                } else if (device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU") {
+                	(value * 65536) + 256
+                } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU" || device.currentValue("currentFirmware") == "1.09EU") { 
                     (value * 256) + 1
                 } else {
                     value
@@ -471,9 +477,13 @@ def update_needed_settings() {
     if(!state.needfwUpdate || state.needfwUpdate == ""){
        logging("Requesting device firmware version")
        cmds << zwave.versionV1.versionGet()
-    }    
-
-    if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
+    }  
+    if (state.currentProperties?."252" != [0]) {
+		logging("Unlocking configuration.")
+		cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(0, 1), parameterNumber: 252, size: 1)
+		cmds << zwave.configurationV1.configurationGet(parameterNumber: 252)
+	}
+	if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
         logging("Setting Wake Interval to ${getAdjustedWake()}")
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: getAdjustedWake(), nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
@@ -500,6 +510,8 @@ def update_needed_settings() {
                     if (it.@index == "41") {
                         if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
+                        } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU") { 
+                        	cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4) 
                         } else {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
                         }
@@ -745,14 +757,14 @@ def configuration_model()
 {
 '''
 <configuration>
-    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
+    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true">
     <Help>
 Is the device powered by battery or USB?
     </Help>
         <Item label="Battery" value="241" />
         <Item label="USB" value="240" />
   </Value>
-  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
 Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set below. This is used to reduce network traffic.
 Default: No (Enable for Better Battery Life)
@@ -760,7 +772,7 @@ Default: No (Enable for Better Battery Life)
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="5000" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="5000" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
 Threshold change in temperature to induce an automatic report.
 Range: 1~5000.
@@ -771,7 +783,7 @@ Only used if selective reporting is enabled.
 2. The value contains one decimal point. E.g. if the value is set to 20, the threshold value =2.0 ℃ (EU/AU version) or 2.0 ℉ (US version). When the current temperature gap is more then 2.0, which will induce a temperature report to be sent out.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
 Threshold change in humidity to induce an automatic report.
 Range: 1~255.
@@ -782,7 +794,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current humidity gap is more than 10%, it will send out a humidity report.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
 Threshold change in luminance to induce an automatic report.
 Range: 1~30000.
@@ -791,7 +803,7 @@ Note:
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
 Threshold change in battery level to induce an automatic report.
 Range: 1~99.
@@ -802,7 +814,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current battery level gap is more than 10%, it will send out a battery report.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
 Threshold change in ultraviolet to induce an automatic report.
 Range: 1~11.
@@ -811,7 +823,7 @@ Note: Firmware 1.06 and 1.07 only support a value of 2.
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
+  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true"> 
     <Help>
 Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 10~3600.
@@ -823,14 +835,14 @@ a), Interval time =Value/60, if the interval time can be divided by 60 and witho
 b), Interval time= (Value/60) +1, if the interval time can be divided by 60 and has remainder.
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
+    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true"> 
     <Help>
 A value from 0-5, from disabled to high sensitivity
 Range: 0~5
 Default: 5
     </Help>
   </Value>
-    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU" displayDuringSetup="true">
+    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true"> 
     <Help>
 The interval time of sending reports in Report group 1
 Range: 30~
@@ -879,7 +891,7 @@ E.g. If measure value = 9 and the standard value = 8, so the calibration value =
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
     </Help>
   </Value>
-  <Value type="list" index="5" label="Command option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="list" index="5" label="Command Option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
 Which command should be sent when the motion sensor is triggered
 Default: Basic Set
@@ -887,15 +899,16 @@ Default: Basic Set
         <Item label="Basic Set" value="1" />
         <Item label="Sensor Binary" value="2" />
   </Value>
-  <Value type="list" index="81" label="Disable LED?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
+  <Value type="list" index="81" label="LED Options" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
-Disable/Enable LED function. (Works on firmware v1.08 only)
+Choose how the LED functions. (Option 1, 2 firmware v1.08+, Option 1, 2, 3 firmware v1.10+) 
 Default: Enabled
     </Help>
-        <Item label="No" value="0" />
-        <Item label="Yes" value="1" />
+		<Item label="Fully Enabled" value="0" /> 
+		<Item label="Disable When Motion" value="1" /> 
+		<Item label="Fully Disabled" value="2" />
   </Value>
-  <Value type="byte" index="8" label="Stay awake time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
+  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
 Set the timeout of awake after the Wake Up CC is sent out. (Works on Firmware v1.08 only)
 Range: 8~255
@@ -903,7 +916,7 @@ Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
   </Value>
-  <Value type="boolean" index="enableDebugging" label="Enable debug logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU"> 
     <Help>
     </Help>
   </Value>
