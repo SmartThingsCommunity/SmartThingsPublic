@@ -24,7 +24,8 @@ metadata {
 		capability "Configuration"
 
 		//zw:L type:1107 mfr:0159 prod:0003 model:0052 ver:1.01 zwv:4.05 lib:03 cc:5E,86,72,5A,73,20,27,25,26,32,60,85,8E,59,70 ccOut:20,26 epc:2
-		fingerprint mfr: "0159", prod: "0003", model: "0052", deviceJoinName: "Qubino Window Treatment"
+		fingerprint mfr: "0159", prod: "0003", model: "0052", deviceJoinName: "Qubino Window Treatment" // Qubino Flush Shutter (110-230 VAC)
+		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Window Treatment" // Qubino Flush Shutter DC
 	}
 
 	tiles(scale: 2) {
