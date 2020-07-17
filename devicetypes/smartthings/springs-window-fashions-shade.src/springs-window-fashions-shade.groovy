@@ -266,7 +266,7 @@ def refresh() {
 def levelChangeFollowUp(expectedLevel) {
     state.expectedValue = expectedLevel
     state.levelChecks = 0
-    runIn(5, "checkLevel")
+    runIn(5, "checkLevel", [overwrite: true])
 }
 
 def checkLevelReport(value) {
@@ -281,7 +281,7 @@ def checkLevelReport(value) {
 def checkLevel() {
     if (state.levelChecks != null && state.levelChecks < 5) {
         state.levelChecks += 1
-        runIn(5, "checkLevel")
+        runIn(5, "checkLevel", [overwrite: true])
         sendHubCommand(zwave.switchMultilevelV1.switchMultilevelGet())
     } else {
         unschedule("checkLevel")
