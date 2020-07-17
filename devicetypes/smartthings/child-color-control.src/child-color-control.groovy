@@ -15,9 +15,8 @@
 *
 */
 metadata {
-	definition(name: "Child Color Selection", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", runLocally: false, executeCommandsLocally: false,) {
+	definition(name: "Child Color Control", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings") {
 		capability "Color Control"
-		capability "Refresh"
 		capability "Actuator"
 	}
 
@@ -28,8 +27,8 @@ metadata {
 			}
 		}
 
-		main(["switch"])
-		details(["rgbSelector", "refresh"])
+		main([])
+		details(["rgbSelector"])
 	}
 
 }
