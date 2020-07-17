@@ -48,6 +48,11 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240R-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340R-ZB
+		
+		// eWeLink
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch 1" //eWeLink 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch 1" //eWeLink 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch 1" //eWeLink 4 Gang Switch 1
 	}
 	// simulator metadata
 	simulator {
@@ -232,9 +237,9 @@ private getChildCount() {
 		return 3
 	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
 		return 2
-	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03") {
 		return 3
-	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04") {
 		return 4
 	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA") {
 		return 5
