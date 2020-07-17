@@ -264,14 +264,14 @@ def setLevel(level, rate = null) {
 def configure() {
 	log.debug "configure()"
 
+	def result = []
+
 	if (isAeotecNanoDimmer()) {
 		state.configured = false
-		state.minDimmingLevel = false
-		state.maxDimmingLevel = false
-		response(getAeotecNanoDimmerConfigurationCommands())
+		state.minLevelConfigured = false
+		state.maxLevelConfigured = false
+		result << response(getAeotecNanoDimmerConfigurationCommands())
 	}
-
-	def result = []
 
 	log.debug "Configure zwaveInfo: "+zwaveInfo
 
@@ -314,21 +314,21 @@ def normalizeLevel(level) {
 
 def getAeotecNanoDimmerDefaults() {
 	[
-		min: 0,
-		max: 99
+		"min": 0,
+		"max": 99
 	]
 }
 
 def getAeotecNanoDimmerConfigurationCommands() {
 	def result = []
-	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[min]
-	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults[max]
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults["min"]
+	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults["max"]
 
 	if (!state.minDimmingLevel) {
-		state.minDimmingLevel = aeotecNanoDimmerDefaults[min]
+		state.minDimmingLevel = aeotecNanoDimmerDefaults["min"]
 	}
 	if (!state.maxDimmingLevel) {
-		state.maxDimmingLevel = aeotecNanoDimmerDefaults[max]
+		state.maxDimmingLevel = aeotecNanoDimmerDefaults["max"]
 	}
 
 	if (!state.configured || (minDimmingLevel != state.minDimmingLevel || maxDimmingLevel != state.maxDimmingLevel)) {
