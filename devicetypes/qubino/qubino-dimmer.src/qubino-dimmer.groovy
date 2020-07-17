@@ -167,13 +167,13 @@ def excludeParameterFromSync(preference){
 	return exclude
 }
 
-private readConfigurationFromTheDevice() {
+private getReadConfigurationFromTheDeviceCommands() {
 	def commands = []
 	parameterMap.each {
 		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
 		commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 	}
-	sendHubCommand(encapCommands(commands))
+	commands
 }
 
 private syncConfiguration() {
@@ -240,6 +240,7 @@ def configure() {
 	// Still, for users it will relatively be 1-100% on the UI and device will report it.
 	// Parameter no. 60 – Minimum dimming value
 	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
+	commands + getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
 }
