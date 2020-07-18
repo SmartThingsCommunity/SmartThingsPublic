@@ -48,6 +48,7 @@ preferences {
         input "baseBetweenMinutes", "number", required: false, title: "¿Cuantos minutos entre encendidos de base?"
         input "maxAditionalBetweenMinutes", "number", required: false, title: "¿+- cuantos minutos entre encendidos?"
         input "activeIfRain", "bool", required: true, title: "¿Activar si va a llover?"
+        
 	}
     
     section("Via notificación push y/o mensaje SMS"){
@@ -90,7 +91,8 @@ def verificarSiEjecutarRutina(evt) {
     if (active){
     	log.debug "Ejecutamos la rutina porque está activa."
         
-        def meteorologiaJson = getWeatherFeature("forecast")//, zipcode)
+        def meteorologiaJson = getTwcConditions();
+        
    		log.debug  "Previsión meteorológica: $meteorologiaJson";
     	
         if (!llueve(meteorologiaJson) ) {
@@ -125,8 +127,12 @@ def verificarNumeroRepeticiones(evt) {
         }
         
         if (numMinRepeticiones < numMaxRepeticiones) {
-        	def randomMaxRepeticiones = new Random().nextInt(numMaxRepeticiones - numMinRepeticiones);
-        	numRepeticiones = numMinRepeticiones + randomMaxRepeticiones;
+        	//def randomMaxRepeticiones = new Random().nextInt(numMaxRepeticiones - numMinRepeticiones);
+        	//def randomMaxRepeticiones = Math.abs( new Random().nextInt() % (numMaxRepeticiones - numMinRepeticiones + 1) ) //+1 para que introduzca el limite superior
+            def randomMaxRepeticiones = new Random().nextInt(numMaxRepeticiones - numMinRepeticiones + 1); //+1 para que introduzca el limite superior
+       		numRepeticiones = numMinRepeticiones + randomMaxRepeticiones;
+            
+            
         } else {
         	numRepeticiones = numMinRepeticiones
         }
@@ -201,9 +207,11 @@ private prepararEncendido(numRepeticiones, Boolean esPrimeraEjecucion){
         //Encendemos
         mensaje = "El dispositivo ${luz.displayName} se encenderá a las ${horaEncendido.format('HH:mm:ss',location.timeZone)} (dentro de $tiempoEspera minutos), y se apagará a las ${horaApagado.format('HH:mm:ss',location.timeZone)} (después de $OnMinutes minutos encendido)."
         notificar(mensaje);  
+     
+     	def horaApagadoTexto = "" + horaApagado.format('HH:mm:ss',location.timeZone);
+    
         
-        
-        def parametrosEncendido = [data: [horaApagado:horaApagado, OnMinutes: OnMinutes, numRepeticiones:numRepeticiones ]]
+        def parametrosEncendido = [data: [horaApagado:horaApagado, horaApagadoTexto:horaApagadoTexto, OnMinutes: OnMinutes, numRepeticiones:numRepeticiones ]]
          
         runIn(tiempoEspera * 60, encender, parametrosEncendido)
     } else {
@@ -223,11 +231,10 @@ private prepararEncendido(numRepeticiones, Boolean esPrimeraEjecucion){
 def encender(parametrosEncendido){
 	luz.on()
     
+    
     log.debug parametrosEncendido
     
-    def horaApagadoText = "" + parametrosEncendido.horaApagado.format('HH:mm:ss',location.timeZone);
-    
-    String mensaje = "El dispositivo ${luz.displayName} se ha Encendido. Se apagará a las ${horaApagadoText} (después de ${parametrosEncendido.OnMinutes} minutos encendido)."
+        String mensaje = "El dispositivo ${luz.displayName} se ha Encendido. Se apagará a las ${parametrosEncendido.horaApagadoTexto} (después de ${parametrosEncendido.OnMinutes} minutos encendido)."
     log.debug mensaje
     if (notificarDetalle)
         	notificar(mensaje) 
@@ -260,24 +267,47 @@ def apagar(parametrosApagado){
 
 
 private llueve(meteorologiaJson) {
-	def iconosABuscar = ['chancerain', 'chancesleet', 'chancesnow', 'chancetstorms', 'flurries', 'sleet', 'rain', 'sleet', 'snow', 'tstorms']
 
-	def prediccion = meteorologiaJson?.forecast?.txt_forecast?.forecastday?.first()
-	if (prediccion) {
-		def icono = prediccion?.icon?.toLowerCase()
-		if (icono) {
-			def result = false
-			for (int i = 0; i < iconosABuscar.size() && !result; i++) {
-				result = icono.contains(iconosABuscar[i])
+	log.debug "Control 1 lluvia > $meteorologiaJson"
+
+	def estadosDeLluvia = ['chancerain', 'chancesleet', 'chancesnow', 'chancetstorms', 'flurries', 'sleet', 'rain', 'sleet', 'snow', 'tstorms']
+
+	def result = false;
+    
+	if (meteorologiaJson) {
+		
+        def prediccion = meteorologiaJson?.wxPhraseShort.toLowerCase();
+    	
+        log.debug "Control 2 lluvia > $prediccion"
+        notificar ("Predicción de hoy: $prediccion");
+        
+		if (prediccion) {
+			
+			for (int i = 0; i < estadosDeLluvia.size() && !result; i++) {
+            	if (prediccion == estadosDeLluvia[i]){
+					result = true;
+                    
+                    log.debug "Control 3 lluvia > encontrado $prediccion"
+                    
+                }
 			}
-			return result
+            
+            if (result == false){
+            	log.debug "Control 5 lluvia > no llueve. $prediccion"
+            }
+            	
+			
 		} else {
-			return false
+			log.debug "Control 4 lluvia > no encontrado en los estados de lluvia"
 		}
 	} else {
-		log.warn "No se ha obtenido una predicción meteorológica: $json"
-		return false
+		log.warn "No se ha obtenido una predicción meteorológica: $meteorologiaJson"
 	}
+
+	log.debug "el resultado es " + result;   
+    
+    return result;
+
 }
 
 
