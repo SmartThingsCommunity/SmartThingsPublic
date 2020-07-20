@@ -50,11 +50,11 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340R-ZB
 		
 		// eWeLink
-        //	Raw Description	<01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000>
+        //	Raw Description	01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch" //eWeLink 2 Gang Switch 1
-        //	Raw Description	<01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000>
+        //	Raw Description	01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch" //eWeLink 3 Gang Switch 1
-        //	Raw Description	<01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000>
+        //	Raw Description	01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch" //eWeLink 4 Gang Switch 1
 	}
 	// simulator metadata
