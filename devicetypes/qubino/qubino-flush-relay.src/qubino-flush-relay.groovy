@@ -24,8 +24,8 @@ metadata {
 		command "reset"
 
 		fingerprint mfr: "0159", prod: "0002", model: "0051", deviceJoinName: "Qubino Switch 1" //Qubino Flush 2 Relay
-		fingerprint mfr: "0159", prod: "0002", model: "0052", deviceJoinName: "Qubino Relay" //Qubino Flush 1 Relay 
-		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Relay" //Qubino Flush 1D Relay
+		fingerprint mfr: "0159", prod: "0002", model: "0052", deviceJoinName: "Qubino Switch" //Qubino Flush 1 Relay 
+		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch" //Qubino Flush 1D Relay
 	}
 
 	tiles(scale: 2) {
@@ -72,7 +72,12 @@ metadata {
 }
 
 def installed() {
-	state.numberOfSwitches = 2
+	if (zwaveInfo?.model.equals("0051")) {
+		state.numberOfSwitches = 2
+	} else {
+		state.numberOfSwitches = 1
+	}
+	
 	if (!childDevices) {
 		addChildSwitches(state.numberOfSwitches)
 	}
@@ -462,6 +467,6 @@ private getParameterMap() {[
 						0: "When system is turned off the output is 0V (NC).",
 						1: "When system is turned off the output is 230V (NO).",
 				],
-				description: "Set value means the type of the device that is connected to the Q2 output. The device type can be normally open (NO) or normally close (NC).  "
+				description: "(Only for Qubino Flush 2 Relay) Set value means the type of the device that is connected to the Q2 output. The device type can be normally open (NO) or normally close (NC).  "
 		]
 ]}
