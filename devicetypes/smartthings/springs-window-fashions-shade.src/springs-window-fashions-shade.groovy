@@ -272,7 +272,7 @@ def levelChangeFollowUp(expectedLevel) {
 def checkLevelReport(value) {
     if (state.expectedValue != null) {
         if ((state.expectedValue == 99 && value >= 99) ||
-                state.expectedValue == value) {
+                (state.expectedValue >= value - 2 && state.expectedValue <= value + 2 )) {
             unschedule("checkLevel")
         }
     }
