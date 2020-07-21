@@ -192,9 +192,8 @@ def pause() {
 	// If the window shade isn't moving when we receive a pause() command then just echo back the current state for the mobile client.
 	if (device.currentValue("windowShade") != "opening" && device.currentValue("windowShade") != "closing") {
 		sendEvent(name: "windowShade", value: device.currentValue("windowShade"), isStateChange: true, display: false)
-	} else {
-		zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
 	}
+	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
 }
 
 def presetPosition() {
