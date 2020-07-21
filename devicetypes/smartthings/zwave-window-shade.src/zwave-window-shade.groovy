@@ -149,6 +149,7 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
         shadeValue = "partially open"
         descriptionText = "${device.displayName} shade is ${level}% open"
     }
+    checkLevelReport(level)
     def levelEvent = createEvent(name: "level", value: level, unit: "%", displayed: false)
     def stateEvent = createEvent(name: "windowShade", value: shadeValue, descriptionText: descriptionText, isStateChange: levelEvent.isStateChange)
 
@@ -164,15 +165,6 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
     [ createEvent(name: "windowShade", value: "partially open", displayed: false, descriptionText: "$device.displayName shade stopped"),
       response(zwave.switchMultilevelV1.switchMultilevelGet().format()) ]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-    updateDataValue("MSR", msr)
-    if (cmd.manufacturerName) {
-        updateDataValue("manufacturer", cmd.manufacturerName)
-    }
-    createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -194,6 +186,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
+    levelChangeFollowUp(99)
     log.debug "open()"
     /*delayBetween([
             zwave.basicV1.basicSet(value: 0xFF).format(),
@@ -203,6 +196,7 @@ def open() {
 }
 
 def close() {
+    levelChangeFollowUp(0)
     log.debug "close()"
     /*delayBetween([
             zwave.basicV1.basicSet(value: 0x00).format(),
@@ -216,10 +210,8 @@ def setLevel(value, duration = null) {
     Integer level = value as Integer
     if (level < 0) level = 0
     if (level > 99) level = 99
-    delayBetween([
-            zwave.basicV1.basicSet(value: level).format(),
-            zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ])
+    levelChangeFollowUp(level)
+    zwave.basicV1.basicSet(value: level).format()
 }
 
 def presetPosition() {
@@ -246,4 +238,29 @@ def refresh() {
             zwave.switchMultilevelV1.switchMultilevelGet().format(),
             zwave.batteryV1.batteryGet().format()
     ], 1500)
+}
+
+def levelChangeFollowUp(expectedLevel) {
+    state.expectedValue = expectedLevel
+    state.levelChecks = 0
+    runIn(5, "checkLevel", [overwrite: true])
+}
+
+def checkLevelReport(value) {
+    if (state.expectedValue != null) {
+        if ((state.expectedValue == 99 && value >= 99) ||
+                (value >= state.expectedValue - 2 && value <= state.expectedValue + 2)) {
+            unschedule("checkLevel")
+        }
+    }
+}
+
+def checkLevel() {
+    if (state.levelChecks != null && state.levelChecks < 5) {
+        state.levelChecks = state.levelChecks + 1
+        runIn(5, "checkLevel", [overwrite: true])
+        sendHubCommand(zwave.switchMultilevelV1.switchMultilevelGet())
+    } else {
+        unschedule("checkLevel")
+    }
 }
