@@ -490,6 +490,11 @@ def setLevel(value, duration = null) {
 	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 	commands << zwave.switchMultilevelV3.switchMultilevelGet()
 
+	if(supportsPowerMeter()){
+		commands << zwave.meterV2.meterGet(scale: 0)
+		commands << zwave.meterV2.meterGet(scale: 2)
+	}
+
 	encapCommands(commands, getStatusDelay)
 }
 
