@@ -87,7 +87,8 @@ def updated() {
 	log.debug "updated()"
 	updateDataValue("onOff", "catchall")
 	for (child in childDevices) {
-		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId)) { //parent DNI has changed after rejoin
+		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId) ||
+				!child.deviceNetworkId.split(':')[-1].startsWith('0')) { //parent DNI has changed after rejoin
 			child.setDeviceNetworkId("${device.deviceNetworkId}:0${getChildEndpoint(child.deviceNetworkId)}")
 		}
 	}
