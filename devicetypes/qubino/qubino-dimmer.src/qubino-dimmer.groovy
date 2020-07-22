@@ -122,7 +122,6 @@ def installed() {
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
 		state.currentPreferencesState."$it.key".status = "synced"
 	}
-	readConfigurationFromTheDevice()
 	// Preferences template end
 }
 
@@ -232,7 +231,7 @@ def configure() {
 	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
-	commands + getRefreshCommands()
+	commands += getRefreshCommands()
 
 	// 1% is default Minimum dimming value for dimmers,
 	// when device is set to 1% - it turns off and device does not send any level reports
@@ -240,7 +239,7 @@ def configure() {
 	// Still, for users it will relatively be 1-100% on the UI and device will report it.
 	// Parameter no. 60 – Minimum dimming value
 	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
-	commands + getReadConfigurationFromTheDeviceCommands()
+	commands += getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
 }
