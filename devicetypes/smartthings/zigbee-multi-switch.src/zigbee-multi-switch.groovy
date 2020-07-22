@@ -88,7 +88,7 @@ def updated() {
 	updateDataValue("onOff", "catchall")
 	for (child in childDevices) {
 		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId)) { //parent DNI has changed after rejoin
-			child.setDeviceNetworkId("${device.deviceNetworkId}:${getChildEndpoint(child.deviceNetworkId)}")
+			child.setDeviceNetworkId("${device.deviceNetworkId}:0${getChildEndpoint(child.deviceNetworkId)}")
 		}
 	}
 	refresh()
@@ -125,7 +125,7 @@ def parse(String description) {
 private void createChildDevices() {
 	def x = getChildCount()
 	for (i in 2..x) {
-		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:${i}", device.hubId,
+		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
 			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
 	}
 }
