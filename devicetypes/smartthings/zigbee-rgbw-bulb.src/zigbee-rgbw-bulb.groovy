@@ -201,7 +201,7 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	zigbee.setColorTemperature(6500) +
+	zigbee.setColorTemperature(5000) +
 	refresh() +
 	// OnOff, level minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	zigbee.onOffConfig(0, 300) +
