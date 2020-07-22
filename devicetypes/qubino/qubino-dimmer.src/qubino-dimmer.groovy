@@ -122,7 +122,6 @@ def installed() {
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
 		state.currentPreferencesState."$it.key".status = "synced"
 	}
-	readConfigurationFromTheDevice()
 	// Preferences template end
 }
 
@@ -167,13 +166,13 @@ def excludeParameterFromSync(preference){
 	return exclude
 }
 
-private readConfigurationFromTheDevice() {
+private getReadConfigurationFromTheDeviceCommands() {
 	def commands = []
 	parameterMap.each {
 		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
 		commands += zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber)
 	}
-	sendHubCommand(encapCommands(commands))
+	commands
 }
 
 private syncConfiguration() {
@@ -232,7 +231,15 @@ def configure() {
 	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
 	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
-	commands + getRefreshCommands()
+	commands += getRefreshCommands()
+
+	// 1% is default Minimum dimming value for dimmers,
+	// when device is set to 1% - it turns off and device does not send any level reports
+	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
+	// Still, for users it will relatively be 1-100% on the UI and device will report it.
+	// Parameter no. 60 – Minimum dimming value
+	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
+	commands += getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
 }
@@ -334,7 +341,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
 
 	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		response(zwave.switchMultilevelV3.switchMultilevelGet())
+		sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
 	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
 		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
 		dimmerEvents(cmd)
@@ -482,6 +489,11 @@ def setLevel(value, duration = null) {
 	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 	commands << zwave.switchMultilevelV3.switchMultilevelGet()
 
+	if(supportsPowerMeter()){
+		commands << zwave.meterV2.meterGet(scale: 0)
+		commands << zwave.meterV2.meterGet(scale: 2)
+	}
+
 	encapCommands(commands, getStatusDelay)
 }
 
@@ -570,11 +582,9 @@ private getParameterMap() {[
 		values: [
 			0: "Default value - Mono-stable switch type (push button) – button quick press turns between previous set dimmer value and zero)",
 			1: "Bi-stable switch type (on/off toggle switch)",
-			2: "Potentiometer (applies to Flush Dimmer 0-10V only, dimmer is using set value the last received from potentiometer or from z-wave controller)",
-			3: "0-10V Temperature sensor (regulated output, applies to Flush Dimmer 0-10V only)"
+			2: "Potentiometer (applies to Flush Dimmer 0-10V only, dimmer is using set value the last received from potentiometer or from z-wave controller)"
 		],
-		description: "Set input based on device type (switch, potentiometer, temperature sensor,..)." +
-			"After parameter change to value 3 first exclude module (without setting parameters to default value) then wait at least 30s and then re include the module! "
+		description: "Set input based on device type (mono-stable switch, bi-stable switch, potentiometer)."
 	],
 	[
 			name: "Input 2 switch type (applies to Qubino Flush Dimmer only)", key: "inputsSwitchTypes", type: "enum",
