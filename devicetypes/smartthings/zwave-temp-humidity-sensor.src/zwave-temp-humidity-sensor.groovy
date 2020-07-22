@@ -13,7 +13,7 @@
  *  Generic Z-Wave Water/Temp/Humidity Sensor
  *
  *  Author: SmartThings
- *  Date: 2020-07-21
+ *  Date: 2020-07-22
  */
 
 metadata {
@@ -71,7 +71,7 @@ def installed() {
     sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
-def configured() {
+def configure() {
 	response([
 		secure(zwave.batteryV1.batteryGet()),
 		"delay 500",
