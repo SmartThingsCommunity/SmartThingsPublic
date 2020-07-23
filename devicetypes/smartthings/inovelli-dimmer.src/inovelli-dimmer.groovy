@@ -140,9 +140,12 @@ def installed() {
 			state.currentPreferencesState."$it.key".status = "synced"
 		}
 	}
-	readConfigurationFromTheDevice();
 // Preferences template end
-	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:3", "LEDColorConfiguration", "LEDColorConfiguration")
+	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:1", "LED Bar", "LEDColorConfiguration")
+}
+
+def configure() {
+	sendHubCommand(getReadConfigurationFromTheDeviceCommands())
 }
 
 def updated() {
@@ -176,13 +179,13 @@ def updated() {
 	response(refresh())
 }
 
-private readConfigurationFromTheDevice() {
+private getReadConfigurationFromTheDeviceCommands() {
 	def commands = []
 	parameterMap.each {
 		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
 		commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 	}
-	sendHubCommand(commands)
+	commands
 }
 
 private syncConfiguration() {
@@ -305,7 +308,7 @@ def parse(String description) {
 
 def handleLEDPreferenceEvent(cmd) {
 	def hueState = [name: "hue", value: "${Math.round(zwaveValueToHuePercent(cmd.scaledConfigurationValue))}"]
-	def childDni = "${device.deviceNetworkId}:3"
+	def childDni = "${device.deviceNetworkId}:1"
 	def childDevice = childDevices.find { it.deviceNetworkId == childDni }
 	childDevice?.sendEvent(hueState)
 	childDevice?.sendEvent(name: "saturation", value: "100")
@@ -489,7 +492,7 @@ private getParameterMap() {
 		[
 			name           : "Default Level (Z-Wave)", key: "defaultLevel(Z-Wave)", type: "range",
 			parameterNumber: 10, size: 1, defaultValue: 0,
-			range          : "1..100",
+			range          : "0..100",
 			description    : "Default dim level for the switch when powered on via a Z-Wave command. This is useful if you'd like your switch to turn on to a certain level when remotely controlling the switch during certain times. For example, you could have your switch only turn on to 10% brightness during the hours of 10pm - 6am when you remotely control it. Example of how the values work: 0 = Switch will return to level it was prior to being off, 1 = 1%, 100 = 100%. This parameter can be set without a HUB from the Configuration Button."
 		],
 		[
@@ -541,7 +544,7 @@ private getParameterMap() {
 		[
 			name           : "LED Indicator Timeout", key: "ledIndicatorTimeout", type: "range",
 			parameterNumber: 17, size: 1, defaultValue: 3,
-			range          : "1..10",
+			range          : "0..10",
 			description    : "Changes the amount of time the RGB Bar shows the Dim level if the LED Bar has been disabled. Example of how the values work: 0 = Always off, 1 = 1 second after level is adjusted, 10 = 10 seconds after level is adjusted."
 		],
 		[
@@ -559,7 +562,7 @@ private getParameterMap() {
 		[
 			name           : "Dimming Speed (Z-Wave)", key: "dimmingSpeed(Z-Wave)", type: "range",
 			parameterNumber: 2, size: 1, defaultValue: 101,
-			range          : "101",
+			range          : "0..101",
 			description    : "How fast or slow the light turns dim when you adjust the switch remotely (ie: dimming from 10-20%, 80-60%, etc). Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
@@ -571,13 +574,13 @@ private getParameterMap() {
 		[
 			name           : "Ramp Rate", key: "rampRate", type: "range",
 			parameterNumber: 3, size: 1, defaultValue: 101,
-			range          : "101",
+			range          : "0..101",
 			description    : "How fast or slow the light turns on when you press the switch 1x to bring from On to Off or Off to On. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
 			name           : "Ramp Rate (Z-Wave)", key: "rampRate(Z-Wave)", type: "range",
 			parameterNumber: 4, size: 1, defaultValue: 101,
-			range          : "101",
+			range          : "0..101",
 			description    : "How fast or slow the light turns on when you bring your switch from On to Off or Off to On remotely. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
