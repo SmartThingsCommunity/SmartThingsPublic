@@ -27,6 +27,8 @@ metadata {
 
 		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 	}
 
 	tiles(scale: 2) {
@@ -149,7 +151,10 @@ def updated() {
 
 def configure() {
 	log.debug "Configure..."
-	response(secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)))
+	response([
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
+	])
 }
 
 private secure(cmd) {
