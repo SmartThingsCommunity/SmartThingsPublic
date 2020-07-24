@@ -25,9 +25,9 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr:"0371", prod:"0002", model:"0009", deviceJoinName: "aeorQ Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//EU // Aeotec Aerq Temperature and Humidity Sensor
-		fingerprint mfr:"0371", prod:"0102", model:"0009", deviceJoinName: "aeorQ Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//US // Aeotec Aerq Temperature and Humidity Sensor
-		fingerprint mfr:"0371", prod:"0202", model:"0009", deviceJoinName: "aeorQ Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//AU // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0002", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//EU // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0102", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//US // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0202", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//AU // Aeotec Aerq Temperature and Humidity Sensor
 	}
 
 	tiles(scale: 2) {
@@ -64,11 +64,11 @@ metadata {
 }
 
 def updated() {
-    configure()
+	configure()
 }
 
 def installed() {
-    sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
@@ -100,11 +100,6 @@ def parse(String description) {
 	log.debug "parse() result ${results.inspect()}"
 
 	return results
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
-	// ignore, to prevent override of SensorBinaryReport
-	[]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
@@ -147,7 +142,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def results = []
 	def map = [:]
 
 	switch (cmd.sensorType) {
@@ -171,13 +165,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
 			map.displayed = true
 			map.isStateChange = true
+			break
 		default:
 			map.descriptionText = cmd.toString()
 	}
 
-	results << createEvent(map)
-
-	return results
+	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
@@ -190,8 +183,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 
 	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
 		cmds += ["delay 1000",
-				 secure(zwave.batteryV1.batteryGet()),
-				 "delay 2000"
+			 secure(zwave.batteryV1.batteryGet()),
+			 "delay 2000"
 		]
 	}
 
