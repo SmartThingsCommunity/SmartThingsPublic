@@ -344,7 +344,7 @@ def pollUsingPwsId(String stationId) {
 
         send(name: "humidity", value: obs.humidity, unit: "%")
         send(name: "weather", value: "n/a")
-        send(name: "weatherIcon", value: null, displayed: false)
+        send(name: "weatherIcon", value: "", displayed: false)
         send(name: "wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits), unit: windUnits)
         send(name: "windVector", value: "${obs.winddir}° ${convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)} ${windUnits}")
         def cityValue = obs.neighborhood
@@ -361,7 +361,7 @@ def pollUsingPwsId(String stationId) {
 
         // Forecast not supported
         send(name: "percentPrecip", value: "n/a", unit: "%")
-        send(name: "forecastIcon", value: null, displayed: false)
+        send(name: "forecastIcon", value: "", displayed: false)
         send(name: "forecastToday", value: "n/a")
         send(name: "forecastTonight", value: "n/a")
         send(name: "forecastTomorrow", value: "n/a")
@@ -435,33 +435,50 @@ private localDate(timeZone) {
 // but also send a legacy custom event for any DM-backed SmartApps using them.
 private send(Map map) {
     def eventConversion = [
-            "localSunrise": "stsmartweather.astronomicalData.localSunrise",
-            "localSunset": "stsmartweather.astronomicalData.localSunset",
-            "city": "stsmartweather.astronomicalData.city",
-            "timeZoneOffset": "stsmartweather.astronomicalData.timeZoneOffset",
-            "weather": "stsmartweather.weatherSummary.weather",
-            "wind": "stsmartweather.windSpeed.wind",
-            "windVector": "stsmartweather.windDirection.windVector",
-            "weatherIcon": "stsmartweather.weatherSummary.weatherIcon",
-            "forecastIcon": "stsmartweather.weatherForecast.forecastIcon",
-            "feelsLike": "stsmartweather.apparentTemperature.feelsLike",
-            "percentPrecip": "stsmartweather.precipitation.percentPrecip",
-            "alert": "stsmartweather.weatherAlert.alert",
-            "alertKeys": "stsmartweather.weatherAlert.alertKeys",
-            "sunriseDate": "stsmartweather.astronomicalData.sunriseDate",
-            "sunsetDate": "stsmartweather.astronomicalData.sunsetDate",
-            "lastUpdate": "stsmartweather.smartWeather.lastUpdate",
-            "uvDescription": "stsmartweather.ultravioletDescription.uvDescription",
-            "forecastToday": "stsmartweather.weatherForecast.forecastToday",
-            "forecastTonight": "stsmartweather.weatherForecast.forecastTonight",
-            "forecastTomorrow": "stsmartweather.weatherForecast.forecastTomorrow"
+            // Apparent Temperature
+            "feelsLike": ["name": "stsmartweather.apparentTemperature.feelsLike", "attrType": "number"],
+            // Astronomical Data
+            "localSunrise": ["name": "stsmartweather.astronomicalData.localSunrise", "attrType": "string"],
+            "localSunset": ["name": "stsmartweather.astronomicalData.localSunset", "attrType": "string"],
+            "sunriseDate": ["name": "stsmartweather.astronomicalData.sunriseDate", "attrType": "string"],
+            "sunsetDate": ["name": "stsmartweather.astronomicalData.sunsetDate", "attrType": "string"],
+            "city": ["name": "stsmartweather.astronomicalData.city", "attrType": "string"],
+            "timeZoneOffset": ["name": "stsmartweather.astronomicalData.timeZoneOffset", "attrType": "string"],
+            // Precipitation
+            "percentPrecip": ["name": "stsmartweather.precipitation.percentPrecip", "attrType": "integer"],
+            // Smart Weather
+            "lastUpdate": ["name": "stsmartweather.smartWeather.lastUpdate", "attrType": "string"],
+            // Ultraviolet Description
+            "uvDescription": ["name": "stsmartweather.ultravioletDescription.uvDescription", "attrType": "string"],
+            // Weather Alert
+            "alert": ["name": "stsmartweather.weatherAlert.alert", "attrType": "string"],
+            "alertKeys": ["name": "stsmartweather.weatherAlert.alertKeys", "attrType": "string"],
+            // Weather Forecast
+            "forecastIcon": ["name": "stsmartweather.weatherForecast.forecastIcon", "attrType": "string"],
+            "forecastToday": ["name": "stsmartweather.weatherForecast.forecastToday", "attrType": "string"],
+            "forecastTonight": ["name": "stsmartweather.weatherForecast.forecastTonight", "attrType": "string"],
+            "forecastTomorrow": ["name": "stsmartweather.weatherForecast.forecastTomorrow" "attrType": "string"],
+            // Weather Summary
+            "weather": ["name": "stsmartweather.weatherSummary.weather", "attrType": "string"],
+            "weatherIcon": ["name": "stsmartweather.weatherSummary.weatherIcon", "attrType": "string"],
+            // Wind Direction
+            "windVector": ["name": "stsmartweather.windDirection.windVector", "attrType": "string"],
+            // Wind Speed
+            "wind": ["name": "stsmartweather.windSpeed.wind", "attrType": "string"]
         ]
 
     //log.trace "WUSTATION: event: $map"
     sendEvent(map)
     if (map.name && eventConversion.containsKey(map.name)) {
         def newMap = map.clone()
-        newMap.name = eventConversion[map.name]
+        def converter = eventConversion[map.name]
+
+        newMap.name = converter.name
+        if (map.value == "n/a" && converter.attrType != "string") {
+            newMap.value = null
+        } else if (map.value == null && converter.attrType == "string") {
+            newMap.value = ""
+        }
 
         //log.trace "WUSTATION: NEW event: $newMap"
         sendEvent(newMap)
