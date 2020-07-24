@@ -92,6 +92,9 @@ def installed() {
 		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
+	response([
+	       	refresh((1..state.numberOfSwitches).toList())
+	])
 }
 
 def updated() {
