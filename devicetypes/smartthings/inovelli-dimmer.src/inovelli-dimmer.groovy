@@ -58,65 +58,39 @@ metadata {
 	preferences {
 		// Preferences template begin
 		parameterMap.each {
-			input(
-				title: it.name,
-				description: it.description,
-				type: "paragraph",
-				element: "paragraph"
-			)
+			input(title: it.name, description: it.description, type: "paragraph",	element: "paragraph")
 
 			switch (it.type) {
 				case "boolRange":
 					input(
-						name: it.key + "Boolean",
-						type: "bool",
-						title: "Enable",
-						description: "If you disable this option, it will overwrite setting below.",
-						defaultValue: it.defaultValue != it.disableValue,
-						required: false
+						name: it.key + "Boolean", type: "bool", title: "Enable", description: "If you disable this option, it will overwrite setting below.",
+						defaultValue: it.defaultValue != it.disableValue, required: false
 					)
 					input(
-						name: it.key,
-						type: "number",
-						title: "Set value (range ${it.range})",
-						defaultValue: it.defaultValue,
-						range: it.range,
-						required: false
+						name: it.key, type: "number", title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue, range: it.range, required: false
 					)
 					break
 				case "boolean":
 					input(
-						type: "paragraph",
-						element: "paragraph",
-						description: "Option enabled: ${it.activeDescription}\n" +
-							"Option disabled: ${it.inactiveDescription}"
+						type: "paragraph", element: "paragraph",
+						description: "Option enabled: ${it.activeDescription}\n" + "Option disabled: ${it.inactiveDescription}"
 					)
 					input(
-						name: it.key,
-						type: "bool",
-						title: "Enable",
-						defaultValue: it.defaultValue == it.activeOption,
-						required: false
+						name: it.key, type: "bool", title: "Enable",
+						defaultValue: it.defaultValue == it.activeOption, required: false
 					)
 					break
 				case "enum":
 					input(
-						name: it.key,
-						title: "Select",
-						type: "enum",
-						options: it.values,
-						defaultValue: it.defaultValue,
-						required: false
+						name: it.key, title: "Select", type: "enum",
+						options: it.values, defaultValue: it.defaultValue, required: false
 					)
 					break
 				case "range":
 					input(
-						name: it.key,
-						type: "number",
-						title: "Set value (range ${it.range})",
-						defaultValue: it.defaultValue,
-						range: it.range,
-						required: false
+						name: it.key,	type: "number", title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue, range: it.range, required: false
 					)
 					break
 			}
@@ -487,41 +461,13 @@ private getParameterMap() {
 			name           : "Dimming Speed", key: "dimmingSpeed", type: "range",
 			parameterNumber: 1, size: 1, defaultValue: 3,
 			range          : "1..100",
-			description    : "How fast or slow the light turns on when you hold the switch (ie: dimming from 10-20%, 80-60%, etc). Example of how the values work: 0 - Instant On, 1 = 1 second, 100 = 100 seconds. This parameter can be set without a HUB from the Configuration Button. Finally, if you are using a,dumb switch in a 3-Way setting, this parameter will not work if you manually press the dumb switch (it will only work if you press the smart switch)."
-		],
-		[
-			name           : "Default Level (Z-Wave)", key: "defaultLevel(Z-Wave)", type: "range",
-			parameterNumber: 10, size: 1, defaultValue: 0,
-			range          : "0..100",
-			description    : "Default dim level for the switch when powered on via a Z-Wave command. This is useful if you'd like your switch to turn on to a certain level when remotely controlling the switch during certain times. For example, you could have your switch only turn on to 10% brightness during the hours of 10pm - 6am when you remotely control it. Example of how the values work: 0 = Switch will return to level it was prior to being off, 1 = 1%, 100 = 100%. This parameter can be set without a HUB from the Configuration Button."
+			description    : "How fast or slow the light turns on when you hold the switch in seconds (ie: dimming from 10-20%, 80-60%, etc). Value 0 - Instant On. This parameter can be set without a HUB from the Configuration Button. Finally, if you are using a,dumb switch in a 3-Way setting, this parameter will not work if you manually press the dumb switch (it will only work if you press the smart switch)."
 		],
 		[
 			name           : "Power On State", key: "powerOnState", type: "range",
 			parameterNumber: 11, size: 1, defaultValue: 0,
 			range          : "0..101",
 			description    : "When power is restored, the switch reverts to either On, Off, or Last Level. Example of how the values work: 0 = Off, 1-100 = Specific % On, 101 = Returns to Level before Power Outage. This parameter can be set without a HUB from the Configuration Button."
-		],
-		[
-			name           : "Association Behavior", key: "associationBehavior", type: "enum",
-			parameterNumber: 12, size: 1, defaultValue: 15,
-			values         : [
-				1 : "Local",
-				2 : "3-Way",
-				3 : "3-Way + Local",
-				4 : "Z-Wave HUB",
-				5 : "Z-Wave HUB + Local",
-				6 : "Z-Wave HUB + 3-Way",
-				7 : "Z-Wave HUB + Local",
-				8 : "Timer",
-				9 : "Timer + Local",
-				10: "Timer + 3-Way",
-				11: "Timer + Local",
-				12: "Timer + Z-Wave HUB",
-				13: "Timer + Local",
-				14: "Timer + Z-Wave HUB",
-				15: "All"
-			],
-			description    : "When should the switch send commands to associated devices."
 		],
 		[
 			name           : "LED Indicator Color", key: "ledIndicatorColor", type: "range",
@@ -545,62 +491,38 @@ private getParameterMap() {
 			name           : "LED Indicator Timeout", key: "ledIndicatorTimeout", type: "range",
 			parameterNumber: 17, size: 1, defaultValue: 3,
 			range          : "0..10",
-			description    : "Changes the amount of time the RGB Bar shows the Dim level if the LED Bar has been disabled. Example of how the values work: 0 = Always off, 1 = 1 second after level is adjusted, 10 = 10 seconds after level is adjusted."
-		],
-		[
-			name           : "Active Power Alerts", key: "activePowerAlerts", type: "boolRange",
-			parameterNumber: 18, size: 1, defaultValue: 10,
-			range          : "1..100", disableValue: 0,
-			description    : "The power level change that will result in a new power report being sent (% of previous report). Example of how the values work: 0 = Disabled, 10 = 10% of previous report, 100 = 100% of previous report."
-		],
-		[
-			name           : "Periodic Power + Energy Reports", key: "periodicPower+EnergyReports", type: "range",
-			parameterNumber: 19, size: 2, defaultValue: 3600,
-			range          : "0..32767",
-			description    : "Time period between consecutive power and energy reports being sent (in seconds). Example of how the values work: 0 = 0 seconds, 1 = 1 second, 32767 = 32767 seconds. The timer resets after every report is sent."
+			description    : "Changes the amount of time the RGB Bar shows the Dim level if the LED Bar has been disabled. Example of how the values work: 0 = Always off, 1 = 1 second after level is adjusted."
 		],
 		[
 			name           : "Dimming Speed (Z-Wave)", key: "dimmingSpeed(Z-Wave)", type: "range",
 			parameterNumber: 2, size: 1, defaultValue: 101,
 			range          : "0..101",
-			description    : "How fast or slow the light turns dim when you adjust the switch remotely (ie: dimming from 10-20%, 80-60%, etc). Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
-		],
-		[
-			name           : "Energy Reports", key: "energyReports", type: "boolRange",
-			parameterNumber: 20, size: 1, defaultValue: 10,
-			range          : "1..100", disableValue: 0,
-			description    : "The energy level change that will result in a new energy report being sent (% of previous report). Example of how the values work: 0 = Disabled, 10 = 10% of previous report, 100 = 100% of previous report."
+			description    : "How fast or slow the light turns dim when you adjust the switch remotely (ie: dimming from 10-20%, 80-60%, etc). Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
 			name           : "Ramp Rate", key: "rampRate", type: "range",
 			parameterNumber: 3, size: 1, defaultValue: 101,
 			range          : "0..101",
-			description    : "How fast or slow the light turns on when you press the switch 1x to bring from On to Off or Off to On. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
+			description    : "How fast or slow the light turns on when you press the switch 1x to bring from On to Off or Off to On. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
 			name           : "Ramp Rate (Z-Wave)", key: "rampRate(Z-Wave)", type: "range",
 			parameterNumber: 4, size: 1, defaultValue: 101,
 			range          : "0..101",
-			description    : "How fast or slow the light turns on when you bring your switch from On to Off or Off to On remotely. Example of how the values work: 0 = Instant On, 1 = 1 second, 100 = 100 seconds. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
+			description    : "How fast or slow the light turns on when you bring your switch from On to Off or Off to On remotely. Entering the value of 101 = Keeps the switch in sync with Parameter 1."
 		],
 		[
 			name           : "Invert Switch", key: "invertSwitch", type: "boolean",
 			parameterNumber: 7, size: 1, defaultValue: 0,
 			optionInactive : 0, inactiveDescription: "Disabled",
 			optionActive   : 1, activeDescription: "Enabled",
-			description    : "Inverts the switch (Tap Down = On, Tap Up = Off). Example of how the values work: 0 = Disabled, 1 = Enabled. This parameter can be set without a HUB from the Configuration Button."
+			description    : "Inverts the switch"
 		],
 		[
 			name           : "Auto Off Timer", key: "autoOffTimer", type: "boolRange",
 			parameterNumber: 8, size: 2, defaultValue: 0,
 			range          : "1..32767", disableValue: 0,
-			description    : "Automatically turns the switch off after x amount of seconds. Example of how the values work: 0 = Disabled, 1 = 1 second, 32767 = 32767 seconds."
-		],
-		[
-			name           : "Default Level (Local)", key: "defaultLevel(Local)", type: "range",
-			parameterNumber: 9, size: 1, defaultValue: 0,
-			range          : "1..100",
-			description    : "Default dim level for the switch when pressed locally (at the switch). This is useful if you'd like your switch to turn on to a certain level when manually pressing the switch during certain times. For example, you could have your switch turn on to 10% brightness during the hours of 10pm - 6am when you manually press it. Example of how the values work: 0 = Switch will return to level it was prior to being off, 1 = 1%, 100 = 100%. This parameter can be set without a HUB from the Configuration Button."
+			description    : "Automatically turns the switch off after x amount of seconds (value 0 = Disabled)"
 		]
 	]
 }

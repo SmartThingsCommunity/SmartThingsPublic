@@ -28,9 +28,8 @@ metadata {
 		}
 
 		main([])
-		details(["rgbSelector"])
+		details([])
 	}
-
 }
 
 def setColor(value) {
