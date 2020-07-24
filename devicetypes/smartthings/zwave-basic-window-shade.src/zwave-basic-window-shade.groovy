@@ -139,7 +139,7 @@ def ping() {
 def installed() {
 	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "availableCurtainPowerButtons", value: JsonOutput.toJson(["open", "close", "pause"]))
+	sendEvent(name: "availableCurtainPowerButtons", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 	state.shadeState = "paused"
 	state.reverseDirection = reverseDirection ? reverseDirection : false
 }
