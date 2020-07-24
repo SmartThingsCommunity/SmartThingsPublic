@@ -247,9 +247,6 @@ def setLevel(level) {
 
 def setShadeLevel(level) {
 	log.debug "Setting shade level: ${level}"
-	def currentLevel = Integer.parseInt(device.currentState("shadeLevel").value)
-	state.blindsLastCommand = currentLevel > level ? "opening" : "closing"
-	state.shadeTarget = level
 	encap(zwave.switchMultilevelV3.switchMultilevelSet(value: Math.min(0x63, level)))
 }
 
@@ -263,7 +260,10 @@ def setSlats(level) {
 }
 
 def refresh() {
-	encap(zwave.switchMultilevelV3.switchMultilevelGet())
+	[
+			encap(zwave.switchMultilevelV3.switchMultilevelGet()),
+			encap(zwave.meterV3.meterGet(scale: 0x00)),
+	]
 }
 
 def ping() {
@@ -319,6 +319,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
+	def currentLevel = Integer.parseInt(device.currentState("shadeLevel").value)
+	state.blindsLastCommand = currentLevel > cmd.value ? "opening" : "closing"
+	state.shadeTarget = cmd.value
 	sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x02)))
 }
 
