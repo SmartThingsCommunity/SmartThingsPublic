@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 Eric Maycock
+ *  Copyright 2020 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,7 +13,7 @@
  *  Aeon RGBW Bulb (Advanced)
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-05-02
+ *  Date: 2020-07-24
  *  
  *  2018-05-02: huesatToRGB Changed method provided by daved314
  */
@@ -414,14 +414,30 @@ def setColor(value) {
     toggleTiles("all")
 	commands(result)
 }
- 
-def setColorTemperature(percent) {
-	if(percent > 99) percent = 99
-	int warmValue = percent * 255 / 99
+
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_MAX() { 6500 }
+private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
+private getZWAVE_COLOR_COMPONENT_ID() { [warmWhite: 0, coldWhite: 1, red: 2, green: 3, blue: 4] }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
+
+
+def setColorTemperature(temp) {
+    log.debug "setColorTemperature($temp)"
+	def cmds = []
+	if (temp < COLOR_TEMP_MIN) temp = COLOR_TEMP_MIN
+	if (temp > COLOR_TEMP_MAX) temp = COLOR_TEMP_MAX
+	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 255) as Integer
+	def coldValue = 255 - warmValue
+    sendEvent(name: "colorTemperature", value: temp)
+	cmds << zwave.switchColorV2.switchColorSet(red: 0, green: 0, blue: 0, coldWhite: coldValue, warmWhite: warmValue)
+    log.debug cmds
+	if ((device.currentValue("switch") != "on")) {
+		log.debug "Bulb is off. Turning on"
+		cmds << zwave.basicV1.basicSet(value: 0xFF)
+	}
     toggleTiles("all")
-    sendEvent(name: "colorTemperature", value: percent)
-	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite: (warmValue > 127 ? 255 : 0), coldWhite: (warmValue < 128? 255 : 0)))
-    
+	commands(cmds)
 }
  
 def reset() {
