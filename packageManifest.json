@@ -1,0 +1,77 @@
+{
+  "packageName": "Pool Controller",
+  "author": "Brad Sileo",
+  "minimumHEVersion": "2.1.9",
+  "documentationLink": "https://github.com/bsileo/hubitat_poolcontroller/blob/master/README.md",
+  "dateReleased": "2020-06-20",
+  "releaseNotes": "Added support for going up to Feature ID 20",
+  "apps": [
+    {
+      "id": "b6348912-4325-4bf3-8a72-4e2e6e37669e",
+      "name": "Pool Controller",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/smartapps/bsileo/pool-controller.src/pool-controller.groovy",
+      "required": true,
+      "oauth": false,
+      "version": "0.9.4"
+    }
+  ],
+  "drivers": [
+    {
+      "id": "a1040a06-02b9-470d-9e61-c24c6d0df620",
+      "name": "Pool Controller",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller.src/pool-controller.groovy",
+      "required": true,
+      "version": "0.9.8"
+    },
+    {
+      "id": "d2c5d427-6e64-4746-9b4c-c4d1dc8348da",
+      "name": "Pool Controller Body",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-body.src/pool-controller-body.groovy",
+      "required": true,
+      "version": "0.9.2"
+    },
+    {
+      "id": "c79e3b5d-52cb-4fec-95d3-6669a3fd2479",
+      "name": "Pool Controller Chlorinator",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-chlorinator.src/pool-controller-chlorinator.groovy",
+      "required": true,
+      "version": "0.9.3"
+    },
+    {
+      "id": "d5b73bc8-714e-4f9e-ab89-6244b0d9e0e3",
+      "name": "Pool Controller Heater",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-heater.src/pool-controller-heater.groovy",
+      "required": true,
+      "version": "0.9.3"
+    },
+    {
+      "id": "fc8f04ee-546a-4d7c-8d53-7a1c997e85b9",
+      "name": "Pool Controller LightGroup",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-lightgroup.src/pool-controller-lightgroup.groovy",
+      "required": true,
+      "version": "0.9.9"
+    },
+    {
+      "id": "48c32c82-f3fe-4b04-8bc8-9be7b526c56a",
+      "name": "Pool Controller Intellichem",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-intellichem.src/pool-controller-intellichem.groovy",
+      "required": true,
+      "version": "0.9.1"
+    },
+    {
+      "id": "e22b4e36-c155-43d8-bd20-9b739e22a6bb",
+      "name": "Pool Controller Pump",
+      "namespace": "bsileo",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/devicetypes/bsileo/pool-controller-pump.src/pool-controller-pump.groovy",
+      "required": true,
+      "version": "0.9.3"
+    }
+  ]
+}

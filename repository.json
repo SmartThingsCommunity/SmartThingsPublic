@@ -1,0 +1,15 @@
+{
+  "author": "Brad Sileo",
+  "gitHubUrl": "https://github.com/bsileo",
+  "packages": [
+    {
+      "name": "Pool Controller",
+      "category": "Integrations",
+      "location": "https://raw.githubusercontent.com/bsileo/hubitat_poolcontroller/master/packageManifest.json",
+      "description": "Integration from Hubitat to a Pentair *Touch Controller using the nodejs-poolController",
+      "tags": [
+        "Pools & Spas"
+      ]
+    }
+  ]
+}
