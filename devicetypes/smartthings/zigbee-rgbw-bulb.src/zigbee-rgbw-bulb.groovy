@@ -135,7 +135,6 @@ private getHUE_COMMAND() { 0x00 }
 private getSATURATION_COMMAND() { 0x03 }
 private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
-private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -203,12 +202,9 @@ def ping() {
 
 def refresh() {
 	zigbee.onOffRefresh() +
-			zigbee.levelRefresh() +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
-			zigbee.onOffConfig(0, 300) +
-			zigbee.levelConfig()
+	zigbee.levelRefresh() +
+	zigbee.colorTemperatureRefresh() +
+	zigbee.hueSaturationRefresh()
 }
 
 def configure() {
@@ -217,17 +213,24 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	refresh()
+
+	def cmds = []
+	if(device.currentState("colorTemperature")?.value == null) {
+		cmds +=	zigbee.setColorTemperature(5000)
+	}
+
+	cmds += refresh() +
+	// OnOff, level minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+	zigbee.onOffConfig(0, 300) +
+	zigbee.levelConfig(0, 300)
+	cmds
 }
 
 def setColorTemperature(value) {
 	value = value as Integer
-	def tempInMired = Math.round(1000000 / value)
-	def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
-	zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
+	zigbee.setColorTemperature(value) +
+	zigbee.colorTemperatureRefresh()
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
@@ -262,20 +265,19 @@ private getScaledSaturation(value) {
 def setColor(value){
 	log.trace "setColor($value)"
 	zigbee.on() +
-			zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
-					getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
+	zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
+		getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+	zigbee.hueSaturationRefresh()
 }
 
 def setHue(value) {
 	zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setSaturation(value) {
 	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def installed() {
