@@ -26,11 +26,11 @@ metadata {
 		capability "Configuration"
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0083 ver:3.92 zwv:4.05 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
-		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion Sensor" //Dome Motion/Light Sensor
+		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Dome_Motion_Light_Sensor_DMMS1"
 		//zw:S type:0701 mfr:0258 prod:0003 model:008D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
-		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion Sensor" //NEO Coolcam Motion/Light Sensor
+		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-NEO_Coolcam_Motion_Light_Sensor"
 		//zw:S type:0701 mfr:0258 prod:0003 model:108D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07 EU version
-		fingerprint mfr: "0258", prod: "0003", model: "108D", deviceJoinName: "NEO Coolcam Motion Sensor" //NEO Coolcam Motion/Light Sensor
+		fingerprint mfr: "0258", prod: "0003", model: "108D", deviceJoinName: "NEO Coolcam Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-NEO_Coolcam_Motion_Light_Sensor"
 		fingerprint mfr: "017F", prod: "0101", model: "0001", deviceJoinName: "Wink Motion Sensor"
 	}
 
