@@ -27,6 +27,8 @@ metadata {
 
 		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 	}
 
 	tiles(scale: 2) {
@@ -137,7 +139,7 @@ def ping() {
 def installed() {
 	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "availableCurtainPowerButtons", value: JsonOutput.toJson(["open", "close", "pause"]))
+	sendEvent(name: "availableCurtainPowerButtons", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 	state.shadeState = "paused"
 	state.reverseDirection = reverseDirection ? reverseDirection : false
 }
@@ -149,7 +151,10 @@ def updated() {
 
 def configure() {
 	log.debug "Configure..."
-	response(secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)))
+	response([
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
+	])
 }
 
 private secure(cmd) {

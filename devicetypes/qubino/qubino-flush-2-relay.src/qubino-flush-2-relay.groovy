@@ -24,6 +24,8 @@ metadata {
 		command "reset"
 
 		fingerprint mfr: "0159", prod: "0002", model: "0051", deviceJoinName: "Qubino Switch 1" //Qubino Flush 2 Relay
+		fingerprint mfr: "0159", prod: "0002", model: "0052", deviceJoinName: "Qubino Switch" //Qubino Flush 1 Relay 
+		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch" //Qubino Flush 1D Relay
 	}
 
 	tiles(scale: 2) {
@@ -70,7 +72,12 @@ metadata {
 }
 
 def installed() {
-	state.numberOfSwitches = 2
+	if (zwaveInfo?.model.equals("0051")) {
+		state.numberOfSwitches = 2
+	} else {
+		state.numberOfSwitches = 1
+	}
+	
 	if (!childDevices) {
 		addChildSwitches(state.numberOfSwitches)
 	}
@@ -85,6 +92,9 @@ def installed() {
 		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
+	response([
+	       	refresh((1..state.numberOfSwitches).toList())
+	])
 }
 
 def updated() {
@@ -93,7 +103,7 @@ def updated() {
 	}
 	// Preferences template begin
 	parameterMap.each {
-		if (isPreferenceChanged(it)) {
+		if (isPreferenceChanged(it) && !excludeParameterFromSync(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
 		} else if (!state.currentPreferencesState."$it.key".value) {
@@ -102,6 +112,20 @@ def updated() {
 	}
 	syncConfiguration()
 	// Preferences template end
+}
+
+def excludeParameterFromSync(preference){
+	def exclude = false
+	if (preference.key == "outputQ2SwitchSelection") {
+		if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+			exclude = true
+		}
+	}
+
+	if (exclude) {
+		log.warn "Preference no ${preference.parameterNumber} - ${preference.key} is not supported by this device"
+	}
+	return exclude
 }
 
 private syncConfiguration() {
@@ -446,6 +470,6 @@ private getParameterMap() {[
 						0: "When system is turned off the output is 0V (NC).",
 						1: "When system is turned off the output is 230V (NO).",
 				],
-				description: "Set value means the type of the device that is connected to the Q2 output. The device type can be normally open (NO) or normally close (NC).  "
+				description: "(Only for Qubino Flush 2 Relay) Set value means the type of the device that is connected to the Q2 output. The device type can be normally open (NO) or normally close (NC).  "
 		]
 ]}
