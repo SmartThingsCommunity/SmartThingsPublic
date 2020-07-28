@@ -379,13 +379,12 @@ def dimmerEvent(physicalgraph.zwave.Command cmd) {
  **/
 def on() {
     def result = []
-    result << endpointCmd(zwave.basicV1.basicSet(value: 255), 5).format()
-    if (state?.DIM_OFF_OFFSET > 0) {
-        result.remove(0)
-        result << endpointCmd(zwave.switchMultilevelV3.switchMultilevelSet(value: state.lastDimmerValue), 5).format()
-    }
+	if (state?.DIM_OFF_OFFSET > 0) {
+	result << endpointCmd(zwave.switchMultilevelV3.switchMultilevelSet(value: state.lastDimmerValue), 5).format()
+	} else {
+	result << endpointCmd(zwave.basicV1.basicSet(value: 255), 5).format()
+	}
     return response(delayBetween(result, 100))
-
 }
 
 /**
@@ -395,17 +394,14 @@ def on() {
  **/
 def off() {
     def result = []
-    result << endpointCmd(zwave.basicV1.basicSet(value: 0), 5).format()
     if (state?.DIM_OFF_OFFSET > 0) {
         log.debug("state.DIM_OFF_OFFSET>0)")
         result.remove(0)
-        result << endpointCmd(zwave.switchMultilevelV3.switchMultilevelSet(value: 1), 5).format()
+        result << endpointCmd(zwave.switchMultilevelV3.switchMultilevelSet(value: state.DIM_OFF_OFFSET), 5).format()
     }
-
-    if (state?.DIM_OFF_OFFSET == 0) {
-        log.debug("state.DIM_OFF_OFFSET==0)")
-        result << endpointCmd(zwave.basicV1.basicSet(value: 0), 5).format()
-    }
+	else{
+		result << endpointCmd(zwave.basicV1.basicSet(value: 0), 5).format()
+	}
     return response(delayBetween(result, 100))
 }
 
@@ -441,67 +437,38 @@ def setLevel(level) {
 }
 
 def setColor(value) {
-
+	
     log.debug("MATRIX: setColor(${value})")
-
     // enchancedLedControl << zwave.configurationV2.configurationGet(parameterNumber: 10)
-
     log.debug("MATRIX: enchancedLedControl(${state.enchancedLedControl})")
-
     def result = []
-
     def WW=0x10
+	
     if (state.enchancedLedControl == 1) {
-        WW = 0;
-        if (settings.configEnchancedLedBlink != NULL) {
-            if (settings.configEnchancedLedBlink.toInteger()) WW |= 1 << 7;
-        }
-        if (settings.configEnchancedLedBlinkTurnOff != NULL) {
-            if (settings.configEnchancedLedBlinkTurnOff.toInteger()) WW |= 1 << 6;
-        }
-        if (settings.configEnchancedLedBlinkTurnOn != NULL) {
-            if (settings.configEnchancedLedBlinkTurnOn.toInteger()) WW |= 1 << 5;
-        }
-        if (settings.configEnchancedLedBlinkDirect != NULL) {
-            if (settings.configEnchancedLedBlinkDirect.toInteger()) WW |= 1 << 4;
-        }
-        if (settings.configEnchancedLedBlinkTime != NULL) {
-            WW += settings.configEnchancedLedBlinkTime.toInteger();
-        }
-        log.debug("MATRIX: WW=(${WW})")
-        log.debug("MATRIX: WW=" + Integer.toBinaryString(WW))
-
+			WW = 0;
+            if (settings.configEnchancedLedBlink?.toInteger())        WW |= 1 << 7;
+            if (settings.configEnchancedLedBlinkTurnOff?.toInteger()) WW |= 1 << 6;
+            if (settings.configEnchancedLedBlinkTurnOn?.toInteger())  WW |= 1 << 5;
+            if (settings.configEnchancedLedBlinkDirect?.toInteger())  WW |= 1 << 4;
+            WW += settings.configEnchancedLedBlinkTime?.toInteger();
+			log.debug("MATRIX: WW=(${WW})")
+			log.debug("MATRIX: WW=" + Integer.toBinaryString(WW))
     }
-
+	
     if (value instanceof String) {
         if ( (value.contains('#') && value.length() == 7) || value.length() == 6) {    //if (value.hex)
-            def c = colorUtil.hexToRgb(value) // value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+            def colors = colorUtil.hexToRgb(value) // value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
             log.debug("Color: R:${c[0]}, G:${c[1]}, B:${c[2]}")
-            result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:c[0], green:c[1], blue:c[2]), 1).format()
-            result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:c[0], green:c[1], blue:c[2]), 2).format()
-            result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:c[0], green:c[1], blue:c[2]), 3).format()
-            result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:c[0], green:c[1], blue:c[2]), 4).format()
-
-            sendEvent(name: "color", value: c)
+            sendEvent(name: "color", value: colors)
         }
+		
     } else {
-
         def hue = value.hue ?: device.currentValue("hue")
         def saturation = value.saturation ?: device.currentValue("saturation")
         if (hue == null) hue = 13
         if (saturation == null) saturation = 13
-        def rgb = huesatToRGB((float)hue, (float)saturation)
-
-        result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:rgb[0], green:rgb[1], blue:rgb[2]), 1).format()
-        result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:rgb[0], green:rgb[1], blue:rgb[2]), 2).format()
-        result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:rgb[0], green:rgb[1], blue:rgb[2]), 3).format()
-        result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:rgb[0], green:rgb[1], blue:rgb[2]), 4).format()
-
-
+        def colors = huesatToRGB((float)hue, (float)saturation)
         if (value.hue != null) sendEvent(name: "hue", value: value.hue)
-
-
-
         if (value.saturation != null) sendEvent(name: "saturation", value: value.saturation)
     }
 
@@ -510,28 +477,31 @@ def setColor(value) {
     log.debug("MATRIX: ENUMM   : (${settings.configBtns})")
     log.debug("MATRIX: ENUMM   : (${settings.configBtns.toString()})")
     if (settings.configBtns == "Button 1") {
-        result.remove(1)
-        result.remove(1)
-        result.remove(1)
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 1).format()
     }
-    if (settings.configBtns == "Button 2") {
-        result.remove(0)
-        result.remove(1)
-        result.remove(1)
+	
+    else if (settings.configBtns == "Button 2") {
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 2).format()
     }
-    if (settings.configBtns == "Button 3") {
-        result.remove(0)
-        result.remove(0)
-        result.remove(1)
+	
+    else if (settings.configBtns == "Button 3") {
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 3).format()
     }
-    if (settings.configBtns == "Button 4") {
-        result.remove(0)
-        result.remove(0)
-        result.remove(0)
+	
+    else if (settings.configBtns == "Button 4") {
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 4).format()
     }
-    ///
-
+	
+	else
+	{	
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 1).format()
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 2).format()
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 3).format()
+		result << endpointCmd(zwave.switchColorV3.switchColorSet(warmWhite: WW, red:colors[0], green:colors[1], blue:colors[2]), 4).format()
+	}
+	
     return response(delayBetween(result, 200))
+	
 }
 
 /**
