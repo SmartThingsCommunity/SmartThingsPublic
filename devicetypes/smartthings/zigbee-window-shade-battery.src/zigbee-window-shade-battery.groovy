@@ -32,7 +32,7 @@ metadata {
 	}
 
 	preferences {
-		input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
+		input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "0..100", required: false, displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
