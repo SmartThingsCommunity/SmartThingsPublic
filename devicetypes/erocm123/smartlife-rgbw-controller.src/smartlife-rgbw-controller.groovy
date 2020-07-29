@@ -1,5 +1,5 @@
 /**
- *  Copyright 2019 Eric Maycock
+ *  Copyright 2020 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,16 +13,24 @@
  *  SmartLife RGBW Controller
  *
  *  Author: Eric Maycock (erocm123) and updated by cjcharles
- *  Date: 2019-02-15
+ *  Date: 2020-07-28
  */
 
 import groovy.json.JsonSlurper
+
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_MAX() { 6500 }
+private getWARM_WHITE() { "warmWhite" }
+private getCOLD_WHITE() { "coldWhite" }
+private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
 
 metadata {
 	definition (name: "SmartLife RGBW Controller", namespace: "erocm123", author: "Eric Maycock", vid:"generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Actuator"
         capability "Color Control"
+        capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -610,6 +618,26 @@ def getWhite(value) {
 	log.debug "level: ${level}"
 	return hex(level)
 }
+
+def setColorTemperature(temp) {
+    log.debug "setColorTemperature being called with ${temp}"
+    def cmds = []
+    if (temp < COLOR_TEMP_MIN) temp = COLOR_TEMP_MIN
+	if (temp > COLOR_TEMP_MAX) temp = COLOR_TEMP_MAX
+    def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 100) as Integer
+    def coldValue = 100 - warmValue
+    if (hasW2 == false) {
+        coldValue = hex((100 - warmValue)/100 * 255) 
+        def uri = "/rgb?value=$coldValue$coldValue$coldValue"
+        cmds.push(getAction("$uri&channels=false&transition=$dtransition"))  
+    } else {
+        cmds.push(getAction("/w2?value=$coldValue&channels=$channels&transition=$dtransition"))
+    }
+    cmds.push(getAction("/w1?value=${hex(warmValue)}&channels=false&transition=$dtransition"))
+    sendEvent(name: "colorTemperature", value: temp)
+    return cmds
+}
+
 def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
@@ -687,7 +715,7 @@ def setColor(value) {
     }
     else if (value.aLevel) {
     	def actions = []
-        if (channels == "true") {
+        if (channels == true) {
            def skipColor = false
            // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
            if (device.currentValue("white1") == "on" || state.previousW1 != "00") {
@@ -1466,6 +1494,10 @@ If "Custom" is chosen above as the default color, default level does not apply.
 </Help>
 </Value>
 <Value type="boolean" byteSize="1" index="channels" label="Mutually Exclusive RGB / White.\nOnly allow one or the other" min="" max="" value="false" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="boolean" byteSize="1" index="hasW2" label="Use W2 for cold white instead of RGB" min="" max="" value="false" setting_type="preference" fw="">
 <Help>
 </Help>
 </Value>
