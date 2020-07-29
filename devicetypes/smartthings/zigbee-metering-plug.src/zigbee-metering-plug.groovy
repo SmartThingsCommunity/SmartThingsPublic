@@ -67,8 +67,6 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     def descMap = zigbee.parseDescriptionAsMap(description)
-    def powerDiv = 1
-    def energyDiv = 100
 
     if (event) {
         log.info "event enter:$event"
@@ -76,10 +74,10 @@ def parse(String description) {
             log.info "Ignoring default response with desc map: $descMap"
             return [:]
         } else if (event.name== "power") {
-            event.value = event.value/powerDiv
+            event.value = event.value/getPowerDiv()
             event.unit = "W"
         } else if (event.name== "energy") {
-            event.value = event.value/energyDiv
+            event.value = event.value/getEnergyDiv()
             event.unit = "kWh"
         }
         log.info "event outer:$event"
@@ -98,13 +96,13 @@ def parse(String description) {
                 if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "power"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/powerDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getPowerDiv()
                         map.unit = "W"
                 }
                 else if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/energyDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
                         map.unit = "kWh"
                 }
 
@@ -155,5 +153,18 @@ def configure() {
     return refresh() +
     	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
-           zigbee.electricMeasurementPowerConfig(1, 600, 1) 
+           zigbee.electricMeasurementPowerConfig(1, 600, 1) +
+           zigbee.simpleMeteringPowerConfig()
+}
+
+private int getPowerDiv() {
+    isSengledOutlet() ? 10 : 1
+}
+
+private int getEnergyDiv() {
+    isSengledOutlet() ? 10000 : 100
+}
+
+private boolean isSengledOutlet() {
+    device.getDataValue("model") == "E1C-NB7"
 }
