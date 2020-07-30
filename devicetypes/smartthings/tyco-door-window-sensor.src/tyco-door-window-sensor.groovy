@@ -208,9 +208,7 @@ private Map getTemperatureResult(value) {
 	log.debug 'TEMP'
 	def linkText = getLinkText(device)
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
 	return [
