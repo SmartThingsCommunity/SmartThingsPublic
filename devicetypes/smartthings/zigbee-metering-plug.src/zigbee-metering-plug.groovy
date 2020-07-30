@@ -164,3 +164,7 @@ def configure() {
 
     return configurationCommands
 }
+
+private isDawon() {
+    device.getDataValue("manufacturer") == "DAWON_DNS"
+}
