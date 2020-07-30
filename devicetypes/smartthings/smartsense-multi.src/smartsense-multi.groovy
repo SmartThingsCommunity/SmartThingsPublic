@@ -314,9 +314,7 @@ private Map getTempResult(part, description) {
 	def temperatureScale = getTemperatureScale()
 	def value = zigbee.parseSmartThingsTemperatureValue(part, "temp: ", temperatureScale)
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def linkText = getLinkText(device)
 	def descriptionText = "$linkText was $value°$temperatureScale"
