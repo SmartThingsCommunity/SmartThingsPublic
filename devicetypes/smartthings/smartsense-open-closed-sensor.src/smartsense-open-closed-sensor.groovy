@@ -193,8 +193,8 @@ def ping() {
 
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURED_VALUE_ATTRIBUTE) +
-		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE_ATTRIBUTE) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
+	def refreshCmds = zigbee.enrollResponse() + zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURED_VALUE_ATTRIBUTE) +
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE_ATTRIBUTE) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds
 }
@@ -208,8 +208,7 @@ def configure() {
 	def cmds = refresh() +
 		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
 		zigbee.batteryConfig() +
-		zigbee.temperatureConfig(30, 60 * 30) +
-		zigbee.enrollResponse()
+		zigbee.temperatureConfig(30, 60 * 30)
 	if (isEcolink()) {
 		cmds += configureEcolink()
 	} else if (isBoschRadionMultiSensor()) {
