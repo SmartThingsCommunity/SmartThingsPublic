@@ -237,7 +237,7 @@ def pause() {
 	}
 }
 
-def setLevelChild(level, childDni) {
+def setLevelChild(level, childDni, currentLevel) { // These two arguments are defined in child DTH, so they also have to be used here
 	setSlats(level)
 }
 
