@@ -493,13 +493,10 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = "unknown"
 			responseMap.descriptionText = "Unknown state"
 		}
-		if (responseMap.value &&
-				device.currentValue("lock") &&
-				device.currentValue("lock") != responseMap.value) {
-			/* if this event indicates a state change (and we haven't gotten an operation event yet), delay
-				it for a second in the hopes that we get the operation event (which has more info). If we don't get
-				one, then it's okay to send. If we send the event with more info first, the event with less info
-				will be marked as not displayed
+		if (responseMap.value) {
+			/*  delay this event for a second in the hopes that we get the operation event (which has more info).
+				If we don't get one, then it's okay to send. If we send the event with more info first, the event
+				with less info will be marked as not displayed
 			 */
 			runIn(1, "delayLockEvent", [data : [map : responseMap]])
 			return [:]
