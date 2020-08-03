@@ -346,7 +346,7 @@ private onOffCmd(value, endpoint = 1) {
 	delayBetween([
 		encap(zwave.basicV1.basicSet(value: value), endpoint),
 		encap(zwave.basicV1.basicGet(), endpoint)
-	])
+	], 1000)
 }
 
 private refreshAll(includeMeterGet = true) {
