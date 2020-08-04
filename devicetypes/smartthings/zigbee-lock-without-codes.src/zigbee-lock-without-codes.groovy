@@ -212,6 +212,7 @@ private def parseAttributeResponse(String description) {
 				If we don't get one, then it's okay to send. If we send the event with more info first, the event
 				with less info will be marked as not displayed
 			 */
+            log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
 			runIn(1, "delayLockEvent", [data : [map : responseMap]])
 			return [:]
 		}
