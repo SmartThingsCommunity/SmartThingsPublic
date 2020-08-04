@@ -527,7 +527,7 @@ private def parseAttributeResponse(String description) {
 }
 
 def delayLockEvent(data) {
-	log.debug "Sending cached lock operation: $data.map"
+	log.debug "Sending cached lock operation: ${data.map}"
 	sendEvent(data.map)
 }
 
