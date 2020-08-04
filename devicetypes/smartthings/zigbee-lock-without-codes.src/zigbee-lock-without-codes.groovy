@@ -207,11 +207,25 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = "unknown"
 			responseMap.descriptionText = "Unknown state"
 		}
+		if (responseMap.value) {
+			/*  delay this event for a second in the hopes that we get the operation event (which has more info).
+				If we don't get one, then it's okay to send. If we send the event with more info first, the event
+				with less info will be marked as not displayed
+			 */
+			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
+			runIn(1, "delayLockEvent", [data : [map : responseMap]])
+			return [:]
+		}
 	} else {
 		return null
 	}
 	result << createEvent(responseMap)
 	return result
+}
+
+def delayLockEvent(data) {
+	log.debug "Sending cached lock operation: ${data.map}"
+	sendEvent(data.map)
 }
 
 private def parseIasMessage(String description) {
