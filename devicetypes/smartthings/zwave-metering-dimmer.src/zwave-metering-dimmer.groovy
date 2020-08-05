@@ -104,19 +104,11 @@ metadata {
 				)
 				input(
 						title: "Set the MIN brightness level (Aeotec Nano Dimmer Only):",
-						description: "Set the min brightness level that the load can reach to.",
+						description: "Adjust the minimum dimming level. This may be needed for incandescent and non-incandescent bulbs.",
 						name: "minDimmingLevel",
 						type: "number",
 						range: "0..99",
 						defaultValue: 0
-				)
-				input(
-						title:  "Set the MAX brightness level (Aeotec Nano Dimmer Only):",
-						description: "Set the max brightness level that the load can reach to.",
-						name: "maxDimmingLevel",
-						type: "number",
-						range: "0..99",
-						defaultValue: 99
 				)
 			}
 	}
@@ -268,8 +260,6 @@ def configure() {
 
 	if (isAeotecNanoDimmer()) {
 		state.configured = false
-		state.minLevelConfigured = false
-		state.maxLevelConfigured = false
 		result << response(getAeotecNanoDimmerConfigurationCommands())
 	}
 
@@ -312,37 +302,18 @@ def normalizeLevel(level) {
 	level == 99 ? 100 : level
 }
 
-def getAeotecNanoDimmerDefaults() {
-	[
-		"min": 0,
-		"max": 99
-	]
-}
-
 def getAeotecNanoDimmerConfigurationCommands() {
 	def result = []
-	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults["min"]
-	Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: aeotecNanoDimmerDefaults["max"]
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: 0 // default value (parameter 131) for Aeotec Nano Dimmer
 
 	if (!state.minDimmingLevel) {
-		state.minDimmingLevel = aeotecNanoDimmerDefaults["min"]
-	}
-	if (!state.maxDimmingLevel) {
-		state.maxDimmingLevel = aeotecNanoDimmerDefaults["max"]
+		state.minDimmingLevel = 0 // default value (parameter 131) for Aeotec Nano Dimmer
 	}
 
-	if (!state.configured || (minDimmingLevel != state.minDimmingLevel || maxDimmingLevel != state.maxDimmingLevel)) {
+	if (!state.configured || (minDimmingLevel != state.minDimmingLevel)) {
 		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
-
-		if (!state.minLevelConfigured || minDimmingLevel != state.minDimmingLevel) {
-			state.minLevelConfigured = false
-			result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
-			result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
-		}
-		if (!state.maxLevelConfigured || maxDimmingLevel != state.maxDimmingLevel) {
-			state.maxLevelConfigured = false
-			result << encap(zwave.configurationV1.configurationSet(parameterNumber: 132, size: 1, scaledConfigurationValue: maxDimmingLevel))
-			result << encap(zwave.configurationV1.configurationGet(parameterNumber: 132))
+		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
+		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
 		}
 	}
 
@@ -353,13 +324,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	if (isAeotecNanoDimmer()) {
 		if (cmd.parameterNumber == 131) {
 			state.minDimmingLevel = scaledConfigurationValue
-			state.minLevelConfigured = true
-		} else if (cmd.parameterNumber == 132) {
-			state.maxDimmingLevel = scaledConfigurationValue
-			state.maxLevelConfigured = true
-		}
-
-		if (state.minLevelConfigured && state.maxLevelConfigured) {
 			state.configured = true
 		}
 
