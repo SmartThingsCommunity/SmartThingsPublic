@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", "vid": "generic-humidity", ocfDeviceType: "oic.d.thermostat") {
+	definition(name: "Z-Wave Mold Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", "vid": "generic-humidity", ocfDeviceType: "oic.d.thermostat") {
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Battery"
@@ -28,21 +28,22 @@ metadata {
 		fingerprint mfr:"0371", prod:"0002", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//EU // Aeotec Aerq Temperature and Humidity Sensor
 		fingerprint mfr:"0371", prod:"0102", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//US // Aeotec Aerq Temperature and Humidity Sensor
 		fingerprint mfr:"0371", prod:"0202", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//AU // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0154", prod:"0004", model:"0014", deviceJoinName: "POPP Multipurpose Sensor"	//EU // POPP Mold Detector
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState "temperature", label: '${currentValue}°',
-					backgroundColors: [
-						[value: 31, color: "#153591"],
-						[value: 44, color: "#1e9cbb"],
-						[value: 59, color: "#90d2a7"],
-						[value: 74, color: "#44b621"],
-						[value: 84, color: "#f1d801"],
-						[value: 95, color: "#d04e00"],
-						[value: 96, color: "#bc2323"]
-					]
+						backgroundColors: [
+								[value: 31, color: "#153591"],
+								[value: 44, color: "#1e9cbb"],
+								[value: 59, color: "#90d2a7"],
+								[value: 74, color: "#44b621"],
+								[value: 84, color: "#f1d801"],
+								[value: 95, color: "#d04e00"],
+								[value: 96, color: "#bc2323"]
+						]
 			}
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
@@ -69,19 +70,28 @@ def updated() {
 
 def installed() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	def cmds = [
+			secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId)),
+			secure(zwave.wakeUpV2.wakeUpIntervalGet())
+	]
+
+	response(cmds)
 }
 
 def configure() {
 	response([
-		secure(zwave.batteryV1.batteryGet()),
-		"delay 500",
-		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)), // humidity
-		"delay 500",
-		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)), // temperature
-		"delay 500",
-		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)), // dew point
-		"delay 500",
-		secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+			secure(zwave.batteryV1.batteryGet()),
+			"delay 2000",
+			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)), // humidity
+			"delay 2000",
+			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)), // temperature
+			"delay 2000",
+			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)), // dew point
+			"delay 2000",
+			secure(zwave.notificationV3.notificationGet(notificationType: 0x10)), // mold detection
+			"delay 2000",
+			secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
 	])
 }
 
@@ -100,6 +110,10 @@ def parse(String description) {
 	log.debug "parse() result ${results.inspect()}"
 
 	return results
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
+	log.debug "Wake Up Interval Report: ${cmd}"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
@@ -123,7 +137,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 
-	result = createEvent(name: "isMoldEnvironment", value: value, descriptionText: description, isStateChange: true, displayed: true)
+		result = createEvent(name: "isMoldEnvironment", value: value, descriptionText: description, isStateChange: true, displayed: true)
 	}
 }
 
@@ -160,7 +174,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.isStateChange = true
 			break
 		case 0x0B:
-			map.name = "dewPoint"
+			map.name = "dewpoint"
 			map.unit = temperatureScale
 			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
 			map.displayed = true
@@ -180,11 +194,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)) // humidity
 	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) // temperature
 	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)) // dew point
+	cmds += secure(zwave.notificationV3.notificationGet(notificationType: 0x10)) // mold
 
 	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
 		cmds += ["delay 1000",
-			 secure(zwave.batteryV1.batteryGet()),
-			 "delay 2000"
+				 secure(zwave.batteryV1.batteryGet()),
+				 "delay 2000"
 		]
 	}
 
