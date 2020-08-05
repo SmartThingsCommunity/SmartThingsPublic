@@ -216,6 +216,9 @@ def parse(String description) {
 }
 
 def multilevelChildInstalled(childDni) {
+	// Device unreliably responds to the command below during initial poll, causing an error while using child's setLevel,
+	// due to the null value of currentLevel
+	sendEventsToVenetianBlind([[name: "level", value: 50]])
 	state.timeOfVenetianMovement = 150
 	sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet(), 2))
 }
