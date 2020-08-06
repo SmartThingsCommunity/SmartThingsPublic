@@ -104,7 +104,7 @@ metadata {
 				)
 				input(
 						title: "Set the MIN brightness level (Aeotec Nano Dimmer Only):",
-						description: "Adjust the minimum dimming level. This may be needed for incandescent and non-incandescent bulbs.",
+						description: "This may need to be adjusted for bulbs that are not dimming properly.",
 						name: "minDimmingLevel",
 						type: "number",
 						range: "0..99",
@@ -314,7 +314,6 @@ def getAeotecNanoDimmerConfigurationCommands() {
 		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
 		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
 		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
-		}
 	}
 
 	return result
@@ -323,7 +322,7 @@ def getAeotecNanoDimmerConfigurationCommands() {
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
 	if (isAeotecNanoDimmer()) {
 		if (cmd.parameterNumber == 131) {
-			state.minDimmingLevel = scaledConfigurationValue
+			state.minDimmingLevel = cmd.scaledConfigurationValue
 			state.configured = true
 		}
 
