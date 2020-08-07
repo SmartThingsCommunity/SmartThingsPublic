@@ -3,8 +3,7 @@
  *  Aeon Multisensor 6 (Advanced)
  *   
  *	github: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
- *	Date: 2019-10-28 3:05 PM
+ *	Date: 2020-08-07
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -19,6 +18,8 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
+ *
+ *  2020-08-07: Fix for missing "maxFirmware()" method. 
  *
  *  2019-10-28: Adjusting method of determining firmware specific settings. 
  *
@@ -147,6 +148,10 @@
             "refresh", "configure", "statusText2", 
             ])
 	}
+}
+
+private getMaxFirmware() {
+	return 1.13
 }
 
 def parse(String description)
