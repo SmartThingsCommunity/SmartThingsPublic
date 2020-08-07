@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 Eric Maycock
+ *  Copyright 2020 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,17 +12,25 @@
  *
  *  SmartLife RGBW Controller
  *
- *  Author: Eric Maycock (erocm123)
- *  Date: 2016-12-10
+ *  Author: Eric Maycock (erocm123) and updated by cjcharles
+ *  Date: 2020-07-28
  */
 
 import groovy.json.JsonSlurper
 
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_MAX() { 6500 }
+private getWARM_WHITE() { "warmWhite" }
+private getCOLD_WHITE() { "coldWhite" }
+private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
+
 metadata {
-	definition (name: "SmartLife RGBW Controller", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "SmartLife RGBW Controller", namespace: "erocm123", author: "Eric Maycock", vid:"generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Actuator"
         capability "Color Control"
+        capability "Color Temperature"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
@@ -55,6 +63,16 @@ metadata {
         command "setBlueLevel"
         command "setWhite1Level"
         command "setWhite2Level"
+
+        // Flash green for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+        command "flashGreen"
+        
+        // Flash red for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+        command "flashRed"
+        
+        // Flash blue for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+        command "flashBlue"
+
 	}
 
 	simulator {
@@ -62,6 +80,17 @@ metadata {
     
     preferences {
         input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input "p1Child", "bool", title: "Program 1 Child Device", description: "", required: false, defaultValue: false
+        input "p2Child", "bool", title: "Program 2 Child Device", description: "", required: false, defaultValue: false
+        input "p3Child", "bool", title: "Program 3 Child Device", description: "", required: false, defaultValue: false
+        input "p4Child", "bool", title: "Program 4 Child Device", description: "", required: false, defaultValue: false
+        input "p5Child", "bool", title: "Program 5 Child Device", description: "", required: false, defaultValue: false
+        input "p6Child", "bool", title: "Program 6 Child Device", description: "", required: false, defaultValue: false
+        input "rChild", "bool", title: "Red Channel Child Device", description: "", required: false, defaultValue: false
+        input "gChild", "bool", title: "Green Channel Child Device", description: "", required: false, defaultValue: false
+        input "bChild", "bool", title: "Blue Channel Child Device", description: "", required: false, defaultValue: false
+        input "w1Child", "bool", title: "White1 Channel Child Device", description: "", required: false, defaultValue: false
+        input "w2Child", "bool", title: "White2 Channel Child Device", description: "", required: false, defaultValue: false
 		generate_preferences(configuration_model())
 	}
 
@@ -171,8 +200,9 @@ metadata {
 }
 
 def installed() {
-	log.debug "installed()"
-	configure()
+    log.debug "installed()"
+    createChildDevices()
+    configure()
 }
 
 def configure() {
@@ -185,11 +215,141 @@ def configure() {
 def updated()
 {
     logging("updated()", 1)
+    createChildDevices()
     def cmds = [] 
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 12 * 60 * 2, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     if (cmds != []) response(cmds)
+}
+
+private void createChildDevices() {
+    if (p1Child && !childExists("ep01")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep01", null, [completedSetup: true, label: "${device.label} - Program 1",
+            isComponent: false
+        ])
+    } else if (!p1Child && childExists("ep01")) {
+        log.debug "Trying to delete child device ep01. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep01")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (p2Child && !childExists("ep02")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep02", null, [completedSetup: true, label: "${device.label} - Program 2",
+            isComponent: false
+        ])
+    } else if (!p2Child && childExists("ep02")) {
+        log.debug "Trying to delete child device ep02. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep02")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (p3Child && !childExists("ep03")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep03", null, [completedSetup: true, label: "${device.label} - Program 3",
+            isComponent: false
+        ])
+    } else if (!p3Child && childExists("ep03")) {
+        log.debug "Trying to delete child device ep03. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep03")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (p4Child && !childExists("ep04")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep04", null, [completedSetup: true, label: "${device.label} - Program 4",
+            isComponent: false
+        ])
+    } else if (!p4Child && childExists("ep04")) {
+        log.debug "Trying to delete child device ep04. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep04")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (p5Child && !childExists("ep05")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep05", null, [completedSetup: true, label: "${device.label} - Program 5",
+            isComponent: false
+        ])
+    } else if (!p5Child && childExists("ep05")) {
+        log.debug "Trying to delete child device ep05. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep05")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (p6Child && !childExists("ep06")) {
+        addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep06", null, [completedSetup: true, label: "${device.label} - Program 6",
+            isComponent: false
+        ])
+    } else if (!p6Child && childExists("ep06")) {
+        log.debug "Trying to delete child device ep06. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep06")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (rChild && !childExists("ep07")) {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep07", null, [completedSetup: true, label: "${device.label} - Red Channel",
+            isComponent: false
+        ])
+    } else if (!rChild && childExists("ep07")) {
+        log.debug "Trying to delete child device ep07. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep07")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (gChild && !childExists("ep08")) {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep08", null, [completedSetup: true, label: "${device.label} - Green Channel",
+            isComponent: false
+        ])
+    } else if (!gChild && childExists("ep08")) {
+        log.debug "Trying to delete child device ep08. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep08")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (bChild && !childExists("ep09")) {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep09", null, [completedSetup: true, label: "${device.label} - Blue Channel",
+            isComponent: false
+        ])
+    } else if (!bChild && childExists("ep09")) {
+        log.debug "Trying to delete child device ep09. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep09")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (w1Child && !childExists("ep10")) {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep10", null, [completedSetup: true, label: "${device.label} - White1 Channel",
+            isComponent: false
+        ])
+    } else if (!w1Child && childExists("ep10")) {
+        log.debug "Trying to delete child device ep10. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep10")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    if (w2Child && !childExists("ep11")) {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep11", null, [completedSetup: true, label: "${device.label} - White2 Channel",
+            isComponent: false
+        ])
+    } else if (!w2Child && childExists("ep11")) {
+        log.debug "Trying to delete child device ep11. If this fails it is likely that there is an App using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep11")}
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+    }
+    childDevices.each {
+        if (it.label == "${state.oldLabel} (CH${channelNumber(it.deviceNetworkId)})") {
+            def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
+            it.setLabel(newLabel)
+        }
+    }
+    state.oldLabel = device.label
+}
+
+def childExists(ep) {
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith(ep)}
+    if (childDevice) 
+        return true
+    else
+        return false
 }
 
 private def logging(message, level) {
@@ -211,7 +371,10 @@ def getDefault(){
         return "Previous"
     } else if(settings.dcolor == "Random") {
         return "${transition == "false"? "d~" : "f~"}${getHexColor(settings.dcolor)}"
-    } else if(settings.dcolor == "Custom") {
+    } else if(settings.dcolor == "Custom" && settings.custom.length() == 10) {
+    	//Here we have a 10 char value, i.e. exact colour choice
+        return "${settings.custom}"
+    } else if(settings.dcolor == "Custom" && settings.dcolor.length() != 10) {
         return "${transition == "false"? "d~" : "f~"}${settings.custom}"
     } else if(settings.dcolor == "Soft White" || settings.dcolor == "Warm White") {
         if (settings.level == null || settings.level == "0") {
@@ -246,18 +409,18 @@ def parse(description) {
     def map = [:]
     def events = []
     def cmds = []
+    def body
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
-
-    if (!state.mac || state.mac != descMap["mac"]) {
+    
+    if (descMap["mac"] != null && (!state.mac || state.mac != descMap["mac"])) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
         updateDataValue("mac", descMap["mac"])
 	}
     if (state.mac != null && state.dni != state.mac) state.dni = setDeviceNetworkId(state.mac)
-    
-    def body = new String(descMap["body"].decodeBase64())
-    log.debug body
+    if (descMap["body"]) body = new String(descMap["body"].decodeBase64())
+    if(body?.startsWith("{") || body?.startsWith("[")) {
     
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
@@ -268,7 +431,7 @@ def parse(description) {
     }
     if (result.containsKey("power")) {
         events << createEvent(name: "switch", value: result.power)
-        toggleTiles("all")
+        toggleTiles("all", "off")
     }
     if (result.containsKey("rgb")) {
        events << createEvent(name:"color", value:"#$result.rgb")
@@ -288,6 +451,12 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"red", value: "off", displayed: false)
        }
+       def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep07")}
+        if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: (Integer.parseInt(result.r,16)/255 * 100 as Integer) > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: Integer.parseInt(result.r,16)/255 * 100 as Integer)            
+        }
     }
     if (result.containsKey("g")) {
        events << createEvent(name:"greenLevel", value: Integer.parseInt(result.g,16)/255 * 100 as Integer, displayed: false)
@@ -296,6 +465,12 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"green", value: "off", displayed: false)
        }
+       def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep08")}
+        if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: (Integer.parseInt(result.g,16)/255 * 100 as Integer) > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: Integer.parseInt(result.g,16)/255 * 100 as Integer)            
+        }
     }
     if (result.containsKey("b")) {
        events << createEvent(name:"blueLevel", value: Integer.parseInt(result.b,16)/255 * 100 as Integer, displayed: false)
@@ -304,6 +479,12 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"blue", value: "off", displayed: false)
        }
+       def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep09")}
+        if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: (Integer.parseInt(result.b,16)/255 * 100 as Integer) > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: Integer.parseInt(result.b,16)/255 * 100 as Integer)            
+        }
     }
     if (result.containsKey("w1")) {
        events << createEvent(name:"white1Level", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer, displayed: false)
@@ -312,7 +493,12 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white1", value: "off", displayed: false)
        }
-
+       def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep10")}
+        if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: (Integer.parseInt(result.w1,16)/255 * 100 as Integer) > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: Integer.parseInt(result.w1,16)/255 * 100 as Integer)            
+        }
        // only store the previous value if the response did not come from a power-off command
        if (result.power != "off")
           state.previousW1 = result.w1
@@ -324,7 +510,12 @@ def parse(description) {
        } else {
     	  events << createEvent(name:"white2", value: "off", displayed: false)
        }
-
+       def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep11")}
+        if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: (Integer.parseInt(result.w2,16)/255 * 100 as Integer) > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: Integer.parseInt(result.w2,16)/255 * 100 as Integer)            
+        }
        // only store the previous value if the response did not come from a power-off command
        if (result.power != "off")
           state.previousW2 = result.w2
@@ -332,29 +523,42 @@ def parse(description) {
     if (result.containsKey("version")) {
        events << createEvent(name:"firmware", value: result.version + "\r\n" + result.date, displayed: false)
     }
+    
+    if (result.containsKey("uptime")) {
+        events << createEvent(name: "uptime", value: result.uptime, displayed: false)
+    }
 
     if (result.containsKey("success")) {
        if (result.success == "true") state.configSuccess = "true" else state.configSuccess = "false" 
     }
     if (result.containsKey("program")) {
-        if (result.running == "false") {
-            toggleTiles("all")
-        }
-        else {
-            toggleTiles("switch$result.program")
-            events << createEvent(name:"switch$result.program", value: "on")
-        }
+
+        toggleTiles(result.program, result.running == "true"? "on" : "off")
+        
     }
-    
+    } else {    
+        log.debug "Response is not JSON: $body"    
+    }
     if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) events << createEvent(name: 'ip', value: getDataValue("ip"))
 
     return events
 }
 
-private toggleTiles(value) {
-   def tiles = ["switch1", "switch2", "switch3", "switch4", "switch5", "switch6"]
-   tiles.each {tile ->
-      if (tile != value) sendEvent(name: tile, value: "off")
+private toggleTiles(number, value) {
+   for (int i = 1; i <= 6; i++){
+       if ("${i}" != number){
+           def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep0$i"}
+           if (childDevice) {         
+                childDevice.sendEvent(name: "switch", value: "off")
+           }
+           sendEvent(name: "switch$i", value: "off")
+       } else {
+           def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep0$i"}
+           if (childDevice) {         
+                childDevice.sendEvent(name: "switch", value: value)
+           }
+           sendEvent(name: "switch$i", value: value)
+       }
    }
 }
 
@@ -378,12 +582,12 @@ private getScaledColor(color) {
 
 def on() {
 	log.debug "on()"
-    getAction("/on?transition=$transition")
+    getAction("/on?transition=$dtransition")
 }
 
 def off() {
 	log.debug "off()"
-    getAction("/off?transition=$transition")
+    getAction("/off?transition=$dtransition")
 }
 
 def setLevel(level) {
@@ -414,16 +618,37 @@ def getWhite(value) {
 	log.debug "level: ${level}"
 	return hex(level)
 }
+
+def setColorTemperature(temp) {
+    log.debug "setColorTemperature being called with ${temp}"
+    def cmds = []
+    if (temp < COLOR_TEMP_MIN) temp = COLOR_TEMP_MIN
+	if (temp > COLOR_TEMP_MAX) temp = COLOR_TEMP_MAX
+    def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 100) as Integer
+    def coldValue = 100 - warmValue
+    if (hasW2 == false) {
+        coldValue = hex((100 - warmValue)/100 * 255) 
+        def uri = "/rgb?value=$coldValue$coldValue$coldValue"
+        cmds.push(getAction("$uri&channels=false&transition=$dtransition"))  
+    } else {
+        cmds.push(getAction("/w2?value=$coldValue&channels=$channels&transition=$dtransition"))
+    }
+    cmds.push(getAction("/w1?value=${hex(warmValue)}&channels=false&transition=$dtransition"))
+    sendEvent(name: "colorTemperature", value: temp)
+    return cmds
+}
+
 def setColor(value) {
     log.debug "setColor being called with ${value}"
     def uri
     def validValue = true
+    def hex
     
     if ((value.saturation != null) && (value.hue != null)) {
         def hue = (value.hue != null) ? value.hue : 13
 		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
-        value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
+        hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
     } 
     
     if (value.hue == 5 && value.saturation == 4) {
@@ -457,6 +682,20 @@ def setColor(value) {
        uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
     }
+    else if (hex) {
+       log.debug "setting color with hex"
+       if (!hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+           log.debug "$hex is not valid"
+           validValue = false
+       } else {
+           def rgb = hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+           def myred = rgb[0] < 40 ? 0 : rgb[0]
+           def mygreen = rgb[1] < 40 ? 0 : rgb[1]
+           def myblue = rgb[2] < 40 ? 0 : rgb[2]
+           def dimmedColor = getDimmedColor(rgbToHex([r:myred, g:mygreen, b:myblue]))
+           uri = "/rgb?value=${dimmedColor}"
+       }
+    }
 	else if (value.hex) {
        log.debug "setting color with hex"
        if (!value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
@@ -476,7 +715,7 @@ def setColor(value) {
     }
     else if (value.aLevel) {
     	def actions = []
-        if (channels == "true") {
+        if (channels == true) {
            def skipColor = false
            // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
            if (device.currentValue("white1") == "on" || state.previousW1 != "00") {
@@ -491,7 +730,7 @@ def setColor(value) {
         log.debug state.previousRGB
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
            uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
-           actions.push(getAction("$uri&channels=$channels&transition=$transition"))
+           actions.push(getAction("$uri&channels=$channels&transition=$dtransition"))
         }
         } else {
            // Handle white channel dimmers if they're on or were not previously off (excluding power-off command)
@@ -502,7 +741,7 @@ def setColor(value) {
         
            // if the device is currently on, scale the current RGB values; otherwise scale the previous setting
            uri = "/rgb?value=${getDimmedColor(device.latestValue("switch") == "on" ? device.currentValue("color").substring(1) : state.previousRGB)}"
-           actions.push(getAction("$uri&channels=$channels&transition=$transition"))
+           actions.push(getAction("$uri&channels=$channels&transition=$dtransition"))
         }
         return actions
     }
@@ -511,7 +750,7 @@ def setColor(value) {
        uri = "/w1?value=ff"
     }
 
-    if (uri != null && validValue != false) getAction("$uri&channels=$channels&transition=$transition")
+    if (uri != null && validValue != false) getAction("$uri&channels=$channels&transition=$dtransition")
 
 }
 
@@ -604,7 +843,7 @@ def huesatToRGB(float hue, float sat) {
 }
 
 private rgbwToHSV(Map colorMap) {
-    log.debug "rgbwToHSV(): colorMap: ${colorMap}"
+    //log.debug "rgbwToHSV(): colorMap: ${colorMap}"
 
     if (colorMap.containsKey("r") & colorMap.containsKey("g") & colorMap.containsKey("b")) { 
 
@@ -764,20 +1003,6 @@ private getHeader(userpass = null){
     return headers
 }
 
-def toAscii(s){
-        StringBuilder sb = new StringBuilder();
-        String ascString = null;
-        long asciiInt;
-                for (int i = 0; i < s.length(); i++){
-                    sb.append((int)s.charAt(i));
-                    sb.append("|");
-                    char c = s.charAt(i);
-                }
-                ascString = sb.toString();
-                asciiInt = Long.parseLong(ascString);
-                return asciiInt;
-}
-
 def on1() { onOffCmd(1, 1) }
 def on2() { onOffCmd(1, 2) }
 def on3() { onOffCmd(1, 3) }
@@ -796,15 +1021,125 @@ def onOffCmd(value, program) {
     log.debug "onOffCmd($value, $program)"
     def uri
     if (value == 1){
-       if(state."program${program}" != null) {
-          uri = "/program?value=${state."program${program}"}&number=$program"
-       }    
+       uri = getProgramString(program)
     } else if(value == 0){
        uri = "/stop"
     } else {
        uri = "/off"
     }
+	log.debug uri
     if (uri != null) return getAction(uri)
+}
+
+def getProgramString(number){
+def uri = ""
+if(state."program${number}" != null) {
+        uri = "/program?value=${state."program${number}"}&number=${number}"
+    } else {
+        //default programs if user hasn't set them up
+        switch(number){
+        case 1:
+            uri = "/program?value=g~ff0000~100_g~0000ff~100&repeat=-1&off=true&number=${number}"
+            break;
+        case 2:
+            uri = "/program?value=f~ff0000~6000_f~0000ff~6000_f~00ff00~6000_f~ffff00~6000_f~5a00ff~6000_f~ff00ff~6000_f~00ffff~6000&repeat=-1&off=false&number=${number}"
+            break;
+        case 3:
+            uri = "/program?value=f~xxxxxx~100-3000&repeat=-1&off=false&number=${number}"
+            break;
+        case 4:
+            uri = "/program?value=f~800000~100-3000_f~662400~100-2000_f~330000~100-3000_f~4d1b00~100-2000_f~990000~100-3000_f~1a0900~100-2000&repeat=-1&off=true&number=${number}"
+            break;
+        case 5:
+            uri = "/program?value=f~00004d~100-15000_x~b3~100_g~000000~100_x~cc~100&repeat=-1&off=true&number=${number}"
+            break;
+        case 6:
+            uri = "/program?value=f~xxxxxx~100-3000&repeat=-1&off=false&number=${number}"
+            break;
+        default:
+            uri = "/program?value=f~xxxxxx~100-3000&repeat=-1&off=false"
+            break;
+        }
+        
+    }
+    return uri
+}
+
+def childOn(String dni) {
+    log.debug "childOn($dni)"
+    def uri = ""
+    switch(channelNumber(dni)) {
+        case [1, 2, 3, 4, 5, 6]:
+        sendHubCommand(getAction(getProgramString(channelNumber(dni))))
+        break;
+        case [7, 8, 9, 10, 11]:
+        childSetLevel(dni, 100)
+        break;
+    }
+}
+
+def childSetLevel(String dni, value) {
+    def level = Math.min(value as Integer, 99)  
+    def uri = ""
+    level = 255 * level/99 as Integer
+    log.debug "level: ${level}"
+    level = hex(level)
+    switch (channelNumber(dni)) {
+        case 7:
+            uri = "/r?value=$level&channels=$channels&transition=$dtransition"
+        break
+        case 8:
+            uri = "/g?value=$level&channels=$channels&transition=$dtransition"
+        break
+        case 9:
+            uri = "/b?value=$level&channels=$channels&transition=$dtransition"
+        break
+        case 10:
+            uri = "/w1?value=$level&channels=$channels&transition=$dtransition"
+        break
+        case 11:
+            uri = "/w2?value=$level&channels=$channels&transition=$dtransition"
+        break
+    }
+    sendHubCommand(getAction(uri))
+}
+
+
+def childOff(String dni) {
+    log.debug "childOff($dni)"
+    def uri = ""
+     if (channelNumber(dni) in [1,2,3,4,5,6]) {
+         uri = "/stop"
+         sendHubCommand(getAction(uri))
+     } else {
+        switch (channelNumber(dni)) {
+        case 7:
+            childSetLevel(dni, 0)
+            break;
+        case 8:
+            childSetLevel(dni, 0)
+            break;
+        case 9:
+            childSetLevel(dni, 0)
+            break;
+        case 10:
+            childSetLevel(dni, 0)
+            break;
+        case 11:
+            childSetLevel(dni, 0)
+            break;
+        }
+     }
+    
+}
+
+def childRefresh(String dni) {
+    log.debug "childRefresh($dni)"
+    //Not needed right now
+}
+
+private channelNumber(String dni) {
+    dni.split("-ep")[-1] as Integer
 }
 
 def setProgram(value, program){
@@ -816,89 +1151,110 @@ def hex2int(value){
 }
 
 def redOn() {
-	log.debug "redOn()"
-    getAction("/r?value=ff&channels=$channels&transition=$transition")
+    log.debug "redOn()"
+    getAction("/r?value=ff&channels=$channels&transition=$dtransition")
 }
 def redOff() {
-	log.debug "redOff()"
-    getAction("/r?value=00&channels=$channels&transition=$transition")
+    log.debug "redOff()"
+    getAction("/r?value=00&channels=$channels&transition=$dtransition")
 }
 
 def setRedLevel(value) {
-	log.debug "setRedLevel: ${value}"
+    log.debug "setRedLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
-	log.debug "level: ${level}"
-	level = hex(level)
-    getAction("/r?value=$level&channels=$channels&transition=$transition")
+    log.debug "level: ${level}"
+    level = hex(level)
+    getAction("/r?value=$level&channels=$channels&transition=$dtransition")
 }
 def greenOn() {
-	log.debug "greenOn()"
-    getAction("/g?value=ff&channels=$channels&transition=$transition")
+    log.debug "greenOn()"
+    getAction("/g?value=ff&channels=$channels&transition=$dtransition")
 }
 def greenOff() {
-	log.debug "greenOff()"
-    getAction("/g?value=00&channels=$channels&transition=$transition")
+    log.debug "greenOff()"
+    getAction("/g?value=00&channels=$channels&transition=$dtransition")
 }
 
 def setGreenLevel(value) {
-	log.debug "setGreenLevel: ${value}"
+    log.debug "setGreenLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
-	log.debug "level: ${level}"
-	level = hex(level)
-    getAction("/g?value=$level&channels=$channels&transition=$transition")
+    log.debug "level: ${level}"
+    level = hex(level)
+    getAction("/g?value=$level&channels=$channels&transition=$dtransition")
 }
 def blueOn() {
-	log.debug "blueOn()"
-    getAction("/b?value=ff&channels=$channels&transition=$transition")
+    log.debug "blueOn()"
+    getAction("/b?value=ff&channels=$channels&transition=$dtransition")
 }
 def blueOff() {
-	log.debug "blueOff()"
-    getAction("/b?value=00&channels=$channels&transition=$transition")
+    log.debug "blueOff()"
+    getAction("/b?value=00&channels=$channels&transition=$dtransition")
 }
 
 def setBlueLevel(value) {
-	log.debug "setBlueLevel: ${value}"
+    log.debug "setBlueLevel: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
-	log.debug "level: ${level}"
-	level = hex(level)
-    getAction("/b?value=$level&channels=$channels&transition=$transition")
+    log.debug "level: ${level}"
+    level = hex(level)
+    getAction("/b?value=$level&channels=$channels&transition=$dtransition")
 }
 def white1On() {
-	log.debug "white1On()"
-    getAction("/w1?value=ff&channels=$channels&transition=$transition")
+    log.debug "white1On()"
+    getAction("/w1?value=ff&channels=$channels&transition=$dtransition")
 }
 def white1Off() {
-	log.debug "white1Off()"
-    getAction("/w1?value=00&channels=$channels&transition=$transition")
+    log.debug "white1Off()"
+    getAction("/w1?value=00&channels=$channels&transition=$dtransition")
 }
 
 def setWhite1Level(value) {
-	log.debug "setwhite1Level: ${value}"
+    log.debug "setwhite1Level: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
-	log.debug "level: ${level}"
-	def whiteLevel = hex(level)
-    getAction("/w1?value=$whiteLevel&channels=$channels&transition=$transition")
+    log.debug "level: ${level}"
+    def whiteLevel = hex(level)
+    getAction("/w1?value=$whiteLevel&channels=$channels&transition=$dtransition")
 }
 def white2On() {
-	log.debug "white2On()"
-    getAction("/w2?value=ff&channels=$channels&transition=$transition")
+    log.debug "white2On()"
+    getAction("/w2?value=ff&channels=$channels&transition=$dtransition")
 }
 def white2Off() {
-	log.debug "white2Off()"
-    getAction("/w2?value=00&channels=$channels&transition=$transition")
+    log.debug "white2Off()"
+    getAction("/w2?value=00&channels=$channels&transition=$dtransition")
 }
 
 def setWhite2Level(value) {
-	log.debug "setwhite2Level: ${value}"
+    log.debug "setwhite2Level: ${value}"
     def level = Math.min(value as Integer, 99)    
     level = 255 * level/99 as Integer
-	log.debug "level: ${level}"
-	def whiteLevel = hex(level)
-    getAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
+    log.debug "level: ${level}"
+    def whiteLevel = hex(level)
+    getAction("/w2?value=$whiteLevel&channels=$channels&transition=$dtransition")
+}
+
+// Flash green for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashGreen() {
+	log.debug "flashGreen()"
+    def uri = "/program?value=f~00ff00~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
+}
+
+// Flash red for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashRed() {
+	log.debug "flashRed()"
+    def uri = "/program?value=f~ff0000~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
+}
+
+// Flash blue for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashBlue() {
+	log.debug "flashBlue()"
+    def uri = "/program?value=f~0000ff~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
 }
 
 private getHexColor(value){
@@ -997,7 +1353,7 @@ def generate_preferences(configuration_model)
                     displayDuringSetup: "${it.@displayDuringSetup}"
             break
             case "boolean":
-               input "${it.@index}", "boolean",
+               input "${it.@index}", "bool",
                     title:"${it.@label}\n" + "${it.Help}",
                     defaultValue: "${it.@value}",
                     displayDuringSetup: "${it.@displayDuringSetup}"
@@ -1099,12 +1455,12 @@ Default: Off
     <Item label="Off" value="0" />
     <Item label="On" value="1" />
 </Value>
-<Value type="list" byteSize="1" index="transition" label="Default Transition" min="0" max="1" value="0" setting_type="preference" fw="">
+<Value type="list" byteSize="1" index="dtransition" label="Default Transition" min="1" max="2" value="1" setting_type="lan" fw="">
 <Help>
 Default: Fade
 </Help>
-    <Item label="Fade" value="true" />
-    <Item label="Flash" value="false" />
+    <Item label="Fade" value="1" />
+    <Item label="Flash" value="2" />
 </Value>
 <Value type="list" byteSize="1" index="dcolor" label="Default Color" min="" max="" value="" setting_type="lan" fw="">
 <Help>
@@ -1129,8 +1485,8 @@ Default: Previous
 </Value>
 <Value type="text" byteSize="1" index="custom" label="Custom Color in Hex" min="" max="" value="" setting_type="preference" fw="">
 <Help>
-(ie ffffff)
-If \"Custom\" is chosen above as the default color. Default level does not apply if custom hex value is chosen.
+Use a 10 digit hex value rrggbbw1w2 (ie for white1 channel = 100% and red channel = 100% ff0000ff00)
+If "Custom" is chosen above as the default color, default level does not apply.
 </Help>
 </Value>
 <Value type="number" byteSize="1" index="level" label="Default Level" min="1" max="100" value="" setting_type="preference" fw="">
@@ -1138,6 +1494,10 @@ If \"Custom\" is chosen above as the default color. Default level does not apply
 </Help>
 </Value>
 <Value type="boolean" byteSize="1" index="channels" label="Mutually Exclusive RGB / White.\nOnly allow one or the other" min="" max="" value="false" setting_type="preference" fw="">
+<Help>
+</Help>
+</Value>
+<Value type="boolean" byteSize="1" index="hasW2" label="Use W2 for cold white instead of RGB" min="" max="" value="false" setting_type="preference" fw="">
 <Help>
 </Help>
 </Value>
