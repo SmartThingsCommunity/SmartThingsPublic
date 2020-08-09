@@ -119,7 +119,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSL012Z", deviceJoinName: "RealityLight Light" //RealityLight
 
 		// Ajax Online
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Ajax Online", model: "CCT", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-6500K" // Ajax Online Filament Bulb
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "ZB/Ajax Online", model: "CCT Light", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-6500K" // Ajax Online Filament Bulb
 	}
 
 	// UI tile definitions
