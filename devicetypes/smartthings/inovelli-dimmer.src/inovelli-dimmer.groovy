@@ -312,14 +312,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 }
 
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
-	log.debug "dimmer events ${cmd}"
-	def map = [name: "switch", value: cmd.value ? "on" : "off", descriptionText: "$device.displayName was turned $cmd.value"]
-	def switchEvent = createEvent(map)
-	def result = [switchEvent]
-	if (cmd.value) {
-		map = [name: "level", value: cmd.value == 99 ? 100 : cmd.value, unit: "%"]
-		result << createEvent(map)
-	}
+	def switchEvent = createEvent([name: "switch", value: cmd.value ? "on" : "off", descriptionText: "$device.displayName was turned ${cmd.value ? "on" : "off"}"])
+	def dimmerEvent = createEvent([name: "level", value: cmd.value == 99 ? 100 : cmd.value, unit: "%"])
+	def result = [switchEvent, dimmerEvent]
 	if (switchEvent.isStateChange) {
 		result << response(["delay 1000", zwave.meterV3.meterGet(scale: 2).format()])
 	}
