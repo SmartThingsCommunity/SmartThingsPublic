@@ -27,8 +27,8 @@ metadata {
 			}
 		}
 
-		main([])
-		details([])
+		main(["switch"])
+		details(["switch"])
 	}
 }
 

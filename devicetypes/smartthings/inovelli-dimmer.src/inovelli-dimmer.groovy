@@ -178,42 +178,41 @@ private syncConfiguration() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	// Preferences template begin
-	log.debug "Configuration report: ${cmd}"
-	def preference = parameterMap.find({ it.parameterNumber == cmd.parameterNumber })
-	def key = preference.key
-	def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
-	log.debug "settings.key ${settings."$key"} preferenceValue ${preferenceValue}"
-
-	if (state.currentPreferencesState."$key".status == "reverseSyncPending") {
-		log.debug "reverseSyncPending"
-		state.currentPreferencesState."$key".value = preferenceValue
-		state.currentPreferencesState."$key".status = "synced"
+	if (cmd.parameterNumber == 13) {
+		handleLEDPreferenceEvent(cmd)
 	} else {
-		if (preferenceValue instanceof String && settings."$key" == preferenceValue.toBoolean()) {
-			state.currentPreferencesState."$key".value = settings."$key"
+		// Preferences template begin
+		log.debug "Configuration report: ${cmd}"
+		def preference = parameterMap.find({ it.parameterNumber == cmd.parameterNumber })
+		def key = preference.key
+		def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
+		log.debug "settings.key ${settings."$key"} preferenceValue ${preferenceValue}"
+
+		if (state.currentPreferencesState."$key".status == "reverseSyncPending") {
+			log.debug "reverseSyncPending"
+			state.currentPreferencesState."$key".value = preferenceValue
 			state.currentPreferencesState."$key".status = "synced"
-		} else if (preferenceValue instanceof Integer && settings."$key" == preferenceValue) {
-			state.currentPreferencesState."$key".value = settings."$key"
-			state.currentPreferencesState."$key".status = "synced"
-		} else if (preference.type == "boolRange") {
-			log.debug "${state.currentPreferencesState."$key".status}"
-			if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-				state.currentPreferencesState."$key".status = "disabled"
+		} else {
+			if (preferenceValue instanceof String && settings."$key" == preferenceValue.toBoolean()) {
+				state.currentPreferencesState."$key".value = settings."$key"
+				state.currentPreferencesState."$key".status = "synced"
+			} else if (preferenceValue instanceof Integer && settings."$key" == preferenceValue) {
+				state.currentPreferencesState."$key".value = settings."$key"
+				state.currentPreferencesState."$key".status = "synced"
+			} else if (preference.type == "boolRange") {
+				log.debug "${state.currentPreferencesState."$key".status}"
+				if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
+					state.currentPreferencesState."$key".status = "disabled"
+				} else {
+					runIn(5, "syncConfiguration", [overwrite: true])
+				}
 			} else {
+				state.currentPreferencesState."$key"?.status = "syncPending"
 				runIn(5, "syncConfiguration", [overwrite: true])
 			}
-		} else {
-			state.currentPreferencesState."$key"?.status = "syncPending"
-			if (cmd.parameterNumber == 13) {
-				state.currentPreferencesState."$key".value = preferenceValue
-				state.currentPreferencesState."$key".status = "synced"
-				handleLEDPreferenceEvent(cmd)
-			}
-			runIn(5, "syncConfiguration", [overwrite: true])
 		}
+		// Preferences template end
 	}
-	// Preferences template end
 }
 
 private getPreferenceValue(preference, value = "default") {
@@ -291,7 +290,7 @@ def handleLEDPreferenceEvent(cmd) {
 def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel, childComponentName) {
 	try {
 		log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}, ${childComponentName}"
-		def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
+		addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
 			[
 				completedSetup: true,
 				label         : childComponentLabel,
@@ -299,7 +298,6 @@ def createChildDevice(childDthNamespace, childDthName, childDni, childComponentL
 				componentName : childComponentName,
 				componentLabel: childComponentLabel
 			])
-		childDevice
 	} catch (Exception e) {
 		log.debug "Exception: ${e}"
 	}
@@ -323,7 +321,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 		result << createEvent(map)
 	}
 	if (switchEvent.isStateChange) {
-		result << response(["delay 3000", zwave.meterV3.meterGet(scale: 2).format()])
+		result << response(["delay 1000", zwave.meterV3.meterGet(scale: 2).format()])
 	}
 	return result
 }
@@ -332,14 +330,14 @@ def on() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0xFF),
 		zwave.basicV1.basicGet()
-	], 5000)
+	], 1000)
 }
 
 def off() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0x00),
 		zwave.basicV1.basicGet()
-	], 5000)
+	], 1000)
 }
 
 def setLevel(level) {
@@ -348,7 +346,7 @@ def setLevel(level) {
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),
 		zwave.switchMultilevelV1.switchMultilevelGet()
-	], 5000)
+	], 1000)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
@@ -378,7 +376,7 @@ def setColorCmd(value, id) {
 	encapSequence([
 		zwave.configurationV2.configurationSet(scaledConfigurationValue: ledColor, parameterNumber: 13, size: 2),
 		zwave.configurationV2.configurationGet(parameterNumber: 13)
-	], 5000)
+	], 1000)
 }
 
 private huePercentToZwaveValue(value) {
@@ -398,7 +396,7 @@ def refresh() {
 	encapSequence([
 		zwave.basicV1.basicGet(),
 		zwave.meterV3.meterGet(scale: 0)
-	], 5000)
+	], 1000)
 }
 
 /*
@@ -468,12 +466,6 @@ private getParameterMap() {
 			parameterNumber: 11, size: 1, defaultValue: 0,
 			range          : "0..101",
 			description    : "When power is restored, the switch reverts to either On, Off, or Last Level. Example of how the values work: 0 = Off, 1-100 = Specific % On, 101 = Returns to Level before Power Outage. This parameter can be set without a HUB from the Configuration Button."
-		],
-		[
-			name           : "LED Indicator Color", key: "ledIndicatorColor", type: "range",
-			parameterNumber: 13, size: 2, defaultValue: 170,
-			range          : "0..255",
-			description    : "This will set the default color of the LED Bar. This is calculated by using a hue color circle (Value / 255 * 360). See website for more info. This parameter can be set without a HUB from the Configuration Button."
 		],
 		[
 			name           : "LED Indicator Intensity", key: "ledIndicatorIntensity", type: "range",
