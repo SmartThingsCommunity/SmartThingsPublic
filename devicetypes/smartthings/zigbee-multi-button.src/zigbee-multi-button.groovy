@@ -279,7 +279,13 @@ private getButtonName() {
 private Map parseAduroSmartButtonMessage(Map descMap){
 	def buttonState = "pushed"
 	def buttonNumber = 0
-	if (descMap.clusterInt == ADUROSMART_SPECIFIC_CLUSTER) {
+	if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+		if (descMap.command == "01") {
+		    buttonNumber = 1
+		} else if (descMap.command == "00") {
+		    buttonNumber = 4
+		}
+	} else if (descMap.clusterInt == ADUROSMART_SPECIFIC_CLUSTER) {
 		def list2 = descMap.data
 		buttonNumber = (list2[1] as int) + 1
 	}
