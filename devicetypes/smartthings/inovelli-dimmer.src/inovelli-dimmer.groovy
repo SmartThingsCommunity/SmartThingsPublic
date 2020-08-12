@@ -15,7 +15,7 @@
 *
 */
 metadata {
-	definition(name: "Inovelli Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", minHubCoreVersion: '000.017.0012', mcdSync: true) {
+	definition(name: "Inovelli Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mcdSync: true) {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"
@@ -26,7 +26,7 @@ metadata {
 		capability "Switch Level"
 		capability "Power Meter"
 
-		fingerprint mfr: "031E", prod: "0001", model: "0001", deviceJoinName: "Inovelli Dimmer Switch" , vid: "SmartThings-smartthings-Inovelli_Dimmer"//Inovelli Dimmer LZW31-SN
+		fingerprint mfr: "031E", prod: "0001", model: "0001", deviceJoinName: "Inovelli Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Inovelli_Dimmer" //Inovelli Dimmer LZW31-SN
 	}
 
 	tiles(scale: 2) {
@@ -58,7 +58,7 @@ metadata {
 	preferences {
 		// Preferences template begin
 		parameterMap.each {
-			input(title: it.name, description: it.description, type: "paragraph",	element: "paragraph")
+			input(title: it.name, description: it.description, type: "paragraph", element: "paragraph")
 
 			switch (it.type) {
 				case "boolRange":
@@ -89,7 +89,7 @@ metadata {
 					break
 				case "range":
 					input(
-						name: it.key,	type: "number", title: "Set value (range ${it.range})",
+						name: it.key, type: "number", title: "Set value (range ${it.range})",
 						defaultValue: it.defaultValue, range: it.range, required: false
 					)
 					break
