@@ -3,7 +3,7 @@
  *  Aeon Multisensor 6 (Advanced)
  *   
  *	github: Eric Maycock (erocm123)
- *	Date: 2020-08-07
+ *	Date: 2020-08-10
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -19,7 +19,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2020-08-07: Fix for missing "maxFirmware()" method. 
+ *  2020-08-10: Fix for missing "maxFirmware()" method. 
  *
  *  2019-10-28: Adjusting method of determining firmware specific settings. 
  *
@@ -668,7 +668,7 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave"){
             if (currentProperties."${it.@index}" == null)
             {
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware()){
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware){
                     isUpdateNeeded = "YES"
                     logging("Current value of parameter ${it.@index} is unknown")
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
@@ -676,7 +676,7 @@ def update_needed_settings()
             } 
             else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
             { 
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware()){
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware){
                     isUpdateNeeded = "YES"
 
                     logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
