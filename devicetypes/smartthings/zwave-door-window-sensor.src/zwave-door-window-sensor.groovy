@@ -23,6 +23,7 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
+		capability "Tamper Alert"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x80,0x84,0x85,0x86,0x72", deviceJoinName: "Open/Closed Sensor"
 		fingerprint deviceId: "0x07", inClusters: "0x30", deviceJoinName: "Open/Closed Sensor"
@@ -58,6 +59,9 @@ metadata {
 		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Recessed Door Sensor 7
 		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Recessed Door Sensor 7
 		fingerprint mfr: "0109", prod: "2022", model: "2201", deviceJoinName: "Vision Open/Closed Sensor" //AU //Vision Recessed Door Sensor
+		fingerprint mfr: "0371", prod: "0002", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //EU //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0102", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //US //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0202", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //AU //Aeotec Door/Window Sensor 7 Pro
 	}
 
 	// simulator metadata
@@ -119,6 +123,7 @@ def installed() {
 	// this is the nuclear option because the device often goes to sleep before we can poll it
 	sendEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
 	sendEvent(name: "battery", unit: "%", value: 100)
+	sendEvent(name: "tamper", value: "clear")
 	response(initialPoll())
 }
 
@@ -168,10 +173,13 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else if (cmd.notificationType == 0x07) {
 		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice door/window sensors
 			result << sensorValueEvent(cmd.v1AlarmLevel)
+		} else if (cmd.event == 0x00) {
+			result << createEvent(name: "tamper", value: "clear")
 		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
 			result << sensorValueEvent(1)
 		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
+			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 			if (!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
@@ -366,4 +374,8 @@ def retypeBasedOnMSR() {
 // this is present in zwave-motion-sensor.groovy DTH too
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }

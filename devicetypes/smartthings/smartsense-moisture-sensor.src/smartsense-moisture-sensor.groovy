@@ -26,13 +26,13 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "SmartThings Water Leak Sensor" //Water Leak Sensor
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315", deviceJoinName: "SmartThings Water Leak Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "SmartThings Water Leak Sensor" //Water Leak Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Water Leak Sensor" //Iris Smart Water Sensor
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-G", deviceJoinName: "Centralite Water Leak Sensor" //Centralite Water Sensor
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "SmartThings Water Leak Sensor" //Water Leak Sensor
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "SmartThings Water Leak Sensor" //Water Leak Sensor
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-IM6001"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-WTD03", deviceJoinName: "Sercomm Water Leak Sensor" //Sercomm Water Leak Detector
 	}
 
@@ -139,7 +139,7 @@ def parse(String description) {
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true

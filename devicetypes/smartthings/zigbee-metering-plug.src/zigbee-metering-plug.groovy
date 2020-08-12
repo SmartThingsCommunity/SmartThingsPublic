@@ -29,6 +29,10 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0105", deviceJoinName: "HONYAR Outlet" //HONYAR Smart Outlet (USB)
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0104", deviceJoinName: "HONYAR Outlet" //HONYAR Smart Outlet
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0009, 0702, 0B04", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "E_Socket", deviceJoinName: "HEIMAN Outlet" //HEIMAN Smart Outlet
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "sengled", model: "E1C-NB7",  deviceJoinName: "Sengled Outlet" //Sengled Smart Plug with Energy Tracker
+        fingerprint manufacturer: "DAWON_DNS", model: "PM-B430-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS Smart Plug PM-B430-ZB (10A), raw description: 01 0104 0051 01 07 0000, 0004, 0003, 0006, 0019, 0702, 0B04 07 0000, 0004, 0003, 0006, 0019, 0702, 0B04
+        fingerprint manufacturer: "DAWON_DNS", model: "PM-B530-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS Smart Plug PM-B530-ZB (16A), raw description: 01 0104 0051 01 07 0000, 0004, 0003, 0006, 0019, 0702, 0B04 07 0000, 0004, 0003, 0006, 0019, 0702, 0B04
+        fingerprint manufacturer: "DAWON_DNS", model: "PM-C140-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS In-Wall Outlet PM-C140-ZB, raw description: 01 0104 0051 01 0A 0000 0002 0003 0004 0006 0019 0702 0B04 0008 0009 0A 0000 0002 0003 0004 0006 0019 0702 0B04 0008 0009
 	}
 
     tiles(scale: 2){
@@ -62,23 +66,24 @@ def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
-    def powerDiv = 1
-    def energyDiv = 100
+    def descMap = zigbee.parseDescriptionAsMap(description)
 
     if (event) {
         log.info "event enter:$event"
-        if (event.name== "power") {
-            event.value = event.value/powerDiv
+        if (event.name == "switch" && !descMap.isClusterSpecific && descMap.commandInt == 0x0B) {
+            log.info "Ignoring default response with desc map: $descMap"
+            return [:]
+        } else if (event.name== "power") {
+            event.value = event.value/getPowerDiv()
             event.unit = "W"
         } else if (event.name== "energy") {
-            event.value = event.value/energyDiv
+            event.value = event.value/getEnergyDiv()
             event.unit = "kWh"
         }
         log.info "event outer:$event"
         sendEvent(event)
     } else {
         List result = []
-        def descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "Desc Map: $descMap"
 
         List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
@@ -91,13 +96,13 @@ def parse(String description) {
                 if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "power"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/powerDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getPowerDiv()
                         map.unit = "W"
                 }
                 else if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/energyDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
                         map.unit = "kWh"
                 }
 
@@ -148,5 +153,18 @@ def configure() {
     return refresh() +
     	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
-           zigbee.electricMeasurementPowerConfig(1, 600, 1) 
+           zigbee.electricMeasurementPowerConfig(1, 600, 1) +
+           zigbee.simpleMeteringPowerConfig()
+}
+
+private int getPowerDiv() {
+    isSengledOutlet() ? 10 : 1
+}
+
+private int getEnergyDiv() {
+    isSengledOutlet() ? 10000 : 100
+}
+
+private boolean isSengledOutlet() {
+    device.getDataValue("model") == "E1C-NB7"
 }

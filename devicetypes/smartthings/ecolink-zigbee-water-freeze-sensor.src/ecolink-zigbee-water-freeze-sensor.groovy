@@ -90,7 +90,7 @@ def parse(String description) {
 	} else if (map.name == "temperature") {
 		freezeStatus(map.value)
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true

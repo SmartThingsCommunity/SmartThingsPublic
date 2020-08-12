@@ -30,7 +30,8 @@ metadata {
 
 		// eWeLink
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
-
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "eWeLink", model: "ZB-SW01", deviceJoinName: "eWeLink Switch"
+         
 		// EZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
 
@@ -89,6 +90,10 @@ metadata {
 		// Third Reality
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch Plus
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch
+
+		// Dawon
+		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140R-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140R-ZB
 	}
 
 	// simulator metadata

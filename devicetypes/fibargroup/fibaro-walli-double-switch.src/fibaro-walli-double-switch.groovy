@@ -64,24 +64,6 @@ metadata {
 			)
 
 			switch(it.type) {
-				case "boolRange":
-					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
-					)
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
-					)
-					break
 				case "boolean":
 					input(
 							type: "paragraph",
@@ -133,11 +115,7 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
+		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
 }
@@ -152,14 +130,6 @@ def updated() {
 			state.currentPreferencesState."$it.key".status = "syncPending"
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
-		}
-		if (it.type == "boolRange") {
-			def preferenceName = it.key + "Boolean"
-			if (!settings."$preferenceName") {
-				state.currentPreferencesState."$it.key".status = "disablePending"
-			} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-				state.currentPreferencesState."$it.key".status = "syncPending"
-			}
 		}
 	}
 	syncConfiguration()
@@ -196,10 +166,10 @@ private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
 		case "boolean":
-			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+		// boolean values are returned as strings from the UI preferences
+			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
+		case "range":
+			return settings."$parameterKey"
 		default:
 			return Integer.parseInt(settings."$parameterKey")
 	}
@@ -256,12 +226,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (settings."$key" == preferenceValue) {
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
@@ -381,11 +345,8 @@ def childOnOff(deviceNetworkId, value) {
 private onOffCmd(value, endpoint = 1) {
 	delayBetween([
 		encap(zwave.basicV1.basicSet(value: value), endpoint),
-		encap(zwave.basicV1.basicGet(), endpoint),
-		"delay 3000",
-		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-		encap(zwave.meterV3.meterGet(scale: 2), endpoint)
-	])
+		encap(zwave.basicV1.basicGet(), endpoint)
+	], 1000)
 }
 
 private refreshAll(includeMeterGet = true) {

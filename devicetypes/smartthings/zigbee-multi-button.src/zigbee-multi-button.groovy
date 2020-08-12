@@ -285,16 +285,6 @@ private Map parseAduroSmartButtonMessage(Map descMap){
 		} else if (descMap.command == "00") {
 		    buttonNumber = 4
 		}
-	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
-		if (descMap.command == "02") {
-		    def data = descMap.data
-		    def d0 = data[0]
-		    if (d0 == "00") {
-			buttonNumber = 2
-		    } else if (d0 == "01") {
-			buttonNumber = 3
-		    }
-		}
 	} else if (descMap.clusterInt == ADUROSMART_SPECIFIC_CLUSTER) {
 		def list2 = descMap.data
 		buttonNumber = (list2[1] as int) + 1

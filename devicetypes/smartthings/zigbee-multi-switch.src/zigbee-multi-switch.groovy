@@ -42,6 +42,20 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR Switch 1" //HONYAR 2 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+
+		// Dawon
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240R-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340R-ZB
+		
+		// eWeLink
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch" //eWeLink 2 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch" //eWeLink 3 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch" //eWeLink 4 Gang Switch 1
 	}
 	// simulator metadata
 	simulator {
@@ -72,15 +86,21 @@ metadata {
 }
 
 def installed() {
-        createChildDevices()
-        updateDataValue("onOff", "catchall")
-        refresh()
+	createChildDevices()
+	updateDataValue("onOff", "catchall")
+	refresh()
 }
 
 def updated() {
-        log.debug "updated()"
-        updateDataValue("onOff", "catchall")
-        refresh()
+	log.debug "updated()"
+	updateDataValue("onOff", "catchall")
+	for (child in childDevices) {
+		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId) || //parent DNI has changed after rejoin
+				!child.deviceNetworkId.split(':')[-1].startsWith('0')) {
+			child.setDeviceNetworkId("${device.deviceNetworkId}:0${getChildEndpoint(child.deviceNetworkId)}")
+		}
+	}
+	refresh()
 }
 
 def parse(String description) {
@@ -112,10 +132,12 @@ def parse(String description) {
 }
 
 private void createChildDevices() {
-	def x = getChildCount()
-	for (i in 2..x) {
-		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+	if (!childDevices) {
+		def x = getChildCount()
+		for (i in 2..x) {
+			addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+				[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+		}
 	}
 }
 
@@ -156,12 +178,12 @@ def refresh() {
 	if (isOrvibo()) {
 		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
 	} else {
-	        def cmds = zigbee.onOffRefresh()
-	        def x = getChildCount()
-	        for (i in 2..x) {
-	        	cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
-	        }
-	        return cmds
+		def cmds = zigbee.onOffRefresh()
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
+		}
+		return cmds
 	}
 }
 
@@ -198,17 +220,17 @@ def configure() {
 	if (isOrvibo()) {
 		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
 		def cmds = zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
-        	cmds += refresh()
-       		return cmds
+		cmds += refresh()
+		return cmds
 	} else {
 		//other devices supported by this DTH in the future
-	        def cmds = zigbee.onOffConfig(0, 120)
-	        def x = getChildCount()
-	        for (i in 2..x) {
-	        	cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
-	        }
-	        cmds += refresh()
-	        return cmds
+		def cmds = zigbee.onOffConfig(0, 120)
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
+		}
+		cmds += refresh()
+		return cmds
 	}
 }
 
@@ -221,14 +243,16 @@ private getChildCount() {
 		return 3
 	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
 		return 2
-	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03") {
 		return 3
-	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04") {
 		return 4
 	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA") {
 		return 5
 	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
 		return 6 
+	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB") {
+		return 3
 	} else {
 		return 2
 	}

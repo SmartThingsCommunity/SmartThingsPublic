@@ -44,7 +44,15 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Aurora", model: " RGBGU10Bulb50AU", deviceJoinName: "Aurora Light" //Aurora Smart RGBW
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300, FFFF, 1000", outClusters: "0019", manufacturer: "Aurora", model: "RGBBulb51AU", deviceJoinName: "Aurora Light" //Aurora RGBW GLS Lamp
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "RGBBulb51AU", deviceJoinName: "AOne Light" //AOne Smart RGBW GLS Lamp
-
+        
+		//CWD 
+		// raw description "01 0104 010D 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Ergbw-A001", deviceJoinName: "CWD Light" //model: "E27 RGBW & Colour Tuneable", brand: "Collingwood"
+		// raw description "01 0104 010D 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.A806Brgbw-A001", deviceJoinName: "CWD Light" //model: "BC RGBW & Colour Tuneable", brand: "Collingwood"
+		// raw description "01 0104 010D 01 0A 0000 0003 0004 0005 0006 0008 0300 0B05 1000 FC82 02 000A 0019"
+		fingerprint manufacturer: "CWD", model: "ZB.M350rgbw-A001", deviceJoinName: "CWD Light" //model: "GU10 RGBW & Colour Tuneable", brand: "Collingwood"
+        
 		// Innr
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 285 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart Bulb Color
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "BY 285 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart Bulb Color
@@ -80,9 +88,13 @@ metadata {
 		fingerprint manufacturer: "sengled", model: "E1G-G8E", deviceJoinName: "Sengled Smart Light Strip", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05, FC03", outClusters: "0019", manufacturer: "sengled", model: "E11-U3E", deviceJoinName: "Sengled Element Color Plus", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05, FC03", outClusters: "0019", manufacturer: "sengled", model: "E11-U2E", deviceJoinName: "Sengled Element Color Plus"
-
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05, FC03, FC04", outClusters: "0019", manufacturer: "sengled", model: "E1F-N5E", deviceJoinName: "Sengled Light"
+		
 		// Q Smart Lights
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Neuhaus Lighting Group", model: "ZBT-ExtendedColor", deviceJoinName: "Q-Smart Light", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
+
+		// Ajax Online
+		fingerprint manufacturer: "Ajaxonline", model: "AJ-RGBCCT 5 in 1", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 	}
 
 	// UI tile definitions
@@ -123,7 +135,6 @@ private getHUE_COMMAND() { 0x00 }
 private getSATURATION_COMMAND() { 0x03 }
 private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
-private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -191,12 +202,9 @@ def ping() {
 
 def refresh() {
 	zigbee.onOffRefresh() +
-			zigbee.levelRefresh() +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
-			zigbee.onOffConfig(0, 300) +
-			zigbee.levelConfig()
+	zigbee.levelRefresh() +
+	zigbee.colorTemperatureRefresh() +
+	zigbee.hueSaturationRefresh()
 }
 
 def configure() {
@@ -205,17 +213,24 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	refresh()
+
+	def cmds = []
+	if(device.currentState("colorTemperature")?.value == null) {
+		cmds +=	zigbee.setColorTemperature(5000)
+	}
+
+	cmds += refresh() +
+	// OnOff, level minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+	zigbee.onOffConfig(0, 300) +
+	zigbee.levelConfig(0, 300)
+	cmds
 }
 
 def setColorTemperature(value) {
 	value = value as Integer
-	def tempInMired = Math.round(1000000 / value)
-	def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
-	zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
+	zigbee.setColorTemperature(value) +
+	zigbee.colorTemperatureRefresh()
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
@@ -250,20 +265,19 @@ private getScaledSaturation(value) {
 def setColor(value){
 	log.trace "setColor($value)"
 	zigbee.on() +
-			zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
-					getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
+	zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
+		getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+	zigbee.hueSaturationRefresh()
 }
 
 def setHue(value) {
 	zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setSaturation(value) {
 	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def installed() {

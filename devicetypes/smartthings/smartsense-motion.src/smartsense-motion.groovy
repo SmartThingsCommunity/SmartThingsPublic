@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Motion", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition (name: "SmartSense Motion", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion") {
 		capability "Signal Strength"
 		capability "Motion Sensor"
 		capability "Sensor"

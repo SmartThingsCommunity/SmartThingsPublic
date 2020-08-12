@@ -70,24 +70,6 @@ metadata {
 			)
 
 			switch(it.type) {
-				case "boolRange":
-					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
-					)
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
-					)
-					break
 				case "boolean":
 					input(
 							type: "paragraph",
@@ -168,11 +150,7 @@ def installed() {
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
 		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
+		state.currentPreferencesState."$it.key".status = "synced"
 	}
 	// Preferences template end
 }
@@ -186,18 +164,6 @@ def updated() {
 		if (isPreferenceChanged(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
-			if (it.type == "boolRange") {
-				def preferenceName = it.key + "Boolean"
-				if (notNullCheck(settings."$preferenceName")) {
-					if (!settings."$preferenceName") {
-						state.currentPreferencesState."$it.key".status = "disablePending"
-					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-						state.currentPreferencesState."$it.key".status = "syncPending"
-					}
-				} else {
-					state.currentPreferencesState."$it.key".status = "syncPending"
-				}
-			}
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
@@ -231,12 +197,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (settings."$key" == preferenceValue) {
 		state.currentPreferencesState."$key".value = settings."$key"
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
@@ -260,10 +220,8 @@ private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
 		case "boolean":
-			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
-		case "boolRange":
-			def parameterKeyBoolean = parameterKey + "Boolean"
-			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			// boolean values are returned as strings from the UI preferences
+			return settings."$parameterKey" == 'true' ? preference.optionActive : preference.optionInactive
 		case "range":
 			return settings."$parameterKey"
 		default:
@@ -272,24 +230,11 @@ private getCommandValue(preference) {
 }
 
 private isPreferenceChanged(preference) {
-	if (notNullCheck(settings."$preference.key")) {
-		if (preference.type == "boolRange") {
-			def boolName = preference.key + "Boolean"
-			if (state.currentPreferencesState."$preference.key".status == "disabled") {
-				return settings."$boolName"
-			} else {
-				return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
-			}
-		} else {
-			return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
-		}
+	if (settings."$preference.key" != null) {
+		return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
 	} else {
 		return false
 	}
-}
-
-private notNullCheck(value) {
-	return value != null
 }
 
 // parse events into attributes

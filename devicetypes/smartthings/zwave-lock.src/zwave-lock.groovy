@@ -48,6 +48,8 @@ metadata {
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Door Lock" //Schlage Connected Keypad Lever Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0468", deviceJoinName: "Schlage Door Lock" //BE468ZP //Schlage Connect Smart Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0469", deviceJoinName: "Schlage Door Lock" //BE469ZP //Schlage Connect Smart Deadbolt Door Lock
+		fingerprint mfr:"003B", prod:"0004", model:"2109", deviceJoinName: "Schlage Door Lock" //Schlage Keypad Deadbolt JBE109
+		fingerprint mfr:"003B", prod:"0004", model:"6109", deviceJoinName: "Schlage Door Lock" //Schlage Keypad Lever JFE109
 		// Yale
 		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Door Lock" // YRD120 //Yale Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Door Lock" // YRD220, YRD240 //Yale Touchscreen Deadbolt Door Lock
@@ -633,6 +635,7 @@ private def handleBatteryAlarmReport(cmd) {
 		case 0x01: //power has been applied, check if the battery level updated
 			log.debug "Batteries replaced. Queueing a battery get."
 			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+			state.batteryQueries = 0
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
@@ -772,6 +775,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
 			log.debug "Batteries replaced. Queueing a battery check."
 			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+			state.batteryQueries = 0
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
 		case 131: // Disabled user entered at keypad
@@ -1807,9 +1811,11 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 
 private queryBattery() {
 	log.debug "Running queryBattery"
-	if (!state.lastbatt || now() - state.lastbatt > 10*1000) {
+	if (state.batteryQueries == null) state.batteryQueries = 0
+	if ((!state.lastbatt || now() - state.lastbatt > 10*1000) && state.batteryQueries < 5) {
 		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
 		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+		state.batteryQueries = state.batteryQueries + 1
 		sendHubCommand(secure(zwave.batteryV1.batteryGet()))
 	}
 }

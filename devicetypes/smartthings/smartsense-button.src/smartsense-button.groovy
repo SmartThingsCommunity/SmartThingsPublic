@@ -27,7 +27,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
 
-        fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "SmartThings Button" //Button
+        fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "Button"
     }
 
     simulator {
@@ -140,7 +140,7 @@ def parse(String description) {
         }
     } else if (map.name == "temperature") {
         if (tempOffset) {
-            map.value = (int) map.value + (int) tempOffset
+            map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
             map.unit = getTemperatureScale()
         }
         map.descriptionText = getTemperatureScale() == 'C' ? "${ device.displayName } was ${ map.value }°C" : "${ device.displayName } was ${ map.value }°F"
