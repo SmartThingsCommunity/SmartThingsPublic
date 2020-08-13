@@ -20,7 +20,8 @@
  *
  *	Changelog:
  *
- *	1.0	Initial Version
+ *  1.0.dd.1  13-Aug-2020 Updates to better support the new SmartThings app. Thank you @mikerossman. (darwin@darwinsden.com)
+ *	1.0	                  Initial Version
  *
  *
  *   Button Mappings:
@@ -108,43 +109,43 @@ metadata {
 		}
 
         standardTile("tapUp2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
+			state "default", label: "Tap Up 2", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
 		}     
  
         standardTile("tapDown2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
+			state "default", label: "Tap Down 2", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
 		} 
 
         standardTile("tapUp3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
+			state "default", label: "Tap Up 3", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
 		} 
 
         standardTile("tapDown3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
+			state "default", label: "Tap Down 3", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
 		}
         
         standardTile("tapUp4", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp4", icon: "st.Home.home30"
+			state "default", label: "Tap Up 4", backgroundColor: "#ffffff", action: "tapUp4", icon: "st.Home.home30"
 		} 
 
         standardTile("tapDown4", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown4", icon: "st.Home.home30"
+			state "default", label: "Tap Down 4", backgroundColor: "#ffffff", action: "tapDown4", icon: "st.Home.home30"
 		} 
         
         standardTile("tapUp5", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp5", icon: "st.Home.home30"
+			state "default", label: "Tap Up 5", backgroundColor: "#ffffff", action: "tapUp5", icon: "st.Home.home30"
 		} 
 
         standardTile("tapDown5", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown5", icon: "st.Home.home30"
+			state "default", label: "Tap Down 5", backgroundColor: "#ffffff", action: "tapDown5", icon: "st.Home.home30"
 		} 
 
         standardTile("holdUp", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
+			state "default", label: "Hold Up", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
 		} 
 
         standardTile("holdDown", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
+			state "default", label: "Hold Down", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
         }
         
 		main(["switch"])
@@ -445,73 +446,73 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def tapUp1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲")
+    sendEvent(name: "status" , value: "Tap Up")
 	[name: "button", value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼")
+    sendEvent(name: "status" , value: "Tap Down")
 	[name: "button", value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲")
+    sendEvent(name: "status" , value: "Tap Up 2")
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼")
+    sendEvent(name: "status" , value: "Tap Down 2")
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲▲")
+    sendEvent(name: "status" , value: "Tap Up 3")
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp4Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲▲▲")
+    sendEvent(name: "status" , value: "Tap Up 4")
 	[name: "button", value: "pushed", data: [buttonNumber: "9"], descriptionText: "$device.displayName Tap-Up-4 (button 9) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp5Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲▲▲▲")
+    sendEvent(name: "status" , value: "Tap Up 5")
 	[name: "button", value: "pushed", data: [buttonNumber: "11"], descriptionText: "$device.displayName Tap-Up-5 (button 11) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼▼")
+    sendEvent(name: "status" , value: "Tap Down 3")
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown4Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼▼▼")
+    sendEvent(name: "status" , value: "Tap Down 4")
 	[name: "button", value: "pushed", data: [buttonNumber: "10"], descriptionText: "$device.displayName Tap-Down-3 (button 10) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown5Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼▼▼▼")
+    sendEvent(name: "status" , value: "Tap Down 5")
 	[name: "button", value: "pushed", data: [buttonNumber: "12"], descriptionText: "$device.displayName Tap-Down-3 (button 12) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▲")
+    sendEvent(name: "status" , value: "Hold Up")
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▼")
+    sendEvent(name: "status" , value: "Hold Down")
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
