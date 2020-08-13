@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.04 (08/13/2020) - Merge pull request from mikerossman for updates to better support new SmartThings app
  *  1.03 (11/14/2017) - Turn off firmware event log, correct physical button setting for some presses, remove 100ms delay in instant status
  *  1.02 (06/25/2017) - Pulled in @stephack's changes to include button 7/8 events when triggered remotely
  *  1.01 (01/16/2017) - Corrected advertised number of buttons (8)
