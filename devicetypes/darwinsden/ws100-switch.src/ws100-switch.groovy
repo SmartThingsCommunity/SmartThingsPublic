@@ -89,27 +89,27 @@ metadata {
 		}
         
         standardTile("tapUp2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
+			state "default", label: "Tap Up x2", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
 		}     
  
         standardTile("tapDown2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
+			state "default", label: "Tap Down x2", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
 		} 
 
         standardTile("tapUp3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
+			state "default", label: "Tap Up x3", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
 		} 
 
         standardTile("tapDown3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
+			state "default", label: "Tap Down x3", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
 		} 
 
         standardTile("holdUp", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
+			state "default", label: "Hold Up", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
 		} 
 
         standardTile("holdDown", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
+			state "default", label: "Hold Down", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
 		} 
 
         standardTile("indicator", "device.indicatorStatus", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
@@ -341,49 +341,49 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def tapUp1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲")
+    sendEvent(name: "status" , value: "Tap Up")
 	[name: "button", value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼")
+    sendEvent(name: "status" , value: "Tap Down")
 	[name: "button", value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲")
+    sendEvent(name: "status" , value: "Tap Up x2")
 	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼")
+    sendEvent(name: "status" , value: "Tap Down x2")
 	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲▲")
+    sendEvent(name: "status" , value: "Tap Up x3")
 	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼▼")
+    sendEvent(name: "status" , value: "Tap Down x3")
 	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▲")
+    sendEvent(name: "status" , value: "Hold Up")
 	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▼")
+    sendEvent(name: "status" , value: "Hold Down")
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
     isStateChange: true, type: "$buttonType"]
 }
@@ -412,8 +412,16 @@ def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
 
+private getSupportedButtonValues() {
+	def values = ["pushed", "held"]
+	log.debug ("getSupportedButtonValues() called")
+	return values
+}
+
+
 def configure() {
     sendEvent(name: "numberOfButtons", value: 8, displayed: false)
+    sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
     def commands = []
     commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     commands << zwave.versionV1.versionGet().format()
