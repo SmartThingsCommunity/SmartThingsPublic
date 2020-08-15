@@ -17,7 +17,7 @@
  *  Date: 2013-05-30
  */
 metadata {
-	definition (name: "Aeon Home Energy Meter - code check", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.energymeter") {
+	definition (name: "Aeon Home Energy Meter", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.energymeter") {
 		capability "Energy Meter"
 		capability "Power Meter"
 		capability "Configuration"
