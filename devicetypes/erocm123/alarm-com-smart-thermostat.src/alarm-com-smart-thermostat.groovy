@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 Eric Maycock
+ *  Copyright 2020 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,7 +13,9 @@
  *  Alarm.com Smart Thermostat ADC-T2000 / Building 36 Intelligent Thermostat B36-T10
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-11-12
+ *  Date: 2020-17-08
+ *
+ *  2020-08-17: Fixes to work with new app. 
  *
  *  2017-10-20: Removed parameter 26 "Power Source" as this seems to be read only. 
  *
@@ -393,68 +395,71 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanstatev1.ThermostatFanSt
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
-	def map = [:]
+	def map = [name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes]]
 	switch (cmd.mode) {
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_OFF:
 			map.value = "off"
             sendEvent(name: "currentMode", value: "off" as String)
-            break
+			break
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_HEAT:
 			map.value = "heat"
             sendEvent(name: "currentMode", value: "heat" as String)
-            break
+			break
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_AUXILIARY_HEAT:
-			map.value = "emergencyHeat"
+			map.value = "emergency heat"
             sendEvent(name: "currentMode", value: "aux" as String)
-            break
+			break
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_COOL:
 			map.value = "cool"
             sendEvent(name: "currentMode", value: "cool" as String)
-            def displayMode = map.value
-            break
+			break
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_AUTO:
 			map.value = "auto"
             sendEvent(name: "currentMode", value: "auto" as String)
-            break
+			break
 	}
-	map.name = "thermostatMode"
-	map
+	sendEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport cmd) {
-	def map = [:]
+	def map = [name: "thermostatFanMode", data:[supportedThermostatFanModes: state.supportedFanModes]]
 	switch (cmd.fanMode) {
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_AUTO_LOW:
-			map.value = "fanAuto"
+			map.value = "auto"
             sendEvent(name: "currentfanMode", value: "Auto Mode" as String)
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_LOW:
-			map.value = "fanOn"
+			map.value = "on"
             sendEvent(name: "currentfanMode", value: "On Mode" as String)
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_CIRCULATION:
-			map.value = "fanCirculate"
+			map.value = "circulate"
             sendEvent(name: "currentfanMode", value: "Cycle Mode" as String)
 			break
 	}
-	map.name = "thermostatFanMode"
-	map.displayed = false
-	map
+	sendEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
-	def supportedModes = ""
-	if(cmd.off) { supportedModes += "off " }
-	if(cmd.heat) { supportedModes += "heat " }
-	if(cmd.auxiliaryemergencyHeat) { supportedModes += "emergencyHeat " }
-	if(cmd.cool) { supportedModes += "cool " }
-	if(cmd.auto) { supportedModes += "auto " }
+	def supportedModes = []
+	if(cmd.off) { supportedModes << "off" }
+	if(cmd.heat) { supportedModes << "heat" }
+	if(cmd.cool) { supportedModes << "cool" }
+	if(cmd.auto) { supportedModes << "auto" }
+	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
+
 	state.supportedModes = supportedModes
+	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeSupportedReport cmd) {
-	def supportedFanModes = "fanAuto fanOn fanCirculate "
+	def supportedFanModes = []
+	if(cmd.auto) { supportedFanModes << "auto" }
+	if(cmd.circulation) { supportedFanModes << "circulate" }
+	if(cmd.low) { supportedFanModes << "on" }
+
 	state.supportedFanModes = supportedFanModes
+	sendEvent(name: "supportedThermostatFanModes", value: supportedFanModes, displayed: false)
 }
 
 def updateState(String name, String value) {
@@ -690,10 +695,46 @@ def updated()
     logging("updated() is being called")
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = update_needed_settings()
-    
+    cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
+    cmds << zwave.thermostatFanModeV2.thermostatFanModeSupportedGet()
+
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
     if (cmds != []) response(commands(cmds, 2000))
+}
+
+def setThermostatMode(mode) {
+    switch (mode) {
+        case "auto":
+            modeauto()
+        break;
+        case "cool":
+            modecool()
+        break;
+        case "emergency heat":
+            modeemgcyheat()
+        break;
+        case "heat":
+            modeheat()
+        break;
+        case "off":
+            modeoff()
+        break;
+    }
+}
+
+def setThermostatFanMode(mode) {
+    switch (mode) {
+        case "auto":
+            fanauto()
+        break;
+        case "on":
+            fanon()
+        break;
+        case "circulate":
+            fancir()
+        break;
+    }
 }
 
 def configure() {
