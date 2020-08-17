@@ -379,11 +379,11 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 		}
 	}
 
-    // If the door lock operation report comes before the notification report, the extra info in the notification
+	// If the door lock operation report comes before the notification report, the extra info in the notification
 	// report will not be used because it will be marked as a duplicate. We delay the door lock operation report
 	// so that hopefully the notification report comes in and we can create a more info-rich event
-    runIn(2, "delayLockEvent", [data: [map: map]])
-    return [:]
+	runIn(2, "delayLockEvent", [data: [map: map]])
+	return [:]
 }
 
 def delayLockEvent(data) {
