@@ -13,7 +13,7 @@
  *  Alarm.com Smart Thermostat ADC-T2000 / Building 36 Intelligent Thermostat B36-T10
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2020-17-08
+ *  Date: 2020-08-17
  *
  *  2020-08-17: Fixes to work with new app. 
  *
@@ -634,7 +634,7 @@ def modeheat() {
 	logging("Setting thermostat mode to HEAT.")
 	commands([
 		zwave.thermostatModeV2.thermostatModeSet(mode: 1),
-        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: 1, precision: 1,  scaledValue: state.heat),
+        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: 1, precision: 1,  scaledValue: state.heat?state.heat:65),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1),
 		zwave.thermostatModeV2.thermostatModeGet()
 	])
@@ -644,7 +644,7 @@ def modecool() {
 	logging("Setting thermostat mode to COOL.")
 	commands([
 		zwave.thermostatModeV2.thermostatModeSet(mode: 2),
-        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: 1, precision: 1,  scaledValue: state.cool),
+        zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: 1, precision: 1,  scaledValue: state.cool?state.cool:80),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2),
 		zwave.thermostatModeV2.thermostatModeGet()
 	])
@@ -745,6 +745,7 @@ def configure() {
     cmds = update_needed_settings()    
     
     cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
+    cmds << zwave.thermostatFanModeV2.thermostatFanModeSupportedGet()
 	cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
 
 	if(!device.currentValue("temperature") || device.currentValue("humidity")) cmds << zwave.sensorMultilevelV3.sensorMultilevelGet() // current temperature
@@ -783,15 +784,15 @@ private commands(commands, delay=2000) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
+	if (getZwaveInfo()?.zw?.contains("s")) {
+        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+    } else {
+        cmd.format()
+    }
 }
 
 private getStandardDelay() {
-	1000
+	2000
 }
 
 def tempUp() {
