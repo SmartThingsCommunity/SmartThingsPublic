@@ -25,11 +25,15 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "SmartSense Temp & Humidity Sensor"
-		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Temp & Humidity Sensor"
-		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Temp & Humidity Sensor"
-		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "Heiman", model: "b467083cfc864f5e826459e5d8ea6079", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
-		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
+    
+		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "Multipurpose Sensor"
+		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Multipurpose Sensor" //Centralite Temp & Humidity Sensor
+		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Multipurpose Sensor"
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "Heiman", model: "b467083cfc864f5e826459e5d8ea6079", deviceJoinName: "Orvibo Multipurpose Sensor" //Orvibo Temperature & Humidity Sensor
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Multipurpose Sensor" //Orvibo Temperature & Humidity Sensor
+		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0009, 0402", manufacturer: "HEIMAN", model: "HT-EM", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
+		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0402, 0B05", manufacturer: "HEIMAN", model: "HT-EF-3.0", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
+
 	}
 
 	simulator {
@@ -41,8 +45,8 @@ metadata {
 	}
 
 	preferences {
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-		input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
+		input "humidityOffset", "number", title: "Humidity offset", description: "Enter a percentage to adjust the humidity.", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -83,7 +87,11 @@ def parse(String description) {
 	if (!map) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-			map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			if (descMap.attrInt == 0x0021) {
+            			map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
+			} else {
+				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+            		}
 		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 			if (descMap.data[0] == "00") {
 				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
@@ -94,7 +102,7 @@ def parse(String description) {
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
@@ -106,6 +114,21 @@ def parse(String description) {
 
 	log.debug "Parse returned $map"
 	return map ? createEvent(map) : [:]
+}
+
+
+def getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.value = Math.round(rawValue / 2)
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	}
+
+	return result
 }
 
 private Map getBatteryResult(rawValue) {

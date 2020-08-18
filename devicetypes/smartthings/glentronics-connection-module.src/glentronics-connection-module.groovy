@@ -20,7 +20,7 @@ metadata {
 		capability "Power Source"
 		capability "Health Check"
 
-		fingerprint mfr:"0084", prod:"0093", model:"0114", deviceJoinName: "Glentronics Connection Module"
+		fingerprint mfr:"0084", prod:"0093", model:"0114", deviceJoinName: "Glentronics Water Leak Sensor" //Glentronics Connection Module
 	}
 
 	tiles (scale: 2){

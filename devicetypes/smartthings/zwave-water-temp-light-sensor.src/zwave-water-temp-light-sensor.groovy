@@ -25,7 +25,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Illuminance Measurement"
 
-		fingerprint mfr: "019A", prod: "0003", model: "000A", deviceJoinName: "Sensative Strips Comfort/Drip"
+		fingerprint mfr: "019A", prod: "0003", model: "000A", deviceJoinName: "Sensative Water Leak Sensor" //Sensative Strips Comfort/Drip
 	}
 
 	simulator {

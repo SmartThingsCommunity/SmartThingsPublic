@@ -26,22 +26,23 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S", deviceJoinName: "Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326-L", deviceJoinName: "Iris Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3328-G", deviceJoinName: "Centralite Micro Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Motion Sensor-A", deviceJoinName: "SYLVANIA SMART+ Motion and Temperature Sensor"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv4", deviceJoinName: "Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv5", deviceJoinName: "Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0400,0500,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFPR-ZB", deviceJoinName: "Bosch Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "Bosch", model: "RFDL-ZB-MS", deviceJoinName: "Bosch Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "motion", deviceJoinName: "Motion Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "PIRZB1-ECO", deviceJoinName: "Ecolink Motion Detector"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3326-L", deviceJoinName: "Iris Motion Sensor" //Iris Motion Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3328-G", deviceJoinName: "Centralite Motion Sensor" //Centralite Micro Motion Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Motion Sensor-A", deviceJoinName: "SYLVANIA Motion Sensor" //SYLVANIA SMART+ Motion and Temperature Sensor
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv4", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv5", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0400,0500,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFPR-ZB", deviceJoinName: "Bosch Motion Sensor" //Bosch Motion Sensor
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "Bosch", model: "RFDL-ZB-MS", deviceJoinName: "Bosch Motion Sensor" //Bosch Motion Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "motion", deviceJoinName: "Motion Sensor" // This is the only ST sensor that shouldn't use SmartThings-smartthings-SmartSense_Motion_Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "PIRZB1-ECO", deviceJoinName: "Ecolink Motion Sensor" //Ecolink Motion Detector
+        //AduroSmart
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.0
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.1
 	}
 
 	simulator {
@@ -58,7 +59,7 @@ metadata {
 			])
 		}
 		section {
-			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 		}
 	}
 
@@ -123,7 +124,7 @@ def parse(String description) {
 					def battMap = descMaps.find { it.attrInt == 0x0021 }
 
 					if (battMap) {
-						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+						map = getBatteryPercentageResultSamjin(Integer.parseInt(battMap.value, 16))
 					}
 				} else {
 					def battMap = descMaps.find { it.attrInt == 0x0020 }
@@ -132,7 +133,7 @@ def parse(String description) {
 						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
 					}
 				}
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002 && descMap.commandInt != 0x07) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
@@ -152,7 +153,7 @@ def parse(String description) {
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
@@ -243,18 +244,16 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
-private Map getBatteryPercentageResult(rawValue) {
-	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
-	def result = [:]
+private Map getBatteryPercentageResultSamjin(rawValue) {
+	// This formula was provided by Samjin to effectively adjust the minimum voltage required for operation from 2.1V -> 2.4V
+	BigDecimal rawPercentage = rawValue - (200 - rawValue) / 2
+	Integer percentage = Math.min(100, Math.max(Math.round(rawPercentage / 2), 0))
 
-	if (0 <= rawValue && rawValue <= 200) {
-		result.name = 'battery'
-		result.translatable = true
-		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-		result.value = Math.round(rawValue / 2)
-	}
-
-	return result
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${percentage}%"
+	return [name: 'battery',
+			translatable: true,
+			descriptionText: "{{ device.displayName }} battery was {{ value }}%",
+			value: percentage]
 }
 
 private Map getMotionResult(value) {
@@ -294,7 +293,8 @@ def refresh() {
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	// Sets up low battery threshold reporting
+	sendEvent(name: "DeviceWatch-Enroll", displayed: false, value: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, scheme: "TRACKED", checkInterval: 2 * 60 * 60 + 1 * 60, lowBatteryThresholds: [15, 7, 3], offlinePingable: "1"].encodeAsJSON())
 
 	log.debug "Configuring Reporting"
 	def configCmds = [zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)]

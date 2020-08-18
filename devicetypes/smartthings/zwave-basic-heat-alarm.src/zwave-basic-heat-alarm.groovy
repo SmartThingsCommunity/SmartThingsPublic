@@ -19,7 +19,7 @@ metadata {
 		capability "Health Check"
 
 		//zw:S type:0701 mfr:026F prod:0001 model:0002 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
-		fingerprint mfr: "026F ", prod: "0001", model: "0002", deviceJoinName: "FireAngel Thermistek Alarm"
+		fingerprint mfr: "026F ", prod: "0001", model: "0002", deviceJoinName: "FireAngel Smoke Detector" //FireAngel Thermistek Alarm
 	}
 
 	simulator {
@@ -158,7 +158,7 @@ def createHeatEvents(name) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.endsWith("s")) {
+	if (zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

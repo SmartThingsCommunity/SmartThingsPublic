@@ -24,7 +24,7 @@ metadata {
 
 	command "test"
 
-	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeotec Siren (Gen 5)"
+	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeotec Siren" //Aeotec Siren (Gen 5)
  }
 
  simulator {

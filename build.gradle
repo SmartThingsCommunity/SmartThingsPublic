@@ -138,3 +138,17 @@ slackSendMessage {
         text: messageText
     )
 }
+
+task configure(type: Exec) {
+    description "Configures automatic spaces->tabs conversion on merge and a commit hook to detect syntax errors"
+    File attributeFile = new File("${projectDir}/.git/info/attributes")
+    attributeFile.write("*.groovy filter=tabspace\n")
+    commandLine "git", "config", "filter.tabspace.clean", "unexpand -t 2"
+    commandLine "git", "config", "core.hooksPath", ".githooks"
+}
+
+task unconfigure(type: Exec) {
+    description "Undoes configuration put in place by configure"
+    commandLine "git", "config", "--unset-all", "filter.tabspace.clean"
+    commandLine "git", "config", "core.hooksPath", "${projectDir}/.git/hooks"
+}

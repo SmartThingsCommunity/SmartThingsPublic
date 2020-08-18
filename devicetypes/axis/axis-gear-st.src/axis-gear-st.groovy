@@ -1,5 +1,7 @@
+import groovy.json.JsonOutput
+
 metadata {
-	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-2") {  
+	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-3") {  
 		capability "Window Shade"
 		capability "Window Shade Preset"
 		capability "Switch Level"
@@ -20,9 +22,9 @@ metadata {
 		command "stop"
 		command "getversion"
 		
-		fingerprint profileID: "0104", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Gear"
-		fingerprint profileId: "0104", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Gear"
-		fingerprint endpointID: "01, C4", profileId: "0104, C25D", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Gear"
+		fingerprint profileID: "0104", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
+		fingerprint profileId: "0104", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
+		fingerprint endpointID: "01, C4", profileId: "0104, C25D", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
 
 		//ClusterIDs: 0000 - Basic; 0006 - On/Off; 0008 - Level Control; 0102 - Window Covering;
 		//Updated 2017-06-21
@@ -32,6 +34,7 @@ metadata {
 		//Updated 2018-11-01 - added in configure reporting for refresh button, close when press on partial shade icon, update handler to parse between 0-254 as a percentage
 		//Updated 2019-06-03 - modified to use Window Covering Cluster Commands and versioning tile and backwards compatibility (firmware and app), fingerprinting enabled
 		//Updated 2019-08-09 - minor changes and improvements, onoff state reporting fixed
+		//Updated 2019-11-11 - minor changes
 	}
 	
 	tiles(scale: 2) {
@@ -81,7 +84,7 @@ metadata {
 			state "default", label: "Preset", action:"presetPosition", icon:"st.Home.home2"
 		}
 		preferences {
-			input "preset", "number", title: "Preset percentage (1-100) [Default - 50%]", defaultValue: 50, required: false, displayDuringSetup: true, range:"(1..100)"
+			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, required: false, displayDuringSetup: true, range:"1..100"
 		}
 		
 		main(["main"])
@@ -164,6 +167,10 @@ def stop() {
 			return zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, [delay:5000])  
 		}
 	}
+}
+
+def pause() {
+	stop()
 }
 
 //Send Command through setLevel()
@@ -302,6 +309,7 @@ def configure() {
 	sendEvent(name: "windowShade", value: "unknown")
 	log.debug "Configuring Reporting and Bindings."
 	sendEvent(name: "checkInterval", value: (2 * 60 * 60 + 10 * 60), displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 
 	def attrs_refresh = zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID) +
 						zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE) +

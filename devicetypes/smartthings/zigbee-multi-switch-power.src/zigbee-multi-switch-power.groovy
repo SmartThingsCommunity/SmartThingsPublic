@@ -26,7 +26,7 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "AURORA SMART DOUBLE SOCKET 1" //profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04", outClusters: "0019"
+		fingerprint manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "AURORA Outlet 1" //profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04", outClusters: "0019" //AURORA SMART DOUBLE SOCKET 1
 	}
 
 	tiles(scale: 2) {

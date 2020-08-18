@@ -1,0 +1,32 @@
+{
+  "name": "Apparent Temperature",
+  "attributes": {
+    "feelsLike": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "TemperatureValue",
+            "type": "number",
+            "minimum": -460,
+            "maximum": 10000
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "F",
+              "C"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "unit"
+        ]
+      }
+    }
+  },
+  "commands": {
+  }
+}

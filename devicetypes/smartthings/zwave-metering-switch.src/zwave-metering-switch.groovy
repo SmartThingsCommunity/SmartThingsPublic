@@ -25,29 +25,33 @@ metadata {
 
 		command "reset"
 
-		fingerprint inClusters: "0x25,0x32"
-		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
-		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //US
-		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //EU
-		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
-		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Nano Switch"
-		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Plug-in Switch", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Direct-Wire Outdoor Switch"
-		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "NEO Coolcam Power plug", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug ZW5", ocfDeviceType: "oic.d.smartplug" // EU
-		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Fibaro Wall Plug ZW5", ocfDeviceType: "oic.d.smartplug"// UK
-		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //EU
-		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //US
+		fingerprint inClusters: "0x25,0x32", deviceJoinName: "Switch"
+		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Switch" //Aeotec Micro Smart Switch
+		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome Outlet", ocfDeviceType: "oic.d.smartplug" //Dome On/Off Plug-in Switch
+		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0203", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //AU //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Switch" //Aeotec Nano Switch
+		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Switch" //Aeotec Nano Switch
+		fingerprint mfr: "0086", prod: "0203", model: "0074", deviceJoinName: "Aeotec Switch" //AU //Aeotec Nano Switch
+		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Wall-Mounted Outlet
+		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Plug-in Switch
+		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Switch" //GE Direct-Wire Outdoor Switch
+		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "NEO Coolcam Outlet", ocfDeviceType: "oic.d.smartplug" //NEO Coolcam Power plug
+		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" // EU //Fibaro Wall Plug ZW5
+		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug"// UK //Fibaro Wall Plug ZW5
+		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Aeotec Switch" //EU //Aeotec Heavy Duty Smart Switch
+		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Aeotec Switch" //US //Aeotec Heavy Duty Smart Switch
 		//zw:L type:1001 mfr:0258 prod:0003 model:1087 ver:3.94 zwv:4.05 lib:03 cc:5E,72,86,85,59,5A,73,70,25,27,71,32,20 role:05 ff:8700 ui:8700
-		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Power Plug", ocfDeviceType: "oic.d.smartplug"  //EU
-		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Power Switch"
-		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Smart Plug", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "018C", prod: "0042", model: "0005", deviceJoinName: "Dawon Smart Plug", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "018C", prod: "0042", model: "0008", deviceJoinName: "Dawon Smart Multitab", ocfDeviceType: "oic.d.smartplug"
-		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //EU
-		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //US
+		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //NEO Coolcam Power Plug
+		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Switch" //Zooz Power Switch
+		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Outlet", ocfDeviceType: "oic.d.smartplug" //Qubino Smart Plug
+		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 7
+		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 7
+		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Everspring Smart Plug
+		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch" //US //Inovelli Switch Red Series
+		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
+		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
 	}
 
 	// simulator metadata
@@ -61,7 +65,7 @@ metadata {
 		}
 		for (int i = 0; i <= 100; i += 10) {
 			status "energy	${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-			   scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
+				scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
 		}
 
 		// reply messages
@@ -255,6 +259,8 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 5*60))) // report every 5 minutes
 	} else if (zwaveInfo.mfr == "014F" && zwaveInfo.prod == "5053" && zwaveInfo.model == "3531") {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
+	} else if (zwaveInfo.mfr == "0154" && zwaveInfo.prod == "0003" && zwaveInfo.model == "000A") {
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 25, size: 1, scaledConfigurationValue: 1))) //report every 1W change
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))

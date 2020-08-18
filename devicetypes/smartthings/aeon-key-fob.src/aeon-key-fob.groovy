@@ -22,9 +22,8 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
-		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Key Fob"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
+		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85", deviceJoinName: "Aeon Remote Control"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Button", mnmn: "SmartThings", vid: "generic-button-2" //Aeotec Panic Button
 	}
 
 	simulator {
@@ -218,9 +217,14 @@ private void createChildDevices() {
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
 
 	for (i in 1..buttons) {
-		def child = addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
-				[completedSetup: true, label: "${device.displayName} button ${i}",
-				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+		def child = addChildDevice("Child Button",
+				"${device.deviceNetworkId}/${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} button ${i}",
+				 isComponent: true,
+				 componentName: "button$i",
+				 componentLabel: "Button $i"])
 
 		child.sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
 		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)

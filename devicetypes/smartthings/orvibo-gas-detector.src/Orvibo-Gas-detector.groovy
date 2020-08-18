@@ -25,8 +25,9 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		capability "Refresh"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "Heiman", model:"d0e857bfd54f4a12816295db3945a421", deviceJoinName: "欧瑞博 可燃气体报警器(SG21)"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "HEIMAN", model:"358e4e3e03c644709905034dae81433e", deviceJoinName: "欧瑞博 可燃气体报警器(SG21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "Heiman", model:"d0e857bfd54f4a12816295db3945a421", deviceJoinName: "Orvibo Gas Detector" //欧瑞博 可燃气体报警器(SG21)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "HEIMAN", model:"358e4e3e03c644709905034dae81433e", deviceJoinName: "Orvibo Gas Detector" //欧瑞博 可燃气体报警器(SG21)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500", outClusters: "0019", manufacturer: "HEIMAN", model:"GASSensor-N", deviceJoinName: "HEIMAN Gas Detector" //HEIMAN Gas Detector (HS3CG)
 	}
 
 	simulator {

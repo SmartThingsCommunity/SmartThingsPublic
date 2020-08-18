@@ -100,7 +100,7 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private getDeviceIsSecure() {
 	if (zwaveInfo && zwaveInfo.zw) {
-		return zwaveInfo.zw.endsWith("s")
+		return zwaveInfo.zw.contains("s")
 	} else {
 		return state.sec ? true : false
 	}

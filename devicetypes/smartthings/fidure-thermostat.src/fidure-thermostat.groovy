@@ -43,8 +43,8 @@ metadata {
 
 		attribute "thermostatOperatingState", "string"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019"
-		fingerprint manufacturer: "Fidure", model: "A1732R3" // same clusters as above
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019", deviceJoinName: "Fidure Thermostat"
+		fingerprint manufacturer: "Fidure", model: "A1732R3" , deviceJoinName: "Fidure Thermostat"// same clusters as above
 
 	}
 
@@ -519,7 +519,7 @@ def checkLastTimeSync(delay) {
 
 	long duration = (new Date()).getTime() - (new Date(lastSync)).getTime()
 
-  //  log.debug "check Time: $lastSync duration: ${duration} settings.sync_clock: ${settings.sync_clock}"
+  //log.debug "check Time: $lastSync duration: ${duration} settings.sync_clock: ${settings.sync_clock}"
 	if (duration > 86400000) {
 		sendEvent("name":"lastTimeSync", "value":"${new Date()}")
 		return setThermostatTime()

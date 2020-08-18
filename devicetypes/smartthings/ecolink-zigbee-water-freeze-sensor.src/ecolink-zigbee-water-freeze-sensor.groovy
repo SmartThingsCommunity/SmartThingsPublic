@@ -28,7 +28,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Temperature Alarm"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0019", manufacturer: "Ecolink", model: "FLZB1-ECO", deviceJoinName: "Ecolink Water/Freeze Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0019", manufacturer: "Ecolink", model: "FLZB1-ECO", deviceJoinName: "Ecolink Water Leak Sensor" //Ecolink Water/Freeze Sensor
 	}
 
 	tiles(scale: 2) {
@@ -90,7 +90,7 @@ def parse(String description) {
 	} else if (map.name == "temperature") {
 		freezeStatus(map.value)
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true

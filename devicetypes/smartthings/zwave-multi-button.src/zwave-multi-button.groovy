@@ -17,19 +17,21 @@ import groovy.json.JsonOutput
  */
 
 metadata {
-	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //EU
-		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button"  //US
-		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
-		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
-		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
-		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		// While adding new device to this DTH, remember to update method getProdNumberOfButtons()
+		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button" //EU //Fibaro KeyFob
+		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button"  //US //Fibaro KeyFob
+		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //US //Aeotec NanoMote Quad
+		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //EU //Aeotec NanoMote Quad
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //US //Aeotec KeyFob
+		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //EU //Aeotec KeyFob
+		fingerprint mfr: "010F", prod: "1001", model: "3000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button" //AU //Fibaro KeyFob
 	}
 
 	tiles(scale: 2) {
@@ -59,23 +61,12 @@ def updated() {
 
 
 def initialize() {
-	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
-	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	if(isUntrackedAeotec()) {
+	if(isUntrackedAeotec() || isUntrackedFibaro()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
-	if(!childDevices) {
-		addChildButtons(numberOfButtons)
-	}
-	if(childDevices) {
-		def event
-		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true)
-			sendEventToChild(endpoint, event)
-		}
-	}
+
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -95,7 +86,21 @@ def configure() {
 			//Makes Fibaro KeyFob buttons send all kind of supported events
 		}
 	}
+	setupChildDevices()
 	cmds
+}
+
+def setupChildDevices(){
+	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
+	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
+	if(!childDevices) {
+		addChildButtons(numberOfButtons)
+
+		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
+			def event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(endpoint, event)
+		}
+	}
 }
 
 def parse(String description) {
@@ -122,12 +127,22 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	// Below handler was tested with Aoetec KeyFob and probably will work only with it
+	def value = cmd.sceneId % 2 ? "pushed" : "held"
+	def childId = (int)(cmd.sceneId / 2) + (cmd.sceneId % 2)
+	def description = "Button no. ${childId} was ${value}"
+	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: childId], isStateChange: true)
+	sendEventToChild(childId, event)
+	return event
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
-	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-	sendEventToChild(cmd.sceneNumber, event)
-	return createEvent(descriptionText: description)
+	def childEvent = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
+	sendEventToChild(cmd.sceneNumber, childEvent)
+	return createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true, displayed: false)
 }
 
 def sendEventToChild(buttonNumber, event) {
@@ -164,7 +179,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if(zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -193,25 +208,31 @@ private addChildButtons(numberOfButtons) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		//2: "down_hold",
+		2: "down_hold",
 		3: "double",
-		//4: "pushed_3x"
+		4: "pushed_3x"
 ]}
 
 private getProdNumberOfButtons() {[
 		"1001" : 6,
 		"0102" : 4,
-		"0002" : 4
+		"0002" : 4,
+		"0101" : 4,
+		"0001" : 4
 ]}
 
 private getSupportedButtonValues() {
 	def values = ["pushed", "held"]
-	if (isFibaro()) values << "double"
+	if (isFibaro()) values += ["double", "down_hold", "pushed_3x"]
 	return values
 }
 
 private isFibaro() {
 	zwaveInfo.mfr?.contains("010F")
+}
+
+private isUntrackedFibaro() {
+	isFibaro() && zwaveInfo.prod?.contains("1001")
 }
 
 private isUntrackedAeotec() {

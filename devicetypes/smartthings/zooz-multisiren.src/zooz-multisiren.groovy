@@ -29,7 +29,8 @@ metadata {
 	capability "Refresh"
 	capability "Configuration"
 
-	fingerprint mfr: "027A", prod: "000C", model: "0003", deviceJoinName: "Zooz S2 Multisiren ZSE19"
+	fingerprint mfr: "027A", prod: "000C", model: "0003", deviceJoinName: "Zooz Siren" //Zooz S2 Multisiren ZSE19
+	fingerprint mfr: "0060", prod: "000C", model: "0003", deviceJoinName: "Everspring Siren" //Everspring Indoor Voice Siren
 
 }
 
