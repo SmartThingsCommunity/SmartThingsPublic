@@ -74,7 +74,7 @@ metadata {
 def installed() {
 	if (zwaveInfo?.model.equals("0051")) {
 		state.numberOfSwitches = 2
-	} else if (zwaveInfo?.model.equals("0052") || zwaveInfo?.model.equals("0053")) {
+	} else {
 		state.numberOfSwitches = 1
 	}
 	
