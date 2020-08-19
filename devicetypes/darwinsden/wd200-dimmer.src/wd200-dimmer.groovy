@@ -18,7 +18,7 @@
  *	Author: HomeSeer, darwin@darwinsden.com
  *
  *	Changelog:
- *
+ *  2.0.1     18-Aug-2020 correct digital on/off button tap responses.
  *  2.0       18-Aug-2020 darwin@darwinsden.com: Updates to support new app automation capability. This update replaces the 12 button mappings with a single
  *                        button supporting all up/down multi-tap and hold actions. WARNING: This update will break existing rules/smartapps, and automations 
  *                        that rely on the old 12 button mappings. These automations will need to be recreated with the new app automation capability or
@@ -278,7 +278,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-    sendEvent(tapUp1Response("digital"))
+    sendEvent(btnResponse("up", "digital"))
     delayBetween([
         zwave.basicV1.basicSet(value: 0xFF).format(),
         zwave.switchMultilevelV1.switchMultilevelGet().format()
@@ -286,7 +286,7 @@ def on() {
 }
 
 def off() {
-    sendEvent(tapDown1Response("digital"))
+    sendEvent(btnResponse("down", "digital"))
     delayBetween([
         zwave.basicV1.basicSet(value: 0x00).format(),
         zwave.switchMultilevelV1.switchMultilevelGet().format()
