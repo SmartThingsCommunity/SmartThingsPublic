@@ -78,7 +78,7 @@ def installed() {
 		state.numberOfSwitches = 1
 	}
 	
-	if (!childDevices) {
+ 	if (!childDevices && state.numberOfSwitches > 1) {
 		addChildSwitches(state.numberOfSwitches)
 	}
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -93,12 +93,12 @@ def installed() {
 	}
 	// Preferences template end
 	response([
-	       	refresh((1..state.numberOfSwitches).toList())
+			refresh((1..state.numberOfSwitches).toList())
 	])
 }
 
 def updated() {
-	if (!childDevices) {
+	if (!childDevices && state.numberOfSwitches > 1) {
 		addChildSwitches(state.numberOfSwitches)
 	}
 	// Preferences template begin
