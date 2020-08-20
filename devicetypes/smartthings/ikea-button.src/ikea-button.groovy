@@ -172,9 +172,12 @@ def configure() {
 	log.debug "Configuring device ${device.getDataValue("model")}"
 
 	def cmds = zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
 			zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
 			readDeviceBindingTable() // Need to read the binding table to see what group it's using
+
+	if (!isSomfySituo()) {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21)
+	}
 
 	cmds
 }
@@ -188,7 +191,7 @@ def parse(String description) {
 	} else {
 		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
-			if (!isSomfySituo() && descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
+			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
 				event = getBatteryEvent(zigbee.convertHexToInt(descMap.value))
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
 					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
