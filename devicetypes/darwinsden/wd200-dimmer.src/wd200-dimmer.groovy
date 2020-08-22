@@ -18,6 +18,7 @@
  *	Author: HomeSeer, darwin@darwinsden.com
  *
  *	Changelog:
+ *  2.0.2     21-Aug-2020 Added 'classic' 12 button mapping preference option. Support preference setting updates without requiring configure button. 
  *  2.0.1     18-Aug-2020 correct digital on/off button tap responses.
  *  2.0       18-Aug-2020 darwin@darwinsden.com: Updates to support new app automation capability. This update replaces the 12 button mappings with a single
  *                        button supporting all up/down multi-tap and hold actions. WARNING: This update will break existing rules/smartapps, and automations 
@@ -91,9 +92,11 @@ metadata {
         input "doubleTapDownToDim", "bool", title: "Double-Tap Down sets to 25% level", defaultValue: false, displayDuringSetup: true, required: false
         input "reverseSwitch", "bool", title: "Reverse Switch", defaultValue: false, displayDuringSetup: true, required: false
         input "bottomled", "bool", title: "Bottom LED On if Load is Off", defaultValue: false, displayDuringSetup: true, required: false
-        input("localcontrolramprate", "number", title: "Press Configuration button after changing preferences\n\nLocal Ramp Rate: Duration (0-90)(1=1 sec) [default: 3]", defaultValue: 3, range: "0..90", required: false)
+        input("localcontrolramprate", "number", title: "Local Ramp Rate: Duration (0-90)(1=1 sec) [default: 3]", defaultValue: 3, range: "0..90", required: false)
         input("remotecontrolramprate", "number", title: "Remote Ramp Rate: duration (0-90)(1=1 sec) [default: 3]", defaultValue: 3, range: "0..90", required: false)
         input("color", "enum", title: "Default LED Color", options: ["White", "Red", "Green", "Blue", "Magenta", "Yellow", "Cyan"], description: "Select Color", required: false)
+        input"classicBtns", "bool", title: "Use classic 12 button mapping for multi-tap and hold events instead of default one button, 12 action mapping",
+           defaultValue: false, displayDuringSetup: true, required: false
     }
 
     tiles(scale: 2) {
@@ -113,7 +116,7 @@ metadata {
         }
 
         standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "default", label: '', action: "refresh.refresh", icon: "st.secondary.configure"
+            state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
         }
 
         valueTile("firmwareVersion", "device.firmwareVersion", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
@@ -627,7 +630,14 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 
 def btnResponse(action, buttonType) {
     sendEvent(name: "status", value: action)
-    [name: "button", value: action, data: [buttonNumber: 1], descriptionText: action, displayed: false, isStateChange: true, type: buttonType]
+    def eventBtn = 1 
+    def eventAction = action
+    if (classicBtns) {
+      // overrride default buttons
+      eventBtn = classicBtn[action]  
+      eventAction = "pushed"
+    }
+    [name: "button", value: eventAction, data: [buttonNumber: eventBtn], descriptionText: action, displayed: false, isStateChange: true, type: buttonType]
 }
 
 def tapUp1() {
@@ -693,14 +703,28 @@ def setFirmwareVersion() {
 
 def configure() {
     log.debug("configure() called")
-    sendEvent(name: "numberOfButtons", value: 1, displayed: false)
-    sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
-    def commands = []
-    commands << setDimRatePrefs()
-    commands << zwave.switchMultilevelV1.switchMultilevelGet().format()
-    commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-    commands << zwave.versionV1.versionGet().format()
-    delayBetween(commands, 500)
+    def numBtns
+    def btnValues
+    if (classicBtns) {
+      log.debug "setting classic button mapping"
+      numBtns = 12
+      btnValues = ["pushed"].encodeAsJSON()
+    } else {
+      log.debug "setting default button mapping"
+      numBtns = 1
+      btnValues = ["down", "down_hold", "down_2x", "down_3x", "down_4x", "down_5x", "up", "up_hold", "up_2x", "up_3x", "up_4x", "up_5x"].encodeAsJSON()
+    }
+    sendEvent(name: "numberOfButtons", value: numBtns, displayed: false)
+    sendEvent(name: "supportedButtonValues", value: btnValues, displayed: false)
+    def cmds = []
+    cmds << setDimRatePrefs()
+    cmds << zwave.switchMultilevelV1.switchMultilevelGet().format()
+    cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+    cmds << zwave.versionV1.versionGet().format()
+}
+
+private commands(commands, delay=500) {
+    delayBetween(commands.collect{ it }, delay)
 }
 
 def setDimRatePrefs() {
@@ -767,11 +791,10 @@ def setDimRatePrefs() {
 }
 
 def updated() {
-    def cmds = []
-    cmds << setDimRatePrefs
-    delayBetween(cmds, 500)
+    def cmds=configure()
+    response(commands(cmds, 1000))
 }
 
-private getSupportedButtonValues() {
-    ["down", "down_hold", "down_2x", "down_3x", "down_4x", "down_5x", "up", "up_hold", "up_2x", "up_3x", "up_4x", "up_5x"]
+private getClassicBtn() {
+   ["up_2x":1, "down_2x":2,"up_3x":3,"down_3x":4, "up_hold":5, "down_hold":6, "up":7, "down":8, "up_4x":9, "down_4x":10, "up_5x":11, "down_5x":12]
 }
