@@ -18,12 +18,8 @@
  *	Author: HomeSeer, darwin@darwinsden.com
  *
  *	Changelog:
- *  2.0.2     21-Aug-2020 Added 'classic' 12 button mapping preference option. Support preference setting updates without requiring configure button. 
- *  2.0.1     18-Aug-2020 correct digital on/off button tap responses.
- *  2.0       18-Aug-2020 darwin@darwinsden.com: Updates to support new app automation capability. This update replaces the 12 button mappings with a single
- *                        button supporting all up/down multi-tap and hold actions. WARNING: This update will break existing rules/smartapps, and automations 
- *                        that rely on the old 12 button mappings. These automations will need to be recreated with the new app automation capability or
- *                        with smart apps that support the new SupportedButtonValues capability.
+ *  2.1       22-Aug-2020 Added button value support for new app automations. Added preference option to choose between 'classic' 12 button multi-tap 
+ *                        actions or one button supporting all 12 multi-tap values. Updated preference settings to no longer require configure button. 
  *  1.1.dd.1  13-Aug-2020 Updates to better support the new SmartThings app. Thank you @mikerossman. (darwin@darwinsden.com)
  *  1.0.dd.9  13-Feb-2019 Added dummy setLevel command with duration for compatibility with HA Bridge, others? (darwin@darwinsden.com)
  *  1.0.dd.8  28-Jul-2018 Additional protection against floating point default preference values. (darwin@darwinsden.com)
@@ -182,18 +178,20 @@ metadata {
 
 def parse(String description) {
     def result = null
-    log.debug(description)
+    //log.debug(description)
     if (description != "updated") {
         def cmd = zwave.parse(description, [0x20: 1, 0x26: 1, 0x70: 1])
         if (cmd) {
             result = zwaveEvent(cmd)
         }
     }
+    /*
     if (!result) {
         log.debug "Parse returned ${result} for command ${cmd}"
     } else {
         log.debug "Parse returned ${result}"
     }
+    */
     return result
 }
 
@@ -240,11 +238,11 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    log.debug "manufacturerId:   ${cmd.manufacturerId}"
-    log.debug "manufacturerName: ${cmd.manufacturerName}"
+    //log.debug "manufacturerId:   ${cmd.manufacturerId}"
+    //log.debug "manufacturerName: ${cmd.manufacturerName}"
     state.manufacturer = cmd.manufacturerName
-    log.debug "productId:        ${cmd.productId}"
-    log.debug "productTypeId:    ${cmd.productTypeId}"
+    //log.debug "productId:        ${cmd.productId}"
+    //log.debug "productTypeId:    ${cmd.productTypeId}"
     def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
     updateDataValue("MSR", msr)
     setFirmwareVersion()
@@ -254,21 +252,21 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     //updateDataValue("applicationVersion", "${cmd.applicationVersion}")
     log.debug("received Version Report")
-    log.debug "applicationVersion:      ${cmd.applicationVersion}"
-    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
+    //log.debug "applicationVersion:      ${cmd.applicationVersion}"
+    //log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
     state.firmwareVersion = cmd.applicationVersion + '.' + cmd.applicationSubVersion
-    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
-    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
-    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+    //log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
+    //log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
+    //log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
     setFirmwareVersion()
     createEvent([descriptionText: "Firmware V" + state.firmwareVersion, isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd) {
     log.debug("received Firmware Report")
-    log.debug "checksum:       ${cmd.checksum}"
-    log.debug "firmwareId:     ${cmd.firmwareId}"
-    log.debug "manufacturerId: ${cmd.manufacturerId}" [: ]
+    //log.debug "checksum:       ${cmd.checksum}"
+    //log.debug "firmwareId:     ${cmd.firmwareId}"
+    //log.debug "manufacturerId: ${cmd.manufacturerId}" [: ]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelStopLevelChange cmd) {
@@ -297,7 +295,7 @@ def off() {
 }
 
 def setLevel(value) {
-    log.debug "setLevel >> value: $value"
+    //log.debug "setLevel >> value: $value"
     def valueaux = value as Integer
     def level = Math.max(Math.min(valueaux, 99), 0)
     if (level > 0) {
@@ -527,7 +525,7 @@ def refresh() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-    log.debug("sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}")
+    //log.debug("sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}")
     def result = []
 
     switch (cmd.sceneNumber) {
@@ -698,33 +696,34 @@ def setFirmwareVersion() {
     } else {
         versionInfo = versionInfo + "Firmware unknown"
     }
+    log.debug "Firmware: ${versionInfo}"
     sendEvent(name: "firmwareVersion", value: versionInfo, isStateChange: true, displayed: false)
 }
 
-def configure() {
-    log.debug("configure() called")
+def configureButtons() {
     def numBtns
     def btnValues
     if (classicBtns) {
-      log.debug "setting classic button mapping"
+      log.debug "setting classic 12 button mapping"
       numBtns = 12
       btnValues = ["pushed"].encodeAsJSON()
     } else {
-      log.debug "setting default button mapping"
+      log.debug "setting default 1 button mapping"
       numBtns = 1
       btnValues = ["down", "down_hold", "down_2x", "down_3x", "down_4x", "down_5x", "up", "up_hold", "up_2x", "up_3x", "up_4x", "up_5x"].encodeAsJSON()
     }
     sendEvent(name: "numberOfButtons", value: numBtns, displayed: false)
     sendEvent(name: "supportedButtonValues", value: btnValues, displayed: false)
+}
+
+def configure() {
+    log.debug("configure() called")
+    configureButtons()
     def cmds = []
     cmds << setDimRatePrefs()
     cmds << zwave.switchMultilevelV1.switchMultilevelGet().format()
     cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     cmds << zwave.versionV1.versionGet().format()
-}
-
-private commands(commands, delay=500) {
-    delayBetween(commands.collect{ it }, delay)
 }
 
 def setDimRatePrefs() {
@@ -792,7 +791,7 @@ def setDimRatePrefs() {
 
 def updated() {
     def cmds=configure()
-    response(commands(cmds, 1000))
+    response(delayBetween(cmds, 1000))
 }
 
 private getClassicBtn() {
