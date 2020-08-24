@@ -94,6 +94,10 @@ metadata {
 
 	main(["switch","power","energy"])
 	details(["switch", "power", "energy", "refresh", "reset"])
+
+	preferences {
+		input name: "resetPowerMeterValues", type: "bool", title: "Reset Energy Consumption", description: "Reset the accumulated energy consumption value"
+	}
 }
 
 def getCommandClassVersions() {
@@ -114,7 +118,12 @@ def installed() {
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	response(refresh())
+	def cmd = []
+	if (settings.resetPowerMeterValues) {
+		cmd += reset()
+	}
+	cmd += refresh()
+	response(cmd)
 }
 
 // parse events into attributes
@@ -251,6 +260,7 @@ def configure() {
 }
 
 def reset() {
+	log.debug "reset()"
 	encapSequence([
 		meterReset(),
 		meterGet(scale: 0)
