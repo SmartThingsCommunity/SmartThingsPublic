@@ -142,6 +142,10 @@ def both() {
 	on()
 }
 
+def chime() {
+	on()
+}
+
 def ping() {
 	def cmds = [
 			encap(zwave.basicV1.basicGet())
@@ -201,26 +205,30 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0x09: //TAMPER
 				sendEvent(name: "tamper", value: "detected")
-				runIn(10, "clearTamper")
+				sendEvent(name: "alarm", value: "both")
+				runIn(2, "clearTamperAndAlarm")
 				break
 			case 0x01: //ON
 				if (state.lastTriggeredSound == 1) {
-					createEvent([name: "alarm", value: "both"])
-					createEvent([name: "chime", value: "chime"])
+					sendEvent(name: "chime", value: "chime")
+					sendEvent(name: "alarm", value: "both")
 				} else {
 					setActiveSound(state.lastTriggeredSound)
 				}
 				break
 			case 0x00: //OFF
 				resetActiveSound()
-				createEvent([name: "tamper", value: "clear"])
+				sendEvent(name: "tamper", value: "clear")
+				sendEvent(name: "alarm", value: "off")
+				sendEvent(name: "chime", value: "off")
 				break
 		}
 	}
 }
 
-def clearTamper() {
+def clearTamperAndAlarm() {
 	sendEvent(name: "tamper", value: "clear")
+	sendEvent(name: "alarm", value: "off")
 }
 
 def setOnChild(deviceDni) {
@@ -252,7 +260,7 @@ def resetActiveSound() {
 def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent(name: "chime", value: "on")
+	child?.sendEvent(name: "chime", value: "chime")
 	child?.sendEvent(name: "alarm", value: "both")
 }
 
