@@ -115,7 +115,11 @@ def installed() {
 		}
 	}
 // Preferences template end
-	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:1", "LED Bar", "LEDColorConfiguration")
+	createChildButtonDevices()
+	def value = ['pushed', 'up', 'up_2x', 'up_3x', 'up_4x', 'up_5x', 'down', 'down_2x', 'down_3x', 'down_4x', 'down_5x'].encodeAsJson()
+	sendEvent(name: "supportedButtonValues", value: value)
+	sendEvent(name: "numberOfButtons", value: 3, displayed: true)
+	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:4", "LED Bar", "LEDColorConfiguration")
 }
 
 def configure() {
@@ -281,7 +285,7 @@ def parse(String description) {
 
 def handleLEDPreferenceEvent(cmd) {
 	def hueState = [name: "hue", value: "${Math.round(zwaveValueToHuePercent(cmd.scaledConfigurationValue))}"]
-	def childDni = "${device.deviceNetworkId}:1"
+	def childDni = "${device.deviceNetworkId}:4"
 	def childDevice = childDevices.find { it.deviceNetworkId == childDni }
 	childDevice?.sendEvent(hueState)
 	childDevice?.sendEvent(name: "saturation", value: "100")
@@ -352,6 +356,66 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 		map = [name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
 	}
 	createEvent(map)
+}
+
+private getButtonLabel() {
+	[
+		"Up",
+		"Down",
+		"Configuration"
+	]
+}
+
+private void createChildButtonDevices() {
+	for (buttonNumber in 1..3) {
+		def child = addChildDevice("smartthings", "Child Button", "${device.deviceNetworkId}:${buttonNumber}", device.hub.id,
+			[
+				completedSetup: true,
+				label         : buttonLabel[buttonNumber - 1],
+				isComponent   : true,
+				componentName : "button$buttonNumber",
+				componentLabel: buttonLabel[buttonNumber - 1]
+			])
+
+		child.sendEvent(name: "supportedButtonValues", value: ["pushed"].encodeAsJSON(), displayed: false)
+		child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
+	}
+}
+
+def sendButtonEvent(gesture, buttonNumber) {
+	def event = createEvent([name: "button", value: gesture, data: [buttonNumber: buttonNumber], isStateChange: true])
+	String childDni = "${device.deviceNetworkId}:$buttonNumber"
+	def child = childDevices.find { it.deviceNetworkId == childDni }
+	child?.sendEvent(event)
+	return createEvent([name: "button", value: gesture, data: [buttonNumber: buttonNumber], isStateChange: true, displayed: false])
+}
+
+def labelForGesture(gesture, attribute) {
+	if (attribute == 0) {
+		gesture;
+	} else {
+		def number = attribute - 1;
+		"${gesture}_${number}x";
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+	log.info("CentralSceneNotification, keyAttributes=${cmd.keyAttributes}, sceneNumber=${cmd.sceneNumber}")
+	def singleClick = 0;
+	def multipleClicks = [3, 4, 5, 6]
+	def supportedAttributes = [singleClick] + multipleClicks
+	int attribute = cmd.keyAttributes
+	int scene = cmd.sceneNumber
+	if (scene == 1 && attribute in supportedAttributes) {
+		sendButtonEvent(labelForGesture("down", attribute), 2);
+	} else if (scene == 2 && attribute in supportedAttributes) {
+		sendButtonEvent(labelForGesture("up", attribute), 1);
+	} else if (scene == 3 && attribute == singleClick) {
+		sendButtonEvent("pushed", 3)
+	} else {
+		log.warn("Unhandled scene notification, keyAttributes=${attribute}, sceneNumber=${scene}")
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
