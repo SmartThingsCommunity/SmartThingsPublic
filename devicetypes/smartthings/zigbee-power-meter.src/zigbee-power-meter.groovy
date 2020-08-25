@@ -52,8 +52,13 @@ def parse(String description) {
     if (event) {
         log.info event
         if (event.name == "power") {
-            event.value = event.value/1000
-            event.unit = "W"
+            if (event.cluster == 0x0B04 && event.attrId == 0x050b) {
+                event.value = event.value
+                event.unit = "W"
+            } else {
+                event.value = event.value/1000
+                event.unit = "W"
+            }
         } else if (event.name == "energy") {
             event.value = event.value/1000000
             event.unit = "kWh"
