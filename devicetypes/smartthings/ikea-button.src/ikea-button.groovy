@@ -91,7 +91,7 @@ private getIkeaOnOffSwitchNames() {
 	]
 }
 
-private getIkeaOpenCloseOrSomfySituoRemoteNames() {
+private getOpenCloseRemoteNames() {
 	[
 		"Up", // Up button
 		"Down" // Down button
@@ -106,7 +106,7 @@ private getButtonLabel(buttonNum) {
 	} else if (isIkeaOnOffSwitch()) {
 		label = ikeaOnOffSwitchNames[buttonNum - 1]
 	} else if (isIkeaOpenCloseRemote() || isSomfySituo()) {
-		label = ikeaOpenCloseOrSomfySituoRemoteNames[buttonNum - 1]
+		label = openCloseRemoteNames[buttonNum - 1]
 	}
 
 	return label
