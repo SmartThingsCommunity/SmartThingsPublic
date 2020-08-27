@@ -99,6 +99,10 @@ metadata {
 	}
 }
 
+private getUP_BUTTON(){ 1 }
+private getDOWN_BUTTON(){ 2 }
+private getCONFIGURATION_BUTTON(){ 3 }
+
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -116,7 +120,7 @@ def installed() {
 	}
 // Preferences template end
 	createChildButtonDevices()
-	def value = ['pushed', 'up', 'up_2x', 'up_3x', 'up_4x', 'up_5x', 'down', 'down_2x', 'down_3x', 'down_4x', 'down_5x'].encodeAsJson()
+	def value = ['pushed', 'pushed_2x', 'pushed_3x', 'pushed_4x', 'pushed_5x'].encodeAsJson()
 	sendEvent(name: "supportedButtonValues", value: value)
 	sendEvent(name: "numberOfButtons", value: 3, displayed: true)
 	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:4", "LED Bar", "LEDColorConfiguration")
@@ -340,7 +344,6 @@ def off() {
 }
 
 def setLevel(level) {
-	log.debug "setLevel"
 	if (level > 99) level = 99
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),
@@ -351,7 +354,7 @@ def setLevel(level) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	def map = [:]
 	if (cmd.meterType == 1 && cmd.scale == 0) {
-		map = [name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
+		map = [name: "energy", value: cmd.scaledMeterValue.round(1), unit: "kWh"]
 	} else if (cmd.meterType == 1 && cmd.scale == 2) {
 		map = [name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
 	}
@@ -360,9 +363,9 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 
 private getButtonLabel() {
 	[
-		"Up",
-		"Down",
-		"Configuration"
+		"Up button",
+		"Down button",
+		"Configuration button"
 	]
 }
 
@@ -377,7 +380,8 @@ private void createChildButtonDevices() {
 				componentLabel: buttonLabel[buttonNumber - 1]
 			])
 
-		child.sendEvent(name: "supportedButtonValues", value: ["pushed"].encodeAsJSON(), displayed: false)
+		def value = buttonNumber == 3 ? ['pushed'] : ['pushed', 'pushed_2x', 'pushed_3x', 'pushed_4x', 'pushed_5x']
+		child.sendEvent(name: "supportedButtonValues", value: value.encodeAsJSON(), displayed: false)
 		child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 	}
@@ -391,7 +395,8 @@ def sendButtonEvent(gesture, buttonNumber) {
 	return createEvent([name: "button", value: gesture, data: [buttonNumber: buttonNumber], isStateChange: true, displayed: false])
 }
 
-def labelForGesture(gesture, attribute) {
+def labelForGesture( attribute) {
+	def	gesture = "pushed"
 	if (attribute == 0) {
 		gesture;
 	} else {
@@ -408,11 +413,11 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	int attribute = cmd.keyAttributes
 	int scene = cmd.sceneNumber
 	if (scene == 1 && attribute in supportedAttributes) {
-		sendButtonEvent(labelForGesture("down", attribute), 2);
+		sendButtonEvent(labelForGesture(attribute), DOWN_BUTTON);
 	} else if (scene == 2 && attribute in supportedAttributes) {
-		sendButtonEvent(labelForGesture("up", attribute), 1);
+		sendButtonEvent(labelForGesture(attribute), UP_BUTTON);
 	} else if (scene == 3 && attribute == singleClick) {
-		sendButtonEvent("pushed", 3)
+		sendButtonEvent("pushed", CONFIGURATION_BUTTON)
 	} else {
 		log.warn("Unhandled scene notification, keyAttributes=${attribute}, sceneNumber=${scene}")
 	}
@@ -424,12 +429,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
-def childSetColor(deviceNetworkId, value) {
-	def id = deviceNetworkId?.split(":")[1] as Integer
-	sendHubCommand setColorCmd(value, id)
+def childSetColor(value) {
+	sendHubCommand setColorCmd(value)
 }
 
-def setColorCmd(value, id) {
+def setColorCmd(value) {
 	if (value.hue == null || value.saturation == null) return
 	def ledColor = Math.round(huePercentToZwaveValue(value.hue))
 	encapSequence([
@@ -444,11 +448,6 @@ private huePercentToZwaveValue(value) {
 
 private zwaveValueToHuePercent(value) {
 	return value <= 2 ? 0 : (value >= 254 ? 100 : value / 255 * 100)
-}
-
-def childRefresh(deviceNetworkId) {
-	def id = deviceNetworkId?.split(":")[1] as Integer
-	sendHubCommand refresh()
 }
 
 def refresh() {

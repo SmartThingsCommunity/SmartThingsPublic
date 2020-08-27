@@ -33,5 +33,5 @@ metadata {
 }
 
 def setColor(value) {
-	parent.childSetColor(device.deviceNetworkId, value);
+	parent.childSetColor(value)
 }
