@@ -37,15 +37,15 @@ def parse(String description) {
 // handle commands
 def execute() {
 	log.debug "Executing 'execute'"
-      def cmdStr = new physicalgraph.device.HubAction([
-    method: "POST",
-    path: "/dispositivos/727645701/acionar/0",
-    headers: [
-    "HOST": "192.168.1.201:3000",
-    "Content-Type": "application/json",
-    "Authorization": "Basic dG9rZW46YTc5NTMxOWFkMzViNjQ2YzBiYjJmY2RjZDdjNjQ3MWQ="
-    ]
-  ])
+    def cmdStr = new physicalgraph.device.HubAction([
+      method: "POST",
+      path: "/dispositivos/727645701/acionar/0",
+      headers: [
+      "HOST": "192.168.1.201:3000",
+      "Content-Type": "application/json",
+      "Authorization": "Basic dG9rZW46YTc5NTMxOWFkMzViNjQ2YzBiYjJmY2RjZDdjNjQ3MWQ="
+      ]
+    ])
 
 
   try {
