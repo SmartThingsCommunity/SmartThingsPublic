@@ -354,7 +354,7 @@ def setLevel(level) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	def map = [:]
 	if (cmd.meterType == 1 && cmd.scale == 0) {
-		map = [name: "energy", value: cmd.scaledMeterValue.round(1), unit: "kWh"]
+		map = [name: "energy", value: cmd.scaledMeterValue.toDouble().round(1), unit: "kWh"]
 	} else if (cmd.meterType == 1 && cmd.scale == 2) {
 		map = [name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
 	}
