@@ -139,7 +139,7 @@ def updateLegacySettings() {
 	visualIndicatorNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[visualIndicatorNotificationStatus] : visualIndicatorNotificationStatus
 	soundNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[soundNotificationStatus] : soundNotificationStatus
 
-	state.legacySettingsUpdate = true
+	state.legacySettingsUpdated = true
 }
 
 
