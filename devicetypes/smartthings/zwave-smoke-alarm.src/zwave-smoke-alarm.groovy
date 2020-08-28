@@ -191,13 +191,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response([
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
 				zwave.batteryV1.batteryGet().format(),
-				"delay 2000",
 				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-			])
+		]), 2000 )
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		]), 2000 )
 	}
 }
 
