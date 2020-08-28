@@ -27,6 +27,7 @@ metadata {
 		capability "Power Meter"
 
 		fingerprint mfr: "031E", prod: "0001", model: "0001", deviceJoinName: "Inovelli Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Inovelli_Dimmer" //Inovelli Dimmer LZW31-SN
+		fingerprint mfr: "031E", prod: "0003", model: "0001", deviceJoinName: "Inovelli Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Inovelli_Dimmer_LZW31" //Inovelli Dimmer LZW31
 	}
 
 	tiles(scale: 2) {
@@ -119,10 +120,12 @@ def installed() {
 		}
 	}
 // Preferences template end
-	createChildButtonDevices()
-	def value = ['pushed', 'pushed_2x', 'pushed_3x', 'pushed_4x', 'pushed_5x'].encodeAsJson()
-	sendEvent(name: "supportedButtonValues", value: value)
-	sendEvent(name: "numberOfButtons", value: 3, displayed: true)
+	if(isInovelliDimmerLZW31SN()) {
+		createChildButtonDevices()
+		def value = ['pushed', 'pushed_2x', 'pushed_3x', 'pushed_4x', 'pushed_5x'].encodeAsJson()
+		sendEvent(name: "supportedButtonValues", value: value)
+		sendEvent(name: "numberOfButtons", value: 3, displayed: true)
+	}
 	createChildDevice("smartthings", "Child Color Control", "${device.deviceNetworkId}:4", "LED Bar", "LEDColorConfiguration")
 }
 
@@ -509,6 +512,10 @@ private encap(cmd, endpoint = null) {
 
 private encapSequence(cmds, Integer delay = 250) {
 	delayBetween(cmds.collect { encap(it) }, delay)
+}
+
+private isInovelliDimmerLZW31SN(){
+	zwaveInfo.mfr.equals("031E") && zwaveInfo.prod.equals("0001") && zwaveInfo.model.equals("0001")
 }
 
 private getParameterMap() {
