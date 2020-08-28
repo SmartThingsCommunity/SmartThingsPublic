@@ -119,9 +119,28 @@ metadata {
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
+	if(!state.legacySettingsUpdated) updateLegacySettings()
 	setConfigured("false") //wait until the next time device wakeup to send configure command
 }
 
+def updateLegacySettings() {
+
+	def legacyNotificationOptionMap = {
+		"disabled" : "None",
+		"casing opened" : "Casing opened",
+		"exceeding temperature threshold" : "Exceeding temperature threshold",
+		"lack of Z-Wave range" : "Lack of Z-Wave range",
+		"all notifications" : "All"
+	}
+
+	temperatureReportInterval == "reports inactive" ? "Reports inactive" : temperatureReportInterval
+
+	zwaveNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[zwaveNotificationStatus] : zwaveNotificationStatus
+	visualIndicatorNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[visualIndicatorNotificationStatus] : visualIndicatorNotificationStatus
+	soundNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[soundNotificationStatus] : soundNotificationStatus
+
+	state.legacySettingsUpdate = true
+}
 
 
 def parse(String description) {
