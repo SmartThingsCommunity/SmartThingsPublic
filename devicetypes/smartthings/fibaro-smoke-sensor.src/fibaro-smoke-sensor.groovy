@@ -135,9 +135,9 @@ def updateLegacySettings() {
 
 	temperatureReportInterval == "reports inactive" ? "Reports inactive" : temperatureReportInterval
 
-	zwaveNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[zwaveNotificationStatus] : zwaveNotificationStatus
-	visualIndicatorNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[visualIndicatorNotificationStatus] : visualIndicatorNotificationStatus
-	soundNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[soundNotificationStatus] : soundNotificationStatus
+	zwaveNotificationStatus = zwaveNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[zwaveNotificationStatus] : zwaveNotificationStatus
+	visualIndicatorNotificationStatus = visualIndicatorNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[visualIndicatorNotificationStatus] : visualIndicatorNotificationStatus
+	soundNotificationStatus = soundNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[soundNotificationStatus] : soundNotificationStatus
 
 	state.legacySettingsUpdated = true
 }
