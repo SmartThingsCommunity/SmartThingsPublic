@@ -125,19 +125,19 @@ def updated() {
 
 def updateLegacySettings() {
 
-	def legacyNotificationOptionMap = {
+	def legacyNotificationOptionMap = [
 		"disabled" : "None",
 		"casing opened" : "Casing opened",
 		"exceeding temperature threshold" : "Exceeding temperature threshold",
 		"lack of Z-Wave range" : "Lack of Z-Wave range",
 		"all notifications" : "All"
-	}
+	]
 
-	temperatureReportInterval == "reports inactive" ? "Reports inactive" : temperatureReportInterval
+	device.updateSetting("temperatureReportInterval", temperatureReportInterval == "reports inactive" ?: "Reports inactive")
 
-	zwaveNotificationStatus = zwaveNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[zwaveNotificationStatus] : zwaveNotificationStatus
-	visualIndicatorNotificationStatus = visualIndicatorNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[visualIndicatorNotificationStatus] : visualIndicatorNotificationStatus
-	soundNotificationStatus = soundNotificationStatus in legacyNotificationOptionMap ? legacyNotificationOptionMap[soundNotificationStatus] : soundNotificationStatus
+	device.updateSetting("zwaveNotificationStatus", legacyNotificationOptionMap[zwaveNotificationStatus] ?: zwaveNotificationStatus)
+	device.updateSetting("visualIndicatorNotificationStatus", legacyNotificationOptionMap[visualIndicatorNotificationStatus] ?: visualIndicatorNotificationStatus)
+	device.updateSetting("soundNotificationStatus", legacyNotificationOptionMap[soundNotificationStatus] ?: soundNotificationStatus)
 
 	state.legacySettingsUpdated = true
 }
