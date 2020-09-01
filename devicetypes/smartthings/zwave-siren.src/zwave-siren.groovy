@@ -79,13 +79,13 @@ metadata {
 
 		// Yale siren only
 		preferences {
-			input name: "alarmLength", type: "number", title: "Alarm length", description: "This setting does not apply to all devices", range: "1..10"
+			input name: "alarmLength", type: "number", title: "Alarm length", description: "Enter alarm length", range: "1..10"
 			// defaultValue: 10
-			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash", description: "This setting does not apply to all devices"
+			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash", description: "This setting only applies to Yale sirens."
 			// defaultValue: false
-			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", description: "This setting does not apply to all devices", range: "0..25"
+			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", description: "This setting only applies to Yale sirens.", range: "0..25"
 			// defaultValue: 0
-			input name: "tamper", type: "bool", title: "Tamper alert", description: "This setting does not apply to all devices"
+			input name: "tamper", type: "bool", title: "Tamper alert", description: "This setting only applies to Yale sirens."
 			// defaultValue: false
 		}
 
