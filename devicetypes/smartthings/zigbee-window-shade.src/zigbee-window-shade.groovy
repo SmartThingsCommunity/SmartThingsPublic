@@ -33,6 +33,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "KG0001", deviceJoinName: "Window Treatment" //Smart Curtain Motor(BCM300D)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Window Treatment" //Smart Curtain Motor(DT82TV)
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Somfy", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
 	}
 
 	preferences {
@@ -193,7 +195,7 @@ def pause() {
 }
 
 def presetPosition() {
-    setLevel(preset ?: 50)
+	setLevel(preset ?: 50)
 }
 
 /**
@@ -271,7 +273,7 @@ private List readDeviceBindingTable() {
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSomfyGlydea() || isSomfySonesse()
 }
 
 def reportsBatteryPercentage() {
@@ -284,4 +286,13 @@ def isIkeaKadrilj() {
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isSomfyGlydea() {
+	device.getDataValue("model") == "Glydea Somfy"
+}
+
+def isSomfySonesse() {
+	// the default model name can be changed by the user from the Somfy Set&Go bluetooth app.
+	device.getDataValue("model") == "Roller"
 }
