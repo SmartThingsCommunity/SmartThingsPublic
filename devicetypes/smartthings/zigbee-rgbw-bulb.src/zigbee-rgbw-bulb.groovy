@@ -96,6 +96,7 @@ metadata {
 
 		// Ajax Online
 		fingerprint manufacturer: "Ajaxonline", model: "AJ-RGBCCT 5 in 1", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+        fingerprint profileId: "0104", manufacturer: "Ajax online Ltd", model: "AJ_ZB30_GU10", deviceJoinName: "Ajax Light"
 	}
 
 	// UI tile definitions
