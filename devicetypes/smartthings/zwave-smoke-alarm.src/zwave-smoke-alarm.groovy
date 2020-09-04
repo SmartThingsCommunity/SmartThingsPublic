@@ -195,9 +195,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, res
 				zwave.batteryV1.batteryGet().format(),
 				"delay 2000",
 				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-			])
+		], 2000))
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		], 2000))
 	}
 }
 
