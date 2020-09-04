@@ -10,6 +10,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2020.09.04  	Remove v3 fingerprint 
  */
 import groovy.json.JsonOutput
 
@@ -26,7 +27,7 @@ metadata {
 		capability "Window Shade Level"
 
 		fingerprint mfr:"0287", prod:"0003", model:"000D", deviceJoinName: "iBlinds Motor"
-		fingerprint mfr:"0287", prod:"0004", model:"0071", deviceJoinName: "iBlinds Motor"
+		
 	}
 
 	simulator {
