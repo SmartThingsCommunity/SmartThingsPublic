@@ -1,5 +1,10 @@
 metadata {
-	definition (name: "mySwitch", namespace: "smartthings", author: "Baranauskas") {
+	definition (name: "mySwitch", namespace: "smartthings", author: "Baranauskas",
+               // vid: "c2c-switch", 
+                runLocally: true, 
+                minHubCoreVersion: '000.031.00004' //, 
+         //       executeCommandsLocally: true
+                ) {
 		capability "Actuator"
 //        capability "Refresh"
 		capability "Switch"
