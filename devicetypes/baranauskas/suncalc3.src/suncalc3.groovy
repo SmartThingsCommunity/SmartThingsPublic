@@ -21,7 +21,7 @@
 metadata {
     definition (
        name: "SunCalc3",
-//       version: "3.0",
+       version: "3.0",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
@@ -66,7 +66,7 @@ metadata {
         attribute "daytime", "string"
         attribute "nighttime", "string"
         // Ratio
-        attribute "dayNigthRatio", "string"
+        attribute "dayNigthRatio", "number"
 
         // location
         attribute "latitude", "number"
@@ -115,7 +115,7 @@ def updated() {
     refresh()
     runEvery1Minute( refreshSunPosition )
     int ss = 60 * Math.random()
-    def cronString = "${ss} 1 0 1/1 * ? *"
+    def cronString = "${ss} 15 0 1/1 * ? *"
     log.debug "cron schedule: ${cronString}"
     schedule(cronString, refreshSunTimes )
 }
@@ -124,7 +124,7 @@ def getSensorNames() {
   return ["SunNorth", "SunWest", "SunSouth", "SunEast"]
 }
 
-Map getSettings() {
+def validateSettings() {
   def afn = settings.angleFromNorth   ?: 0
   def ai  = settings.angleOfIncidence ?: 45
   return ["afn": afn, "aoi": aoi]
@@ -178,8 +178,8 @@ def refreshSunPosition() {
     def p    = getPosition( date, lat, lng )
     log.debug "SunPosition: ${p}"
 
-    def s = getSettings()
-    def front = remainder( (360 + 180 - p.azimuth + s.afn), 360 )
+    def s = validateSettings()
+    def front     = remainder( (360 + 180 - p.azimuth + s.afn), 360 )
     def sun_up    = (p.altitude > -0.833)
     def sun_north = sun_up && ((360.0 - s.aoi) <= front || front <  s.aoi)
     def sun_west  = sun_up && (s.aoi <= front && front < (180.0 - s.aoi))
@@ -226,28 +226,12 @@ def refreshSunTimes() {
 
     t = formatDates( t )
     t.each { key, value ->
-      sendEvent(name: key,           value: value  )
+      sendEvent(name: "${key}",           value: value  )
     }
-
-/*    sendEvent(name: "sunrise",        value: t.sunrise )
-    sendEvent(name: "sunset",         value: t.sunset )
-    sendEvent(name: "sunriseEnd",     value: t.sunriseEnd )
-    sendEvent(name: "sunsetStart",    value: t.sunsetStart )
-    sendEvent(name: "dawn",           value: t.dawn )
-    sendEvent(name: "dusk",           value: t.dusk )
-    sendEvent(name: "nauticalDawn",   value: t.nauticalDawn )
-    sendEvent(name: "nauticalDusk",   value: t.nauticalDusk )
-    sendEvent(name: "night",          value: t.night )
-    sendEvent(name: "nightEnd",       value: t.nightEnd )
-    sendEvent(name: "goldenHourEnd",  value: t.goldenHourEnd )
-    sendEvent(name: "goldenHour",     value: t.goldenHour )
-    sendEvent(name: "noon",           value: t.noon )
-    sendEvent(name: "nadir",          value: t.nadir )
-    sendEvent(name: "midmorning",     value: t.midmorning )
-    sendEvent(name: "midafternoon",   value: t.midafternoon )
-    sendEvent(name: "daytime",        value: t.daytime )
-    sendEvent(name: "nighttime",      value: t.nighttime )
-*/
+    def dt = Date.parse("yyyy-MM-dd hh:mm:ssZ", t.daytime ).getTime()
+    def midnight = new Date(dt).clearTime().getTime()
+    def dayNigthRatio = (dt - midnight) / (24*60*60*1000)
+    sendEvent(name: "dayNigthRatio", value: dayNigthRatio )
     sendEvent(name: "lastUpdatedSunTimes", value: formatDate( date ) )
 }
 
@@ -446,8 +430,8 @@ def getTimes(date, lat, lng, height=0) {
     jm = toJulian( jm )
     result << ["midmorning"   : fromJulian( (jr + jn) / 2 ),
                "midafternoon" : fromJulian( (jn + js) / 2 ),
-               "daytime"    : fromJulian( jm + (js - jr) ),
-               "nighttime"  : fromJulian( jm + 1.000011574074074 - (js - jr) )
+               "daytime"      : fromJulian( jm + (js - jr) ),
+               "nighttime"    : fromJulian( jm + 1.000011574074074 - (js - jr) )
               ]
     return result
 }
