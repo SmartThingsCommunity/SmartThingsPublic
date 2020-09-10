@@ -21,6 +21,7 @@ metadata {
 		capability "Refresh"
 
 		fingerprint mfr: "0159", prod: "0007", model: "0054", deviceJoinName: "Qubino Energy Monitor" //Qubino 3 Phase Meter
+		// zw:L type:3103 mfr:0159 prod:0007 model:0054 ver:1.00 zwv:4.61 lib:03 cc:5E,55,86,73,56,98,9F,72,5A,70,60,85,8E,59,32,6C,7A epc:4
 	}
 
 	// tile definitions
@@ -106,7 +107,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, endpoint = 
 private handleMeterReport(cmd, endpoint) {
 	def event = createMeterEventMap(cmd)
 	if (endpoint && endpoint > 1) {
-		String childDni = "${device.deviceNetworkId}:$endpoint"
+		String childDni = "${device.deviceNetworkId}:${endpoint - 1}"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(event)
 	} else {
@@ -122,7 +123,7 @@ private createMeterEventMap(cmd) {
 		eventMap.unit = "kWh"
 	} else if (cmd.scale == 2) {
 		eventMap.name = "power"
-		eventMap.value = cmd.scaledMeterValue >= 0 ? Math.round(cmd.scaledMeterValue) : Math.round(cmd.scaledMeterValue) * (-1)
+		eventMap.value = Math.round(Math.abs(cmd.scaledMeterValue))
 		eventMap.unit = "W"
 	}
 	eventMap
@@ -165,7 +166,7 @@ private addChildMeters(numberOfMeters) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName + " ${endpoint}"
-			addChildDevice("smartthings", "Child Metering Switch", childDni, device.getHub().getId(), [
+			addChildDevice("smartthings", "Child Energy Meter", childDni, device.getHub().getId(), [
 					completedSetup	: true,
 					label			: componentLabel,
 					isComponent		: true,
