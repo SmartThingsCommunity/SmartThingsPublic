@@ -48,6 +48,11 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240R-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340R-ZB
+        
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S250-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S250-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S350-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S350-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S250-ZB", deviceJoinName: "ST Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S250-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S350-ZB", deviceJoinName: "ST Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S350-ZB
 		
 		// eWeLink
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
@@ -251,7 +256,7 @@ private getChildCount() {
 		return 5
 	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
 		return 6 
-	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB") {
+	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
 		return 3
 	} else {
 		return 2

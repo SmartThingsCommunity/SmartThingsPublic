@@ -95,6 +95,9 @@ metadata {
 		// Dawon
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140R-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140R-ZB
+        
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S150-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S150-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S150-ZB", deviceJoinName: "ST Dawon Switch" //DAWOS DNS In-Wall Switch ST-S150-ZB
 	}
 
 	// simulator metadata
