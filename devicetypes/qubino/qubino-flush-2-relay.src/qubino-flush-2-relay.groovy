@@ -81,6 +81,8 @@ def installed() {
  	if (!childDevices && state.numberOfSwitches > 1) {
 		addChildSwitches(state.numberOfSwitches)
 	}
+
+	schedule(new Date(), getEnergyUsage)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
@@ -112,6 +114,12 @@ def updated() {
 	}
 	syncConfiguration()
 	// Preferences template end
+}
+
+private getEnergyUsage() {
+	for (def endpoint : 1..state.numberOfSwitches) {
+		sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)), endpoint)
+	}
 }
 
 def excludeParameterFromSync(preference){
