@@ -22,7 +22,7 @@ metadata {
 		capability "Thermostat Operating State"
 		capability "Thermostat Mode"
 		capability "Thermostat Fan Mode"
-		capability "Humidity Measurement"
+		capability "Relative Humidity Measurement"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
