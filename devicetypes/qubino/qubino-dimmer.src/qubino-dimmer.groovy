@@ -332,6 +332,10 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
+	if(isDINDimmer()) {
+		sendHubCommand(encap(zwave.meterV2.meterGet(scale: 0)))
+		sendHubCommand(encap(zwave.meterV2.meterGet(scale: 2)))
+	}
 	dimmerEvents(cmd)
 }
 
