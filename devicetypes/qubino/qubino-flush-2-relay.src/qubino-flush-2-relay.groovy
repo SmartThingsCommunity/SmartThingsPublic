@@ -117,9 +117,11 @@ def updated() {
 }
 
 private getEnergyUsage() {
+	def cmds = []
 	for (def endpoint : 1..state.numberOfSwitches) {
-		sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)), endpoint)
+		cmds += encap(zwave.meterV3.meterGet(scale: 0x00), endpoint)
 	}
+	sendHubCommand(cmds)
 }
 
 def excludeParameterFromSync(preference){
