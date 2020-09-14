@@ -193,12 +193,12 @@ def configure() {
 	def cmds = []
 
 	if (isSomfySituo()) {
-		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01, ["destEndpoint":0xE8]) +
-				zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, ["destEndpoint":0xE8]) +
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, ["destEndpoint":0xE8]) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01, ["destEndpoint":0xE8]) +
 				zigbee.addBinding(CLUSTER_WINDOW_COVERING)
 	} else {
-		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
-				zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
 				zigbee.addBinding(zigbee.ONOFF_CLUSTER)
 	}
 
@@ -216,12 +216,10 @@ def parse(String description) {
 		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
-				def batteryValue
+				def batteryValue = zigbee.convertHexToInt(descMap.value)
 				if (isSomfySituo()) {
-					// Somfy Situo reports decimal values
-					batteryValue = descMap.value
-				} else {
-					batteryValue = zigbee.convertHexToInt(descMap.value)
+					// Somfy reports battery percentage remaining with a range between zero and 100%, with 0x00 = 0%, 0x64 = 50%, and 0xC8
+					batteryValue = batteryValue / 2
 				}
 				event = getBatteryEvent(batteryValue)
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
