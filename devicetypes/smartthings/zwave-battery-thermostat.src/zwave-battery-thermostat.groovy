@@ -139,7 +139,6 @@ def initialize() {
 }
 
 def configure() {
-	def cmds = []
 	/*
 	Configuration of reporting values. Bitmask based on:
 	1	TEMPERATURE (CC_SENSOR_MULTILEVEL)
@@ -157,7 +156,7 @@ def configure() {
 	16384	MECH STATUS
 	32768	SCP STATUS
 	*/
-	cmds << zwave.configurationV1.configurationSet(parameterNumber: 23, size: 2, scaledConfigurationValue: 8319)
+	response(zwave.configurationV1.configurationSet(parameterNumber: 23, size: 2, scaledConfigurationValue: 8319))
 }
 
 def parse(String description)
