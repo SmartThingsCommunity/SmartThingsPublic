@@ -118,7 +118,7 @@ metadata {
 
 def installed() {
 	// Configure device
-	def cmds = [new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]))]
+	def cmds = [zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])]
 	sendHubCommand(cmds)
 	runIn(3, "initialize", [overwrite: true, forceForLocallyExecuting: true])  // Allow configure command to be sent and acknowledged before proceeding
 }
@@ -132,8 +132,8 @@ def initialize() {
 	sendEvent(name: "checkInterval", value: 60 * 60 * 24, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	unschedule()
 	sendHubCommand([
-		new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet()),
-		new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet())
+		zwave.thermostatModeV2.thermostatModeSupportedGet(),
+		zwave.thermostatFanModeV3.thermostatFanModeSupportedGet()
 	])
 	pollDevice()
 }
@@ -242,7 +242,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev1.Thermosta
 			break
 	}
 	// Makes sure we have the correct thermostat mode
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet()))
+	sendHubCommand(zwave.thermostatModeV2.thermostatModeGet())
 	createEvent(map)
 }
 
@@ -357,14 +357,14 @@ def refresh() {
 
 def pollDevice() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet())
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 1)) // current temperature
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 5)) // current relative humidity
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1))
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2))
-	cmds << new physicalgraph.device.HubAction(zwave.batteryV1.batteryGet())
+	cmds << zwave.thermostatModeV2.thermostatModeGet()
+	cmds << zwave.thermostatFanModeV3.thermostatFanModeGet()
+	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 1) // current temperature
+	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 5) // current relative humidity
+	cmds << zwave.thermostatOperatingStateV1.thermostatOperatingStateGet()
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
+	cmds << zwave.batteryV1.batteryGet()
 	sendHubCommand(cmds, 1200)
 }
 
@@ -504,7 +504,7 @@ def updateSetpoints(data) {
 def ping() {
 	log.debug "ping() called"
 	// Just get Operating State there's no need to flood more commands
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet()))
+	sendHubCommand(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet())
 }
 
 def switchMode() {
@@ -538,7 +538,7 @@ def switchToMode(nextMode) {
 
 def getSupportedModes() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet())
+	cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
 	sendHubCommand(cmds)
 }
 
@@ -572,7 +572,7 @@ def switchToFanMode(nextMode) {
 }
 
 def getSupportedFanModes() {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet())]
+	def cmds = [zwave.thermostatFanModeV3.thermostatFanModeSupportedGet()]
 	sendHubCommand(cmds)
 }
 
@@ -589,8 +589,8 @@ def setThermostatMode(String value) {
 }
 
 def setGetThermostatMode(data) {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode])),
-			new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet())]
+	def cmds = [zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode]),
+			zwave.thermostatModeV2.thermostatModeGet()]
 	sendHubCommand(cmds)
 }
 
@@ -605,8 +605,8 @@ def setThermostatFanMode(String value) {
 }
 
 def setGetThermostatFanMode(data) {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode])),
-			new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet())]
+	def cmds = [zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode]),
+			zwave.thermostatFanModeV3.thermostatFanModeGet()]
 	sendHubCommand(cmds)
 }
 
