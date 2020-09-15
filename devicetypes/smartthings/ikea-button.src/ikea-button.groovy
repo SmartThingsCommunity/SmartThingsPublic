@@ -217,8 +217,7 @@ def parse(String description) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
 				def batteryValue = zigbee.convertHexToInt(descMap.value)
-				if (isSomfySituo()) {
-					// Somfy reports battery percentage remaining with a range between zero and 100%, with 0x00 = 0%, 0x64 = 50%, and 0xC8
+				if (!isIkea()) {
 					batteryValue = batteryValue / 2
 				}
 				event = getBatteryEvent(batteryValue)
@@ -362,9 +361,15 @@ private boolean isIkeaOpenCloseRemote() {
 	device.getDataValue("model") == "TRADFRI open/close remote"
 }
 
+private boolean isIkea() {
+	isIkeaRemoteControl() || isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()
+}
+
 private boolean isSomfySituo() {
 	device.getDataValue("model") == "Situo 4 Zigbee"
 }
+
+
 
 private Integer getGroupAddrFromBindingTable(description) {
 	log.info "Parsing binding table - '$description'"
