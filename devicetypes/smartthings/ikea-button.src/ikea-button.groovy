@@ -369,8 +369,6 @@ private boolean isSomfySituo() {
 	device.getDataValue("model") == "Situo 4 Zigbee"
 }
 
-
-
 private Integer getGroupAddrFromBindingTable(description) {
 	log.info "Parsing binding table - '$description'"
 	def btr = zigbee.parseBindingTableResponse(description)
