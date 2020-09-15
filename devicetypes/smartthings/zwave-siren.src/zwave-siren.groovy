@@ -83,7 +83,7 @@ metadata {
 			// defaultValue: 10
 			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash", description: "This setting only applies to Yale sirens."
 			// defaultValue: false
-			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", description: "This setting only applies to Yale sirens.", range: "0..25"
+			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec)", description: "This setting only applies to Yale sirens.", range: "0..25"
 			// defaultValue: 0
 			input name: "tamper", type: "bool", title: "Tamper alert", description: "This setting only applies to Yale sirens."
 			// defaultValue: false

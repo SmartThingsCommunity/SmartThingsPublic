@@ -55,25 +55,25 @@ metadata {
 				title: "To check smoke detection state", displayDuringSetup: true, type: "paragraph", element: "paragraph"
 		input description: "Please consult Fibaro Smoke Sensor operating manual for advanced setting options. You can skip this configuration to use default settings",
 				title: "Advanced settings", displayDuringSetup: true, type: "paragraph", element: "paragraph"
-		input "smokeSensorSensitivity", "enum", title: "Smoke sensor sensitivity", options: ["High", "Medium", "Low"], defaultValue: "${smokeSensorSensitivity}", displayDuringSetup: true
+		input "smokeSensorSensitivity", "enum", title: "Smoke sensor sensitivity", options: ["High", "Medium", "Low"], defaultValue: "Medium", displayDuringSetup: true
 		input "zwaveNotificationStatus", "enum", title: "Notifications", options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
 			   // defaultValue: "${zwaveNotificationStatus}", displayDuringSetup: true
 			   //Setting the default to casing opened so it can work in SmartThings mobile app.
 				defaultValue: "Casing opened", displayDuringSetup: true
 		input "visualIndicatorNotificationStatus", "enum", title: "Visual indicator notifications status",
 				options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
-				defaultValue: "${visualIndicatorNotificationStatus}", displayDuringSetup: true
+				defaultValue: "None", displayDuringSetup: true
 		input "soundNotificationStatus", "enum", title: "Sound notifications status",
 				options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
-				defaultValue: "${soundNotificationStatus}", displayDuringSetup: true
+				defaultValue: "None", displayDuringSetup: true
 		input "temperatureReportInterval", "enum", title: "Temperature report interval",
-				options: ["Reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${temperatureReportInterval}", displayDuringSetup: true
+				options: ["Reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
 		input "temperatureReportHysteresis", "number", title: "Temperature report hysteresis", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
 		input "temperatureThreshold", "number", title: "Overheat temperature threshold", description: "Available settings: 0 or 2-100 C", range: "0..100", displayDuringSetup: true
 		input "excessTemperatureSignalingInterval", "enum", title: "Excess temperature signaling interval",
-				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${excessTemperatureSignalingInterval}", displayDuringSetup: true
+				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
 		input "lackOfZwaveRangeIndicationInterval", "enum", title: "Lack of Z-Wave range indication interval",
-				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${lackOfZwaveRangeIndicationInterval}", displayDuringSetup: true
+				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "6 hours", displayDuringSetup: true
 	}
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
