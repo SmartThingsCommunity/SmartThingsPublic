@@ -273,7 +273,7 @@ private List readDeviceBindingTable() {
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSomfyGlydea() || isSomfySonesse()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSomfy()
 }
 
 def reportsBatteryPercentage() {
@@ -288,11 +288,6 @@ def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
 }
 
-def isSomfyGlydea() {
-	device.getDataValue("model") == "Glydea Somfy"
-}
-
-def isSomfySonesse() {
-	// the default model name can be changed by the user from the Somfy Set&Go bluetooth app.
-	device.getDataValue("model") == "Roller"
+def isSomfy() {
+	device.getDataValue("manufacturer") == "SOMFY"
 }
