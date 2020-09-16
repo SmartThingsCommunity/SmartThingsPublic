@@ -107,8 +107,8 @@ metadata {
 						description: "This may need to be adjusted for bulbs that are not dimming properly.",
 						name: "minDimmingLevel",
 						type: "number",
-						range: "0..99",
-						defaultValue: 0
+						range: "1..99",
+						defaultValue: 1
 				)
 			}
 	}
@@ -304,10 +304,10 @@ def normalizeLevel(level) {
 
 def getAeotecNanoDimmerConfigurationCommands() {
 	def result = []
-	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: 0 // default value (parameter 131) for Aeotec Nano Dimmer
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: 1 // default value (parameter 131) for Aeotec Nano Dimmer
 
 	if (!state.minDimmingLevel) {
-		state.minDimmingLevel = 0 // default value (parameter 131) for Aeotec Nano Dimmer
+		state.minDimmingLevel = 1 // default value (parameter 131) for Aeotec Nano Dimmer
 	}
 
 	if (!state.configured || (minDimmingLevel != state.minDimmingLevel)) {
