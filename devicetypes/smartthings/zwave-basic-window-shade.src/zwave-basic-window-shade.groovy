@@ -25,10 +25,10 @@ metadata {
 		command "close"
 		command "pause"
 
-		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
-		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
-		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
-		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
+		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
 	}
 
 	tiles(scale: 2) {
@@ -58,11 +58,25 @@ metadata {
 				defaultValue: false,
 				displayDuringSetup: false
 			)
+            
+                input(title: "Aeotec Nano Shutter settings",
+                    description: "Sets the Open/Close time.",
+                    displayDuringSetup: false,
+                    type: "paragraph",
+                    element: "paragraph")
+
+                input("calibrationTime", "number",
+                    title: "Set the open/close time for motor, range = 5 - 255",
+                    defaultValue: false,
+                    displayDuringSetup: false,
+                    default: 10
+                )
 		}
 	}
 }
 
 def parse(String description) {
+	log.debug "parse() - description: $description"
 	def result = []
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
@@ -101,11 +115,12 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def setButton(button) {
+	log.debug "button: $button"
 	switch(button) {
-		case "open":
+		case "statelessCurtainPowerButton_open_button":
 			open()
 			break
-		case "close":
+		case "statelessCurtainPowerButton_close_button":
 			close()
 			break
 		default:
@@ -147,6 +162,14 @@ def installed() {
 def updated() {
 	sendHubCommand(pause())
 	state.reverseDirection = reverseDirection ? reverseDirection : false
+    int time = calibrationTime
+    
+    if (calibrationTime >= 5 && calibrationTime <= 255) {
+        response([
+    		secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: time)),
+        ])
+    } else {}
+    
 }
 
 def configure() {
