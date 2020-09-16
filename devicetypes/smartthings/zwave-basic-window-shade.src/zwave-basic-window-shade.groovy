@@ -25,10 +25,10 @@ metadata {
 		command "close"
 		command "pause"
 
-		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
-		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
-		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
-		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Nano Shutter" //Aeotec Nano Shutter
+		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0371", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 	}
 
 	tiles(scale: 2) {
@@ -58,19 +58,19 @@ metadata {
 				defaultValue: false,
 				displayDuringSetup: false
 			)
-            
-                input(title: "Aeotec Nano Shutter settings",
-                    description: "Sets the Open/Close time.",
-                    displayDuringSetup: false,
-                    type: "paragraph",
-                    element: "paragraph")
+            		
+			input(title: "Aeotec Nano Shutter settings",
+			    description: "Sets the Open/Close time.",
+			    displayDuringSetup: false,
+			    type: "paragraph",
+			    element: "paragraph")
 
-                input("calibrationTime", "number",
-                    title: "Set the open/close time for motor, range = 5 - 255",
-                    defaultValue: false,
-                    displayDuringSetup: false,
-                    default: 10
-                )
+			input("calibrationTime", "number",
+			    title: "Set the open/close time for motor, range = 5 - 255",
+			    defaultValue: false,
+			    displayDuringSetup: false,
+			    default: 10
+			)
 		}
 	}
 }
@@ -168,7 +168,7 @@ def updated() {
         response([
     		secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: time)),
         ])
-    } else {}
+    }
     
 }
 
