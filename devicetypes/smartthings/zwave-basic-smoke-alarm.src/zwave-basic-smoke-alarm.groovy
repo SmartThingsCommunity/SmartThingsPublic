@@ -252,6 +252,6 @@ def initialPoll() {
 	// check initial battery and smoke sensor state
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_SMOKE)
-	request << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4*60*60, nodeid: zwaveHubNodeId)
+	if (zwaveInfo.mfr != "0138") request << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4*60*60, nodeid: zwaveHubNodeId)
 	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
