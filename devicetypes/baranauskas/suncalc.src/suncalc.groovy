@@ -35,7 +35,7 @@
  *          SunEarlyNight:     sunset <= sun <= nadir (solar midnight)
  *          SunLateNight:      nadir <= sun <= sunrise
  *
- * Notes: Please read remarks about attributes near theirs definitions.
+ * Note: Please read remarks about attributes near theirs definitions.
  */
 metadata {
     definition (
