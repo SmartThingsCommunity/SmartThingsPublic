@@ -59,14 +59,10 @@ metadata {
 				displayDuringSetup: false
 			)
             		
-			input(title: "Aeotec Nano Shutter settings",
-			    description: "Sets the Open/Close time.",
-			    displayDuringSetup: false,
-			    type: "paragraph",
-			    element: "paragraph")
-
+			//This setting for calibrationTime is specific to Aeotec Nano Shutter and operates under def updated() - Line 159
 			input("calibrationTime", "number",
-			    title: "Set the open/close time for motor",
+			    title: "Open/Close timing",
+			    description: "Set the motor's open/close time",
 			    defaultValue: false,
 			    displayDuringSetup: false,
 			    range: "5..255",
@@ -163,11 +159,10 @@ def installed() {
 def updated() {
 	sendHubCommand(pause())
 	state.reverseDirection = reverseDirection ? reverseDirection : false
-	int time = calibrationTime
 
 	if (calibrationTime >= 5 && calibrationTime <= 255) {
 		response([
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: time)),
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: calibrationTime)),
 		])
 	}
     
