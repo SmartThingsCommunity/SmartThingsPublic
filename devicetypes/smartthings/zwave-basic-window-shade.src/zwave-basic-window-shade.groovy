@@ -114,9 +114,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def setButton(button) {
 	log.debug "button: $button"
 	switch(button) {
+		case "open":
 		case "statelessCurtainPowerButton_open_button":
 			open()
 			break
+		case "close":
 		case "statelessCurtainPowerButton_close_button":
 			close()
 			break
