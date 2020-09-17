@@ -40,7 +40,7 @@
 metadata {
     definition (
        name: "SunCalc",
-       version: "3.81 (2020-09-17)",
+       version: "3.82 (2020-09-17)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
@@ -139,7 +139,6 @@ metadata {
         // location
         attribute "latitude",               "number"
         attribute "longitude",              "number"
-        attribute "timeZone",               "string"
         attribute "timeZoneOffset",         "string"
     }
 
@@ -301,7 +300,7 @@ def sendEvents( Map e ) {
       sendEvent( name: key, value: value )
     }
 }
-// get "HH:mm" from datetime "yyyy-MM-dd HH:mm:ss" as string
+// get "HH:mm" from datetime "yyyy-MM-dd HH:mm:ss-0300" as string
 def getTimeFromDate( String date ){
     return date.substring( 11, 16 )
 }
@@ -414,7 +413,6 @@ def refreshLocation() {
     def loc = [
         latitude:       location.latitude,
         longitude:      location.longitude,
-        timeZone:       location.timeZone,
         timeZoneOffset: new Date().format("Z", location.timeZone )
     ]
     sendEvents( loc )
