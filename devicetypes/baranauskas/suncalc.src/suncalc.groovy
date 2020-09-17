@@ -40,7 +40,7 @@
 metadata {
     definition (
        name: "SunCalc",
-       version: "3.8 (2020-09-16)",
+       version: "3.81 (2020-09-17)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
@@ -301,9 +301,9 @@ def sendEvents( Map e ) {
       sendEvent( name: key, value: value )
     }
 }
-// get HH:mm:ss from datetime as string
+// get "HH:mm" from datetime "yyyy-MM-dd HH:mm:ss" as string
 def getTimeFromDate( String date ){
-    return date.substring( 11, 19 )
+    return date.substring( 11, 16 )
 }
 
 def childSensorValues( Map attr ) {
