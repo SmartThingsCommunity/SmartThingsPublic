@@ -66,9 +66,10 @@ metadata {
 			    element: "paragraph")
 
 			input("calibrationTime", "number",
-			    title: "Set the open/close time for motor, range = 5 - 255",
+			    title: "Set the open/close time for motor",
 			    defaultValue: false,
 			    displayDuringSetup: false,
+			    range: "5..255",
 			    default: 10
 			)
 		}
@@ -162,21 +163,21 @@ def installed() {
 def updated() {
 	sendHubCommand(pause())
 	state.reverseDirection = reverseDirection ? reverseDirection : false
-    int time = calibrationTime
-    
-    if (calibrationTime >= 5 && calibrationTime <= 255) {
-        response([
-    		secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: time)),
-        ])
-    }
+	int time = calibrationTime
+
+	if (calibrationTime >= 5 && calibrationTime <= 255) {
+		response([
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: time)),
+		])
+	}
     
 }
 
 def configure() {
 	log.debug "Configure..."
 	response([
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
 	])
 }
 
