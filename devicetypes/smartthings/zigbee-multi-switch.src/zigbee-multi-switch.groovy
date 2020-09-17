@@ -51,8 +51,8 @@ metadata {
         
 		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S250-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S250-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S350-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S350-ZB
-		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S250-ZB", deviceJoinName: "ST Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S250-ZB
-		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S350-ZB", deviceJoinName: "ST Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S350-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S250-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S250-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S350-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S350-ZB
 		
 		// eWeLink
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
