@@ -54,7 +54,7 @@ metadata {
 	preferences {
 		section {
 			input(title: "Control Sound and Volume",
-			description: "Follow these steps to adjust sound/volume: 1. Set Endpoint, 2. Set Volume, 3. Set Sound, # 4. Toggle button to ON, 5. Close setting page to refresh button or toggle button OFF, 6. Wait five seconds before configuration or use",
+			description: "Follow these steps to adjust sound/volume: 1. Set Endpoint, 2. Set Volume, 3. Set Sound, 4. Toggle button to ON, 5. Wait five seconds before new configuration or use, 6. Close setting page to refresh button or toggle button OFF",
 			displayDuringSetup: false,
 			type: "paragraph",
 			element: "paragraph")
