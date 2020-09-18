@@ -156,7 +156,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.parameter = cmd.parameter.drop(2)
 	}
     
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x60: 3, 0x79: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x60: 3])
 	def endpoint = cmd.sourceEndPoint
     
 	if (endpoint == state.lastTriggeredSound && encapsulatedCommand != null) {
@@ -165,7 +165,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def securedEncapsulatedCommand = cmd.securedEncapsulatedCommand([0x60: 3, 0x79: 2])
+	def securedEncapsulatedCommand = cmd.securedEncapsulatedCommand([0x60: 3])
 	if (securedEncapsulatedCommand) {
 		zwaveEvent(securedEncapsulatedCommand)
 	} else {
