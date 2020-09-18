@@ -82,7 +82,6 @@ def installed() {
 	state.temperatureSensorDni = null
 	sendHubCommand(encap(zwave.configurationV2.configurationGet(parameterNumber: 71)))
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	schedule(new Date(), getEnergyUsage)
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -369,7 +368,11 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 				events += createEvent([name: "windowShade", value: state.blindsLastCommand])
 				events += createEvent([name: "shadeLevel", value: state.shadeTarget, displayed: false])
 			} else {
-				events += response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
+				events += response([
+						encap(zwave.switchMultilevelV3.switchMultilevelGet()),
+						"delay 500",
+						encap(zwave.meterV3.meterGet(scale: 0x00))
+				])
 			}
 		}
 	}
@@ -447,10 +450,6 @@ private createVenetianBlindsChildDeviceIfNeeded() {
 	if (state.currentMode.contains("Venetian")) {
 		state.venetianBlindDni = createChildDevice("venetianBlind", "Venetian Blind", "Child Switch Multilevel", 2).deviceNetworkId
 	}
-}
-
-private getEnergyUsage() {
-	sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)))
 }
 
 private getParameterMap() {[
