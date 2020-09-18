@@ -73,8 +73,8 @@ metadata {
 	}
 }
 
-local getPRESSURE_MEASUREMENT_CLUSTER() {0x0403}
-local getMFG_CODE() {0x115B}
+def getPRESSURE_MEASUREMENT_CLUSTER() {0x0403}
+def getMFG_CODE() {0x115B}
 
 def parse(String description) {
 	log.debug "description: $description"
@@ -99,7 +99,7 @@ def parse(String description) {
 	createEvent(event)
 }
 
-getBatteryPercentageResult(rawValue) {
+def getBatteryPercentageResult(rawValue) {
 	// reports raw percentage, not 2x
 	def result = [:]
 
@@ -113,7 +113,7 @@ getBatteryPercentageResult(rawValue) {
 	return result
 }
 
-getPressureResult(rawValue) {
+def getPressureResult(rawValue) {
 	def kpa = rawvalue / (10 * 1000) // reports are in deciPascals, I think
 	return [name: "atmosphericPressure", value: kpa, units: "kPa"]
 }
