@@ -82,7 +82,6 @@ def installed() {
 		addChildSwitches(state.numberOfSwitches)
 	}
 
-	schedule(new Date(), getEnergyUsage)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
@@ -114,14 +113,6 @@ def updated() {
 	}
 	syncConfiguration()
 	// Preferences template end
-}
-
-private getEnergyUsage() {
-	def cmds = []
-	for (def endpoint : 1..state.numberOfSwitches) {
-		cmds += encap(zwave.meterV3.meterGet(scale: 0x00), endpoint)
-	}
-	sendHubCommand(cmds)
 }
 
 def excludeParameterFromSync(preference){
@@ -265,11 +256,15 @@ private changeSwitch(endpoint, cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
 	if (ep == 1) {
-		createEvent(createMeterEventMap(cmd))
+		[
+				createEvent(createMeterEventMap(cmd)),
+				response(encap(zwave.meterV3.meterGet(scale: 0x00), 1))
+		]
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(createMeterEventMap(cmd))
+		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
 }
 
