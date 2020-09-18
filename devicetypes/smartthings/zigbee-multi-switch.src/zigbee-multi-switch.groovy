@@ -107,6 +107,20 @@ def parse(String description) {
 	Map eventMap = zigbee.getEvent(description)
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
+	if ( device.getDataValue("deviceJoinName") == "eZEX Switch 1") {
+		if (eventMap && eventMap?.name == "switch" && (eventMap?.value == "on" || eventMap?.value == "off")) {
+			if (eventDescMap && eventDescMap?.attrId != "0000") {
+				return [:]
+			}
+		}
+
+		if (!eventMap && eventDescMap) {
+			if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER && eventDescMap?.attrId != "0000") {
+				return [:]
+			}
+		}
+	}
+
 	if (!eventMap && eventDescMap) {
 		eventMap = [:]
 		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
