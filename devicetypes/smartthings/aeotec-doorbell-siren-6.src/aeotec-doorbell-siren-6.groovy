@@ -23,10 +23,10 @@ metadata {
 
 		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //EU //Aeotec Doorbell 6
 		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //US //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //AU //Aeotec Doorbell 6
 		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //EU //Aeotec Siren 6
 		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //US //Aeotec Siren 6
 		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //AU //Aeotec Siren 6
-		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //AU //Aeotec Doorbell 6
 	}
 
 	tiles {
@@ -50,13 +50,57 @@ metadata {
 		main "alarm"
 		details(["alarm", "off", "tamper", "refresh"])
 	}
+    
+	preferences {
+		section {
+			input(title: "Control Sound and Volume",
+			description: "Follow these steps to adjust sound/volume: 1. Set Endpoint, 2. Set Volume, 3. Set Sound, # 4. Toggle button to ON, 5. Close setting page to refresh button or toggle button OFF, 6. Wait five seconds before configuration or use",
+			displayDuringSetup: false,
+			type: "paragraph",
+			element: "paragraph")
+			
+			//Endpoint variable
+			input(title: "Endpoint Explanation",
+			description: "Determines which endpoint to control. 1 = Browse, 2 = Tamper, 3 = Button one, 4 = Button two, 5 = Button three, 6 = Environment, 7 = Security, 8 = Emergency",
+			displayDuringSetup: false,
+			type: "paragraph",
+			element: "paragraph")
+			input("SirenDoorbellEndpoint", "number",
+			title: "1. Endpoint",
+			defaultValue: 2,
+                	range: "1..8",
+			displayDuringSetup: false)
+            		
+			//Volume level variable
+			input("SirenDoorbellVolume", "number",
+			title: "2. Volume set in %",
+                	defaultValue: 30,
+                	range: "0..100",
+			displayDuringSetup: false)
+			
+			//SoundID variable
+			input("SirenDoorbellSound", "number",
+			title: "3. Sound #",
+                	defaultValue: 17,
+                	range: "1..30",
+			displayDuringSetup: false)
+            		
+			//Will not send sound/volume to reduce z-wave traffic until (SirenDoorbellSend == true)
+            		//SirenDoorbellSend will toggle back to false when settings page is closed.
+            		input("SirenDoorbellSend", "bool",
+			title: "4. Send sound and volume configuration",
+			defaultValue: false,
+			displayDuringSetup: false)
+		}
+	}
+    
 }
 
 private getNumberOfSounds() {
 	def numberOfSounds = [
-			"0003" : 8, //Aeotec Doorbell/Siren EU
-			"0103" : 8, //Aeotec Doorbell/Siren US
-			"0203" : 8 //Aeotec Doorbell/Siren AU
+		"0003" : 8, //Aeotec Doorbell/Siren EU
+		"0103" : 8, //Aeotec Doorbell/Siren US
+		"0203" : 8 //Aeotec Doorbell/Siren AU
 	]
 	return numberOfSounds[zwaveInfo.prod] ?: 1
 }
@@ -66,10 +110,24 @@ def installed() {
 	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "tamper", value: "clear", isStateChange: true, displayed: false)
+    	soundControl(2, 30, 17) //adjust the tamper volume to be lower than default when initially paired.
 }
 
 def updated() {
 	initialize()
+	if (SirenDoorbellSend == true) //keep Z-Wave traffic low, requires bool button in setting to trigger.
+	{
+    		soundControl(SirenDoorbellEndpoint, SirenDoorbellVolume, SirenDoorbellSound)
+	}
+}
+
+def soundControl(Endpoint, Volume, Sound) {
+	if (Endpoint && Volume && Sound) {
+    		log.debug "soundControl($Endpoint, $Volume, $Sound)"
+        	encap(zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:0, destinationEndPoint:Endpoint, commandClass:121, command:5, parameter: [Volume,Sound]))
+	} else {
+    		log.debug "Endpoint, Volume, or Sound settings is null"
+	}
 }
 
 def initialize() {
@@ -89,7 +147,8 @@ def parse(String description) {
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {  
+	log.debug ""+cmd
 	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
 		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
 		cmd.parameter = cmd.parameter.drop(2)
@@ -98,15 +157,17 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.command = cmd.parameter[1]
 		cmd.parameter = cmd.parameter.drop(2)
 	}
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+    
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x60: 3, 0x79: 1])
 	def endpoint = cmd.sourceEndPoint
+    
 	if (endpoint == state.lastTriggeredSound && encapsulatedCommand != null) {
-		zwaveEvent(encapsulatedCommand)
+		return zwaveEvent(encapsulatedCommand)
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def securedEncapsulatedCommand = cmd.securedEncapsulatedCommand()
+	def securedEncapsulatedCommand = cmd.securedEncapsulatedCommand([0x60: 3, 0x79: 2])
 	if (securedEncapsulatedCommand) {
 		zwaveEvent(securedEncapsulatedCommand)
 	} else {
@@ -144,7 +205,7 @@ def both() {
 
 def ping() {
 	def cmds = [
-			encap(zwave.basicV1.basicGet())
+		encap(zwave.basicV1.basicGet())
 	]
 	sendHubCommand(cmds)
 }
@@ -167,27 +228,14 @@ private addChildren(numberOfSounds) {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 
 			addChildDevice("Aeotec Doorbell Siren Child", childDni, device.getHub().getId(), [
-					completedSetup: true,
-					label         : "$device.displayName Sound $endpoint",
-					isComponent   : true,
-					componentName : "sound$endpoint",
-					componentLabel: "Sound $endpoint"
+				completedSetup: true,
+				label         : "$device.displayName Sound $endpoint",
+				isComponent   : true,
+				componentName : "sound$endpoint",
+				componentLabel: "Sound $endpoint"
 			])
 		} catch (Exception e) {
 			log.debug "Excep: ${e} "
-		}
-	}
-}
-
-private encap(cmd, endpoint = null) {
-	if (cmd) {
-		if (endpoint && endpoint > 1) {
-			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
-		}
-		if (zwaveInfo.zw.contains("s")) {
-			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		} else {
-			cmd.format()
 		}
 	}
 }
@@ -266,5 +314,26 @@ def keepChildrenOnline() {
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(name: "chime", value: "off")
 		child?.sendEvent(name: "alarm", value: "off")
+	}
+}
+
+private encap(cmd, endpoint = null) {
+	if (cmd) {
+		if (endpoint && endpoint > 1) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
+		}
+		if (zwaveInfo.zw.contains("s")) {
+			if (cmd.commandClass == 121 && cmd.command == 5)
+			{
+                		def rawZwaveData = zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+                		device.updateSetting("SirenDoorbellSend", [value:"false",type:"bool"])
+            			return new physicalgraph.device.HubAction(rawZwaveData) //used to process Sound Switch Configuration SET, did not work through standard zwave.securityV1 command
+			} else {
+            			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+			}
+		} 
+		else {
+			cmd.format()
+		}
 	}
 }
