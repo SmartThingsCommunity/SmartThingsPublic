@@ -332,9 +332,8 @@ private encap(cmd, endpoint = null) {
 private mcEncap(cmd) {
 	if (cmd) {
 		if (zwaveInfo.zw.contains("s")) {
-			def rawZwaveData = zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 			device.updateSetting("sirenDoorbellSend", [value:"false",type:"bool"]) //reset preference toggle button when leaving setting page
-			return new physicalgraph.device.HubAction(rawZwaveData) //used to process Sound Switch Configuration SET, did not work through standard zwave.securityV1 command
+			response(zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()) //used to process Sound Switch Configuration SET, did not work through standard zwave.securityV1 command
 		} else {
 			cmd.format()
 		}
