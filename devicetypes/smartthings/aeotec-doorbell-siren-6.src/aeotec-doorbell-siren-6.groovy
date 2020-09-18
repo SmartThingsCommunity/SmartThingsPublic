@@ -333,7 +333,7 @@ private mcEncap(cmd) {
 	if (cmd) {
 		if (zwaveInfo.zw.contains("s")) {
 			device.updateSetting("sirenDoorbellSend", [value:"false",type:"bool"]) //reset preference toggle button when leaving setting page
-			response(zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()) //used to process Sound Switch Configuration SET
+			return response(zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()) //used to process Sound Switch Configuration SET
 		} else {
 			cmd.format()
 		}
