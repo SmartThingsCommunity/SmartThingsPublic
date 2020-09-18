@@ -65,35 +65,34 @@ metadata {
 			displayDuringSetup: false,
 			type: "paragraph",
 			element: "paragraph")
-			input("SirenDoorbellEndpoint", "number",
+			input("sirenDoorbellEndpoint", "number",
 			title: "1. Endpoint",
-			defaultValue: 2,
-                	range: "1..8",
+            		default: 2,
+			range: "1..8",
 			displayDuringSetup: false)
             		
 			//Volume level variable
-			input("SirenDoorbellVolume", "number",
+			input("sirenDoorbellVolume", "number",
 			title: "2. Volume set in %",
-                	defaultValue: 30,
-                	range: "0..100",
+            		default: 30,
+			range: "0..100",
 			displayDuringSetup: false)
 			
 			//SoundID variable
-			input("SirenDoorbellSound", "number",
+			input("sirenDoorbellSound", "number",
 			title: "3. Sound #",
-                	defaultValue: 17,
-                	range: "1..30",
+            		default: 17,
+			range: "1..30",
 			displayDuringSetup: false)
             		
 			//Will not send sound/volume to reduce z-wave traffic until (SirenDoorbellSend == true)
-            		//SirenDoorbellSend will toggle back to false when settings page is closed.
-            		input("SirenDoorbellSend", "bool",
+			//SirenDoorbellSend will toggle back to false when settings page is closed.
+			input("sirenDoorbellSend", "bool",
 			title: "4. Send sound and volume configuration",
-			defaultValue: false,
+			default: false,
 			displayDuringSetup: false)
 		}
 	}
-    
 }
 
 private getNumberOfSounds() {
@@ -110,23 +109,22 @@ def installed() {
 	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "tamper", value: "clear", isStateChange: true, displayed: false)
-    	soundControl(2, 30, 17) //adjust the tamper volume to be lower than default when initially paired.
+	soundControl(2, 30, 17) //adjust the tamper volume to be lower than default when initially paired.
 }
 
 def updated() {
 	initialize()
-	if (SirenDoorbellSend == true) //keep Z-Wave traffic low, requires bool button in setting to trigger.
-	{
-    		soundControl(SirenDoorbellEndpoint, SirenDoorbellVolume, SirenDoorbellSound)
+	//keep Z-Wave traffic low, requires bool button in setting to trigger.
+	if (sirenDoorbellSend == true) { 
+    		soundControl(sirenDoorbellEndpoint, sirenDoorbellVolume, sirenDoorbellSound)
 	}
 }
 
-def soundControl(Endpoint, Volume, Sound) {
-	if (Endpoint && Volume && Sound) {
-    		log.debug "soundControl($Endpoint, $Volume, $Sound)"
-        	encap(zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:0, destinationEndPoint:Endpoint, commandClass:121, command:5, parameter: [Volume,Sound]))
+def soundControl(endpoint, volume, sound) {
+	if (endpoint && volume && sound) {
+        	mcEncap(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint, commandClass:0x79, command:0x05, parameter: [volume,sound]))
 	} else {
-    		log.debug "Endpoint, Volume, or Sound settings is null"
+    		log.debug "endpoint, volume, or sound settings is null"
 	}
 }
 
@@ -319,20 +317,25 @@ def keepChildrenOnline() {
 
 private encap(cmd, endpoint = null) {
 	if (cmd) {
+    		log.debug "encap: "+cmd
 		if (endpoint && endpoint > 1) {
 			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
 		}
 		if (zwaveInfo.zw.contains("s")) {
-			if (cmd.commandClass == 121 && cmd.command == 5)
-			{
-                		def rawZwaveData = zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-                		device.updateSetting("SirenDoorbellSend", [value:"false",type:"bool"])
-            			return new physicalgraph.device.HubAction(rawZwaveData) //used to process Sound Switch Configuration SET, did not work through standard zwave.securityV1 command
-			} else {
-            			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-			}
-		} 
-		else {
+			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		} else {
+			cmd.format()
+		}
+	}
+}
+
+private mcEncap(cmd) {
+	if (cmd) {
+		if (zwaveInfo.zw.contains("s")) {
+			def rawZwaveData = zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+			device.updateSetting("sirenDoorbellSend", [value:"false",type:"bool"]) //reset preference toggle button when leaving setting page
+			return new physicalgraph.device.HubAction(rawZwaveData) //used to process Sound Switch Configuration SET, did not work through standard zwave.securityV1 command
+		} else {
 			cmd.format()
 		}
 	}
