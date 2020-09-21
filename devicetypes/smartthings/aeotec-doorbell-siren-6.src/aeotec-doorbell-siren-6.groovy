@@ -206,7 +206,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 0x09: //TAMPER
 				sendEvent(name: "tamper", value: "detected")
 				sendEvent(name: "alarm", value: "both")
-				runIn(2, "clearTamperAndAlarm")
+				sendEvent(name: "chime", value: "chime")
+				runIn(2, "clearTamperAlarmAndChime")
 				break
 			case 0x01: //ON
 				if (state.lastTriggeredSound == 1) {
@@ -218,17 +219,16 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 			case 0x00: //OFF
 				resetActiveSound()
-				sendEvent(name: "tamper", value: "clear")
-				sendEvent(name: "alarm", value: "off")
-				sendEvent(name: "chime", value: "off")
+				runIn(2, "clearTamperAlarmAndChime")
 				break
 		}
 	}
 }
 
-def clearTamperAndAlarm() {
+def clearTamperAlarmAndChime() {
 	sendEvent(name: "tamper", value: "clear")
 	sendEvent(name: "alarm", value: "off")
+	sendEvent(name: "chime", value: "off")
 }
 
 def setOnChild(deviceDni) {
