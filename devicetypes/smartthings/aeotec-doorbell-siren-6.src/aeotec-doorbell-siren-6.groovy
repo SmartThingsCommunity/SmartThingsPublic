@@ -158,6 +158,10 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x60: 3])
 	def endpoint = cmd.sourceEndPoint
+	
+	if (cmd.commandClass == 0x71) {
+    		state.lastTriggeredSound = endpoint //notification cc determines sound is triggered
+	}
     
 	if (endpoint == state.lastTriggeredSound && encapsulatedCommand != null) {
 		return zwaveEvent(encapsulatedCommand)
