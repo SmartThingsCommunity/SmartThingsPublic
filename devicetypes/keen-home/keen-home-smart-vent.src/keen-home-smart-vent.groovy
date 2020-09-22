@@ -125,7 +125,7 @@ def on() {
 		cmds << clearObstruction()
 		cmds << "delay 2000"
 	}
-	def levelToSet = device.currentValue("level") as int > 0 ? device.currentValue("level") as int : 100
+	def levelToSet = (device.currentValue("level") as int) > 0 ? device.currentValue("level") : 100
 	cmds << zigbee.setLevel(levelToSet)
 }
 
