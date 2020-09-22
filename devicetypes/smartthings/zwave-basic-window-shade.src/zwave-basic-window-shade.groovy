@@ -58,11 +58,22 @@ metadata {
 				defaultValue: false,
 				displayDuringSetup: false
 			)
+            		
+			//This setting for calibrationTime is specific to Aeotec Nano Shutter and operates under def updated() - Line 159
+			input("calibrationTime", "number",
+			    title: "Open/Close timing",
+			    description: "Set the motor's open/close time",
+			    defaultValue: false,
+			    displayDuringSetup: false,
+			    range: "5..255",
+			    default: 10
+			)
 		}
 	}
 }
 
 def parse(String description) {
+	log.debug "parse() - description: $description"
 	def result = []
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
@@ -101,11 +112,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def setButton(button) {
+	log.debug "button: $button"
 	switch(button) {
 		case "open":
+		case "statelessCurtainPowerButton_open_button":
 			open()
 			break
 		case "close":
+		case "statelessCurtainPowerButton_close_button":
 			close()
 			break
 		default:
@@ -147,13 +161,20 @@ def installed() {
 def updated() {
 	sendHubCommand(pause())
 	state.reverseDirection = reverseDirection ? reverseDirection : false
+
+	if (calibrationTime >= 5 && calibrationTime <= 255) {
+		response([
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 35, size: 1, scaledConfigurationValue: calibrationTime)),
+		])
+	}
+    
 }
 
 def configure() {
 	log.debug "Configure..."
 	response([
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 1)),
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 85, size: 1, scaledConfigurationValue: 1))
 	])
 }
 
