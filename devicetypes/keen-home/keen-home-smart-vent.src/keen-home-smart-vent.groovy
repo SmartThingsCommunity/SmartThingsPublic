@@ -86,8 +86,9 @@ def parse(String description) {
         } else if (descMap?.clusterInt == PRESSURE_MANAGEMENT_CLUSTER && descMap.attrInt == 0x0020) {
             event = getPressureResult(Integer.parseInt(descMap.value, 16))
         }
-    } else if (event.name == "level" && event.value > 100) {
-        state.obstructed = true
+    } else if (event.name == "level" && event.value == 100) {
+        def descMap = zigbee.parseDescriptionAsMap(description)
+        if (Integer.parseInt(descMap.value.trim(), 16) == 255) state.obstructed = true
     } else if (event.name == "level") {
         state.obstructed = false
         if (event.value > 0 && device.currentValue("switch") == "off") {
