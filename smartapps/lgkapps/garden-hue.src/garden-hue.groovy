@@ -1,5 +1,5 @@
 /**
-* Garden Hue v 3.0 
+* Garden Hue v 3.1 
 * by lg. kahn
 *
 * This SmartApp will turn on if enabled after sunset and run to
@@ -23,9 +23,13 @@
 * Related, Add options to turn on/off each color.
 * Add every 1 minute option. Use Sparingly can overload back end Scheduling
 * Added better logging, so in notification window you can see current color set. This is in order to help debug for when lights stop responding.
-*
 * The latest version of this file can be found at
 *
+*
+* Vesion 3,1 :
+* Found bug in code when random was off it had a check xxxx = true instead of xxxx == true so it automatically controlled each light (if you have more than one)
+* individually even if you hadn't enabled that setting.
+
 * https://github.com/lgkapps/SmartThingsPublic/gardenhue
 *
 */
@@ -346,6 +350,8 @@ def changeHandler(evt) {
          def onstr = numberon.toString() 
          
        log.debug "found $onstr that were on!"
+      // log.debug "holiday mode = $settings.holidayMode"
+       // log.debug "Random mode = $settings.randomMode"
     
     if ((numberon > 0) && (settings.enabled == true))
     {
@@ -353,6 +359,7 @@ def changeHandler(evt) {
       if (settings.randomMode == true)
        {
 
+ 
        // lgk define alternate color array if holiday mode enabled
        if (settings.holidayMode == true)
          {
@@ -400,7 +407,7 @@ def changeHandler(evt) {
            log.debug "Enabled Color Count = $colorsEnabled"
            log.debug "Enabled Color Array = $enabledColorArray"
 
-           if ((numberon > 1) && (settings.individualControl = true))
+           if ((numberon > 1) && (settings.individualControl == true))
              {
 
                  for (def i=0; i<numberon; i++) 
