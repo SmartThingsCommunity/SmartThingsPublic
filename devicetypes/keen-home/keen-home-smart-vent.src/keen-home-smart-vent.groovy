@@ -83,12 +83,12 @@ def parse(String description) {
         Map descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
             event = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-        } else if (descMap?.clusterInt == PRESSURE_MANAGEMENT_CLUSTER && descMap.attrInt == 0x0020) {
+        } else if (descMap?.clusterInt == PRESSURE_MEASUREMENT_CLUSTER && descMap.attrInt == 0x0020) {
+            // manufacturer-specific attribute
             event = getPressureResult(Integer.parseInt(descMap.value, 16))
+        } else if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.attrInt == 0x0000) {
+            if (Integer.parseInt(descMap.value, 16) == 255) state.obstructed = true
         }
-    } else if (event.name == "level" && event.value == 100) {
-        def descMap = zigbee.parseDescriptionAsMap(description)
-        if (Integer.parseInt(descMap.value.trim(), 16) == 255) state.obstructed = true
     } else if (event.name == "level") {
         state.obstructed = false
         if (event.value > 0 && device.currentValue("switch") == "off") {
@@ -115,8 +115,8 @@ def getBatteryPercentageResult(rawValue) {
 }
 
 def getPressureResult(rawValue) {
-    def kpa = rawvalue / (10 * 1000) // reports are in deciPascals, I think
-    return [name: "atmosphericPressure", value: kpa, units: "kPa"]
+    def kpa = rawValue / (10 * 1000) // reports are in deciPascals, I think
+    return [name: "atmosphericPressure", value: kpa, unit: "kPa"]
 }
 
 /**** COMMAND METHODS ****/
@@ -168,7 +168,7 @@ def refresh() {
     zigbee.onOffRefresh() +
             zigbee.levelRefresh() +
             zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-            zigbee.readAttribute(PRESSURE_MANAGEMENT_CLUSTER, 0x0020, [mfgCode: MFG_CODE]) +
+            zigbee.readAttribute(PRESSURE_MEASUREMENT_CLUSTER, 0x0020, [mfgCode: MFG_CODE]) +
             zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
 
@@ -194,7 +194,7 @@ def configure() {
                     zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
     ]
 
-    return delayBetween(cmds) + refresh()
+    return refresh + cmds
 }
 
 
