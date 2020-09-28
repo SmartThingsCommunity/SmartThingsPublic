@@ -18,7 +18,6 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition(name: "ZigBee Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
 		capability "Actuator"
-		capability "Battery"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Window Shade"
@@ -80,7 +79,6 @@ private getCOMMAND_GOTO_LIFT_PERCENTAGE() { 0x05 }
 private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
 private getATTRIBUTE_CURRENT_LEVEL() { 0x0000 }
 private getCOMMAND_MOVE_LEVEL_ONOFF() { 0x04 }
-private getBATTERY_PERCENTAGE_REMAINING() { 0x0021 }
 
 private List<Map> collectAttributes(Map descMap) {
 	List<Map> descMaps = new ArrayList<Map>()
@@ -117,9 +115,6 @@ def parse(String description) {
 			def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
 
 			levelEventHandler(valueInt)
-		} else if (reportsBatteryPercentage() && descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && zigbee.convertHexToInt(descMap?.attrId) == BATTERY_PERCENTAGE_REMAINING && descMap.value) {
-			def batteryLevel = zigbee.convertHexToInt(descMap.value)
-			batteryPercentageEventHandler(batteryLevel)
 		}
 	}
 }
@@ -149,13 +144,6 @@ def updateFinalState() {
 	log.debug "updateFinalState: ${level}"
 	if (level > 0 && level < 100) {
 		sendEvent(name: "windowShade", value: "partially open")
-	}
-}
-
-def batteryPercentageEventHandler(batteryLevel) {
-	if (batteryLevel != null) {
-		batteryLevel = Math.min(100, Math.max(0, batteryLevel))
-		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%"])
 	}
 }
 
@@ -243,15 +231,7 @@ def configure() {
 		cmds += readDeviceBindingTable()
 	}
 
-	if (reportsBatteryPercentage()) {
-		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
-	}
-
 	return refresh() + cmds
-}
-
-def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()
 }
 
 private def parseBindingTableMessage(description) {
@@ -276,22 +256,6 @@ private List addHubToGroup(Integer groupAddr) {
 
 private List readDeviceBindingTable() {
 	["zdo mgmt-bind 0x${device.deviceNetworkId} 0", "delay 200"]
-}
-
-def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSomfy()
-}
-
-def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
-}
-
-def isIkeaKadrilj() {
-	device.getDataValue("model") == "KADRILJ roller blind"
-}
-
-def isIkeaFyrtur() {
-	device.getDataValue("model") == "FYRTUR block-out roller blind"
 }
 
 def isSomfy() {
