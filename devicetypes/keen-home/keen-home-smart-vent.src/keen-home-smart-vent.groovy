@@ -194,7 +194,7 @@ def configure() {
                     zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
     ]
 
-    return refresh + cmds
+    return refresh() + cmds
 }
 
 
