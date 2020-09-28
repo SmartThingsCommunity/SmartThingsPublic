@@ -87,7 +87,10 @@ def parse(String description) {
             // manufacturer-specific attribute
             event = getPressureResult(Integer.parseInt(descMap.value, 16))
         } else if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.attrInt == 0x0000) {
-            if (Integer.parseInt(descMap.value, 16) == 255) state.obstructed = true
+            if (Integer.parseInt(descMap.value, 16) == 255) {
+                log.debug("Obstruction detected")
+                state.obstructed = true
+            }
         }
     } else if (event.name == "level") {
         state.obstructed = false
@@ -126,7 +129,11 @@ def on() {
         cmds << clearObstruction()
         cmds << "delay 2000"
     }
-    def levelToSet = (device.currentValue("level") as int) > 0 ? device.currentValue("level") : 100
+    def currentLevel = device.currentValue("level")
+    if (currentLevel != null) {
+        currentLevel = currentLevel as int
+    }
+    def levelToSet = currentLevel ? curentLevel : 100
     cmds << zigbee.setLevel(levelToSet)
 }
 
@@ -166,10 +173,10 @@ def setLevel(value, rate = null) {
 
 def refresh() {
     zigbee.onOffRefresh() +
-            zigbee.levelRefresh() +
-            zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-            zigbee.readAttribute(PRESSURE_MEASUREMENT_CLUSTER, 0x0020, [mfgCode: MFG_CODE]) +
-            zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+    zigbee.levelRefresh() +
+    zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+    zigbee.readAttribute(PRESSURE_MEASUREMENT_CLUSTER, 0x0020, [mfgCode: MFG_CODE]) +
+    zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
 
 /**
@@ -188,13 +195,13 @@ def configure() {
 
     def cmds = [
             zigbee.temperatureConfig(30, 300) +
-                    zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
-                    zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
-                    zigbee.configureReporting(PRESSURE_MEASUREMENT_CLUSTER, 0x0020, DataType.UINT32, 600, 21600, 0x010000, [mfgCode: MFG_CODE]) +
-                    zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
+            zigbee.onOffConfig() +
+            zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
+            zigbee.addBinding(PRESSURE_MEASUREMENT_CLUSTER) +
+            zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
     ]
 
-    return refresh() + cmds
+    return delayBetween(cmds) + refresh()
 }
 
 
@@ -204,7 +211,6 @@ private boolean isObstructed() {
     if (currentState == "obstructed") {
         sendEvent(name: "level", value: 0) // convert legacy implementation
         state.obstructed == true
-        log.error("cannot set level because ${device.displayName} is obstructed")
     }
     return state.obstructed
 }
