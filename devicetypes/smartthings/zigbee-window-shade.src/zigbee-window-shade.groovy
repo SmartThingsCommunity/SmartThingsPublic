@@ -258,6 +258,10 @@ private List readDeviceBindingTable() {
 	["zdo mgmt-bind 0x${device.deviceNetworkId} 0", "delay 200"]
 }
 
+def shouldInvertLiftPercentage() {
+	return isSomfy()
+}
+
 def isSomfy() {
 	device.getDataValue("manufacturer") == "SOMFY"
 }
