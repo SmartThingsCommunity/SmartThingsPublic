@@ -18,13 +18,14 @@ import java.lang.Math
 metadata {
 	definition (name: "Fibaro Walli Roller Shutter Venetian", namespace: "fibargroup", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Roller_Shutter_Venetian", mcdSync: true) {
 		capability "Window Shade"
-		capability "Switch Level"
+		capability "Window Shade Level"
 		capability "Power Meter"
 		capability "Energy Meter"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Configuration"
 
+		capability "Switch Level"
 	}
 
 	tiles(scale: 2) {
@@ -55,70 +56,47 @@ metadata {
 	}
 
 	preferences {
+		// Preferences template begin
 		parameterMap.each {
-			input (
-					title: it.name,
-					description: it.description,
-					type: "paragraph",
-					element: "paragraph"
-			)
+			input (title: it.name, description: it.description, type: "paragraph", element: "paragraph")
 
 			switch(it.type) {
 				case "boolRange":
 					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
+							name: it.key + "Boolean", type: "bool", title: "Enable",
 							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
+							defaultValue: it.defaultValue != it.disableValue, required: false
 					)
 					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+							name: it.key, type: "number", title: "Set value (range ${it.range})",
+							defaultValue: it.defaultValue, range: it.range, required: false
 					)
 					break
 				case "boolean":
 					input(
-							type: "paragraph",
-							element: "paragraph",
-							description: "Option enabled: ${it.activeDescription}\n" +
-									"Option disablePending: ${it.inactiveDescription}"
+							type: "paragraph", element: "paragraph",
+							description: "Option enabled: ${it.activeDescription}\n Option disabled: ${it.inactiveDescription}"
 					)
 					input(
-							name: it.key,
-							type: "boolean",
-							title: "Enable",
-							defaultValue: it.defaultValue == it.activeOption,
-							required: false
+							name: it.key, type: "boolean",
+							title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false
 					)
 					break
 				case "enum":
 					input(
-							name: it.key,
-							title: "Select",
-							type: "enum",
-							options: it.values,
-							defaultValue: it.defaultValue,
-							required: false
+							name: it.key, title: "Select", type: "enum",
+							options: it.values, defaultValue: it.defaultValue, required: false
 					)
 					break
 				case "range":
 					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+							name: it.key, type: "number", title: "Set value (range ${it.range})",
+							defaultValue: it.defaultValue, range: it.range, required: false
 					)
 					break
 			}
 		}
+		// Preferences template end
 	}
 }
 
@@ -345,7 +323,7 @@ def setLevel(level) {
 def setShadeLevel(level) {
 	log.debug "Setting shade level: ${level}"
 	state.isManualCommand = false
-	def currentLevel = Integer.parseInt(device.currentState("level").value)
+	def currentLevel = Integer.parseInt(device.currentState("shadeLevel").value)
 	state.blindsLastCommand = currentLevel > level ? "opening" : "closing"
 	state.shadeTarget = level
 	encap(zwave.switchMultilevelV3.switchMultilevelSet(value: Math.min(0x63, level)), 1)
@@ -423,7 +401,8 @@ private shadeEvent(value) {
 	} 
 	[
 		createEvent(name: "windowShade", value: shadeValue, isStateChange: true, descriptionText: "Window blinds is ${shadeValue}"),
-		createEvent(name: "level", value: value != 0x63 ? value : 100)
+		createEvent(name: "level", value: value != 0x63 ? value : 100),
+		createEvent(name: "shadeLevel", value: value != 0x63 ? value : 100)
 	]
 }
 
@@ -446,8 +425,10 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 				additionalShadeEvent.name = "windowShade"
 				additionalShadeEvent.value = state.blindsLastCommand
 				toReturn += createEvent(additionalShadeEvent)
-				if (!state.isManualCommand)
+				if (!state.isManualCommand) {
 					sendEvent(name: "level", value: state.shadeTarget)
+					sendEvent(name: "shadeLevel", value: state.shadeTarget)
+				}
 			} else {
 				toReturn += response(encap(zwave.switchMultilevelV3.switchMultilevelGet(), 1))
 			}
