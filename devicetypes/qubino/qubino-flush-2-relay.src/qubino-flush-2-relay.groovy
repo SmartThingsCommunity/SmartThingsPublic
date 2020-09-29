@@ -243,7 +243,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 private changeSwitch(endpoint, cmd) {
 	def value = cmd.value ? "on" : "off"
-	if (endpoint == 1) {
+	if (endpoint == 1 || endpoint == null) {
 		createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else if (endpoint) {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
@@ -252,9 +252,9 @@ private changeSwitch(endpoint, cmd) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = endpointValue()) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
-	if (ep == 1) {
+	if (ep == 1 || ep == null) {
 		createEvent(createMeterEventMap(cmd))
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
@@ -323,11 +323,20 @@ def childOnOff(deviceNetworkId, value) {
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
-private onOffCmd(value, endpoint = 1) {
+private onOffCmd(value, endpoint = endpointValue()) {
 	delayBetween([
 			encap(zwave.basicV1.basicSet(value: value), endpoint),
 			encap(zwave.basicV1.basicGet(), endpoint),
 	])
+}
+
+def endpointValue() {
+	log.debug "endpoint"
+	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+		return null
+	} else {
+		return 1
+	}
 }
 
 def childRefresh(deviceNetworkId, includeMeterGet = true) {
