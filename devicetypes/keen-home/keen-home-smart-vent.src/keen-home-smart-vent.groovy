@@ -118,7 +118,7 @@ def getBatteryPercentageResult(rawValue) {
 }
 
 def getPressureResult(rawValue) {
-    def kpa = rawValue / (10 * 1000) // reports are in deciPascals, I think
+    def kpa = rawValue / (10 * 1000) // reports are in deciPascals
     return [name: "atmosphericPressure", value: kpa, unit: "kPa"]
 }
 
@@ -133,7 +133,7 @@ def on() {
     if (currentLevel != null) {
         currentLevel = currentLevel as int
     }
-    def levelToSet = currentLevel ? curentLevel : 100
+    def levelToSet = currentLevel ? currentLevel : 100
     cmds << zigbee.setLevel(levelToSet)
 }
 
@@ -209,8 +209,8 @@ private boolean isObstructed() {
     def currentState = device.currentValue("switch")
 
     if (currentState == "obstructed") {
-        sendEvent(name: "level", value: 0) // convert legacy implementation
-        state.obstructed == true
+        sendEvent(name: "switch", value: "off", displayed: false) // convert legacy implementation
+        state.obstructed = true
     }
     return state.obstructed
 }
