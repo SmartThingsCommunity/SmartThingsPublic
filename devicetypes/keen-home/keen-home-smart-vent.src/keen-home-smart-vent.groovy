@@ -35,8 +35,6 @@ metadata {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
             state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#00a0dc"
             state "off", action: "switch.on", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
-            state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#e86d13"
-            state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
         }
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"
@@ -86,14 +84,8 @@ def parse(String description) {
         } else if (descMap?.clusterInt == PRESSURE_MEASUREMENT_CLUSTER && descMap.attrInt == 0x0020) {
             // manufacturer-specific attribute
             event = getPressureResult(Integer.parseInt(descMap.value, 16))
-        } else if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.attrInt == 0x0000) {
-            if (Integer.parseInt(descMap.value, 16) == 255) {
-                log.debug("Obstruction detected")
-                state.obstructed = true
-            }
         }
     } else if (event.name == "level") {
-        state.obstructed = false
         if (event.value > 0 && device.currentValue("switch") == "off") {
             sendEvent([name: "switch", value: "on"])
         }
@@ -125,10 +117,6 @@ def getPressureResult(rawValue) {
 /**** COMMAND METHODS ****/
 def on() {
     def cmds = []
-    if (isObstructed()) {
-        cmds << clearObstruction()
-        cmds << "delay 2000"
-    }
     def currentLevel = device.currentValue("level")
     if (currentLevel != null) {
         currentLevel = currentLevel as int
@@ -138,33 +126,12 @@ def on() {
 }
 
 def off() {
-    def cmds = []
-    if (isObstructed()) {
-        cmds << clearObstruction()
-        cmds << "delay 2000"
-    }
-    cmds << zigbee.off()
-}
-
-def clearObstruction() {
-    log.debug "attempting to clear ${device.displayName} obstruction"
-
-    // send a move command to ensure level attribute gets reset for old, buggy firmware
-    // then send a reset to factory defaults
-    // finally re-configure to ensure reports and binding is still properly set after the rtfd
-    [
-            zigbee.setLevel(device.currentValue("level")), "delay 500",
-            zigbee.command(zigbee.BASIC_CLUSTER, 0x00), "delay 5000"
-    ] + configure()
+    zigbee.off()
 }
 
 def setLevel(value, rate = null) {
     log.debug "setting level: ${value}"
     def cmds = []
-    if (isObstructed()) {
-        cmds << clearObstruction()
-        cmds << "delay 2000"
-    }
     cmds << zigbee.setLevel(value)
     cmds << "delay 1000"
     cmds << zigbee.levelRefresh()
@@ -201,16 +168,5 @@ def configure() {
             zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
     ]
 
-    return delayBetween(cmds) + refresh()
-}
-
-
-private boolean isObstructed() {
-    def currentState = device.currentValue("switch")
-
-    if (currentState == "obstructed") {
-        sendEvent(name: "switch", value: "off", displayed: false) // convert legacy implementation
-        state.obstructed = true
-    }
-    return state.obstructed
+    return refresh() + delayBetween(cmds)
 }
