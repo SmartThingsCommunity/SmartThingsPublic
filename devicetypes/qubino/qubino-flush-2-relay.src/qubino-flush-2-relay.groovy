@@ -25,7 +25,7 @@ metadata {
 
 		fingerprint mfr: "0159", prod: "0002", model: "0051", deviceJoinName: "Qubino Switch 1" //Qubino Flush 2 Relay
 		fingerprint mfr: "0159", prod: "0002", model: "0052", deviceJoinName: "Qubino Switch" //Qubino Flush 1 Relay 
-		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch" //Qubino Flush 1D Relay
+		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch", mnmn: "SmartThings", vid: "generic-switch" //Qubino Flush 1D Relay
 	}
 
 	tiles(scale: 2) {
