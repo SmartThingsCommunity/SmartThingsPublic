@@ -20,6 +20,7 @@ metadata {
 
 		capability "Actuator"
 		capability "Sensor"
+		capability "Occupancy Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Thermostat"
@@ -33,9 +34,22 @@ metadata {
 		capability "Health Check"
 		capability "Refresh"
 
-		//Viconics VT8350
-		fingerprint manufacturer: "Viconics", model: "254-143", deviceJoinName: "Viconics Thermostat", mnmn: "SmartThings", vid: "SmartThings-smartthings-Viconics_Schneider_Room_Controller_Fan" // VT8350 Low Voltage Fan Coil Controller and Zone Controller, Raw Description 0A 0104 0301 00 0A 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0B 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0500
-		//fingerprint profileId: "0104", inClusters: "0000,0003,0201,0202,0204,0405", outClusters: "0402,0405", manufacturer: "Viconics", model: "254-143", deviceJoinName: "VT8350"
+		// Viconics VT8350 Low Voltage Fan Coil Controller and Zone Controller
+		// Raw Description 0A 0104 0301 00 0A 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0B 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0500
+		fingerprint manufacturer: "Viconics", model: "254-143", deviceJoinName: "Viconics Room Controller", mnmn: "SmartThings", vid: "SmartThings-smartthings-Viconics_Schneider_Room_Controller_Fan"
+
+		// Viconics VT8650 Heat Pump and Indoor Air Quality Controller
+		// Raw Description 0A 0104 0301 00 09 0201 0405 0402 0406 0204 0000 0004 0003 0005 0A 0201 0405 0402 0406 0204 0000 0004 0003 0005 0500
+		fingerprint manufacturer: "Viconics", model: "254-162", deviceJoinName: "Viconics Room Controller", mnmn: "SmartThings", vid: "SmartThings-smartthings-Viconics_Schneider_Room_Controller"
+		//fingerprint profileId: "0104", inClusters: "0000,0003,0201,0204,0405", outClusters: "0402,0405", manufacturer: "Viconics", model: "254-162", deviceJoinName: "VT8650xx"
+
+		// Schneider Electric SE8350 Low Voltage Fan Coil Unit (FCU) and Zone Control
+		// Raw Description 0A 0104 0301 00 0A 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0B 0201 0202 0405 0402 0406 0204 0000 0004 0003 0005 0500
+		fingerprint manufacturer: "Schneider Electric", model: "254-145", deviceJoinName: "Schneider Electric Room Controller", vid: "SmartThings-smartthings-Viconics_Schneider_Room_Controller_Fan"
+
+		// Schneider Electric SE8650 Roof Top Unit Controller
+		// Raw Description 0A 0104 0301 00 09 0201 0405 0402 0406 0204 0000 0004 0003 0005 0A 0201 0405 0402 0406 0204 0000 0004 0003 0005 0500
+		fingerprint manufacturer: "Schneider Electric", model: "254-163", deviceJoinName: "Schneider Electric Room Controller", vid: "SmartThings-smartthings-Viconics_Schneider_Room_Controller"
 	}
 }
 
@@ -49,22 +63,28 @@ private getCOOLING_SETPOINT() { 0x0011 }
 private getHEATING_SETPOINT() { 0x0012 }
 private getCOOLING_SETPOINT_UNOCCUPIED() { 0x0013 }
 private getHEATING_SETPOINT_UNOCCUPIED() { 0x0014 }
+private getOCCUPANCY() { 0x002 }
 private getCUSTOM_HUMIDITY() { 0x07a6 }
 private getCUSTOM_THERMOSTAT_MODE() { 0x0687 }
 private getCUSTOM_FAN_SPEED() { 0x0688 }
 private getCUSTOM_FAN_MODE() { 0x0698 }
-private getCUSTOM_OCCUPANCY() { 0x0c50 }
+private getCUSTOM_EFFECTIVE_OCCUPANCY() { 0x0c50 }
 private getCUSTOM_THERMOSTAT_OPERATING_STATE() { 0x06BF }
 private getUNOCCUPIED_SETPOINT_CHILD_DEVICE_ID() {1}
 private getTHERMOSTAT_MODE_OFF() { 0x00 }
 private getTHERMOSTAT_MODE_AUTO() { 0x01 }
-private getTHERMOSTAT_MODE_COOL() { 0x03 }
-private getTHERMOSTAT_MODE_HEAT() { 0x04 }
+private getTHERMOSTAT_MODE_COOL() { 0x02 }
+private getTHERMOSTAT_MODE_HEAT() { 0x03 }
+private getCUSTOM_FAN_MODE_ON() { 0x00 }
+private getCUSTOM_FAN_MODE_AUTO() { 0x01 }
+private getCUSTOM_FAN_MODE_CIRCULATE() { 0x02 }
+
 
 private getFAN_MODE_MAP() {
 	[
-			"04":"on",
-			"05":"auto"
+			"00":"on",
+			"01":"auto",
+			"02":"circulate"
 	]
 }
 
@@ -86,11 +106,27 @@ private getTHERMOSTAT_OPERATING_STATE_MAP() {
 	]
 }
 
+private getEFFECTIVE_OCCUPANCY_MAP() {
+	[
+			"00":"Occupied",
+			"01":"Unoccupied",
+			"02":"Override",
+			"03":"Standby"
+	]
+}
+
 def installed() {
 	log.debug "installed"
 
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	state.supportedFanModes = ["on", "auto"]
+
+
+	if(isViconicsVT8350()|| isSchneiderSE8350()) {
+		state.supportedFanModes = ["on", "auto"]
+	} else {
+		state.supportedFanModes = ["on", "auto", "circulate"]
+	}
+
 	state.supportedThermostatModes = ["off", "auto", "cool", "heat"]
 
 	sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(state.supportedFanModes), displayed: false)
@@ -142,7 +178,11 @@ def parse(String description) {
 		if((descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId)){
 			def attributeInt = zigbee.convertHexToInt(descMap.attrId)
 
-			if (attributeInt == COOLING_SETPOINT) {
+			if(attributeInt == OCCUPANCY) {
+				log.debug "OCCUPANCY, descMap.value: ${descMap.value}"
+				eventMap.name = "occupancy"
+				eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
+			} else if (attributeInt == COOLING_SETPOINT) {
 				log.debug "COOLING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
 				eventMap.name = "coolingSetpoint"
 				eventMap.value = getTemperature(descMap.value)
@@ -177,8 +217,12 @@ def parse(String description) {
 				eventMap.value = Integer.parseInt(descMap.value, 16)
 				eventMap.unit = "%"
 			} else if (attributeInt == CUSTOM_FAN_MODE) {
-				// this device doesn't report fan mode concrete values (it responds for query, but it didn't send any values)
 				log.debug "CUSTOM FAN MODE, descMap.value: ${descMap.value}"
+				if (isViconicsVT8650() || isSchneiderSE8650()) {
+					eventMap.name = "thermostatFanMode"
+					eventMap.value = FAN_MODE_MAP[descMap.value]
+					eventMap.data = [supportedThermostatFanModes: state.supportedFanModes]
+				}
 			} else if (attributeInt == CUSTOM_FAN_SPEED) {
 				// VT8350 reports fan speed 3 as AUTO
 				log.debug "CUSTOM FAN SPEED, descMap.value: ${descMap.value}"
@@ -199,8 +243,10 @@ def parse(String description) {
 				log.debug "CUSTOM THERMOSTAT OPERATING STATE, descMap.value: ${descMap.value}"
 				eventMap.name = "thermostatOperatingState"
 				eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[descMap.value]
-			} else if(attributeInt == CUSTOM_OCCUPANCY) {
-				log.debug "CUSTOM OCCUPANCY, descMap.value: ${descMap.value}"
+			} else if(attributeInt == CUSTOM_EFFECTIVE_OCCUPANCY) {
+				log.debug "EFFECTIVE OCCUPANCY, descMap.value: ${descMap.value}"
+				eventMap.name = "effectiveOccupancy"
+				eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
 			} else {
 				log.debug "descMap.inspect(): ${descMap.inspect()}"
 			}
@@ -268,18 +314,54 @@ def setSetpoint(degrees, setpointAttr) {
 
 def setThermostatFanMode(mode) {
 	if (state.supportedFanModes?.contains(mode)) {
-		switch (mode) {
-			case "on":
-				setFanSpeed(1)
-				break
-			case "auto":
-				setFanSpeed(4)
-				break
+		if(isViconicsVT8350() || isSchneiderSE8350()) {
+			switch (mode) {
+				case "on":
+					setFanSpeed(1)
+					break
+				case "auto":
+					setFanSpeed(4)
+					break
+			}
+		} else if(isViconicsVT8650() || isSchneiderSE8650()) {
+			switch (mode) {
+				case "on":
+					getThermostatFanModeCommands(CUSTOM_FAN_MODE_ON)
+					break
+				case "auto":
+					getThermostatFanModeCommands(CUSTOM_FAN_MODE_AUTO)
+					break
+				case "circulate":
+					getThermostatFanModeCommands(CUSTOM_FAN_MODE_CIRCULATE)
+					break
+			}
 		}
 	} else {
 		log.debug "Unsupported fan mode $mode"
 	}
 }
+
+def fanOn() {
+	getThermostatFanModeCommands(CUSTOM_FAN_MODE_ON)
+}
+
+def fanAuto() {
+	getThermostatFanModeCommands(CUSTOM_FAN_MODE_AUTO)
+}
+
+def fanCirculate() {
+	getThermostatFanModeCommands(CUSTOM_FAN_MODE_CIRCULATE)
+}
+
+def getThermostatFanModeCommands(mode) {
+	if(mode) {
+		delayBetween([
+				zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
+		], 500)
+	}
+}
+
 
 def setFanSpeed(speed) {
 	log.debug "setFanSpeed: ${speed}"
@@ -291,8 +373,9 @@ def setFanSpeed(speed) {
 	}
 	delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, speed),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED),
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED)
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
@@ -321,28 +404,32 @@ def setThermostatMode(mode) {
 def off() {
 	delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_OFF),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE)
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
 def auto() {
 	delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_AUTO),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE)
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
 def cool() {
 	delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_COOL),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE)
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
 def heat() {
 	delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_HEAT),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE)
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
@@ -374,7 +461,8 @@ def getRefreshCommands() {
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, 0x0650)	//occupancy command
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY)
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY)
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, OCCUPANCY)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE)
 
 	refreshCommands
@@ -392,26 +480,22 @@ def configure() {
 	configurationCommands += "zdo bind 0x${device.deviceNetworkId} 1 0xA 0x201 {${device.zigbeeId}} {}"
 	configurationCommands += "zdo bind 0x${device.deviceNetworkId} 1 0xA 0x405 {${device.zigbeeId}} {}"
 
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, 1, 300, 1) //formerly THERMOSTAT MODE: 0x001C
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE, DataType.INT16, 10, 60, 50)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 1, 300, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 1, 300, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 300, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 300, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, 1, 60, 1) //formerly THERMOSTAT MODE: 0x001C
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE, DataType.INT16, 10, 60, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 1, 60, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 1, 60, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 60, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 60, 10)
 	//configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, 0x0A58, 0x10, 1, 300, 1) //GFan
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 300, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 300, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 300, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 300, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 300, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 60, 300, 5)
-	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 60, 300, 5)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 60, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 60, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 60, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 60, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 60, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 60, 10)
+	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 60, 5)
 
 	delayBetween(getRefreshCommands()+configurationCommands)
-}
-
-def isViconicsVT8350() {
-	device.getDataValue("model") == "254-143" // Viconics VT8350 Low Voltage Fan Coil Controller and Zone Controller
 }
 
 def getCoolingSetpointRange() {
@@ -453,4 +537,20 @@ def mapFanSpeedSliderValue(rawValue) {
 			break
 	}
 	resultValue
+}
+
+def isViconicsVT8350() {
+	device.getDataValue("model") == "254-143" // Viconics VT8350 Low Voltage Fan Coil Controller and Zone Controller
+}
+
+def isViconicsVT8650() {
+	device.getDataValue("model") == "254-162" // Viconics VT8650 Heat Pump and Indoor Air Quality Controller
+}
+
+def isSchneiderSE8350() {
+	device.getDataValue("model") == "254-145" // SE8350 Low Voltage Fan Coil Unit (FCU) and Zone Control
+}
+
+def isSchneiderSE8650() {
+	device.getDataValue("model") == "254-163" // SE8650 Roof Top Unit Controller
 }
