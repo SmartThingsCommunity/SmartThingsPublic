@@ -136,7 +136,7 @@ def installed() {
 private void createChildThermostat() {
 	log.debug "Creating child thermostat to handle unoccupied cooling/heating setpoints"
 	def label = "Unoccupied setpoints"
-	def childName = "${device.displayName} " + label
+	def childName = "${device.displayName} ${label}"
 
 	def child = addChildDevice("Child Thermostat Setpoints", "${device.deviceNetworkId}:1", device.hubId,
 			[completedSetup: true, label: childName, isComponent: true, componentName: "childSetpoints", componentLabel: label]
@@ -172,7 +172,7 @@ def parse(String description) {
 		eventMap = [:]
 		def descMap = zigbee.parseDescriptionAsMap(description)
 
-		if ((descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId)) {
+		if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId) {
 			def attributeInt = zigbee.convertHexToInt(descMap.attrId)
 
 			if (attributeInt == OCCUPANCY || attributeInt == CUSTOM_EFFECTIVE_OCCUPANCY) {
