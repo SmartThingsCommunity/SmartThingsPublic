@@ -64,11 +64,12 @@ private getHEATING_SETPOINT() { 0x0012 }
 private getCOOLING_SETPOINT_UNOCCUPIED() { 0x0013 }
 private getHEATING_SETPOINT_UNOCCUPIED() { 0x0014 }
 private getOCCUPANCY() { 0x002 }
+private getCUSTOM_OCCUPANCY() {0x0650}
+private getCUSTOM_EFFECTIVE_OCCUPANCY() { 0x0c50 }
 private getCUSTOM_HUMIDITY() { 0x07a6 }
 private getCUSTOM_THERMOSTAT_MODE() { 0x0687 }
 private getCUSTOM_FAN_SPEED() { 0x0688 }
 private getCUSTOM_FAN_MODE() { 0x0698 }
-private getCUSTOM_EFFECTIVE_OCCUPANCY() { 0x0c50 }
 private getCUSTOM_THERMOSTAT_OPERATING_STATE() { 0x06BF }
 private getUNOCCUPIED_SETPOINT_CHILD_DEVICE_ID() {1}
 private getTHERMOSTAT_MODE_OFF() { 0x00 }
@@ -174,8 +175,8 @@ def parse(String description) {
 		if ((descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId)) {
 			def attributeInt = zigbee.convertHexToInt(descMap.attrId)
 
-			if (attributeInt == OCCUPANCY) {
-				log.debug "OCCUPANCY, descMap.value: ${descMap.value}"
+			if (attributeInt == OCCUPANCY || attributeInt == CUSTOM_EFFECTIVE_OCCUPANCY) {
+				log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
 				eventMap.name = "occupancy"
 				eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
 			} else if (attributeInt == COOLING_SETPOINT) {
@@ -239,10 +240,6 @@ def parse(String description) {
 				log.debug "CUSTOM THERMOSTAT OPERATING STATE, descMap.value: ${descMap.value}"
 				eventMap.name = "thermostatOperatingState"
 				eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[descMap.value]
-			} else if (attributeInt == CUSTOM_EFFECTIVE_OCCUPANCY) {
-				log.debug "EFFECTIVE OCCUPANCY, descMap.value: ${descMap.value}"
-				eventMap.name = "effectiveOccupancy"
-				eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
 			} else {
 				log.debug "descMap.inspect(): ${descMap.inspect()}"
 			}
@@ -455,9 +452,9 @@ def getRefreshCommands() {
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE) // formerly THERMOSTAT MODE: 0x001C
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, 0x0650)	//occupancy command
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, OCCUPANCY)
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY)
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE)
 
 	refreshCommands
@@ -485,7 +482,9 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 60, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 60, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 60, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 60, 1)
+    configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 60, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 60, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 60, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 60, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 60, 10)
 	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 60, 5)
