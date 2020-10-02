@@ -137,7 +137,7 @@ private void createChildThermostat() {
 	def label = "Unoccupied setpoints"
 	def childName = "${device.displayName} " + label
 
-	def child = addChildDevice("Child Setpoints", "${device.deviceNetworkId}:1", device.hubId,
+	def child = addChildDevice("Child Thermostat Setpoints", "${device.deviceNetworkId}:1", device.hubId,
 			[completedSetup: true, label: childName, isComponent: true, componentName: "childSetpoints", componentLabel: label]
 	)
 
