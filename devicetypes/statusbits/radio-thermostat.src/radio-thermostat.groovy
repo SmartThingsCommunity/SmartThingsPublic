@@ -1,7 +1,8 @@
 /**
- *  Radio Thermostat CT50 WiFi driver.
+ *  Filtrete 3M-50 WiFi Thermostat.
  *
- *  Author: Statusbits.com. Hubitat conversion by cometfish
+ *  For more information, please visit:
+ *  <https://github.com/statusbits/smartthings/tree/master/RadioThermostat/>
  *
  *  --------------------------------------------------------------------------
  *
@@ -22,35 +23,34 @@
  *
  *  --------------------------------------------------------------------------
  *
+ *  Version 2.0.1 (12/20/2016)
  */
+
+import groovy.json.JsonSlurper
+
+preferences {
+    input("confIpAddr", "string", title:"Thermostat IP Address",
+        required:true, displayDuringSetup:true)
+
+    // FIXME: Android client does not accept "defaultValue" attribute!
+    //input("confTcpPort", "number", title:"Thermostat TCP Port",
+    //    defaultValue:80, required:true, displayDuringSetup:true)
+    //input("pollingInterval", "number", title:"Polling interval in minutes (1 - 59)",
+    //    defaultValue:5, required:true, displayDuringSetup:true)
+    input("confTcpPort", "number", title:"Thermostat TCP Port (default: 80)",
+        required:true, displayDuringSetup:true)
+
+    input("pollingInterval", "number", title:"Polling interval in minutes (1 - 59)",
+        required:true, displayDuringSetup:true)
+}
+
 metadata {
-    definition (name:"Radio Thermostat", namespace:"statusbits", author:"geko@statusbits.com", importUrl: "https://github.com/cometfish/hubitat_driver_radio_thermostat/master/radio_thermostat.groovy") {
-        capability "Initialize"
+    definition (name:"Radio Thermostat", namespace:"statusbits", author:"geko@statusbits.com") {
         capability "Thermostat"
-        capability "TemperatureMeasurement"
+        capability "Temperature Measurement"
         capability "Sensor"
         capability "Refresh"
         capability "Polling"
-        
-        attribute "temperature", "number"
-        attribute "coolingSetpoint", "number"
-		attribute "heatingSetpoint", "number"
-		attribute "schedule", "json_object"
-		attribute "supportedThermostatFanModes", "enum", ["on", "circulate", "auto"]
-		attribute "supportedThermostatModes", "enum", ["auto", "off", "heat", "emergency heat", "cool"]
-		attribute "thermostatFanMode", "enum", ["on", "circulate", "auto"]
-		attribute "thermostatMode", "enum", ["auto", "off", "heat", "emergency heat", "cool"]
-		attribute "thermostatOperatingState", "enum", ["heating", "pending cool", "pending heat", "vent economizer", "idle", "cooling", "fan only"]
-		attribute "thermostatSetpoint", "number"
-
-		command "auto"
-		command "cool"
-		command "emergencyHeat"
-		command "fanAuto"
-		command "fanCirculate"
-		command "fanOn"
-		command "heat"
-		command "off"
 
         // Custom attributes
         attribute "fanState", "string"      // Fan operating state. Values: "on", "off"
@@ -62,46 +62,149 @@ metadata {
         command "temperatureDown"
         command "holdOn"
         command "holdOff"
-        command "setTimeToCurrent"
+    }
+
+    tiles(scale:2) {
+        multiAttributeTile(name:"thermostat", type:"thermostat", width:6, height:4) {
+		    tileAttribute("device.temperature", key:"PRIMARY_CONTROL") {
+			    attributeState("default", label:'${currentValue}°', unit:"dF", defaultState:true,
+                    backgroundColors:[
+                        [value:10, color:"#153591"],
+                        [value:15, color:"#1e9cbb"],
+                        [value:18, color:"#90d2a7"],
+                        [value:21, color:"#44b621"],
+                        [value:24, color:"#f1d801"],
+                        [value:27, color:"#d04e00"],
+                        [value:30, color:"#bc2323"],
+                        [value:31, color:"#153591"],
+                        [value:44, color:"#1e9cbb"],
+                        [value:59, color:"#90d2a7"],
+                        [value:74, color:"#44b621"],
+                        [value:84, color:"#f1d801"],
+                        [value:95, color:"#d04e00"],
+                        [value:96, color:"#bc2323"]
+                    ]
+                )
+	        }
+			tileAttribute("device.temperature", key:"VALUE_CONTROL") {
+				attributeState("VALUE_UP", action:"temperatureUp")
+				attributeState("VALUE_DOWN", action:"temperatureDown")
+			}
+			tileAttribute("device.thermostatOperatingState", key:"OPERATING_STATE") {
+				attributeState("idle", backgroundColor:"#44b621", defaultState:true)
+				attributeState("heating", backgroundColor:"#ea5462")
+				attributeState("cooling", backgroundColor:"#269bd2")
+			}
+			tileAttribute("device.thermostatMode", key:"THERMOSTAT_MODE") {
+				attributeState("off", label:'${name}', defaultState:true)
+				attributeState("heat", label:'${name}')
+				attributeState("cool", label:'${name}')
+				attributeState("auto", label:'${name}')
+			}
+			tileAttribute("device.heatingSetpoint", key:"HEATING_SETPOINT") {
+				attributeState("heatingSetpoint", label:'${currentValue}', unit:"dF", defaultState:true)
+			}
+			tileAttribute("device.coolingSetpoint", key:"COOLING_SETPOINT") {
+				attributeState("heatingSetpoint", label:'${currentValue}', unit:"dF", defaultState:true)
+			}
+        }
+
+        standardTile("modeHeat", "device.thermostatMode", width:2, height:2) {
+            state "default", label:'', icon:"st.thermostat.heat", backgroundColor:"#FFFFFF", action:"thermostat.heat", defaultState:true
+            state "heat", label:'', icon:"st.thermostat.heat", backgroundColor:"#FFCC99", action:"thermostat.off"
+        }
+
+        standardTile("modeCool", "device.thermostatMode", width:2, height:2) {
+            state "default", label:'', icon:"st.thermostat.cool", backgroundColor:"#FFFFFF", action:"thermostat.cool", defaultState:true
+            state "cool", label:'', icon:"st.thermostat.cool", backgroundColor:"#99CCFF", action:"thermostat.off"
+        }
+
+        standardTile("modeAuto", "device.thermostatMode", width:2, height:2) {
+            state "default", label:'', icon:"st.thermostat.auto", backgroundColor:"#FFFFFF", action:"thermostat.auto", defaultState:true
+            state "auto", label:'', icon:"st.thermostat.auto", backgroundColor:"#99FF99", action:"thermostat.off"
+        }
+
+        standardTile("fanMode", "device.thermostatFanMode", width:2, height:2) {
+            state "auto", label:'', icon:"st.thermostat.fan-auto", backgroundColor:"#FFFFFF", action:"thermostat.fanOn", defaultState:true
+            state "on", label:'', icon:"st.thermostat.fan-on", backgroundColor:"#A4FCA6", action:"thermostat.fanAuto"
+        }
+
+        standardTile("hold", "device.hold", width:2, height:2) {
+            state "off", label:'Hold', icon:"st.Weather.weather2", backgroundColor:"#FFFFFF", action:"holdOn", defaultState:true
+            state "on", label:'Hold', icon:"st.Weather.weather2", backgroundColor:"#A4FCA6", action:"holdOff"
+        }
+
+        standardTile("refresh", "device.connection", width:2, height:2, decoration:"flat") {
+        //standardTile("refresh", "device.connection", width:2, height:2) {
+            state "default", icon:"st.secondary.refresh", backgroundColor:"#FFFFFF", action:"refresh.refresh", defaultState:true
+            state "connected", icon:"st.secondary.refresh", backgroundColor:"#44b621", action:"refresh.refresh"
+            state "disconnected", icon:"st.secondary.refresh", backgroundColor:"#ea5462", action:"refresh.refresh"
+        }
+
+        valueTile("temperature", "device.temperature", width:2, height:2) {
+            state "temperature", label:'${currentValue}°', unit:"dF",
+                backgroundColors:[
+                    [value:10, color:"#153591"],
+                    [value:15, color:"#1e9cbb"],
+                    [value:18, color:"#90d2a7"],
+                    [value:21, color:"#44b621"],
+                    [value:24, color:"#f1d801"],
+                    [value:27, color:"#d04e00"],
+                    [value:30, color:"#bc2323"],
+                    [value:31, color:"#153591"],
+                    [value:44, color:"#1e9cbb"],
+                    [value:59, color:"#90d2a7"],
+                    [value:74, color:"#44b621"],
+                    [value:84, color:"#f1d801"],
+                    [value:95, color:"#d04e00"],
+                    [value:96, color:"#bc2323"]
+                ]
+        }
+
+        main("temperature")
+        details([
+            "thermostat",
+            "modeHeat", "modeCool", "modeAuto",
+            "fanMode", "hold", "refresh"
+        ])
+    }
+
+    simulator {
+        status "Temperature 72.0":      "simulator:true, temp:72.00"
+        status "Cooling Setpoint 76.0": "simulator:true, t_cool:76.00"
+        status "Heating Setpoint 68.0": "simulator:true, t_cool:68.00"
+        status "Thermostat Mode Off":   "simulator:true, tmode:0"
+        status "Thermostat Mode Heat":  "simulator:true, tmode:1"
+        status "Thermostat Mode Cool":  "simulator:true, tmode:2"
+        status "Thermostat Mode Auto":  "simulator:true, tmode:3"
+        status "Fan Mode Auto":         "simulator:true, fmode:0"
+        status "Fan Mode Circulate":    "simulator:true, fmode:1"
+        status "Fan Mode On":           "simulator:true, fmode:2"
+        status "State Off":             "simulator:true, tstate:0"
+        status "State Heat":            "simulator:true, tstate:1"
+        status "State Cool":            "simulator:true, tstate:2"
+        status "Fan State Off":         "simulator:true, fstate:0"
+        status "Fan State On":          "simulator:true, fstate:1"
+        status "Hold Disabled":         "simulator:true, hold:0"
+        status "Hold Enabled":          "simulator:true, hold:1"
     }
 }
-
-preferences {
-    input("confIpAddr", "string", title:"Thermostat IP Address",
-        required:true)
-
-    input("confTcpPort", "number", title:"Thermostat TCP Port (default: 80)",
-        required:true, defaultValue:80)
-
-    input("pollingInterval", "number", title:"Polling interval in minutes (1 - 59)",
-        required:true, defaultValue:5)
-}
-
-import groovy.json.JsonSlurper
 
 def installed() {
     //log.debug "installed()"
 
     printTitle()
-    initialize() 
-}
-def initialize() {
-    // Initialize attributes to default values
-    sendEvent(name:'temperature', value:70, isStateChange: true)
-    sendEvent(name:'heatingSetpoint', value:70, isStateChange: true)
-    sendEvent(name:'coolingSetpoint', value:72, isStateChange: true)
-    sendEvent(name: "thermostatSetpoint", value: 72, isStateChange: true)
-    sendEvent(name:'thermostatMode', value:'off', isStateChange: true)
-    sendEvent(name:'thermostatFanMode', value:'auto', isStateChange: true)
-    sendEvent(name: "supportedThermostatFanModes", value: ["on", "auto"], isStateChange: true)
-	sendEvent(name: "supportedThermostatModes", value: ["off", "auto", "heat", "cool"], isStateChange: true)
-	
-    sendEvent(name:'thermostatOperatingState', value:'idle', isStateChange: true)
-    updateDataValue("lastRunningMode", "heat")
-    
-    sendEvent(name:'fanState', value:'off', isStateChange: true)
-    sendEvent(name:'hold', value:'off', isStateChange: true)
-    sendEvent(name:'connection', value:'disconnected', isStateChange: true)
+
+    // Initialize attributes to default values (Issue #18)
+    sendEvent([name:'temperature', value:'70', displayed:false])
+    sendEvent([name:'heatingSetpoint', value:'70', displayed:false])
+    sendEvent([name:'coolingSetpoint', value:'72', displayed:false])
+    sendEvent([name:'thermostatMode', value:'off', displayed:false])
+    sendEvent([name:'thermostatFanMode', value:'auto', displayed:false])
+    sendEvent([name:'thermostatOperatingState', value:'idle', displayed:false])
+    sendEvent([name:'fanState', value:'off', displayed:false])
+    sendEvent([name:'hold', value:'off', displayed:false])
+    sendEvent([name:'connection', value:'disconnected', displayed:false])
 }
 
 def updated() {
@@ -339,17 +442,14 @@ def setHeatingSetpoint(temp) {
     }
 
     log.info "Setting heating setpoint to ${t} °F"
-    double tval = (scale == "C") ? temperatureFtoC(t) : t
+
     def ev = [
         name:   "heatingSetpoint",
-        value:  tval,
+        value:  (scale == "C") ? temperatureFtoC(t) : t,
         unit:   scale,
     ]
 
     sendEvent(ev)
-    if (device.currentValue("thermostatMode") == "heat") {
-        sendEvent(name: "thermostatSetpoint", value: tval, isStateChange: true)
-    }
 
     return writeTstatValue('it_heat', t)
 }
@@ -374,17 +474,13 @@ def setCoolingSetpoint(temp) {
 
     log.info "Setting cooling setpoint to ${t} °F"
 
-    double tval = (scale == "C") ? temperatureFtoC(t) : t;
     def ev = [
         name:   "coolingSetpoint",
-        value:  tval,
+        value:  (scale == "C") ? temperatureFtoC(t) : t,
         unit:   scale,
     ]
 
     sendEvent(ev)
-    if (device.currentValue("thermostatMode") == "heat") {
-        sendEvent(name: "thermostatSetpoint", value: tval, isStateChange: true)
-    }
 
     return writeTstatValue('it_cool', t)
 }
@@ -471,19 +567,6 @@ def holdOff() {
     return writeTstatValue("hold", 0)
 }
 
-// Custom command
-def setTimeToCurrent() {
-    Date date = new Date()
-  
-    log.info "Setting current time"
-    
-    int dow = date[Calendar.DAY_OF_WEEK] - 2
-    if (dow<0)
-        dow = dow + 7
-    apiPost("/tstat/time", "{\"hour\":" + date.format("H") + ", \"minute\": " + date.format("m") + ", \"day\":" + dow + "}")
-
-}
-
 // polling.poll 
 def poll() {
     //log.debug "poll()"
@@ -565,7 +648,7 @@ private apiGet(String path) {
         headers:    headers
     ]
 
-    return new hubitat.device.HubAction(httpRequest)
+    return new physicalgraph.device.HubAction(httpRequest)
 }
 
 private apiPost(String path, data) {
@@ -589,7 +672,7 @@ private apiPost(String path, data) {
         body:       data
     ]
 
-    return new hubitat.device.HubAction(httpRequest)
+    return new physicalgraph.device.HubAction(httpRequest)
 }
 
 private def writeTstatValue(name, value) {
@@ -606,7 +689,7 @@ private def writeTstatValue(name, value) {
 }
 
 private def delayHubAction(ms) {
-    return new hubitat.device.HubAction("delay ${ms}")
+    return new physicalgraph.device.HubAction("delay ${ms}")
 }
 
 private parseHttpHeaders(String headers) {
@@ -645,45 +728,21 @@ private def parseTstatData(Map tstat) {
             unit:   getTemperatureScale(),
         ])
     }
-    mode = device.currentValue("thermostatMode")
-    if (tstat.containsKey("tmode")) {
-        mode = parseThermostatMode(tstat.tmode)
-        events << createEvent([
-            name:   "thermostatMode",
-            value:  mode
-        ])
-    }
 
     if (tstat.containsKey("t_cool")) {
-        tval = scaleTemperature(tstat.t_cool.toFloat())
         events << createEvent([
             name:   "coolingSetpoint",
-            value:  tval,
+            value:  scaleTemperature(tstat.t_cool.toFloat()),
             unit:   getTemperatureScale(),
         ])
-        if (mode == "cool") {
-            events << createEvent([
-                name:   "thermostatSetpoint",
-                value:  tval,
-                unit:   getTemperatureScale(),
-            ])
-        }
     }
 
     if (tstat.containsKey("t_heat")) {
-        tval = scaleTemperature(tstat.t_heat.toFloat())
         events << createEvent([
             name:   "heatingSetpoint",
-            value:  tval,
+            value:  scaleTemperature(tstat.t_heat.toFloat()),
             unit:   getTemperatureScale(),
         ])
-        if (mode == "heat") {
-            events << createEvent([
-                name:   "thermostatSetpoint",
-                value:  tval,
-                unit:   getTemperatureScale(),
-            ])
-        }
     }
 
     if (tstat.containsKey("tstate")) {
@@ -697,6 +756,13 @@ private def parseTstatData(Map tstat) {
         events << createEvent([
             name:   "fanState",
             value:  parseFanState(tstat.fstate)
+        ])
+    }
+
+    if (tstat.containsKey("tmode")) {
+        events << createEvent([
+            name:   "thermostatMode",
+            value:  parseThermostatMode(tstat.tmode)
         ])
     }
 
