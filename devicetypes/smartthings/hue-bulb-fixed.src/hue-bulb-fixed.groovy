@@ -1,0 +1,182 @@
+/**
+ *  Hue Bulb
+ *
+ *  Author: SmartThings
+ 	maxwell:
+    2015-03-01 fixed: java.lang.NullPointerException: Cannot execute null+null @ line 146 error
+ */
+// for the UI
+metadata {
+	// Automatically generated. Make future change here.
+	definition (name: "Hue Bulb Fixed", namespace: "smartthings", author: "SmartThings") {
+		capability "Switch Level"
+		capability "Actuator"
+		capability "Color Control"
+		capability "Switch"
+		capability "Refresh"
+		capability "Sensor"
+
+		command "setAdjustedColor"
+        //[level:100, red:67, hex:#4300FF, saturation:100.0, blue:255, hue:71.04575, green:0, alpha:1] 
+        command "refresh"
+	}
+
+	simulator {
+		// TODO: define status and reply messages here
+	}
+
+	standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
+		state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821"
+		state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff"
+	}
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
+	controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
+		state "color", action:"setAdjustedColor"
+	}
+	controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
+		state "level", action:"switch level.setLevel"
+	}
+	valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
+		state "level", label: 'Level ${currentValue}%'
+	}
+	controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 2, inactiveLabel: false) {
+		state "saturation", action:"color control.setSaturation"
+	}
+	valueTile("saturation", "device.saturation", inactiveLabel: false, decoration: "flat") {
+		state "saturation", label: 'Sat ${currentValue}    '
+	}
+	controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 2, inactiveLabel: false) {
+		state "hue", action:"color control.setHue"
+	}
+	valueTile("hue", "device.hue", inactiveLabel: false, decoration: "flat") {
+		state "hue", label: 'Hue ${currentValue}   '
+	}
+
+	main(["switch"])
+	//details(["switch", "levelSliderControl", "rgbSelector", "refresh"])
+    details(["levelSliderControl","level","saturationSliderControl","saturation","hueSliderControl","hue","switch", "refresh"])
+
+}
+
+// parse events into attributes
+def parse(description) {
+	log.debug "parse() - $description"
+	def results = []
+
+	def map = description
+	if (description instanceof String)  {
+		log.debug "Hue Bulb stringToMap - ${map}"
+		map = stringToMap(description)
+	}
+
+	if (map?.name && map?.value) {
+		results << createEvent(name: "${map?.name}", value: "${map?.value}")
+	}
+
+	results
+
+}
+
+// handle commands
+def on() {
+	parent.on(this)
+	sendEvent(name: "switch", value: "on")
+}
+
+def off() {
+	parent.off(this)
+	sendEvent(name: "switch", value: "off")
+}
+
+/*
+Why?  This isn't event checked into Git?
+def poll() {
+	parent.poll()
+}
+*/
+
+def nextLevel() {
+	def level = device.latestValue("level") as Integer ?: 0
+	if (level < 100) {
+		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
+	}
+	else {
+		level = 25
+	}
+	setLevel(level)
+}
+
+def setLevel(percent) {
+	log.debug "Executing 'setLevel'"
+	parent.setLevel(this, percent)
+	sendEvent(name: "level", value: percent)
+}
+
+def setSaturation(percent) {
+	log.debug "Executing 'setSaturation'"
+	parent.setSaturation(this, percent)
+	sendEvent(name: "saturation", value: percent)
+}
+
+def setHue(percent) {
+	log.debug "Executing 'setHue'"
+	parent.setHue(this, percent)
+	sendEvent(name: "hue", value: percent)
+}
+
+def setColor(value) {
+	log.debug "setColor: ${value}"
+	parent.setColor(this, value)
+
+	if (value.hex) {
+		sendEvent(name: "color", value: value.hex)
+	} else if (value.hue && value.saturation) {
+		def hex = colorUtil.hslToHex(value.hue, value.saturation)
+		sendEvent(name: "color", value: hex)
+	}
+
+	if (value.level) {
+		sendEvent(name: "level", value: value.level)
+	}
+	if (value.switch) {
+		sendEvent(name: "switch", value: value.switch)
+	}
+}
+
+def setAdjustedColor(value) {
+	if (value) {
+		log.debug "setAdjustedColor: ${value}"
+		def adjusted = value + [:]
+		adjusted.hue = adjustOutgoingHue(value.hue)
+		adjusted.level = null // needed because color picker always sends 100
+		setColor(adjusted)
+    }
+}
+
+def save() {
+	log.debug "Executing 'save'"
+}
+
+def refresh() {
+	log.debug "Executing 'refresh'"
+	parent.poll()
+}
+
+def adjustOutgoingHue(percent) {
+	def adjusted = percent
+	if (percent > 31) {
+		if (percent < 63.0) {
+			adjusted = percent + (7 * (percent -30 ) / 32)
+		}
+		else if (percent < 73.0) {
+			adjusted = 69 + (5 * (percent - 62) / 10)
+		}
+		else {
+			adjusted = percent + (2 * (100 - percent) / 28)
+		}
+	}
+	log.info "percent: $percent, adjusted: $adjusted"
+	adjusted
+}
