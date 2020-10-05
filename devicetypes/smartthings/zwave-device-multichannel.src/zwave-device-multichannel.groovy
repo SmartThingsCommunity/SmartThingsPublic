@@ -434,3 +434,9 @@ private encap(cmd, endpoint) {
 private encapWithDelay(commands, endpoint, delay=200) {
 	delayBetween(commands.collect{ encap(it, endpoint) }, delay)
 }
+
+def updated() {
+    childDevices.each {
+        if (it.device.isComponent) { it.save([isComponent: false, componentLabel: null, componentName: null]) }
+    }
+}
