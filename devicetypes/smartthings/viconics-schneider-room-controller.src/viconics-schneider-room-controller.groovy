@@ -23,6 +23,7 @@ metadata {
 		capability "Occupancy Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Fan Speed"
 		capability "Thermostat Fan Mode"
