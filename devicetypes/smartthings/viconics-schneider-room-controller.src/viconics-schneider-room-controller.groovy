@@ -23,7 +23,6 @@ metadata {
 		capability "Occupancy Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
-		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Fan Speed"
 		capability "Thermostat Fan Mode"
@@ -83,44 +82,59 @@ private getCUSTOM_FAN_MODE_CIRCULATE() { 0x02 }
 
 private getFAN_MODE_MAP() {
 	[
-			"00":"on",
-			"01":"auto",
-			"02":"circulate"
+		"00":"on",
+		"01":"auto",
+		"02":"circulate"
+	]
+}
+
+private getTHERMOSTAT_FAN_MODE_ATTRIBUTE_ID_MAP() {
+	[
+		"on":  0x00,		// CUSTOM_FAN_MODE_ON
+		"auto": 0x01,		// CUSTOM_FAN_MODE_AUTO
+		"circulate": 0x02	// CUSTOM_FAN_MODE_CIRCULATE
 	]
 }
 
 private getTHERMOSTAT_MODE_MAP() {
 	[
-			"00":"off",
-			"01":"auto",
-			"02":"cool",
-			"03":"heat",
-			"04":"heat"
+		"00":"off",
+		"01":"auto",
+		"02":"cool",
+		"03":"heat",
+		"04":"heat"
 	]
 }
 
 private getTHERMOSTAT_OPERATING_STATE_MAP() {
 	[
-			"00":"idle",
-			"01":"cooling",
-			"02":"heating"
+		"00":"idle",
+		"01":"cooling",
+		"02":"heating"
 	]
 }
 
 private getEFFECTIVE_OCCUPANCY_MAP() {
 	[
-			"00":"Occupied",
-			"01":"Unoccupied",
-			"02":"Override",
-			"03":"Standby"
+		"00":"Occupied",
+		"01":"Unoccupied"
+	]
+}
+
+private getFAN_SPEED_SLIDER_MAP() {
+	[
+		"00": 1,	// low
+		"01": 2,	// medium
+		"02": 3,	// high
+		"03": 4		// auto
 	]
 }
 
 def installed() {
 	log.debug "installed"
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	if (isViconicsVT8350()|| isSchneiderSE8350()) {
+	if (isViconicsVT8350() || isSchneiderSE8350()) {
 		state.supportedFanModes = ["on", "auto"]
 	} else {
 		state.supportedFanModes = ["on", "auto", "circulate"]
@@ -148,106 +162,99 @@ private void createChildThermostat() {
 }
 
 def parse(String description) {
-	def eventMap = zigbee.getEvent(description)
-	def result = []
+    def result = []
+    def eventMap = [:]
+    def descMap = zigbee.parseDescriptionAsMap(description)
 
-	if (description?.startsWith("humidity: ")) {
-		// Viconics VT8350 humidity reports are parsed as floating point numbers (range 0 - 1%)
-		def humidityVal = (description - "humidity: " - "%").trim()
-		if (humidityVal.isNumber()) {
-			humidityVal = new BigDecimal(humidityVal) * 100
-		}
-		eventMap.name 	= "humidity"
-		eventMap.value 	= humidityVal
-		eventMap.unit 	= "%"
-	}
-	/*} else if (eventMap) {
-		log.debug "eventMap: ${eventMap.inspect()}"
-		// Viconics VT8350 humidity reports are parsed as floating point numbers (range 0 - 1%)
-		if (eventMap.name == "humidity") {
-			eventMap.value = eventMap.value * 100
-		}
-		result = createEvent(eventMap)
-	}*/ else {
-		eventMap = [:]
-		def descMap = zigbee.parseDescriptionAsMap(description)
+    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId) {
+        def attributeInt = zigbee.convertHexToInt(descMap.attrId)
 
-		if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId) {
-			def attributeInt = zigbee.convertHexToInt(descMap.attrId)
+        switch (attributeInt) {
+            case OCCUPANCY:
+            case CUSTOM_EFFECTIVE_OCCUPANCY:
+                log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
+                eventMap.name = "occupancy"
+                eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
+                break
+            case COOLING_SETPOINT:
+                log.debug "COOLING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
+                eventMap.name = "coolingSetpoint"
+                eventMap.value = getTemperature(descMap.value)
+                eventMap.unit = temperatureScale
+                break
+            case HEATING_SETPOINT:
+                log.debug "HEATING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
+                eventMap.name = "heatingSetpoint"
+                eventMap.value = getTemperature(descMap.value)
+                eventMap.unit = temperatureScale
+                break
+            case COOLING_SETPOINT_UNOCCUPIED:
+                log.debug "COOLING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
+                def childEvent = [:]
+                childEvent.name = "coolingSetpoint"
+                childEvent.value = getTemperature(descMap.value)
+                childEvent.unit = temperatureScale
+                sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
+                break
+            case HEATING_SETPOINT_UNOCCUPIED:
+                log.debug "HEATING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
+                def childEvent = [:]
+                childEvent.name = "heatingSetpoint"
+                childEvent.value = getTemperature(descMap.value)
+                childEvent.unit = temperatureScale
+                sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
+                break
+            case LOCAL_TEMPERATURE:
+                log.debug "LOCAL TEMPERATURE, descMap.value: ${descMap.value}"
+                eventMap.name = "temperature"
+                eventMap.value = getTemperature(descMap.value)
+                eventMap.unit = temperatureScale
+                break
+            case CUSTOM_HUMIDITY:
+                log.debug "CUSTOM HUMIDITY, descMap.value: ${descMap.value}"
+                eventMap.name = "humidity"
+                eventMap.value = Integer.parseInt(descMap.value, 16)
+                eventMap.unit = "%"
+                break
+            case CUSTOM_FAN_MODE:
+                log.debug "CUSTOM FAN MODE, descMap.value: ${descMap.value}"
+                if (isViconicsVT8650() || isSchneiderSE8650()) {
+                    eventMap.name = "thermostatFanMode"
+                    eventMap.value = FAN_MODE_MAP[descMap.value]
+                    eventMap.data = [supportedThermostatFanModes: state.supportedFanModes]
+                }
+                break
+            case CUSTOM_FAN_SPEED:
+                // VT8350 reports fan speed 3 as AUTO
+                log.debug "CUSTOM FAN SPEED, descMap.value: ${descMap.value}"
+                def sliderValue = FAN_SPEED_SLIDER_MAP[descMap.value]
+                if (sliderValue < 4) {
+                    eventMap.name = "fanSpeed"
+                    eventMap.value = sliderValue
+                    result << createEvent([name:"thermostatFanMode", value: "on", data: [supportedThermostatFanModes: state.supportedFanModes]])
+                } else {
+                    result << createEvent([name:"thermostatFanMode", value: "auto", data:[supportedThermostatFanModes: state.supportedFanModes]])
+                }
+                break
+            case CUSTOM_THERMOSTAT_MODE:
+                log.debug "CUSTOM THERMOSTAT MODE, descMap.value: ${descMap.value}"
+                eventMap.name = "thermostatMode"
+                eventMap.value = THERMOSTAT_MODE_MAP[descMap.value]
+                eventMap.data = [supportedThermostatModes: state.supportedThermostatModes]
+                break
+            case CUSTOM_THERMOSTAT_OPERATING_STATE:
+                log.debug "CUSTOM THERMOSTAT OPERATING STATE, descMap.value: ${descMap.value}"
+                eventMap.name = "thermostatOperatingState"
+                eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[descMap.value]
+                break
+            default:
+                log.debug "UNHANDLED ATTRIBUTE, descMap.inspect(): ${descMap.inspect()}"
 
-			if (attributeInt == OCCUPANCY || attributeInt == CUSTOM_EFFECTIVE_OCCUPANCY) {
-				log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
-				eventMap.name = "occupancy"
-				eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
-			} else if (attributeInt == COOLING_SETPOINT) {
-				log.debug "COOLING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
-				eventMap.name = "coolingSetpoint"
-				eventMap.value = getTemperature(descMap.value)
-				eventMap.unit = temperatureScale
-			} else if (attributeInt == HEATING_SETPOINT) {
-				log.debug "HEATING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
-				eventMap.name = "heatingSetpoint"
-				eventMap.value = getTemperature(descMap.value)
-				eventMap.unit = temperatureScale
-			} else if (attributeInt == COOLING_SETPOINT_UNOCCUPIED) {
-				log.debug "COOLING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
-				def childEvent = [:]
-				childEvent.name = "coolingSetpoint"
-				childEvent.value = getTemperature(descMap.value)
-				childEvent.unit = temperatureScale
-				sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
-			} else if (attributeInt == HEATING_SETPOINT_UNOCCUPIED) {
-				log.debug "HEATING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
-				def childEvent = [:]
-				childEvent.name = "heatingSetpoint"
-				childEvent.value = getTemperature(descMap.value)
-				childEvent.unit = temperatureScale
-				sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
-			} else if (attributeInt == LOCAL_TEMPERATURE) {
-				log.debug "LOCAL TEMPERATURE, descMap.value: ${descMap.value}"
-				eventMap.name = "temperature"
-				eventMap.value = getTemperature(descMap.value)
-				eventMap.unit = temperatureScale
-			} else if (attributeInt == CUSTOM_HUMIDITY) {
-				log.debug "CUSTOM HUMIDITY, descMap.value: ${descMap.value}"
-				eventMap.name = "humidity"
-				eventMap.value = Integer.parseInt(descMap.value, 16)
-				eventMap.unit = "%"
-			} else if (attributeInt == CUSTOM_FAN_MODE) {
-				log.debug "CUSTOM FAN MODE, descMap.value: ${descMap.value}"
-				if (isViconicsVT8650() || isSchneiderSE8650()) {
-					eventMap.name = "thermostatFanMode"
-					eventMap.value = FAN_MODE_MAP[descMap.value]
-					eventMap.data = [supportedThermostatFanModes: state.supportedFanModes]
-				}
-			} else if (attributeInt == CUSTOM_FAN_SPEED) {
-				// VT8350 reports fan speed 3 as AUTO
-				log.debug "CUSTOM FAN SPEED, descMap.value: ${descMap.value}"
-				def sliderValue = mapFanSpeedSliderValue(descMap.value)
-				if (sliderValue < 4) {
-					eventMap.name = "fanSpeed"
-					eventMap.value = sliderValue
-					result << createEvent([name:"thermostatFanMode", value: "on", data: [supportedThermostatFanModes: state.supportedFanModes]])
-				} else {
-					result << createEvent([name:"thermostatFanMode", value: "auto", data:[supportedThermostatFanModes: state.supportedFanModes]])
-				}
-			} else if (attributeInt == CUSTOM_THERMOSTAT_MODE) {
-				log.debug "CUSTOM THERMOSTAT MODE, descMap.value: ${descMap.value}"
-				eventMap.name = "thermostatMode"
-				eventMap.value = THERMOSTAT_MODE_MAP[descMap.value]
-				eventMap.data = [supportedThermostatModes: state.supportedThermostatModes]
-			} else if (attributeInt == CUSTOM_THERMOSTAT_OPERATING_STATE) {
-				log.debug "CUSTOM THERMOSTAT OPERATING STATE, descMap.value: ${descMap.value}"
-				eventMap.name = "thermostatOperatingState"
-				eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[descMap.value]
-			} else {
-				log.debug "descMap.inspect(): ${descMap.inspect()}"
-			}
-		}
-	}
+        }
+    }
 	result << createEvent(eventMap)
 	//log.debug "Description ${description} parsed to ${result}"
-	return result
+	result
 }
 
 private sendEventToChild(childNumber, event) {
@@ -288,7 +295,7 @@ def setChildHeatingSetpoint(deviceNetworkId, degrees) {
 
 def getChildId(deviceNetworkId) {
 	def split = deviceNetworkId?.split(":")
-	return (split.length > 1) ? split[1] as Integer : null
+	(split.length > 1) ? split[1] as Integer : null
 }
 
 def setSetpoint(degrees, setpointAttr) {
@@ -317,17 +324,7 @@ def setThermostatFanMode(mode) {
 					break
 			}
 		} else if (isViconicsVT8650() || isSchneiderSE8650()) {
-			switch (mode) {
-				case "on":
-					getThermostatFanModeCommands(CUSTOM_FAN_MODE_ON)
-					break
-				case "auto":
-					getThermostatFanModeCommands(CUSTOM_FAN_MODE_AUTO)
-					break
-				case "circulate":
-					getThermostatFanModeCommands(CUSTOM_FAN_MODE_CIRCULATE)
-					break
-			}
+			getThermostatFanModeCommands(THERMOSTAT_FAN_MODE_ATTRIBUTE_ID_MAP[mode])
 		}
 	} else {
 		log.debug "Unsupported fan mode $mode"
@@ -393,41 +390,35 @@ def setThermostatMode(mode) {
 	}
 }
 
-def off() {
-	delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_OFF),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
-	], 500)
-}
-
 def auto() {
-	delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_AUTO),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
-	], 500)
+	getThermostatModeCommands(THERMOSTAT_MODE_AUTO)
 }
 
 def cool() {
-	delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_COOL),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
-	], 500)
+	getThermostatModeCommands(THERMOSTAT_MODE_COOL)
 }
 
 def heat() {
-	delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_HEAT),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
-	], 500)
+	getThermostatModeCommands(THERMOSTAT_MODE_HEAT)
+}
+
+def off() {
+	getThermostatModeCommands(THERMOSTAT_MODE_OFF)
+}
+
+def getThermostatModeCommands(mode) {
+	if (mode) {
+		delayBetween([
+				zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
+		], 500)
+	}
 }
 
 def ping() {
 	log.debug "ping"
-	refresh()
+	zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE)
 }
 
 def refresh() {
@@ -444,8 +435,6 @@ def getRefreshCommands() {
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT)
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED)
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED)
 
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
@@ -457,15 +446,24 @@ def getRefreshCommands() {
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE)
 
+	refreshCommands += refreshChild()
+
+	refreshCommands
+}
+
+def refreshChild() {
+	log.debug "refresh child device"
+	def refreshCommands = []
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED)
+	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED)
+
 	refreshCommands
 }
 
 def configure() {
 	log.debug "Configuration"
 
-	if (!childDevices) {
-		createChildThermostat()
-	}
+	configureChild()
 
 	def configurationCommands = []
 	// todo: check if following binding is necessary here
@@ -482,7 +480,7 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 60, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 60, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 60, 1)
-    configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 60, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 60, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 60, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 60, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 60, 1)
@@ -490,6 +488,12 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 60, 5)
 
 	delayBetween(getRefreshCommands()+configurationCommands)
+}
+
+def configureChild() {
+	if (!childDevices) {
+		createChildThermostat()
+	}
 }
 
 def getCoolingSetpointRange() {
@@ -503,34 +507,11 @@ def getTemperature(value) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if (temperatureScale == "C") {
-			return celsius//Math.round(celsius)
+			celsius//Math.round(celsius)
 		} else {
-			return celsiusToFahrenheit(celsius)//Math.round(celsiusToFahrenheit(celsius))
+			celsiusToFahrenheit(celsius)//Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
-}
-
-def mapFanSpeedSliderValue(rawValue) {
-	log.debug "mapFanSpeedSliderValue: ${rawValue}"
-	//maps current fan value to the Fan Speed slider
-	def resultValue
-
-	switch(rawValue) {
-		case "00": // low
-			resultValue = 1
-			break
-		case "01": // medium
-			resultValue = 2
-			break
-		case "02": // high
-			resultValue = 3
-			break
-		case "03": // auto
-		default:
-			resultValue = 4
-			break
-	}
-	resultValue
 }
 
 def isViconicsVT8350() {
