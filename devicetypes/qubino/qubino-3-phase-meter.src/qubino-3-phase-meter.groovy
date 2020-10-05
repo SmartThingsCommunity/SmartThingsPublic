@@ -111,7 +111,10 @@ private handleMeterReport(cmd, endpoint) {
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(event)
 	} else {
-		createEvent(event)
+		[
+				createEvent(event),
+				response(pollEndpoints())
+		]
 	}
 }
 
@@ -185,11 +188,22 @@ private getMeterId(deviceNetworkId) {
 }
 
 private childRefresh(deviceNetworkId) {
-	def meterId = getMeterId(deviceNetworkId)
+	def meterId = getMeterId(deviceNetworkId) + 1
 	if (switchId != null) {
 		sendHubCommand delayBetween([
 				encap(zwave.meterV3.meterGet(scale: 0), meterId),
 				encap(zwave.meterV3.meterGet(scale: 2), meterId)
 		])
 	}
+}
+
+private pollEndpoints() {
+	def cmds = []
+	def meterId
+	childDevices.each {
+		meterId = getMeterId(it.deviceNetworkId) + 1
+		cmds += encap(zwave.meterV3.meterGet(scale: 0), meterId)
+		cmds += encap(zwave.meterV3.meterGet(scale: 2), meterId)
+	}
+	cmds
 }
