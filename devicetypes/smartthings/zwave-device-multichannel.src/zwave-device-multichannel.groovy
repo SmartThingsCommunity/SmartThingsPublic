@@ -99,8 +99,7 @@ def installed() {
 				try {
 					String dni = "${device.deviceNetworkId}-ep${num}"
 					addChildDevice(typeName, dni, device.hub.id,
-							[completedSetup: true, label: "${device.displayName} ${componentLabel}",
-							 isComponent: true, componentName: "ch${num}", componentLabel: "${componentLabel}"])
+							[completedSetup: true, label: "${device.displayName} ${componentLabel}", isComponent: false])
 					// enabledEndpoints << num.toString()
 					log.debug "Endpoint $num ($desc) added as $componentLabel"
 				} catch (e) {
