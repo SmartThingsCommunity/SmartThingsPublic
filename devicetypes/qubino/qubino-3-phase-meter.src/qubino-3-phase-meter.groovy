@@ -189,7 +189,7 @@ private getMeterId(deviceNetworkId) {
 
 private childRefresh(deviceNetworkId) {
 	def meterId = getMeterId(deviceNetworkId) + 1
-	if (switchId != null) {
+	if (meterId != null) {
 		sendHubCommand delayBetween([
 				encap(zwave.meterV3.meterGet(scale: 0), meterId),
 				encap(zwave.meterV3.meterGet(scale: 2), meterId)
