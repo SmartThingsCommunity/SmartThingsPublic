@@ -133,7 +133,11 @@ def updated() {
 }
 
 def configure() {
-	// currently supported devices do not require initial configuration
+	//Recessed Door Sensor 7 - Enable Binary Sensor Report for S2 Authenticated
+	if (zwaveInfo.mfr == "0371" || zwaveInfo.model == "00BB") {
+		result << response(command(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: 1)))
+		result
+	}
 }
 
 def sensorValueEvent(value) {
