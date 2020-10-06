@@ -28,6 +28,8 @@ metadata {
 		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Door Lock" //99140 //Kwikset Convert Deadbolt Door Lock
 		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Door Lock" //August Smart Lock Pro
 		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Door Lock" // DB2 //Alfred Smart Home Touchscreen Deadbolt
+		//zw:Fs type:4001 mfr:0154 prod:0005 model:0001 ver:1.05 zwv:4.38 lib:03 cc:7A,73,80,5A,98 sec:5E,86,72,30,71,70,59,85,62
+		fingerprint mfr: "0154", prod: "0005", model: "0001", deviceJoinName: "POPP Door Lock" // POPP Strike Lock Control POPE012501
 	}
 
 	simulator {

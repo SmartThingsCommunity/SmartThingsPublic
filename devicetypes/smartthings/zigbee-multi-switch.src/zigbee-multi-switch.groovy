@@ -107,25 +107,19 @@ def parse(String description) {
 	Map eventMap = zigbee.getEvent(description)
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
-	if (!eventMap && eventDescMap) {
-		eventMap = [:]
-		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
-			eventMap[name] = "switch"
-			eventMap[value] = eventDescMap?.value
-		}
-	}
-
 	if (eventMap) {
-		if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
-			sendEvent(eventMap)
-		} else {
-			def childDevice = childDevices.find {
-				it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
-			}
-			if (childDevice) {
-				childDevice.sendEvent(eventMap)
+		if (eventDescMap && eventDescMap?.attrId == "0000") {//0x0000 : OnOff attributeId
+			if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
+				sendEvent(eventMap)
 			} else {
-				log.debug "Child device: $device.deviceNetworkId:${eventDescMap.sourceEndpoint} was not found"
+				def childDevice = childDevices.find {
+					it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
+				}
+				if (childDevice) {
+					childDevice.sendEvent(eventMap)
+				} else {
+					log.debug "Child device: $device.deviceNetworkId:${eventDescMap.sourceEndpoint} was not found"
+				}
 			}
 		}
 	}
