@@ -134,7 +134,7 @@ def updated() {
 
 def configure() {
 	//Recessed Door Sensor 7 - Enable Binary Sensor Report for S2 Authenticated
-	if (state.MSR == "0371-0102-00BB" || state.MSR == "0371-0002-00BB") {
+	if (zwaveInfo.mfr == "0371" || zwaveInfo.model == "00BB") {
 		result << response(command(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: 1)))
 		result
 	}
