@@ -72,49 +72,28 @@ metadata {
 }
 
 def installed() {
-	state.calibrationStatus = "notStarted"
-	state.childDevices = [:]
-	state.childDevices.main = null
-	state.childDevices.assistant = null
-	state.currentMode = "windowShade"
-	createMainChildDeviceIfNeeded()
-	createAssistantChildDeviceIfNeeded()
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	// Preferences template begin
-	state.currentPreferencesState = [:]
-	parameterMap.each {
-		state.currentPreferencesState."$it.key" = [:]
-		state.currentPreferencesState."$it.key".value = getPreferenceValue(it)
-		if (it.type == "boolRange" && getPreferenceValue(it) == it.disableValue) {
-			state.currentPreferencesState."$it.key".status = "disablePending"
-		} else {
-			def preferenceName = it.key + "Boolean"
-			settings."$preferenceName" = true
-			state.currentPreferencesState."$it.key".status = "synced"
-		}
-	}
-	// Preferences template end
+	initializeOnce()
 }
 
 def updated() {
 	// Preferences template begin
 	parameterMap.each {
 		if (isPreferenceChanged(it)) {
-			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
-			state.currentPreferencesState."$it.key".status = "syncPending"
+			log.debug "Preference ${it.key} has been updated from value: ${getPreferenceValue(it.key)} to ${settings."$it.key"}"
+			setPreferenceStatus(it.key, "syncPending")
 			if (it.type == "boolRange") {
 				def preferenceName = it.key + "Boolean"
 				if (settings."$preferenceName" != null) {
 					if (!settings."$preferenceName") {
-						state.currentPreferencesState."$it.key".status = "disablePending"
+						setPreferenceStatus(it.key, "disablePending")
 					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-						state.currentPreferencesState."$it.key".status = "syncPending"
+						setPreferenceStatus(it.key, "syncPending")
 					}
 				} else {
-					state.currentPreferencesState."$it.key".status = "syncPending"
+					setPreferenceStatus(it.key, "syncPending")
 				}
 			}
-		} else if (!state.currentPreferencesState."$it.key".value) {
+		} else if (!getPreferenceValue(it.key)) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
 	}
@@ -126,10 +105,10 @@ private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
 		try {
-			if (state.currentPreferencesState."$it.key".status == "syncPending") {
+			if (getPreferenceStatus(it.key) == "syncPending") {
 				commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
 				commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
-			} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
+			} else if (getPreferenceStatus(it.key) == "disablePending") {
 				commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size))
 				commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 			}
@@ -145,26 +124,26 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	log.debug "Configuration report: ${cmd}"
 	def preference = parameterMap.find( {it.parameterNumber == cmd.parameterNumber} )
 	def key = preference.key
-	def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
+	def preferenceValue = calculatePreferenceValue(preference, cmd.scaledConfigurationValue)
 	if (settings."$key" == preferenceValue) {
-		state.currentPreferencesState."$key".value = settings."$key"
-		state.currentPreferencesState."$key".status = "synced"
+		setPreferenceValue(key, settings."$key")
+		setPreferenceStatus(key, "synced")
 		handleConfigurationChange(cmd)
 	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
+		if (getPreferenceStatus(key) == "disablePending" && preferenceValue == preference.disableValue) {
+			setPreferenceStatus(key, "disabled")
 		} else {
 			runIn(5, "syncConfiguration", [overwrite: true])
 		}
 	} else {
-		state.currentPreferencesState."$key"?.status = "syncPending"
+		setPreferenceStatus(key, "syncPending")
 		runIn(5, "syncConfiguration", [overwrite: true])
 	}
 	// Preferences template end
 	handleConfigurationChange(cmd)
 }
 
-private getPreferenceValue(preference, value = "default") {
+private calculatePreferenceValue(preference, value = "default") {
 	def integerValue = value == "default" ? preference.defaultValue : value.intValue()
 	switch (preference.type) {
 		case "enum":
@@ -193,17 +172,16 @@ private getCommandValue(preference) {
 
 private isPreferenceChanged(preference) {
 	if (settings."$preference.key" != null) {
-		def value = state.currentPreferencesState."$preference.key"
 		switch (preference.type) {
 			case "boolRange":
 				def boolName = preference.key + "Boolean"
-				if (state.currentPreferencesState."$preference.key".status == "disabled") {
+				if (getPreferenceStatus(preference.key) == "disabled") {
 					return settings."$boolName"
 				} else {
-					return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
+					return getPreferenceValue(preference.key) != settings."$preference.key" || !settings."$boolName"
 				}
 			default:
-				return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
+				return getPreferenceValue(preference.key) != settings."$preference.key"
 		}
 	} else {
 		return false
@@ -215,16 +193,16 @@ def handleConfigurationChange(confgurationReport) {
 		case 150: // Calibrating
 			switch(confgurationReport.scaledConfigurationValue) {
 				case 0: // "Device is not calibrated"
-					state.calibrationStatus = "notStarted"
+					setState("calibrationStatus", "notStarted")
 				break
 				case 1: // "Device is calibrated"
-					state.calibrationStatus = "done"
+					setState("calibrationStatus", "done")
 				break
 				case 2: // "Force Calibration"
-					state.calibrationStatus = "pending"
+					setState("calibrationStatus", "pending")
 				break
 			}
-			log.info "Calibration ${state.calibrationStatus}"
+			log.info "Calibration ${getState("calibrationStatus")}"
 		break
 		case 151: //Operating mode
 			switch(confgurationReport.scaledConfigurationValue) {
@@ -243,7 +221,7 @@ def handleConfigurationChange(confgurationReport) {
 					checkAndTriggerModeChange("garageDoorPositioning")
 				break
 			}
-			log.info "Current device's mode is: ${state.currentMode}"
+			log.info "Current device's mode is: ${getState("currentMode")}"
 		break
 		case 152: // Venetian Blinds - time of full turn of the slats
 			state.timeOfVenetianMovement = confgurationReport.scaledConfigurationValue
@@ -255,11 +233,12 @@ def handleConfigurationChange(confgurationReport) {
 }
 
 private checkAndTriggerModeChange(reportedMode) {
-	if (state.currentMode != reportedMode) {
+	if (getState("currentMode") != reportedMode) {
 		deleteChildDevicesIfNeeded(reportedMode)
-		state.currentMode = reportedMode
+		setState("currentMode", reportedMode)
 		createMainChildDeviceIfNeeded()
 		createAssistantChildDeviceIfNeeded()
+		setDeviceType("Type Switch")
 	}
 }
 
@@ -289,7 +268,7 @@ def garageDoorInstalled(childDni) {
 }
 
 def multilevelChildInstalled(childDni) {
-	if (state.currentMode.contains("Venetian")) {
+	if (getState("currentMode").contains("Venetian")) {
 		state.timeOfVenetianMovement = 150
 		sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet(), 2))
 	} else {
@@ -310,7 +289,7 @@ def pauseChild(childDni) {
 }
 
 def setLevelChild(level, childDni, currentLevel = null) {
-	if (state.currentMode.contains("window") && childDni == state.childDevices.assistant) {
+	if (getState("currentMode").contains("window") && childDni == getState("childDeviceAssistant")) {
 		setSlats(level)
 	} else {
 		state.blindsLastCommand = currentLevel > level ? "opening" : "closing"
@@ -413,7 +392,7 @@ private shadeEvent(value) {
 	toSend += [name: mainEventName, value: shadeValue]
 	if (isModeWithPositioning) {
 		def levelEvent = [name: "level", value: value != 0x63 ? value : 100]
-		if (state.currentMode.contains("garage")) {
+		if (getState("currentMode").contains("garage")) {
 			sendEventsToAssistanChildDevice([levelEvent])
 		} else {
 			toSend += levelEvent
@@ -445,7 +424,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 				if (!state.isManualCommand)
 					def levelEvent = [name: "level", value: state.shadeTarget]
 					def shadeLevelEvents = [[name: "level", value: state.shadeTarget], [name: "shadeLevel", value: state.shadeTarget]]
-					state.currentMode.contains("windowShade") ? sendEventsToMainChildDevice(shadeLevelEvents) : sendEventsToAssistantChildDevice([levelEvent])
+					getState("currentMode").contains("windowShade") ? sendEventsToMainChildDevice(shadeLevelEvents) : sendEventsToAssistantChildDevice([levelEvent])
 			} else {
 				toReturn += response(encap(zwave.switchMultilevelV3.switchMultilevelGet(), 1))
 			}
@@ -477,8 +456,8 @@ private encap(cmd, endpoint = null) {
 }
 
 private sendEventsToMainChildDevice(events) {
-	if (state.childDevices.main) {
-		def child = childDevices.find { it.deviceNetworkId == state.childDevices.main }
+	if (getState("childDeviceMain")) {
+		def child = childDevices.find { it.deviceNetworkId == getState("childDeviceMain") }
 		events.each {
 			child.sendEvent(it)
 		}
@@ -488,8 +467,8 @@ private sendEventsToMainChildDevice(events) {
 }
 
 private sendEventsToAssistantChildDevice(events) {
-	if (state.childDevices.assistant) {
-		def child = childDevices.find { it.deviceNetworkId == state.childDevices.assistant }
+	if (getState("childDeviceAssistant")) {
+		def child = childDevices.find { it.deviceNetworkId == getState("childDeviceAssistant") }
 		events.each {
 			child.sendEvent(it)
 		}
@@ -499,20 +478,20 @@ private sendEventsToAssistantChildDevice(events) {
 }
 
 private getMainEventName() {
-	if (state.currentMode.contains("windowShade")) {
+	if (getState("currentMode").contains("windowShade")) {
 		return "windowShade"
-	} else if (state.currentMode.contains("garageDoor")) {
+	} else if (getState("currentMode").contains("garageDoor")) {
 		return "door"
 	}
 }
 
 private isModeWithPositioning() {
-	return state.currentMode != "garageDoor"
+	return getState("currentMode") != "garageDoor"
 }
 
 private createChildDevice(componentName, componentLabel, dthName, childIt) {
 	try {
-		def childDni = "${device.deviceNetworkId}:$childIt" 
+		def childDni = "${device.deviceNetworkId}:$childIt"
 		def child = addChildDevice("smartthings", dthName, childDni, device.getHub().getId(), [
 			completedSetup: true,
 			label         : componentLabel,
@@ -526,43 +505,121 @@ private createChildDevice(componentName, componentLabel, dthName, childIt) {
 }
 
 private createMainChildDeviceIfNeeded() {
-	if (state.currentMode.contains("windowShade") && !state.childDevices.main) {
-		state.childDevices.main = "${device.deviceNetworkId}:1"
-		createChildDevice("windowShade", "Window Shade", "Child Window Shade", 1)
-	} else if (state.currentMode.contains("garageDoor") && !state.childDevices.main) {
-		state.childDevices.main = "${device.deviceNetworkId}:1"
-		createChildDevice("garageDoor", "Garage Door", "Child Garage Door", 1)
+	if (getState("currentMode").contains("windowShade") && !getState("childDeviceMain")) {
+		setState("childDeviceMain", "${device.deviceNetworkId}:3")
+		createChildDevice("windowShade", "Window Shade", "Child Window Shade", 3)
+	} else if (getState("currentMode").contains("garageDoor") && !getState("childDeviceMain")) {
+		setState("childDeviceMain", "${device.deviceNetworkId}:3")
+		createChildDevice("garageDoor", "Garage Door", "Child Garage Door", 3)
 	}
 }
 
 private createAssistantChildDeviceIfNeeded() {
-	if (state.currentMode.contains("Venetian")) {
-		state.childDevices.assistant = "${device.deviceNetworkId}:2"
-		createChildDevice("venetianBlind", "Venetian Blind", "Child Switch Multilevel", 2)
-	} else if (state.currentMode.contains("Positioning")) {
-		state.childDevices.assistant = "${device.deviceNetworkId}:2"
-		createChildDevice("garageDoorPosition", "Garage Door Position", "Child Switch Multilevel", 2)
+	if (getState("currentMode").contains("Venetian")) {
+		setState("childDeviceAssistant", "${device.deviceNetworkId}:4")
+		createChildDevice("venetianBlind", "Venetian Blind", "Child Switch Multilevel", 4)
+	} else if (getState("currentMode").contains("Positioning")) {
+		setState("childDeviceAssistant", "${device.deviceNetworkId}:4")
+		createChildDevice("garageDoorPosition", "Garage Door Position", "Child Switch Multilevel", 4)
 	}
 }
 
 private deleteChildDevicesIfNeeded(reportedMode) {
-	if (state.currentMode.contains("window") && reportedMode.contains("window")) {
-		if (state.currentMode.contains("Venetian")) {
-			deleteChildDevice(state.childDevices.assistant)
-			state.childDevices.assistant = null
+	if (getState("currentMode").contains("window") && reportedMode.contains("window")) {
+		if (getState("currentMode").contains("Venetian")) {
+			getState("childDeviceAssistant")
+			deleteChildDevice(getState("childDeviceAssistant"))
+			setState("childDeviceAssistant", null)
 		}
-	} else if (state.currentMode.contains("garage") && reportedMode.contains("garage")) {
-		if (state.currentMode.contains("Positioning")) {
-			deleteChildDevice(state.childDevices.assistant)
-			state.childDevices.assistant = null
+	} else if (getState("currentMode").contains("garage") && reportedMode.contains("garage")) {
+		if (getState("currentMode").contains("Positioning")) {
+			deleteChildDevice(getState("childDeviceAssistant"))
+			setState("childDeviceAssistant", null)
 		}
 	} else {
-		childDevices.each { 
+		childDevices.each {
+			if (it.deviceNetworkId == "${device.deviceNetworkId}:1" || it.deviceNetworkId == "${device.deviceNetworkId}:2")
+				return
+
 			deleteChildDevice(it.deviceNetworkId)
-			state.childDevices.main = null
-			state.childDevices.assistant = null
+			setState("childDeviceMain", null)
+			setState("childDeviceAssistant", null)
 		}
 	}
+}
+
+private initializeOnce() {
+	if (!childDevices) {
+		createChildDevice("states", "States Collection", "States Collection", 1)
+		createChildDevice("preferences", "Preferences Collection", "Preferences Collection", 2)
+		setState("deviceTypeName", "Fibaro Roller Shutter")
+		setState("calibrationStatus", "notStarted")
+		setState("childDeviceMain", null)
+		setState("childDeviceAssistant", null)
+		setState("currentMode", "windowShade")
+		createMainChildDeviceIfNeeded()
+		createAssistantChildDeviceIfNeeded()
+		sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		// Preferences template begin
+		state.currentPreferencesState = [:]
+		parameterMap.each {
+			allocatePreference(it.key)
+			setPreferenceValue(it.key, calculatePreferenceValue(it))
+			if (it.type == "boolRange" && calculatePreferenceValue(it) == it.disableValue) {
+				setPreferenceStatus(it.key, "disablePending")
+			} else {
+				def preferenceName = it.key + "Boolean"
+				settings."$preferenceName" = true
+				setPreferenceStatus(it.key, "synced")
+			}
+		}
+		// Preferences template end
+	}
+}
+
+private getStatesChild() {
+	String childDni = "${device.deviceNetworkId}:1"
+	return childDevices.find { it.deviceNetworkId == childDni }
+}
+
+private getPreferencesChild() {
+	String childDni = "${device.deviceNetworkId}:2"
+	return childDevices.find { it.deviceNetworkId == childDni }
+}
+
+private void setState(key, value) {
+	def child = getStatesChild()
+	child?.setState(key, value)
+}
+
+private getState(key) {
+	def child = getStatesChild()
+	child?.getState(key)
+}
+
+private void allocatePreference(key) {
+	def child = getPreferencesChild()
+	child?.allocatePreference(key)
+}
+
+private void setPreferenceValue(key, value) {
+	def child = getPreferencesChild()
+	child?.setPreferenceValue(key, value)
+}
+
+private getPreferenceValue(key) {
+	def child = getPreferencesChild()
+	child?.getPreferenceValue(key)
+}
+
+private void setPreferenceStatus(key, value) {
+	def child = getPreferencesChild()
+	child?.setPreferenceStatus(key, value)
+}
+
+private getPreferenceStatus(key) {
+	def child = getPreferencesChild()
+	child?.getPreferenceStatus(key)
 }
 
 private getParameterMap() {[
