@@ -383,6 +383,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	def value = (cmdValue ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmdValue && cmdValue <= 100) {
+		cmdValue = adjustValueToRange(cmd.value)
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
 	}
 
@@ -392,6 +393,16 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	}
 
 	return result
+}
+
+Integer adjustValueToRange(value){
+	if(value == 0){
+		return 0
+	}
+	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
+	def range = 100 - minDimmingLvlPref
+	def adjustedValue = (((value-minDimmingLvlPref)*100)/range) as Integer
+	return Math.max(adjustedValue, minDimmingLvlPref)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
@@ -618,6 +629,16 @@ private getParameterMap() {[
 		optionInactive: 0, inactiveDescription: "Default value - dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
 		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to off position",
 		description: "Set whether the device stores or does not store the last output level in the event of a power outage."
+	],
+	[
+		name           : "Minimum dimming value",
+		key            : "minimumDimmingValue",
+		type           : "range",
+		parameterNumber: 60,
+		size           : 1,
+		defaultValue   : 1,
+		range          : "1..98",
+		description    : "Select minimum dimming value for this device. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
 	],
 	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
