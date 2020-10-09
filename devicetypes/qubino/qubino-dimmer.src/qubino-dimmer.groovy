@@ -400,8 +400,7 @@ Integer adjustValueToRange(value){
 		return 0
 	}
 	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
-	def range = 100 - minDimmingLvlPref
-	def adjustedValue = (((value-minDimmingLvlPref)*100)/range) as Integer
+	def adjustedValue = (((value - minDimmingLvlPref)/(100 - minDimmingLvlPref)) * 100) as Integer
 	return Math.max(adjustedValue, minDimmingLvlPref)
 }
 
