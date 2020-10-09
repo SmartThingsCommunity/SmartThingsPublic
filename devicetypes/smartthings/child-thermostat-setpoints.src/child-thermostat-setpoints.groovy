@@ -17,7 +17,6 @@
 metadata {
 	definition(name: "Child Thermostat Setpoints", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
 		capability "Actuator"
-		capability "Configuration"
 		capability "Health Check"
 		capability "Refresh"
 		capability "Thermostat Cooling Setpoint"
@@ -33,19 +32,6 @@ def setCoolingSetpoint(setpoint) {
 def setHeatingSetpoint(setpoint) {
 	log.debug "setHeatingSetpoint: ${setpoint}"
 	parent.setChildHeatingSetpoint(device.deviceNetworkId, setpoint)
-}
-
-def installed() {
-	configure()
-}
-
-def updated() {
-	configure()
-}
-
-def configure() {
-	parent.configureChild()
-	refresh()
 }
 
 def ping() {
