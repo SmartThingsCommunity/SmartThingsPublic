@@ -249,7 +249,6 @@ def parse(String description) {
                 break
             default:
                 log.debug "UNHANDLED ATTRIBUTE, descMap.inspect(): ${descMap.inspect()}"
-
         }
     }
 	result << createEvent(eventMap)
