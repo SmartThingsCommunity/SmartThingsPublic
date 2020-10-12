@@ -401,7 +401,7 @@ Integer adjustValueToRange(value){
 	}
 	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
 	def adjustedValue = (((value - minDimmingLvlPref)/(100 - minDimmingLvlPref)) * 100) as Integer
-	return Math.max(adjustedValue, minDimmingLvlPref)
+	return Math.max(adjustedValue, 1)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
