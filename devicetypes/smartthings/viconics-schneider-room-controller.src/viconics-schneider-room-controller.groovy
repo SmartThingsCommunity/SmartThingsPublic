@@ -23,7 +23,6 @@ metadata {
 		capability "Occupancy Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
-		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Fan Speed"
 		capability "Thermostat Fan Mode"
@@ -180,20 +179,20 @@ def parse(String description) {
             case COOLING_SETPOINT:
                 log.debug "COOLING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
                 eventMap.name = "coolingSetpoint"
-                eventMap.value = getTemperature(descMap.value)
+                eventMap.value = getTemperature(descMap.value, true)
                 eventMap.unit = temperatureScale
                 break
             case HEATING_SETPOINT:
                 log.debug "HEATING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
                 eventMap.name = "heatingSetpoint"
-                eventMap.value = getTemperature(descMap.value)
+                eventMap.value = getTemperature(descMap.value, true)
                 eventMap.unit = temperatureScale
                 break
             case COOLING_SETPOINT_UNOCCUPIED:
                 log.debug "COOLING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
                 def childEvent = [:]
                 childEvent.name = "coolingSetpoint"
-                childEvent.value = getTemperature(descMap.value)
+                childEvent.value = getTemperature(descMap.value, true)
                 childEvent.unit = temperatureScale
                 sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
                 break
@@ -201,7 +200,7 @@ def parse(String description) {
                 log.debug "HEATING SETPOINT UNOCCUPIED, descMap.value: ${descMap.value}"
                 def childEvent = [:]
                 childEvent.name = "heatingSetpoint"
-                childEvent.value = getTemperature(descMap.value)
+                childEvent.value = getTemperature(descMap.value, true)
                 childEvent.unit = temperatureScale
                 sendEventToChild(UNOCCUPIED_SETPOINT_CHILD_DEVICE_ID, childEvent)
                 break
@@ -279,8 +278,8 @@ def setHeatingSetpoint(degrees) {
 
 def setChildCoolingSetpoint(deviceNetworkId, degrees) {
 	log.debug "deviceNetworkId: ${deviceNetworkId} degrees: ${degrees}"
-	def switchId = getChildId(deviceNetworkId)
-	if (switchId != null) {
+	def childId = getChildId(deviceNetworkId)
+	if (childId != null) {
 		setSetpoint(degrees, COOLING_SETPOINT_UNOCCUPIED)
 	}
 }
@@ -288,8 +287,8 @@ def setChildCoolingSetpoint(deviceNetworkId, degrees) {
 def setChildHeatingSetpoint(deviceNetworkId, degrees) {
 	log.debug "deviceNetworkId: ${deviceNetworkId} degrees: ${degrees}"
 
-	def switchId = getChildId(deviceNetworkId)
-	if (switchId != null) {
+	def childId = getChildId(deviceNetworkId)
+	if (childId != null) {
 		setSetpoint(degrees, HEATING_SETPOINT_UNOCCUPIED)
 	}
 }
@@ -467,9 +466,12 @@ def configure() {
 	configureChild()
 
 	def configurationCommands = []
-	// todo: check if following binding is necessary here
-	configurationCommands += "zdo bind 0x${device.deviceNetworkId} 1 0xA 0x201 {${device.zigbeeId}} {}"
-	configurationCommands += "zdo bind 0x${device.deviceNetworkId} 1 0xA 0x405 {${device.zigbeeId}} {}"
+
+	// set initial values
+	configurationCommands += setSetpoint(initialCoolingSetpoint, COOLING_SETPOINT)
+	configurationCommands += setSetpoint(initialHeatingSetpoint, HEATING_SETPOINT)
+	configurationCommands += setSetpoint(initialCoolingSetpoint, COOLING_SETPOINT_UNOCCUPIED)
+	configurationCommands += setSetpoint(initialHeatingSetpoint, HEATING_SETPOINT_UNOCCUPIED)
 
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, 1, 60, 1) //formerly THERMOSTAT MODE: 0x001C
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE, DataType.INT16, 10, 60, 10)
@@ -504,15 +506,31 @@ def getHeatingSetpointRange() {
 	(getTemperatureScale() == "C") ? [4.5, 32] : [40, 90]
 }
 
-def getTemperature(value) {
+def getInitialCoolingSetpoint() {
+	(getTemperatureScale() == "C") ? 28 : 86
+}
+
+def getInitialHeatingSetpoint() {
+	(getTemperatureScale() == "C") ? 20 : 68
+}
+
+def getTemperature(value, roundValue = false) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
+		if(roundValue) {
+			celsius = roundToTheNearestHalf(value)
+		}
+
 		if (temperatureScale == "C") {
 			celsius//Math.round(celsius)
 		} else {
 			celsiusToFahrenheit(celsius)//Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
+}
+
+def roundToTheNearestHalf(value) {
+	Math.round(value * 2) / 2
 }
 
 def isViconicsVT8350() {
