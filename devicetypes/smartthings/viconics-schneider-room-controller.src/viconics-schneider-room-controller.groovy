@@ -489,7 +489,7 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 60, 10)
 	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 60, 5)
 
-	delayBetween(getRefreshCommands()+configurationCommands)
+	delayBetween(getRefreshCommands() + configurationCommands)
 }
 
 def configureChild() {
