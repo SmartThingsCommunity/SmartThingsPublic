@@ -517,7 +517,7 @@ def getTemperature(value, roundValue = false) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if(roundValue) {
-			celsius = roundToTheNearestHalf(value)
+			celsius = roundToTheNearestHalf(celsius)
 		}
 
 		if (temperatureScale == "C") {
