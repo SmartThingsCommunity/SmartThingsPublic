@@ -204,7 +204,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
-	Integer level = isV3Device() ? NVM_Target_Value : 50 // Blinds fully open at 50%
+	Integer level = isV3Device() ? (NVM_Target_Value ?: 50) : 50 // Blinds fully open at 50%, NVM_Target_Value can't be 0%
 	log.debug "open()"
 
 	sendEvent(name: "windowShade", value: "open")
@@ -294,32 +294,30 @@ def configureParams() {
 		6					1			Speed_Parameter				Speed
 		*/
 
-		// Set Boolean Values
-		def NVM_Direction_Val
-		def NVM_Device_Reset_Val
-		NVM_Direction_Val = boolToInteger(NVM_Direction)
-		NVM_Device_Reset_Val = boolToInteger(NVM_Device_Reset_Support)
-
 		log.debug "Configuration Started"
 
 		// If paramater value has changed then add zwave configration command to cmds
 
-		if (state.param1 != NVM_TightLevel) {
+		if (NVM_TightLevel != null && state.param1 != NVM_TightLevel) {
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [NVM_TightLevel.toInteger()]).format()
 		}
-		if (state.param2 != NVM_Direction) {
+		if (NVM_Direction != null && state.param2 != NVM_Direction) {
+			def NVM_Direction_Val = boolToInteger(NVM_Direction)
+
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [NVM_Direction_Val.toInteger()]).format()
 		}
 		if (state.param3 != 0) {
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [0]).format()
 		}
-		if (state.param4 != NVM_Target_Value) {
+		if (NVM_Target_Value != null && state.param4 != NVM_Target_Value) {
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [NVM_Target_Value.toInteger()]).format()
 		}
-		if (state.param5 != NVM_Device_Reset_Support) {
+		if (NVM_Device_Reset_Support != null && state.param5 != NVM_Device_Reset_Support) {
+			def NVM_Device_Reset_Val = boolToInteger(NVM_Device_Reset_Support)
+
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [NVM_Device_Reset_Val.toInteger()]).format()
 		}
-		if (state.param6 != Speed_Parameter) {
+		if (Speed_Parameter != null && state.param6 != Speed_Parameter) {
 			cmds << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1, configurationValue: [Speed_Parameter.toInteger()]).format()
 		}
 
