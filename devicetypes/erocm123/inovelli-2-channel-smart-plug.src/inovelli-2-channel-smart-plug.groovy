@@ -226,6 +226,21 @@ def updated() {
 	}
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendEvent(name: "needUpdate", value: device.currentValue("needUpdate"), displayed: false, isStateChange: true)
+
+	migrate()
+}
+def migrate() {
+	childDevices.each {
+		def i = it.deviceNetworkId[-1]
+		it.save([deviceNetworkId: "${device.deviceNetworkId}:${i}",
+				 label: "${device.displayName} Outlet ${i}",
+				 isComponent: true,
+				 componentName: "outlet$i",
+				 componentLabel: "Outlet $i"])
+		it.setDeviceType("smartthings", "Child Switch Health")
+	}
+
+	setDeviceType("erocm123", "Inovelli 2-Channel Smart Plug MCD")
 }
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
