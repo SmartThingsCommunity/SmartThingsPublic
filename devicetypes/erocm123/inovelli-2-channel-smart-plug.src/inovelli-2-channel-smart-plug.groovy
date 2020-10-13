@@ -209,7 +209,9 @@ def ping() {
 def installed() {
 	logging("installed()", 1)
 	command(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
-	createChildDevices()
+	if (!childDevices) { // Clicking "Update" from the Graph IDE calls installed(), so protect against trying to recreate children.
+		createChildDevices()
+	}
 }
 def updated() {
 	logging("updated()", 1)
@@ -230,8 +232,13 @@ def updated() {
 	migrate()
 }
 def migrate() {
+	log.info "Migrating to MCD DTH"
+
 	childDevices.each {
 		def i = it.deviceNetworkId[-1]
+
+		log.info "Migrating child ${i} from ${it.componentName} to outlet${i}"
+
 		it.save([deviceNetworkId: "${device.deviceNetworkId}:${i}",
 				 label: "${device.displayName} Outlet ${i}",
 				 isComponent: true,

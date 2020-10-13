@@ -169,7 +169,7 @@ def installed() {
 	initialize()
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
 
-	if (buttons > 1) {
+	if (buttons > 1 && !childDevices) { // Clicking "Update" from the Graph IDE calls installed(), so protect against trying to recreate children.
 		createChildDevices()
 	}
 }
