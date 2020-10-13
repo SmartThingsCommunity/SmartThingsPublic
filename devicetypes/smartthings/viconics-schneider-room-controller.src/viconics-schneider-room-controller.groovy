@@ -54,8 +54,6 @@ metadata {
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
 private getTHERMOSTAT_UI_CONFIGURATION_CLUSTER() { 0x0204 }
-private getRELATIVE_HUMIDITY_CLUSTER() {0x405}
-private getRELATIVE_HUMIDITY_MEASURED_VALUE() {0x0000}
 private getTEMPERATURE_DISPLAY_MODE() {0x0000}
 private getLOCAL_TEMPERATURE() {0x0000}
 private getCOOLING_SETPOINT() { 0x0011 }
@@ -78,55 +76,64 @@ private getTHERMOSTAT_MODE_HEAT() { 0x03 }
 private getCUSTOM_FAN_MODE_ON() { 0x00 }
 private getCUSTOM_FAN_MODE_AUTO() { 0x01 }
 private getCUSTOM_FAN_MODE_CIRCULATE() { 0x02 }
+private getOPERATING_STATE_IDLE() { 0x00 }
+private getOPERATING_STATE_COOLING() { 0x01 }
+private getOPERATING_STATE_HEATING() { 0x02 }
+private getOCCUPANCY_OCCUPIED() { 0x00 }
+private getOCCUPANCY_UNOCCUPIED() { 0x01 }
+private getFAN_SPEED_LOW() { 0x00 }
+private getFAN_SPEED_MEDIUM() { 0x01 }
+private getFAN_SPEED_HIGH() { 0x02 }
+private getFAN_SPEED_AUTO() { 0x03 }
 
 
 private getFAN_MODE_MAP() {
 	[
-		"00":"on",
-		"01":"auto",
-		"02":"circulate"
+		(CUSTOM_FAN_MODE_ON):"on",
+		(CUSTOM_FAN_MODE_AUTO):"auto",
+		(CUSTOM_FAN_MODE_CIRCULATE):"circulate"
 	]
 }
 
 private getTHERMOSTAT_FAN_MODE_ATTRIBUTE_ID_MAP() {
 	[
-		"on":  0x00,		// CUSTOM_FAN_MODE_ON
-		"auto": 0x01,		// CUSTOM_FAN_MODE_AUTO
-		"circulate": 0x02	// CUSTOM_FAN_MODE_CIRCULATE
+		"on":  (CUSTOM_FAN_MODE_ON),
+		"auto": (CUSTOM_FAN_MODE_AUTO),
+		"circulate": (CUSTOM_FAN_MODE_CIRCULATE)
 	]
 }
 
 private getTHERMOSTAT_MODE_MAP() {
 	[
-		"00":"off",
-		"01":"auto",
-		"02":"cool",
-		"03":"heat",
+		(THERMOSTAT_MODE_OFF):"off",
+		(THERMOSTAT_MODE_AUTO):"auto",
+		(THERMOSTAT_MODE_COOL):"cool",
+		(THERMOSTAT_MODE_HEAT):"heat",
 		"04":"heat"
 	]
 }
 
 private getTHERMOSTAT_OPERATING_STATE_MAP() {
 	[
-		"00":"idle",
-		"01":"cooling",
-		"02":"heating"
+		(OPERATING_STATE_IDLE):"idle",
+		(OPERATING_STATE_COOLING):"cooling",
+		(OPERATING_STATE_HEATING):"heating"
 	]
 }
 
 private getEFFECTIVE_OCCUPANCY_MAP() {
 	[
-		"00":"Occupied",
-		"01":"Unoccupied"
+		(OCCUPANCY_OCCUPIED):"Occupied",
+		(OCCUPANCY_UNOCCUPIED):"Unoccupied"
 	]
 }
 
 private getFAN_SPEED_SLIDER_MAP() {
 	[
-		"00": 1,	// low
-		"01": 2,	// medium
-		"02": 3,	// high
-		"03": 4		// auto
+		(FAN_SPEED_LOW): 1,
+		(FAN_SPEED_MEDIUM): 2,
+		(FAN_SPEED_HIGH): 3,
+		(FAN_SPEED_AUTO): 4
 	]
 }
 
@@ -174,7 +181,7 @@ def parse(String description) {
             case CUSTOM_EFFECTIVE_OCCUPANCY:
                 log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
                 eventMap.name = "occupancy"
-                eventMap.value = EFFECTIVE_OCCUPANCY_MAP[descMap.value]
+                eventMap.value = EFFECTIVE_OCCUPANCY_MAP[Integer.parseInt(descMap.value, 16)]
                 break
             case COOLING_SETPOINT:
                 log.debug "COOLING SETPOINT OCCUPIED, descMap.value: ${descMap.value}"
@@ -220,14 +227,14 @@ def parse(String description) {
                 log.debug "CUSTOM FAN MODE, descMap.value: ${descMap.value}"
                 if (isViconicsVT8650() || isSchneiderSE8650()) {
                     eventMap.name = "thermostatFanMode"
-                    eventMap.value = FAN_MODE_MAP[descMap.value]
+                    eventMap.value = FAN_MODE_MAP[Integer.parseInt(descMap.value, 16)]
                     eventMap.data = [supportedThermostatFanModes: state.supportedFanModes]
                 }
                 break
             case CUSTOM_FAN_SPEED:
                 // VT8350 reports fan speed 3 as AUTO
                 log.debug "CUSTOM FAN SPEED, descMap.value: ${descMap.value}"
-                def sliderValue = FAN_SPEED_SLIDER_MAP[descMap.value]
+                def sliderValue = FAN_SPEED_SLIDER_MAP[Integer.parseInt(descMap.value, 16)]
                 if (sliderValue < 4) {
                     eventMap.name = "fanSpeed"
                     eventMap.value = sliderValue
@@ -239,13 +246,13 @@ def parse(String description) {
             case CUSTOM_THERMOSTAT_MODE:
                 log.debug "CUSTOM THERMOSTAT MODE, descMap.value: ${descMap.value}"
                 eventMap.name = "thermostatMode"
-                eventMap.value = THERMOSTAT_MODE_MAP[descMap.value]
+                eventMap.value = THERMOSTAT_MODE_MAP[Integer.parseInt(descMap.value, 16)]
                 eventMap.data = [supportedThermostatModes: state.supportedThermostatModes]
                 break
             case CUSTOM_THERMOSTAT_OPERATING_STATE:
                 log.debug "CUSTOM THERMOSTAT OPERATING STATE, descMap.value: ${descMap.value}"
                 eventMap.name = "thermostatOperatingState"
-                eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[descMap.value]
+                eventMap.value = THERMOSTAT_OPERATING_STATE_MAP[Integer.parseInt(descMap.value, 16)]
                 break
             default:
                 log.debug "UNHANDLED ATTRIBUTE, descMap.inspect(): ${descMap.inspect()}"
@@ -428,7 +435,6 @@ def refresh() {
 def getRefreshCommands() {
 	def refreshCommands = []
 
-	refreshCommands += zigbee.readAttribute(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY)
 
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE)
@@ -487,7 +493,6 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 3600, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 3600, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 3600, 10)
-	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 3600, 5)
 
 	delayBetween(getRefreshCommands() + configurationCommands)
 }
