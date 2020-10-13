@@ -104,7 +104,7 @@ def parse(String description) {
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
-	log.debug "Parsed '$description' to ${result.inspect()}"
+	log.debug "Parsed '$description' to ${result?.inspect()}"
 
 	return result
 }
@@ -168,6 +168,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 
 private handleLevelReport(physicalgraph.zwave.Command cmd) {
 	def level = cmd.value as Integer
+	def result = []
 
 	log.debug "handleLevelReport($level)"
 
@@ -251,7 +252,6 @@ def setLevel(value, duration = null) {
 	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
 	sendEvent(name: "level", value: level,  descriptionText: descriptionText)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
-
 }
 
 def presetPosition() {
