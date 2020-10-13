@@ -87,7 +87,8 @@ def parse(String description) {
                 def evt5 = getIllumiResult(((catchall.data.get(4+7) & 0x0f )<<8) | (catchall.data.get(4+8)) )
                 log.info evt5
                 if(evt5) createEvent(evt5) //sendEvent(name: evt5?.name, value: evt5?.value) //createEvent(map)
-				 return [evt1, evt2, evt3, evt4, evt5]
+				
+                return [evt1, evt2, evt3, evt4, evt5]
 
             }
 		}
