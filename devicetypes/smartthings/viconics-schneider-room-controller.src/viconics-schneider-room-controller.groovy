@@ -305,8 +305,8 @@ def setSetpoint(degrees, setpointAttr) {
 		celsius = (celsius as Double).round(2)
 
 		delayBetween([
-				zigbee.writeAttribute(THERMOSTAT_CLUSTER, setpointAttr, DataType.INT16, zigbee.convertToHexString(celsius * 100)),
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, setpointAttr)
+			zigbee.writeAttribute(THERMOSTAT_CLUSTER, setpointAttr, DataType.INT16, zigbee.convertToHexString(celsius * 100)),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, setpointAttr)
 		], 500)
 	}
 }
@@ -345,8 +345,8 @@ def fanCirculate() {
 def getThermostatFanModeCommands(mode) {
 	if (mode) {
 		delayBetween([
-				zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
+			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
 		], 500)
 	}
 }
@@ -360,10 +360,10 @@ def setFanSpeed(speed) {
 		speed = speed - 1
 	}
 	delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, speed),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
+		zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, speed),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 	], 500)
 }
 
@@ -408,9 +408,9 @@ def off() {
 def getThermostatModeCommands(mode) {
 	if (mode) {
 		delayBetween([
-				zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
+			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
 		], 500)
 	}
 }
@@ -472,22 +472,22 @@ def configure() {
 	configurationCommands += setSetpoint(initialCoolingSetpoint, COOLING_SETPOINT_UNOCCUPIED)
 	configurationCommands += setSetpoint(initialHeatingSetpoint, HEATING_SETPOINT_UNOCCUPIED)
 
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, 1, 60, 1) //formerly THERMOSTAT MODE: 0x001C
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE, DataType.INT16, 10, 60, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 1, 60, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 1, 60, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 60, 10)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 60, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, 1, 3600, 1) //formerly THERMOSTAT MODE: 0x001C
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE, DataType.INT16, 10, 3600, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 1, 3600, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 1, 3600, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 3600, 10)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 3600, 10)
 	//configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, 0x0A58, 0x10, 1, 300, 1) //GFan
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 60, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 60, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 60, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 60, null)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 60, null)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 60, null)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 60, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 60, 10)
-	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 60, 5)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 3600, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 3600, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 3600, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 3600, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 3600, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_EFFECTIVE_OCCUPANCY, DataType.ENUM8, 1, 3600, null)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_UI_CONFIGURATION_CLUSTER, TEMPERATURE_DISPLAY_MODE, DataType.ENUM8, 1, 3600, 1)
+	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_HUMIDITY, DataType.UINT16, 1, 3600, 10)
+	configurationCommands += zigbee.configureReporting(RELATIVE_HUMIDITY_CLUSTER, RELATIVE_HUMIDITY_MEASURED_VALUE, DataType.UINT16, 1, 3600, 5)
 
 	delayBetween(getRefreshCommands() + configurationCommands)
 }
@@ -521,9 +521,9 @@ def getTemperature(value, roundValue = false) {
 		}
 
 		if (temperatureScale == "C") {
-			celsius//Math.round(celsius)
+			celsius
 		} else {
-			celsiusToFahrenheit(celsius)//Math.round(celsiusToFahrenheit(celsius))
+			celsiusToFahrenheit(celsius)
 		}
 	}
 }
