@@ -25,7 +25,7 @@ metadata {
 
 		fingerprint mfr: "0159", prod: "0002", model: "0051", deviceJoinName: "Qubino Switch 1" //Qubino Flush 2 Relay
 		fingerprint mfr: "0159", prod: "0002", model: "0052", deviceJoinName: "Qubino Switch" //Qubino Flush 1 Relay 
-		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch" //Qubino Flush 1D Relay
+		fingerprint mfr: "0159", prod: "0002", model: "0053", deviceJoinName: "Qubino Switch", mnmn: "SmartThings", vid: "generic-switch" //Qubino Flush 1D Relay
 	}
 
 	tiles(scale: 2) {
@@ -81,6 +81,7 @@ def installed() {
  	if (!childDevices && state.numberOfSwitches > 1) {
 		addChildSwitches(state.numberOfSwitches)
 	}
+
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
@@ -255,11 +256,15 @@ private changeSwitch(endpoint, cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
 	if (ep == 1) {
-		createEvent(createMeterEventMap(cmd))
+		[
+				createEvent(createMeterEventMap(cmd)),
+				response(encap(zwave.meterV3.meterGet(scale: 0x00), 1))
+		]
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(createMeterEventMap(cmd))
+		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
 }
 
