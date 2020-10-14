@@ -81,11 +81,6 @@ private getOPERATING_STATE_COOLING() { 0x01 }
 private getOPERATING_STATE_HEATING() { 0x02 }
 private getOCCUPANCY_OCCUPIED() { 0x00 }
 private getOCCUPANCY_UNOCCUPIED() { 0x01 }
-private getFAN_SPEED_LOW() { 0x00 }
-private getFAN_SPEED_MEDIUM() { 0x01 }
-private getFAN_SPEED_HIGH() { 0x02 }
-private getFAN_SPEED_AUTO() { 0x03 }
-
 
 private getFAN_MODE_MAP() {
 	[
@@ -123,17 +118,8 @@ private getTHERMOSTAT_OPERATING_STATE_MAP() {
 
 private getEFFECTIVE_OCCUPANCY_MAP() {
 	[
-		(OCCUPANCY_OCCUPIED):"Occupied",
-		(OCCUPANCY_UNOCCUPIED):"Unoccupied"
-	]
-}
-
-private getFAN_SPEED_SLIDER_MAP() {
-	[
-		(FAN_SPEED_LOW): 1,
-		(FAN_SPEED_MEDIUM): 2,
-		(FAN_SPEED_HIGH): 3,
-		(FAN_SPEED_AUTO): 4
+		(OCCUPANCY_OCCUPIED):"occupied",
+		(OCCUPANCY_UNOCCUPIED):"unoccupied"
 	]
 }
 
@@ -173,13 +159,11 @@ def parse(String description) {
     def eventMap = [:]
     def descMap = zigbee.parseDescriptionAsMap(description)
 
-    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId) {
-        def attributeInt = zigbee.convertHexToInt(descMap.attrId)
-
-        switch (attributeInt) {
+    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrInt) {
+        switch (descMap.attrInt) {
             case OCCUPANCY:
             case CUSTOM_EFFECTIVE_OCCUPANCY:
-                log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
+                log.debug "${descMap.attrInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, descMap.attrInt: ${descMap.attrInt}"
                 eventMap.name = "occupancy"
                 eventMap.value = EFFECTIVE_OCCUPANCY_MAP[Integer.parseInt(descMap.value, 16)]
                 break
@@ -234,7 +218,8 @@ def parse(String description) {
             case CUSTOM_FAN_SPEED:
                 // VT8350 reports fan speed 3 as AUTO
                 log.debug "CUSTOM FAN SPEED, descMap.value: ${descMap.value}"
-                def sliderValue = FAN_SPEED_SLIDER_MAP[Integer.parseInt(descMap.value, 16)]
+				// the device reports values of range 0-3 (0 is LOW)
+				def sliderValue = Integer.parseInt(descMap.value, 16) + 1
                 if (sliderValue < 4) {
                     eventMap.name = "fanSpeed"
                     eventMap.value = sliderValue
@@ -441,7 +426,9 @@ def getRefreshCommands() {
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT)
 
-	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED)
+	if (supportsFanSpeed()) {
+		refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED)
+	}
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE) // formerly THERMOSTAT MODE: 0x001C
 	refreshCommands += zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
@@ -485,8 +472,10 @@ def configure() {
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, COOLING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 3600, 10)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, HEATING_SETPOINT_UNOCCUPIED, DataType.INT16, 1, 3600, 10)
 	//configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, 0x0A58, 0x10, 1, 300, 1) //GFan
+	if (supportsFanSpeed()) {
+		configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 3600, 1)
+	}
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, 1, 3600, 1)
-	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_FAN_SPEED, DataType.ENUM8, 1, 3600, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE, DataType.ENUM8, 1, 3600, 1)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, OCCUPANCY, DataType.ENUM8, 1, 3600, null)
 	configurationCommands += zigbee.configureReporting(THERMOSTAT_CLUSTER, CUSTOM_OCCUPANCY, DataType.ENUM8, 1, 3600, null)
@@ -535,6 +524,10 @@ def getTemperature(value, roundValue = false) {
 
 def roundToTheNearestHalf(value) {
 	Math.round(value * 2) / 2
+}
+
+def supportsFanSpeed() {
+	isViconicsVT8350() || isSchneiderSE8350()
 }
 
 def isViconicsVT8350() {
