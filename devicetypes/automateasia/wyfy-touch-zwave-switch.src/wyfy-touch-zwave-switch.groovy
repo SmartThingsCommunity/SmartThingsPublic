@@ -34,7 +34,7 @@ metadata {
 		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Touch S1"
 		
 		// Batch 2 (model 5102)
-		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Touch S1" // 2-button variant
+		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Touch S1" // 1-button variant
 		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Touch S1" // 2-button variant
 		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Touch S1" // 4-button variant
 	}
