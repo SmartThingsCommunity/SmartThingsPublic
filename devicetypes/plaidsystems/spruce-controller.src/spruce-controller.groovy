@@ -1,9 +1,5 @@
 /**
- *  Spruce Controller V2_4 Big Tiles *
- *  Copyright 2015 Plaid Systems
- *
- *	Author: NC
- *	Date: 2015-11
+ *  Copyright 2020 PlaidSystems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,427 +10,367 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- -----------V3 updates-11-2015------------
- -Start program button updated to signal schedule check in Scheduler
- 11/17 alarm "0" -> 0	(ln 305)
- */
-
+ Version v3.0
+ * Update for new Samsung SmartThings app
+ * update vid with status, message, rainsensor
+ * maintain compatibility with Spruce Scheduler
+ * Requires Spruce Valve as child device 
+ 
+ Version v2.7
+ * added Rain Sensor = Water Sensor Capability
+ * added Pump/Master
+ * add "Dimmer" to Spruce zone child for manual duration
+ 
+**/
+ 
+private def getVersion() { return "v3.0 10-2020" }
+ 
 metadata {
-	definition (name: 'Spruce Controller', namespace: 'plaidsystems', author: 'Plaid Systems') {
-		capability 'Switch'
-        capability 'Configuration'
-        capability 'Refresh'
-        capability 'Actuator'
-        capability 'Valve'        
-		
-        attribute 'switch', 'string'
-        attribute 'switch1', 'string'
-		attribute 'switch2', 'string'
-		attribute 'switch8', 'string'
-		attribute 'switch5', 'string'
-		attribute 'switch3', 'string'
-		attribute 'switch4', 'string'
-		attribute 'switch6', 'string'
-		attribute 'switch7', 'string'
-        attribute 'switch9', 'string'
-		attribute 'switch10', 'string'
-		attribute 'switch11', 'string'
-		attribute 'switch12', 'string'
-		attribute 'switch13', 'string'
-		attribute 'switch14', 'string'
-		attribute 'switch15', 'string'
-        attribute 'switch16', 'string'
-		attribute 'rainsensor', 'string'
-        attribute 'status', 'string'
-        attribute 'tileMessage', 'string'
-        attribute 'minutes', 'string'
-        attribute 'VALUE_UP', 'string'
-        attribute 'VALUE_DOWN', 'string'        
+	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "plaidsystems", mnmn: "SmartThingsCommunity", vid: "412ceebe-09e5-3b06-8ed6-ab12ec248cc7"){
+		capability "Actuator"
+        capability "Switch"        
+        capability "Water Sensor"
+        capability "Sensor"
+        capability "Health Check"
+        capability "heartreturn55003.status"
+        capability "heartreturn55003.controllerMessage"
+        capability "heartreturn55003.rainSensor"
         
-        command 'levelUp'
-        command 'levelDown'
+        capability "Configuration"
+        capability "Refresh"        
+        
+        attribute "status", "string"
+        attribute "controllerMessage", "string"
+        attribute "rainsensor", "string"
+        
+        command "on"
+        command "off"        
+        command "valveOn"
+        command "valveOff"
+        command "zoneDuration"
+        
+        command "wet"
+        command "dry"
+        
+        command "setStatus"
+        command "setRainsensor"
+        command "setControllerMessage"
+        
+        command "zon"
+        command "zoff"
         command 'programOn'
         command 'programOff'
         command 'programWait'
         command 'programEnd'
         
-        command 'on'
-        command 'off'
-        command 'zon'
-        command 'zoff'
-        command 'z1on'
-		command 'z1off'
-		command 'z2on'
-		command 'z2off'        
-		command 'z3on'
-		command 'z3off'
-		command 'z4on'
-		command 'z4off'
-		command 'z5on'
-		command 'z5off'
-		command 'z6on'
-		command 'z6off'
-		command 'z7on'
-		command 'z7off'
-		command 'z8on'
-		command 'z8off'
-        command 'z9on'
-        command 'z9off'
-		command 'z10on'
-		command 'z10off'
-		command 'z11on'
-		command 'z11off'
-		command 'z12on'
-		command 'z12off'
-		command 'z13on'
-		command 'z13off'
-		command 'z14on'
-		command 'z14off'
-		command 'z15on'
-		command 'z15off'
-		command 'z16on'
-		command 'z16off'
-        
-        command 'config'
-        command 'refresh'        
-        command 'rain'
-        command 'manual'
-        command 'manualTime'
-        command 'settingsMap'
-        command 'writeTime'
-        command 'writeType'        
-        command 'notify'
-        command 'updated'      
-        
-		//ST release
-		//fingerprint endpointId: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18', profileId: '0104', deviceId: '0002', deviceVersion: '00', inClusters: '0000,0003,0004,0005,0006,000F', outClusters: '0003, 0019', manufacturer: 'PLAID SYSTEMS', model: 'PS-SPRZ16-01'
+        command "config"
+        command "refresh"        
+        command "rain"
+        command "settingsMap"
+        command "writeTime"
+        command "writeType"        
+        command "notify"
+        command "updated"
+
 		//new release
-        fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Irrigation"
+        fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Controller"
+        fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Controller"
 		
 	}
 
-	// simulator metadata
-	simulator {
-		// status messages
-		
-		// reply messages
+	preferences {
+        input title: "Version", description: getVersion(), displayDuringSetup: true, type: "paragraph", element: "paragraph"
+        
+        input title: "Rain Sensor", description: "If you have a rain sensor wired to the rain sensor input on the Spruce controller, turn it on here.", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+        input "RainEnable", "bool", title: "Rain Sensor Attached?", required: false, displayDuringSetup: true              
+                
+        input title: "Zone devices", displayDuringSetup: true, type: "paragraph", element: "paragraph",
+        	description: "Enable Zones for manual control and automations. Spruce Scheduler will work without zones or pump/master enabled here."
+        
+        input name: "pumpMasterZone", type: "enum", title: "Pump or Master zone", description: "Optional. Spruce Scheduler will also set this up.", required: false,
+        	options: ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6", "Zone 7", "Zone 8", "Zone 9", "Zone 10", "Zone 11", "Zone 12", "Zone 13", "Zone 14", "Zone 15", "Zone 16"]
+            
+        input name: "z1", type: "bool", title: "Enable Zone 1", displayDuringSetup: true
+        input name: "z2", type: "bool", title: "Enable Zone 2", displayDuringSetup: true
+        input name: "z3", type: "bool", title: "Enable Zone 3", displayDuringSetup: true
+        input name: "z4", type: "bool", title: "Enable Zone 4", displayDuringSetup: true
+        input name: "z5", type: "bool", title: "Enable Zone 5", displayDuringSetup: true
+        input name: "z6", type: "bool", title: "Enable Zone 6", displayDuringSetup: true
+        input name: "z7", type: "bool", title: "Enable Zone 7", displayDuringSetup: true
+        input name: "z8", type: "bool", title: "Enable Zone 8", displayDuringSetup: true
+        input name: "z9", type: "bool", title: "Enable Zone 9", displayDuringSetup: true
+        input name: "z10", type: "bool", title: "Enable Zone 10", displayDuringSetup: true
+        input name: "z11", type: "bool", title: "Enable Zone 11", displayDuringSetup: true
+        input name: "z12", type: "bool", title: "Enable Zone 12", displayDuringSetup: true
+        input name: "z13", type: "bool", title: "Enable Zone 13", displayDuringSetup: true
+        input name: "z14", type: "bool", title: "Enable Zone 14", displayDuringSetup: true
+        input name: "z15", type: "bool", title: "Enable Zone 15", displayDuringSetup: true
+        input name: "z16", type: "bool", title: "Enable Zone 16", displayDuringSetup: true
+    }
+	tiles(scale: 2) {        
+		standardTile("switch", "device.switch", width: 2, height: 2) {		
+            state "off", label: "off", action: "on"
+            state "on", label: "on", action: "off"
+        }
+        standardTile("water", "device.water", width: 2, height: 2) {
+			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff", action: "wet"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC", action: "dry"
+		}
+        standardTile("wet", "device.water", inactiveLabel: false, decoration: "flat") {
+			state "default", label:'Wet', action:"wet", icon: "st.alarm.water.wet"
+		}         
+		standardTile("dry", "device.water", inactiveLabel: false, decoration: "flat") {
+			state "default", label:'Dry', action:"dry", icon: "st.alarm.water.dry"
+		}        
+        standardTile("refresh", "device.switch", width: 2, height: 2) {		
+            state "off", label: "off", action: "on"
+            state "on", label: "on", action: "off"
+        }
+        childDeviceTiles("outlets")
+        main "switch"
+        details(["switch", "water","refresh"])
 	}
-    
-    preferences {
-    input description: 'If you have a rain sensor wired to the rain sensor input on the Spruce controller, turn it on here.', displayDuringSetup: true, type: 'paragraph', element: 'paragraph', title: 'Rain Sensor'
-    input description: 'The SYNC SETTINGS button must be pressed after making a change to the Rain sensor:', displayDuringSetup: false, type: 'paragraph', element: 'paragraph', title: ''     
-    input 'RainEnable', 'bool', title: 'Rain Sensor Attached?', required: false, displayDuringSetup: true
-    input description: 'Adjust manual water time with arrows on main tile.  The time indicated in the first small tile indicates the time the zone will water when manually switched on.', displayDuringSetup: false, type: 'paragraph', element: 'paragraph', title: ''
-    }
-
-	// UI tile definitions
-	tiles {
-    
-    	multiAttributeTile(name:"switchall", type:"generic", width:6, height:4) {        
-            tileAttribute('device.status', key: 'PRIMARY_CONTROL') {
-            attributeState 'schedule', label: 'Ready', icon: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_225_top.png'
-            attributeState 'finished', label: 'Finished', icon: 'st.Outdoor.outdoor5', backgroundColor: '#46c2e8'
-            attributeState 'raintoday', label: 'Rain Today', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
-            attributeState 'rainy', label: 'Rain', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
-            attributeState 'raintom', label: 'Rain Tomorrow', icon: 'http://www.plaidsystems.com/smartthings/st_rain.png', backgroundColor: '#d65fe3'
-            attributeState 'donewweek', label: 'Finished', icon: 'st.Outdoor.outdoor5', backgroundColor: '#00A0DC'
-            attributeState 'skipping', label: 'Skip', icon: 'st.Outdoor.outdoor20', backgroundColor: '#46c2e8'
-            attributeState 'moisture', label: 'Ready', icon: 'st.Weather.weather2', backgroundColor: '#46c2e8'
-            attributeState 'pause', label: 'PAUSE', icon: 'st.contact.contact.open', backgroundColor: '#e86d13'
-			attributeState 'delayed', label: 'Delayed', icon: 'st.contact.contact.open', backgroundColor: '#e86d13'
-            attributeState 'active', label: 'Active', icon: 'st.Outdoor.outdoor12', backgroundColor: '#3DC72E'
-            attributeState 'season', label: 'Adjust', icon: 'st.Outdoor.outdoor17', backgroundColor: '#ffb900'
-            attributeState 'disable', label: 'Off', icon: 'st.secondary.off', backgroundColor: '#cccccc'
-            attributeState 'warning', label: 'Warning', icon: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_225_top_yellow.png'
-            attributeState 'alarm', label: 'Alarm', icon: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_225_s_red.png', backgroundColor: '#e66565'
-            }
-            
-            tileAttribute("device.minutes", key: "VALUE_CONTROL") {
-                attributeState "VALUE_UP", action: "levelUp"
-                attributeState "VALUE_DOWN", action: "levelDown"
-            }
-            
-            tileAttribute("device.tileMessage", key: "SECONDARY_CONTROL") {
-                attributeState "tileMessage", label: '${currentValue}'     
-            }            
-            
-        }
-        valueTile('minutes', 'device.minutes'){
-        	state 'minutes', label: '${currentValue} min'
-        }
-        valueTile('dummy', 'device.minutes'){
-        	state 'minutes', label: ''
-        }
-		standardTile('switch', 'device.switch', width:2, height:2) {
-            state 'off', label: 'Start', action: 'programOn', icon: 'st.Outdoor.outdoor12', backgroundColor: '#a9a9a9'
-            state 'programOn', label: 'Wait', action: 'programOff', icon: 'st.contact.contact.open', backgroundColor: '#f6e10e'
-            state 'programWait', label: 'Wait', action: 'programEnd', icon: 'st.contact.contact.open', backgroundColor: '#f6e10e'
-            state 'on', label: 'Running', action: 'programEnd', icon: 'st.Outdoor.outdoor12', backgroundColor: '#3DC72E'
-		}        
-        standardTile("rainsensor", "device.rainsensor", decoration: 'flat') {			
-			state "rainSensoroff", label: 'sensor', icon: 'http://www.plaidsystems.com/smartthings/st_drop_on.png'
-            state "rainSensoron", label: 'sensor', icon: 'http://www.plaidsystems.com/smartthings/st_drop_on_blue_small.png'
-            state "disable", label: 'sensor', icon: 'http://www.plaidsystems.com/smartthings/st_drop_x_small.png'
-            state "enable", label: 'sensor', icon: 'http://www.plaidsystems.com/smartthings/st_drop_on.png'
-		}
-        standardTile('switch1', 'device.switch1', inactiveLabel: false) {			
-			state 'z1off', label: '1', action: 'z1on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z1on', label: '1', action: 'z1off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch2', 'device.switch2', inactiveLabel: false) {            
-            state 'z2off', label: '2', action: 'z2on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z2on', label: '2', action: 'z2off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}        
-        standardTile('switch3', 'device.switch3', inactiveLabel: false) {			
-			state 'z3off', label: '3', action: 'z3on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z3on', label: '3', action: 'z3off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch4', 'device.switch4', inactiveLabel: false) {            
-            state 'z4off', label: '4', action: 'z4on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z4on', label: '4', action: 'z4off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch5', 'device.switch5', inactiveLabel: false) {            
-            state 'z5off', label: '5', action: 'z5on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z5on', label: '5', action: 'z5off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-		standardTile('switch6', 'device.switch6', inactiveLabel: false) {            
-            state 'z6off', label: '6', action: 'z6on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z6on', label: '6', action: 'z6off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch7', 'device.switch7', inactiveLabel: false) {            
-            state 'z7off', label: '7', action: 'z7on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z7on', label: '7', action: 'z7off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-		standardTile('switch8', 'device.switch8', inactiveLabel: false) {            
-            state 'z8off', label: '8', action: 'z8on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z8on', label: '8', action: 'z8off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch9', 'device.switch9', inactiveLabel: false) {			
-			state 'z9off', label: '9', action: 'z9on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z9on', label: '9', action: 'z9off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch10', 'device.switch10', inactiveLabel: false) {            
-            state 'z10off', label: '10', action: 'z10on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z10on', label: '10', action: 'z10off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}        
-        standardTile('switch11', 'device.switch11', inactiveLabel: false) {			
-			state 'z11off', label: '11', action: 'z11on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z11on', label: '11', action: 'z11off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch12', 'device.switch12', inactiveLabel: false) {            
-            state 'z12off', label: '12', action: 'z12on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z12on', label: '12', action: 'z12off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch13', 'device.switch13', inactiveLabel: false) {            
-            state 'z13off', label: '13', action: 'z13on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z13on', label: '13', action: 'z13off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-		standardTile('switch14', 'device.switch14', inactiveLabel: false) {            
-            state 'z14off', label: '14', action: 'z14on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z14on', label: '14', action: 'z14off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}
-        standardTile('switch15', 'device.switch15', inactiveLabel: false) {            
-            state 'z15off', label: '15', action: 'z15on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z15on', label: '15', action: 'z15off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}		
-        standardTile('switch16', 'device.switch16', inactiveLabel: false) {            
-            state 'z16off',  label: '16', action: 'z16on', icon: 'st.valves.water.closed', backgroundColor: '#ffffff'
-            state 'z16on',  label: '16', action: 'z16off', icon: 'st.valves.water.open', backgroundColor: '#00A0DC'
-		}        
-        standardTile('refresh', 'device.switch', inactiveLabel: false, decoration: 'flat') {
-			state 'default', action: 'refresh', icon:'st.secondary.refresh'//-icon'            
-		}
-        standardTile('configure', 'device.configure', inactiveLabel: false, decoration: 'flat') {
-			state 'configure', label:'', action:'configuration.configure', icon:'http://www.plaidsystems.com/smartthings/st_syncsettings.png'//sync_icon_small.png'
-		}        
-		
-        main (['switchall'])        
-        details(['switchall','minutes','rainsensor','switch1','switch2','switch3','switch4','switch','switch5','switch6','switch7','switch8','switch9','switch10','switch11','switch12','refresh','configure','switch13','switch14','switch15','switch16'])		
-    }       
 }
 
-//used for schedule 
-def programOn(){
-    sendEvent(name: 'switch', value: 'programOn', descriptionText: 'Program turned on')    
-    }
-
-def programWait(){    
-    sendEvent(name: 'switch', value: 'programWait', descriptionText: "Initializing Schedule")
-    }
-
-def programEnd(){
-	//sets switch to off and tells schedule switch is off/schedule complete with manaual
-    sendEvent(name: 'switch', value: 'off', descriptionText: 'Program manually turned off')
-    zoff() 
-    }
-    
-def programOff(){    
-    sendEvent(name: 'switch', value: 'off', descriptionText: 'Program turned off')
-    off()
-    }
-
-//set minutes
-def levelUp(){
-	def newvalue = 1
-    if (device.latestValue('minutes') != null) newvalue = device.latestValue('minutes').toInteger()+1
-    if (newvalue >= 60) newvalue = 60
-    def value = newvalue.toString()    
-    log.debug value
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)    
-}
-
-def levelDown(){
-	def newvalue = device.latestValue('minutes').toInteger()-1
-    if (newvalue <= 0) newvalue = 1
-    def value = newvalue.toString()    
-    log.debug value
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)
-}
+//----------------------zigbee parse-------------------------------//
 
 // Parse incoming device messages to generate events
 def parse(String description) {	
-	log.debug "Parse description ${description}"
-    def result = null
-    def map = [:]
-	if (description?.startsWith('read attr -')) {
-		def descMap = parseDescriptionAsMap(description)
-		//log.debug "Desc Map: $descMap"
-        //using 000F cluster instead of 0006 (switch) because ST does not differentiate between EPs and processes all as switch
-		if (descMap.cluster == '000F' && descMap.attrId == '0055') {
-			log.debug 'Zone'
-            map = getZone(descMap)            
-		}
-        else if (descMap.cluster == '0009' && descMap.attrId == '0000') {
-			log.debug 'Alarm'
-            map = getAlarm(descMap)
-            }
-	}
-    else if (description?.startsWith('catchall: 0104 0009')){
-    	log.debug 'Sync settings to controller complete'
-        if (device.latestValue('status') != 'alarm'){
-        	def configEvt = createEvent(name: 'status', value: 'schedule', descriptionText: "Sync settings to controller complete")
-            def configMsg = createEvent(name: 'tileMessage', value: 'Sync settings to controller complete', descriptionText: "Sync settings to controller complete", displayed: false)
-        	result = [configEvt, configMsg]
-            }
-        return result
+	//log.debug "Parse description ${description}"
+    def result = []
+    def endpoint, value, command
+    def map = zigbee.parseDescriptionAsMap(description)
+    log.debug "map ${map}"
+    
+    if (description.contains("on/off")){    	
+        command = 1
+        value = description[-1]
     }
-  
-    if (map) {
-    	result = createEvent(map)
-    	//configure after reboot
-        if (map.value == 'warning' || map.value == 'alarm'){
-            def cmds = config()       
-            def alarmEvt = createEvent(name: 'tileMessage', value: map.descriptionText, descriptionText: "${map.descriptionText}", displayed: false)
-            result = cmds?.collect { new physicalgraph.device.HubAction(it) } + createEvent(map) + alarmEvt           
-			return result
-		}
-        else if (map.name == 'rainsensor'){
-        	def rainEvt = createEvent(name: 'tileMessage', value: map.descriptionText, descriptionText: "${map.descriptionText}", displayed: false)
-        	result = [createEvent(map), rainEvt]
-            return result
-        }
-	}
-	if (map) log.debug "Parse returned ${map} ${result}"
+    else {
+    	endpoint = ( map.sourceEndpoint == null ? hextoint(map.endpoint) : hextoint(map.sourceEndpoint) )
+    	value = ( map.sourceEndpoint == null ? hextoint(map.value) : null )    
+    	command = (value != null ? commandType(endpoint, map.clusterInt) : null)
+    }
+    
+    if (command != null) log.debug "command ${command} endpoint ${endpoint} value ${value} cluster ${map.clusterInt}"
+    switch(command) {
+      case "alarm":
+        log.debug "alarm"
+        result.push(createEvent(name: "status", value: "alarm"))
+        result.push(createEvent(name: "controllerMessage", value: "System reboot.  Possible issue with valve or wiring."))
+        break
+      case "program":
+      	log.debug "program"        
+        if (value == 1) result.push(createEvent(name: "switch", value: "on"))
+        else if (value == 0) result.push(createEvent(name: "switch", value: "off"))
+        break
+      case "zone":      
+      	def onoff = (value == 1 ? "open" : "closed")
+        def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
+        if(child) child.sendEvent(name: "valve", value: onoff)
+        break
+      case "rainSensor":
+      	log.debug "rainSensor"
+        def rainsensor = (value == 1 ? "rainsensoron" : "rainsensoroff")
+        if (!RainEnable) rainsensor = "disabled"
+        result.push(createEvent(name: "rainsensor", value: rainsensor))
+        break
+      case "refresh":
+        log.debug "refresh"
+        
+        break
+      default:
+      	//log.debug "null"
+        break
+    }
+    
+	//log.debug "result: ${result}"
 	return result
 }
 
-def parseDescriptionAsMap(description) {
-	(description - 'read attr - ').split(',').inject([:]) { map, param ->
-		def nameAndValue = param.split(':')
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+def commandType(endpoint, cluster){
+	if (cluster == 9) return "alarm"
+    //else if (cluster == 15 && DNI == 18) return "refresh"
+	else if (endpoint == 1) return "program"
+    else if (endpoint in 2..17) return "zone"
+    else if (endpoint == 18) return "rainSensor"
+    else if (endpoint == 19) return "refresh"
+}
+
+//--------------------end zigbee parse-------------------------------//
+
+def installed() {	
+	if (!childDevices) {
+    	removeChildDevices()
+		createChildDevices()
+        response(refresh() + configure())
 	}
+    initialize()
 }
 
-def getZone(descMap){
-	def map = [:]
-    
-    def EP = Integer.parseInt(descMap.endpoint.trim(), 16)
-    
-    String onoff
-    if(descMap.value == '00'){
-    	onoff = 'off'        
-    }    
-    else onoff = 'on'
-            
-    if (EP == 1){
-    	map.name = 'switch'
-        map.value = onoff
-        map.descriptionText = "${device.displayName} turned sprinkler program ${onoff}"
-        }
-        
-    else if (EP == 18) {
-        map.name = 'rainsensor'
-    	log.debug "Rain enable: ${RainEnable}, sensor: ${onoff}"
-        map.value = 'rainSensor' + onoff
-        map.descriptionText = "${device.displayName} rain sensor is ${onoff}"
-        }
-   	else {
-        EP -= 1
-        map.name = 'switch' + EP
-    	map.value = 'z' + EP + onoff
-    	map.descriptionText = "${device.displayName} turned Zone $EP ${onoff}"
-    	}
-        
-    map.isStateChange = true 
-    map.displayed = true    
-    return map
-}
-
-def getAlarm(descMap){
-	def map = [:]
-    map.name = 'status'
-    def alarmID = Integer.parseInt(descMap.value.trim(), 16)
-    log.debug "${alarmID}"
-    map.value = 'alarm'
-    map.displayed = true
-    map.isStateChange = true
-    if(alarmID <= 0){
-    	map.descriptionText = "${device.displayName} reboot, no other alarms"
-        map.value = 'warning'
-        //map.isStateChange = false
-        }
-    else map.descriptionText = "${device.displayName} reboot, reported zone ${alarmID - 1} error, please check zone is working correctly, press SYNC SETTINGS button to clear"
-       
-    return map        
-}
-
-//status notify and change status
-def notify(String val, String txt){
-	sendEvent(name: 'status', value: val, descriptionText: txt, isStateChange: true, display: false)
-    
-    //String txtShort = txt.take(100)
-    sendEvent(name: 'tileMessage', value: txt, descriptionText: "", isStateChange: true, display: false)
-}
-
-def updated(){
+def updated() {
 	log.debug "updated"
     
+    createChildDevices()
+    initialize()
 }
 
-//prefrences - rain sensor, manual time
-def rain() {
-    log.debug "Rain sensor: ${RainEnable}"
-    if (RainEnable) sendEvent(name: 'rainsensor', value: 'enable', descriptionText: "${device.displayName} rain sensor is enabled", isStateChange: true)
-    else sendEvent(name: 'rainsensor', value: 'disable', descriptionText: "${device.displayName} rain sensor is disabled", isStateChange: true)
+def initialize(){
+    sendEvent(name: "switch", value: "off")
+    sendEvent(name: "status", value: "Idle")
+    sendEvent(name: "controllerMessage", value: "INITIAL SETUP: Enable zones in settings")
+    response(pumpMaster() + rain())
+}
+
+
+private void createChildDevices() {	
+    log.debug "create children"
     
-    if (RainEnable) "st wattr 0x${device.deviceNetworkId} 18 0x0F 0x51 0x10 {01}"
-    else "st wattr 0x${device.deviceNetworkId} 18 0x0F 0x51 0x10 {00}"
+    //create, rename, or remove child    
+    for (i in 1..16){
+    	def dni = i + 1
+        if(settings."${"z${i}"}"){
+        	def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${dni}"}
+            //create child
+            if (!child){
+            	def childLabel = (state.oldLabel != null ? "${state.oldLabel} Zone${i}" : "Spruce Zone${i}")
+                if (settings.pumpMasterZone == i) childLabel = "Spruce PM Zone${i}"
+                child = addChildDevice("Spruce Valve", "${device.deviceNetworkId}:${dni}", device.hubId,
+                        [completedSetup: true, label: "${childLabel}",
+                         isComponent: false])
+                         log.debug "${child}"
+                    child.sendEvent(name: "switch", value: "off", displayed: false)
+            }
+            //or rename child
+            else if (device.label != state.oldLabel){
+            	def childLabel = (state.oldLabel != null ? "${state.oldLabel} Zone${i}" : "Spruce Zone${i}")
+                if (settings.pumpMasterZone == i) childLabel = "Spruce PM Zone${i}"
+            	child.setLabel("${childLabel}")
+            }
+        }
+        //remove child
+        else if (childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${dni}"}){
+        	deleteChildDevice("${device.deviceNetworkId}:${dni}")
+        }
+        
+    }
+    
+    state.oldLabel = device.label
 }
 
-def manualTime(value){	
-	sendEvent(name: 'minutes', value: "${value}", descriptionText: "Manual Time set to ${value}", display: false)
+private removeChildDevices() {
+	log.debug "remove all children"
+	
+    //get and delete children avoids duplicate children
+    def children = getChildDevices()    
+    if(children != null){
+        children.each{
+            deleteChildDevice(it.deviceNetworkId)
+        }
+    }       
 }
 
-def manual(){    
-    def newManaul = 10    
-    if (device.latestValue('minutes')) newManaul = device.latestValue('minutes').toInteger()    
-    log.debug "Manual Zone runtime ${newManaul} mins"    
-    def manualTime = hex(newManaul)  
+
+//----------------------------------commands--------------------------------------//
+//used for schedule
+def notify(String val, String txt){	
+    sendEvent(name: "status", value: "${val}", descriptionText: "${val}")
+    sendEvent(name: "controllerMessage", value: "${txt}", descriptionText: "${txt}")
+}
+
+def setStatus(status){
+	log.debug "status ${status}"
+    sendEvent(name: "status", value: status, descriptionText: "Initialized")
+}
+
+def setRainsensor(rainsensor){
+	log.debug "status ${rainsensor}"
+    sendEvent(name: "rainsensor", value: "${rainsensor}", descriptionText: "Initialized")
+}
+
+def setControllerMessage(controllerMessage){
+	log.debug "status ${controllerMessage}"
+    sendEvent(name: "controllerMessage", value: controllerMessage, descriptionText: "Initialized")
+}
+
+def programOn(){
+	log.debug "programOn"
+    sendEvent(name: "switch", value: "programOn", descriptionText: "Program turned on")    
+}
+
+def programWait(){
+	log.debug "programWait"
+    sendEvent(name: 'switch', value: 'programWait', descriptionText: "Initializing Schedule")    
+}
+
+def programEnd(){
+	log.debug "programEnd"    
+    zoff()
+}
+    
+def programOff(){
+	log.debug "programEnd"    
+    off()
+}
+
+//on & off redefined for Alexa to start manual schedule
+def on() {
+    log.debug "on"
+    //Spruce Scheduler subscribes to programOn    
+    //sendEvent(name: "switch", value: "programOn", descriptionText: "Schedule on")
+    refresh()
+}
+
+def off() {
+	log.debug "off"
+    sendEvent(name: "switch", value: "off", descriptionText: "Schedule off")
+    zoff()        
+}
+
+// Commands to device
+//program on/off
+def zon() {
+	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+}
+def zoff() {
+	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}" 
+}
+
+// Commands to zones/valves
+def valveOn(valueMap) {
+	log.debug valueMap
+    def endpoint = valueMap.dni.replaceFirst("${device.deviceNetworkId}:","").toInteger()
+    def duration = (valueMap.duration != null ? valueMap.duration.toInteger() : 0)
+    
+    sendEvent(name: "status", value: "Zone ${endpoint} on for ${duration}min(s)", descriptionText: "Zone ${endpoint} on for ${duration}min(s)")
+    
+    zoneOn(endpoint, duration)
+}
+
+def valveOff(valueMap) {
+	def endpoint = valueMap.dni.replaceFirst("${device.deviceNetworkId}:","").toInteger()    
+        
+    sendEvent(name: "status", value: "Zone ${endpoint} turned off", descriptionText: "Zone ${endpoint} turned off")
+
+	zoneOff(endpoint)    
+}
+def zoneOn(endpoint, duration) {
+	return zoneDuration(duration) + zigbee.command(6, 1, "", [destEndpoint: endpoint])
+}
+
+def zoneOff(endpoint) {    
+    zigbee.command(6, 0, "", [destEndpoint: endpoint])
+}
+
+def zoneDuration(int duration){
+    def hexDuration = hex(duration)  
     
     def sendCmds = []
-    sendCmds.push("st wattr 0x${device.deviceNetworkId} 1 6 0x4002 0x21 {00${manualTime}}")
+    sendCmds.push("st wattr 0x${device.deviceNetworkId} 1 6 0x4002 0x21 {00${hexDuration}}")
     return sendCmds
 }
+
+//------------------end commands----------------------------------//
 
 //write switch time settings map
 def settingsMap(WriteTimes, attrType){
@@ -447,11 +383,11 @@ def settingsMap(WriteTimes, attrType){
     	  
     	if (WriteTimes."${i}"){        	
         	runTime = hex(Integer.parseInt(WriteTimes."${i}"))
-        	log.debug "${i} : $runTime"
+        	//log.debug "${i} : $runTime"
 		
         	if (attrType == 4001) sendCmds.push("st wattr 0x${device.deviceNetworkId} ${i} 0x06 0x4001 0x21 {00${runTime}}")
         	else sendCmds.push("st wattr 0x${device.deviceNetworkId} ${i} 0x06 0x4002 0x21 {00${runTime}}")
-            sendCmds.push("delay 500")
+            sendCmds.push("delay 600")
         }
         i++
     }    
@@ -460,30 +396,33 @@ def settingsMap(WriteTimes, attrType){
 
 //send switch time
 def writeType(wEP, cycle){
-	log.debug "wt ${wEP} ${cycle}"
+	//log.debug "wt ${wEP} ${cycle}"
     "st wattr 0x${device.deviceNetworkId} ${wEP} 0x06 0x4001 0x21 {00" + hex(cycle) + "}"
-    }
+}
+
 //send switch off time
 def writeTime(wEP, runTime){    
     "st wattr 0x${device.deviceNetworkId} ${wEP} 0x06 0x4002 0x21 {00" + hex(runTime) + "}"
-    }
+}
 
 //set reporting and binding
 def configure() {
-	
-    sendEvent(name: 'status', value: 'schedule', descriptionText: "Syncing settings to controller")
-    sendEvent(name: 'minutes', value: "10", descriptionText: "Manual Time set to 10 mins", display: false)
-    sendEvent(name: 'tileMessage', value: 'Syncing settings to controller', descriptionText: 'Syncing settings to controller')
+	// Device-Watch allows 2 check-in misses from device, checks every 2 hours
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: 2* 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	    
     config()    
 }
 
 def config(){
-
+	configureHealthCheck()
+    
 	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
 	log.debug "Configuring Reporting and Bindings ${device.deviceNetworkId} ${device.zigbeeId}"
     
     def configCmds = [	
-        //program on/off
+        //program on/off        
         "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x09 {${device.zigbeeId}} {}", "delay 1000",        
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0F {${device.zigbeeId}} {}", "delay 1000",
@@ -572,14 +511,40 @@ def config(){
     return configCmds + rain()
 }
 
-def refresh() {
+//PING is used by Device-Watch in attempt to reach the Device
+def ping() {
+	log.debug "device health ping"    
+    return zigbee.onOffRefresh()
+}
 
+def rain() {
+    log.debug "Rain sensor: ${RainEnable}"
+        
+    if (RainEnable) return "st wattr 0x${device.deviceNetworkId} 18 0x0F 0x51 0x10 {01}"
+    else return "st wattr 0x${device.deviceNetworkId} 18 0x0F 0x51 0x10 {00}"  
+}
+
+def pumpMaster() {
+    def pumpMasterEndpoint = (settings.pumpMasterZone != null ? settings.pumpMasterZone.replaceFirst("Zone ","").toInteger() : null)
+    log.debug "Pump/Master zone: ${pumpMasterEndpoint}"
+    
+    def endpointMap = [:]    
+    int zone = 1
+    while(zone <= 17)
+    {
+        def zoneCycle = (zone == pumpMasterEndpoint ? 4 : 2)
+        //endpoint = zone + 1
+        endpointMap."${zone+1}" = "${zoneCycle}"
+        zone++
+    }
+    
+    return settingsMap(endpointMap, 4001)
+}
+
+def refresh() {
 	log.debug "refresh pressed"
-    sendEvent(name: 'tileMessage', value: 'Refresh', descriptionText: 'Refresh')
-        
-    def refreshCmds = [	    
-        
-        "st rattr 0x${device.deviceNetworkId} 1 0x0F 0x55", "delay 500",
+    
+    def refreshCmds = [
         
         "st rattr 0x${device.deviceNetworkId} 2 0x0F 0x55", "delay 500",
         "st rattr 0x${device.deviceNetworkId} 3 0x0F 0x55", "delay 500",
@@ -603,7 +568,37 @@ def refresh() {
  	
     ]
     
+    //will trigger off command if checked during schedule initialization
+    if (device.latestValue("switch") != "programWait") refreshCmds + ["st rattr 0x${device.deviceNetworkId} 1 0x0F 0x55", "delay 500"]
+    
     return refreshCmds
+}
+
+def healthPoll() {
+	log.debug "healthPoll()"
+	def cmds = refresh()
+	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
+def configureHealthCheck() {
+	Integer hcIntervalMinutes = 12
+	if (!state.hasConfiguredHealthCheck) {
+		log.debug "Configuring Health Check, Reporting"
+		unschedule("healthPoll")
+		runEvery5Minutes("healthPoll")
+		def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
+		// Device-Watch allows 2 check-in misses from device
+		sendEvent(healthEvent)
+		childDevices.each {
+			it.sendEvent(healthEvent)
+		}
+		state.hasConfiguredHealthCheck = true
+	}
+}
+
+//parse hex string and make integer
+private hextoint(String hex) {
+	Long.parseLong(hex, 16).toInteger()
 }
 
 private hex(value) {
@@ -627,123 +622,3 @@ private byte[] reverseArray(byte[] array) {
     }
     return array
 }
-
-//on & off redefined for Alexa to start manual schedule
-def on() {    
-    log.debug 'Alexa on'
-    //schedule subscribes to programOn
-    sendEvent(name: 'switch', value: 'programOn', descriptionText: 'Alexa turned program on')           
-}
-def off() {
-	log.debug 'Alexa off'
-    sendEvent(name: 'switch', value: 'off', descriptionText: 'Alexa turned program off')
-    zoff()        
-}
-
-// Commands to device
-//zones on - 8
-def zon() {
-	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
-}
-def zoff() {
-	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}" 
-}
-def z1on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 2 6 1 {}"    
-}
-def z1off() {    
-    "st cmd 0x${device.deviceNetworkId} 2 6 0 {}"
-}
-def z2on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 3 6 1 {}"    
-}
-def z2off() {    
-    "st cmd 0x${device.deviceNetworkId} 3 6 0 {}"    
-}
-def z3on() {        
-    return manual() + "st cmd 0x${device.deviceNetworkId} 4 6 1 {}"    
-}
-def z3off() {	
-    "st cmd 0x${device.deviceNetworkId} 4 6 0 {}"    
-}
-def z4on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 5 6 1 {}"    
-}
-def z4off() {    
-    "st cmd 0x${device.deviceNetworkId} 5 6 0 {}"    
-}
-def z5on() {	
-	return manual() + "st cmd 0x${device.deviceNetworkId} 6 6 1 {}"   
-}
-def z5off() {
-	"st cmd 0x${device.deviceNetworkId} 6 6 0 {}"    
-}
-def z6on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 7 6 1 {}"
-}
-def z6off() {
-    "st cmd 0x${device.deviceNetworkId} 7 6 0 {}"
-}
-def z7on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 8 6 1 {}"  
-}
-def z7off() {
-	"st cmd 0x${device.deviceNetworkId} 8 6 0 {}"    
-}
-def z8on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 9 6 1 {}"    
-}
-def z8off() {
-	"st cmd 0x${device.deviceNetworkId} 9 6 0 {}"    
-}
-
-//zones 9 - 16
-def z9on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 10 6 1 {}"    
-}
-def z9off() {	    
-    "st cmd 0x${device.deviceNetworkId} 10 6 0 {}"   
-}
-def z10on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 11 6 1 {}"    
-}
-def z10off() {    
-    "st cmd 0x${device.deviceNetworkId} 11 6 0 {}"    
-}
-def z11on() {        
-    return manual() + "st cmd 0x${device.deviceNetworkId} 12 6 1 {}"    
-}
-def z11off() {	
-    "st cmd 0x${device.deviceNetworkId} 12 6 0 {}"    
-}
-def z12on() {	
-    return manual() + "st cmd 0x${device.deviceNetworkId} 13 6 1 {}"    
-}
-def z12off() {    
-    "st cmd 0x${device.deviceNetworkId} 13 6 0 {}"    
-}
-def z13on() {	
-	return manual() + "st cmd 0x${device.deviceNetworkId} 14 6 1 {}"   
-}
-def z13off() {
-	"st cmd 0x${device.deviceNetworkId} 14 6 0 {}"    
-}
-def z14on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 15 6 1 {}"
-}
-def z14off() {
-    "st cmd 0x${device.deviceNetworkId} 15 6 0 {}"
-}
-def z15on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 16 6 1 {}"  
-}
-def z15off() {
-	"st cmd 0x${device.deviceNetworkId} 16 6 0 {}"    
-}
-def z16on() {
-	return manual() + "st cmd 0x${device.deviceNetworkId} 17 6 1 {}"    
-}
-def z16off() {
-	"st cmd 0x${device.deviceNetworkId} 17 6 0 {}"    
-}
-
