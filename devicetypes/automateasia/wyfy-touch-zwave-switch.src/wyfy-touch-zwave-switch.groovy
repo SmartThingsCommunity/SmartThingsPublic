@@ -28,7 +28,15 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 		
-		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Touch S1"
+		// Batch 1
+		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Touch S1"
+		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Touch S1"
+		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Touch S1"
+		
+		// Batch 2 (model 5102)
+		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Touch S1" // 2-button variant
+		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Touch S1" // 2-button variant
+		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Touch S1" // 4-button variant
 	}
 	
 	preferences {
@@ -511,3 +519,4 @@ private parameterMap() {[
 				15: "No"
 		], def: 0, title: "Parameter 15", descr: "This parameter defines if the switches can be controlled wirelessly via Z-Wave."]
 ]}
+
