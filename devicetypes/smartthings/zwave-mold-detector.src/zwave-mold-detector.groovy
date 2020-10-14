@@ -20,14 +20,16 @@ metadata {
 	definition(name: "Z-Wave Mold Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", "vid": "generic-humidity", ocfDeviceType: "oic.d.thermostat") {
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
+		capability "Dew Point"
+		capability "Mold Health Concern"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr:"0371", prod:"0002", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//EU // Aeotec Aerq Temperature and Humidity Sensor
-		fingerprint mfr:"0371", prod:"0102", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//US // Aeotec Aerq Temperature and Humidity Sensor
-		fingerprint mfr:"0371", prod:"0202", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//AU // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0002", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor" // mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//EU // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0102", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor" // mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//US // Aeotec Aerq Temperature and Humidity Sensor
+		fingerprint mfr:"0371", prod:"0202", model:"0009", deviceJoinName: "Aeotec Multipurpose Sensor" // mnmn: "SmartThings", "vid": "SmartThings-smartthings-Aeotec_Aerq_Temperature_Humidity_Sensor"	//AU // Aeotec Aerq Temperature and Humidity Sensor
 		fingerprint mfr:"0154", prod:"0004", model:"0014", deviceJoinName: "POPP Multipurpose Sensor"	//EU // POPP Mold Detector
 	}
 
@@ -72,27 +74,22 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	def cmds = [
-			secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId)),
-			secure(zwave.wakeUpV2.wakeUpIntervalGet())
+		secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId)),
+		secure(zwave.wakeUpV2.wakeUpIntervalGet())
 	]
 
 	response(cmds)
 }
 
 def configure() {
-	response([
+	delayBetween([
 			secure(zwave.batteryV1.batteryGet()),
-			"delay 2000",
 			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)), // humidity
-			"delay 2000",
 			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)), // temperature
-			"delay 2000",
 			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)), // dew point
-			"delay 2000",
 			secure(zwave.notificationV3.notificationGet(notificationType: 0x10)), // mold detection
-			"delay 2000",
 			secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
-	])
+	], 2000)
 }
 
 def parse(String description) {
@@ -125,11 +122,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 0x10) {  // Mold Environment Detection
 		switch (cmd.event) {
 			case 0x00:
-				value = "clear"
+				value = "good"
 				description = "Mold environment not detected"
 				break
 			case 0x02:
-				value = "moldDetected"
+				value = "unhealthy"
 				description = "Mold environment detected"
 				break
 			default:
@@ -137,7 +134,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 
-		result = createEvent(name: "isMoldEnvironment", value: value, descriptionText: description, isStateChange: true, displayed: true)
+		result = createEvent(name: "moldHealthConcern", value: value, descriptionText: description, isStateChange: true, displayed: true)
 	}
 }
 
