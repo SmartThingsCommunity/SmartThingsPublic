@@ -159,13 +159,11 @@ def parse(String description) {
     def eventMap = [:]
     def descMap = zigbee.parseDescriptionAsMap(description)
 
-    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrId) {
-        def attributeInt = zigbee.convertHexToInt(descMap.attrId)
-
-        switch (attributeInt) {
+    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrInt) {
+        switch (descMap.attrInt) {
             case OCCUPANCY:
             case CUSTOM_EFFECTIVE_OCCUPANCY:
-                log.debug "${attributeInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, attrId: ${attributeInt}"
+                log.debug "${descMap.attrInt == OCCUPANCY ? "OCCUPANCY" : "EFFECTIVE OCCUPANCY"}, descMap.value: ${descMap.value}, descMap.attrInt: ${descMap.attrInt}"
                 eventMap.name = "occupancy"
                 eventMap.value = EFFECTIVE_OCCUPANCY_MAP[Integer.parseInt(descMap.value, 16)]
                 break
