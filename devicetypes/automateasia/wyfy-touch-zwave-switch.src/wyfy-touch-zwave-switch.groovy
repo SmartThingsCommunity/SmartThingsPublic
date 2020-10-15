@@ -29,14 +29,14 @@ metadata {
 		capability "Health Check"
 		
 		// Batch 1
-		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Touch S1"
-		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Touch S1"
-		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Touch S1"
+		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Touch 1"
+		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Touch 1"
+		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Touch 1"
 		
 		// Batch 2 (model 5102)
-		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Touch S1" // 1-button variant
-		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Touch S1" // 2-button variant
-		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Touch S1" // 4-button variant
+		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Touch 1" // 1-button variant
+		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Touch 1" // 2-button variant
+		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Touch 1" // 4-button variant
 	}
 	
 	preferences {
@@ -189,7 +189,7 @@ private createChildDevices() {
 			try {
 				log.info("${device.displayName} - Adding child device ${i}")
 				state.endpointMap.put("${device.deviceNetworkId}-${i}",i)
-				addChildDevice("WYFY TOUCH ZWAVE SWITCH CHILD", "${device.deviceNetworkId}-${i}", device.hubId, [completedSetup: true, label: "WYFY Touch S${i}", isComponent: false])
+				addChildDevice("WYFY TOUCH ZWAVE SWITCH CHILD", "${device.deviceNetworkId}-${i}", device.hubId, [completedSetup: true, label: "WYFY Touch ${i}", isComponent: false])
 			} catch (Exception e) {
 				log.error("${device.displayName} - error attempting to create child device: ${i}. Caught exception", e)
 			}
