@@ -45,8 +45,9 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0101", manufacturer:"Kwikset", model:"Smartcode", deviceJoinName: "Kwikset Door Lock" //Kwikset Smartcode Lock
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0009, 0020, 0101, 0B05, FC00", outClusters: "000A, 0019", manufacturer: "Schlage", model: "BE468", deviceJoinName: "Schlage Door Lock" //Schlage Connect Smart Deadbolt
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YDD-D4F0 TSDB", deviceJoinName: "Lockwood Door Lock" //Lockwood Smart Lock
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "iZBModule01", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YMF40
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "iZBModule01", deviceJoinName: "Yale Door Lock" //Yale Locks (YDF30/40, YMF30/40) with old firmware (v.9.0)
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "c700000202", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YDF40
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "0700000001", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YMF40
 	}
 
 	tiles(scale: 2) {
