@@ -103,8 +103,7 @@ private getTHERMOSTAT_MODE_MAP() {
 		(THERMOSTAT_MODE_OFF):"off",
 		(THERMOSTAT_MODE_AUTO):"auto",
 		(THERMOSTAT_MODE_COOL):"cool",
-		(THERMOSTAT_MODE_HEAT):"heat",
-		"04":"heat"
+		(THERMOSTAT_MODE_HEAT):"heat"
 	]
 }
 
@@ -159,7 +158,7 @@ def parse(String description) {
     def eventMap = [:]
     def descMap = zigbee.parseDescriptionAsMap(description)
 
-    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrInt) {
+    if (descMap.clusterInt == THERMOSTAT_CLUSTER && descMap.attrInt != null) {
         switch (descMap.attrInt) {
             case OCCUPANCY:
             case CUSTOM_EFFECTIVE_OCCUPANCY:
