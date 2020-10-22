@@ -223,8 +223,8 @@ def configure() {
 
 	cmds += refresh() +
 	// OnOff, level minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	zigbee.onOffConfig(0, 300) +
-	zigbee.levelConfig(0, 300)
+	zigbee.onOffConfig() +
+	zigbee.levelConfig()
 	cmds
 }
 
