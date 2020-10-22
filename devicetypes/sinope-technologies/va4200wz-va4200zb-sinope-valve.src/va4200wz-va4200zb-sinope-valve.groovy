@@ -1,6 +1,6 @@
 /**
 Copyright Sinopé Technologies
-1..0
+1.3.0
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,8 +25,9 @@ metadata {
         capability "Power Source"
         capability "Health Check"
         
-        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200WZ", deviceJoinName: "Sinope Valve" //VA4200WZ
-        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200ZB", deviceJoinName: "Sinope Valve" //VA4200ZB
+        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200WZ", deviceJoinName: "Sinope Valve", mnmn:"SmartThings", vid:"SmartThings-smartthings-ZigBee_Valve" //VA4200WZ
+        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200ZB", deviceJoinName: "Sinope Valve", mnmn:"SmartThings", vid:"SmartThings-smartthings-ZigBee_Valve" //VA4200ZB
+        fingerprint  manufacturer: "Sinope Technologies", model: "VA4220ZB", deviceJoinName: "Sinope Valve", mnmn:"SmartThings", vid:"SmartThings-smartthings-ZigBee_Valve" //VA4220ZB
     }
 
     tiles(scale: 2) {
