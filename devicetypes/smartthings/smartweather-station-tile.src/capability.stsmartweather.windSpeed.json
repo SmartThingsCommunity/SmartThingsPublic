@@ -10,14 +10,32 @@
           },
           "unit": {
             "type": "string",
-            "enum": ["KPH", "MPH"],
-            "default": "KPH"
+            "enum": ["KPH", "MPH"]
           }
         },
         "additionalProperties": false,
         "required": [
-          "value",
-          "unit"
+          "value"
+        ]
+      }
+    },
+    "localWindSpeed": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "PositiveNumber",
+            "type": "number",
+            "minimum": -1
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["KPH", "MPH"]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value"
         ]
       }
     }
