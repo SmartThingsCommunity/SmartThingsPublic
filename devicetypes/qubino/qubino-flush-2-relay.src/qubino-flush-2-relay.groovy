@@ -94,7 +94,7 @@ def installed() {
 	// Preferences template end
 	response([
 			refresh((1..state.numberOfSwitches).toList()),
-			addToAssociationGroup()
+			addToAssociationGroupIfNeeded()
 	].flatten())
 }
 
@@ -129,9 +129,9 @@ def excludeParameterFromSync(preference){
 	return exclude
 }
 
-def addToAssociationGroup() {
+def addToAssociationGroupIfNeeded() {
 	def cmds = []
-	if(zwaveInfo?.model?.equals("0052")){
+	if(zwaveInfo?.model?.equals("0052")) {
 		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: [zwaveHubNodeId]))
 	}
 	cmds
@@ -247,7 +247,13 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) { 
 	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
-	[changeSwitch(ep, cmd), response(["delay 2000", encap(zwave.meterV3.meterGet(scale: 2), endpoint)])]
+	[
+		changeSwitch(ep, cmd), 
+		response([
+			"delay 2000",
+			 encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+		 ])
+	]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
@@ -255,9 +261,17 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	changeSwitch(ep, cmd)
 }
 
+def endpointPollValue() {
+	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+		return null
+	} else {
+		return 1
+	}
+}
+
 private changeSwitch(endpoint, cmd) {
 	def value = cmd.value ? "on" : "off"
-	if (endpoint == 1 || endpoint == null) {
+	if (endpoint == endpointPollValue()) {
 		createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else if (endpoint) {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
@@ -268,7 +282,7 @@ private changeSwitch(endpoint, cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
-	if (ep == 1 || ep == null) {
+	if (ep == endpointPollValue()) {
 		[
 				createEvent(createMeterEventMap(cmd)),
 				cmd.scale == 2 ? response(encap(zwave.meterV3.meterGet(scale: 0x00), ep)) : null
@@ -341,7 +355,7 @@ def childOnOff(deviceNetworkId, value) {
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
-private onOffCmd(value, endpoint = null) {
+private onOffCmd(value, endpoint = endpointPollValue()) {
 	delayBetween([
 			encap(zwave.basicV1.basicSet(value: value), endpoint),
 			encap(zwave.basicV1.basicGet(), endpoint)
