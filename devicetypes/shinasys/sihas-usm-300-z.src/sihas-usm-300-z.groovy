@@ -220,13 +220,13 @@ def initialize() {
     sendEvent(name: "healthStatus", value: "online")
     //sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
     //zigbee.readAttribute(0x0000, 0Xff84) 
-    zigbee.readAttribute(0x0000, 0X0001) 
+    zigbee.readAttribute(0x0000, 0x0001) 
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	zigbee.readAttribute(0x0000, 0X0001)  //Application Version 
+	zigbee.readAttribute(0x0000, 0x0001)  //Application Version 
     //zigbee.readAttribute(0x0000, 0Xff84) 
     log.debug "pings"
 }
