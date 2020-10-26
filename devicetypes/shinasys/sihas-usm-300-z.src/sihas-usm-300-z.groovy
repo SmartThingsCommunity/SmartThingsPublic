@@ -163,6 +163,7 @@ private Map getTempResult(rawValue) {
     def result = [
         name: 'temperature',
         value: displayTempInteger ? (int) tempval : tempval,
+        unit: "C",
         isStateChange:true,
         descriptionText : "${device.displayName} temperature is ${tempval}°C"
     ]
@@ -179,6 +180,7 @@ private Map getHumiResult(rawValue) {
     def result = [
         name: 'humidity',
         value: humival,
+        unit: "%",
         isStateChange:true,
         descriptionText : "${device.displayName} humidity is ${humival}%"
     ]
@@ -195,6 +197,7 @@ private Map getIllumiResult(rawValue) {
     def result = [
         name: 'illuminance',
         value: illumival,
+        unit: "lux",
         isStateChange:true,
         descriptionText : "${device.displayName} illuminance is ${illumival}lux"
     ]
@@ -204,7 +207,6 @@ private Map getIllumiResult(rawValue) {
         
     return result
 }
-
 def installed() {
     initialize()
 }
@@ -216,16 +218,16 @@ def updated() {
 def initialize() {
     sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
     sendEvent(name: "healthStatus", value: "online")
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
-    zigbee.readAttribute(0x0000, 0Xff84) 
-    
+    //sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    //zigbee.readAttribute(0x0000, 0Xff84) 
+    zigbee.readAttribute(0x0000, 0X0001) 
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	//zigbee.readAttribute(0x0000, 0X0001)  //Application Version 
-    zigbee.readAttribute(0x0000, 0Xff84) 
+	zigbee.readAttribute(0x0000, 0X0001)  //Application Version 
+    //zigbee.readAttribute(0x0000, 0Xff84) 
     log.debug "pings"
 }
 
@@ -233,23 +235,44 @@ def refresh() {
 //	log.debug "Refreshing Values"
 	def refreshCmds = []
 
-	//refreshCmds += zigbee.readAttribute(0x0000, 0X0001)  //Application Version 
-	refreshCmds += zigbee.readAttribute(0x0000, 0Xff84)  //Application Version 		
+	refreshCmds += zigbee.readAttribute(0x0000, 0X0001)  //Application Version 
+	//refreshCmds += zigbee.readAttribute(0x0000, 0Xff84)  //Application Version 		
 	log.debug "refrsh cmd = $refreshCmds "
 	return refreshCmds
 }
-def setLevel(value, rate = null) {
-    setTemperature(value)
+
+def poll() {
+	refresh()
 }
 
-def up() {
-    setTemperature(getTemperature() + 1)
+def healthPoll() {
+	log.debug "healthPoll()"
+	def cmds = refresh()
+	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
 }
-
-def down() {
-    setTemperature(getTemperature() - 1)
+def configureHealthCheck() {
+	Integer hcIntervalMinutes = 12
+	if (!state.hasConfiguredHealthCheck) {
+		log.debug "Configuring Health Check, Reporting"
+		unschedule("healthPoll")
+		runEvery5Minutes("healthPoll")
+		def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
+		// Device-Watch allows 2 check-in misses from device
+		sendEvent(healthEvent)
+		//childDevices.each {
+		//	it.sendEvent(healthEvent)
+		//}
+		state.hasConfiguredHealthCheck = true
+	}
 }
-
-def setTemperature(value) {
-    sendEvent(name:"temperature", value: value)
+def configure() {
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	//sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	//sendEvent(name: "checkInterval", value: 1 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	//log.debug "Configuring Reporting and Bindings."
+	configureHealthCheck()
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return refresh()
 }
