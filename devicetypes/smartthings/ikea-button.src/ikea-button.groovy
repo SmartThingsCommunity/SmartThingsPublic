@@ -367,7 +367,7 @@ private boolean isIkea() {
 }
 
 private boolean isSomfySituo() {
-	device.getDataValue("model") == "Situo 4 Zigbee" || device.getDataValue("model") == "Situo 1 Zigbee"
+	device.getDataValue("manufacturer") == "SOMFY"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {
