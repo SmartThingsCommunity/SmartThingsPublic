@@ -326,7 +326,9 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSE_BUTTONS.DOWN
 			}
 		}
-	} else if (isSomfySituo()){
+	} else if (isSomfySituo() && descMap.data?.size() == 0){
+		// Somfy Situo Remotes query their shades directly after "My"(stop) button  is pressed (that's intended behavior)
+		// descMap contains 'data':['00', '00'] in such cases, so we have to ignore those redundant misinterpreted UP events
 		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
 			buttonState = "pushed"
 			if (descMap.commandInt == 0x00) {
