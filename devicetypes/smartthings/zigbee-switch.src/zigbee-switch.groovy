@@ -98,6 +98,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140R-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140R-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S150-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S150-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S150-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch ST-S150-ZB
+        // Mixtile
+        fingerprint profileId: "0104", inClusters: "0000, 0004, 0005, 0006", outClusters: "0006, 0019", manufacturer: "Mixtile", model: "mixtile.wallswtich.separating.v2", deviceJoinName: "Mixitle In-Wall Swtich" // Mixtile In-Wall Swtich
 	}
 
 	// simulator metadata
