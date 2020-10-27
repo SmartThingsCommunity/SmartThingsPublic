@@ -120,7 +120,7 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 	if (0 <= rawLevel && rawLevel <= 100) {
 		def value = (rawLevel ? "on" : "off")
 		result << createEvent(name: "switch", value: value)
-		result << createEvent(name: "level", value: rawLevel == 99 ? 100 : rawLevel)
+		result << createEvent(name: "level", value: rawLevel == 99 ? 100 : rawLevel, displayed: false)
 
 		def fanLevel = 0
 
