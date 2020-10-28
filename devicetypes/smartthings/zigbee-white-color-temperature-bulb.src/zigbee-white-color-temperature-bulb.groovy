@@ -36,6 +36,8 @@ metadata {
 
 		// ABL
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "Ultra Thin Wafer", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "Ultra Thin Wafer", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
+
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria ZigBee Color Temperature Bulb"
