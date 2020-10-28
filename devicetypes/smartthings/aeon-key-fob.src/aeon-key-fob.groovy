@@ -13,7 +13,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller") {
+	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller", mnmn: "SmartThings", vid: "generic-4-button-alt", mcdSync: true) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -169,7 +169,7 @@ def installed() {
 	initialize()
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
 
-	if (buttons > 1) {
+	if (buttons > 1 && !childDevices) { // Clicking "Update" from the Graph IDE calls installed(), so protect against trying to recreate children.
 		createChildDevices()
 	}
 }

@@ -368,7 +368,11 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 				events += createEvent([name: "windowShade", value: state.blindsLastCommand])
 				events += createEvent([name: "shadeLevel", value: state.shadeTarget, displayed: false])
 			} else {
-				events += response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
+				events += response([
+						encap(zwave.switchMultilevelV3.switchMultilevelGet()),
+						"delay 500",
+						encap(zwave.meterV3.meterGet(scale: 0x00))
+				])
 			}
 		}
 	}

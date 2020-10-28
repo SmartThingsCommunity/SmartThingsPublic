@@ -58,6 +58,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "BY 285 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart Bulb Color
 		fingerprint manufacturer: "innr", model: "RB 250 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart Candle Colour
 		fingerprint manufacturer: "innr", model: "RS 230 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart GU10 Spot Colour
+		fingerprint manufacturer: "innr", model: "AE 280 C", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Innr Smart Color Bulb E26 AE 280 C
 
 		// Müller Licht
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "MLI", model: "ZBT-ExtendedColor", deviceJoinName: "Tint Light", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K" //Müller Licht Bulb White+Color
@@ -95,6 +96,7 @@ metadata {
 
 		// Ajax Online
 		fingerprint manufacturer: "Ajaxonline", model: "AJ-RGBCCT 5 in 1", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+		fingerprint manufacturer: "Ajax online Ltd", model: "AJ_ZB30_GU10", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K" // Raw Description: 0B 0104 010D 01 08 0000 0003 0004 0005 0006 0008 0300 1000 00
 	}
 
 	// UI tile definitions
@@ -221,8 +223,8 @@ def configure() {
 
 	cmds += refresh() +
 	// OnOff, level minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	zigbee.onOffConfig(0, 300) +
-	zigbee.levelConfig(0, 300)
+	zigbee.onOffConfig() +
+	zigbee.levelConfig()
 	cmds
 }
 
