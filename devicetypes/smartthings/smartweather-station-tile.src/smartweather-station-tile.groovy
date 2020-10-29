@@ -230,7 +230,7 @@ def pollUsingZipCode(String zipCode) {
         send(name: "feelsLike", value: obs.temperatureFeelsLike, unit: tempUnits)
 
         send(name: "humidity", value: obs.relativeHumidity, unit: "%")
-        send(name: "weather", value: obs.wxPhraseShort)
+        send(name: "weather", value: obs.wxPhraseLong)
         send(name: "weatherIcon", value: obs.iconCode, displayed: false)
 
         send(name: "wind", value: obs.windSpeed, unit: windUnits)
@@ -239,7 +239,7 @@ def pollUsingZipCode(String zipCode) {
 
         log.trace "Getting location info"
         def loc = getTwcLocation(zipCode)?.location
-        def cityValue = "${loc?.city}, ${loc?.adminDistrictCode} ${loc?.countryCode}"
+        def cityValue = createCityName(loc) ?: zipCode // I don't think we'll ever hit a point where we can't build a city name... But just in case...
         if (cityValue != device.currentValue("city")) {
             send(name: "city", value: cityValue, isStateChange: true)
         }
@@ -332,7 +332,8 @@ def pollUsingPwsId(String stationId) {
         send(name: "windspeed", value: new BigDecimal(convertWindSpeed(obs[dataScale].windSpeed, dataScale, "metric") / 3.6).setScale(2, BigDecimal.ROUND_HALF_UP), unit: "m/s")
         send(name: "windVector", value: "${obs.winddir}° ${windSpeed} ${windUnits}")
 
-        def cityValue = obs.neighborhood
+        def loc = getTwcLocation("${obs.lat},${obs.lon}")?.location
+        def cityValue = createCityName(loc) ?: "${obs.neighborhood}, ${obs.country}"
         if (cityValue != device.currentValue("city")) {
             send(name: "city", value: cityValue, isStateChange: true)
         }
@@ -341,9 +342,7 @@ def pollUsingPwsId(String stationId) {
 
         def cond = getTwcConditions("${obs.lat},${obs.lon}")
         if (cond) {
-            def loc = getTwcLocation("${obs.lat},${obs.lon}")?.location
-
-            send(name: "weather", value: cond.wxPhraseShort)
+            send(name: "weather", value: cond.wxPhraseLong)
             send(name: "weatherIcon", value: cond.iconCode, displayed: false)
             send(name: "uvDescription", value: cond.uvDescription)
 
@@ -533,4 +532,22 @@ private convertWindSpeed(value, fromScale, toScale) {
         return value / 1.609
     }
     return value * 1.609
+}
+
+private createCityName(location) {
+    def cityName = null
+
+    if (location) {
+        cityName = location.city + ", "
+
+        if (location.adminDistrictCode) {
+            cityName += location.adminDistrictCode
+            cityName += " "
+            cityName += location.countryCode ?: location.country
+        } else {
+            cityName += location.country
+        }
+    }
+
+    cityName
 }
