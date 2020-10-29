@@ -22,8 +22,8 @@ metadata {
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
-        //capability "Wind Speed" // Not in production yet
-        capability "stsmartweather.windSpeed" // "Wind Speed" only supports m/s unit, however we want to create both events
+        capability "Wind Speed"
+        capability "stsmartweather.windSpeed"
         capability "stsmartweather.windDirection"
         capability "stsmartweather.apparentTemperature"
         capability "stsmartweather.astronomicalData"
@@ -34,29 +34,6 @@ metadata {
         capability "stsmartweather.weatherSummary"
         capability "Sensor"
         capability "Refresh"
-
-        // While we have created a custom capability for these attributes,
-        // they will remain to support any custom DataManagement based SmartApps using them.
-        attribute "localSunrise", "string"
-        attribute "localSunset", "string"
-        attribute "city", "string"
-        attribute "timeZoneOffset", "string"
-        attribute "weather", "string"
-        attribute "wind", "string"
-        attribute "windVector", "string"
-        attribute "weatherIcon", "string"
-        attribute "forecastIcon", "string"
-        attribute "feelsLike", "string"
-        attribute "percentPrecip", "string"
-        attribute "alert", "string"
-        attribute "alertKeys", "string"
-        attribute "sunriseDate", "string"
-        attribute "sunsetDate", "string"
-        attribute "lastUpdate", "string"
-        attribute "uvDescription", "string"
-        attribute "forecastToday", "string"
-        attribute "forecastTonight", "string"
-        attribute "forecastTomorrow", "string"
     }
 
     preferences {
@@ -255,11 +232,14 @@ def pollUsingZipCode(String zipCode) {
         send(name: "humidity", value: obs.relativeHumidity, unit: "%")
         send(name: "weather", value: obs.wxPhraseShort)
         send(name: "weatherIcon", value: obs.iconCode, displayed: false)
+
         send(name: "wind", value: obs.windSpeed, unit: windUnits)
+        send(name: "windspeed", value: new BigDecimal(convertWindSpeed(obs.windSpeed, tempUnits == "F" ? "imperial" : "metric", "metric") / 3.6).setScale(2, BigDecimal.ROUND_HALF_UP), unit: "m/s")
         send(name: "windVector", value: "${obs.windDirectionCardinal} ${obs.windSpeed} ${windUnits}")
+
         log.trace "Getting location info"
-        def loc = getTwcLocation(zipCode).location
-        def cityValue = "${loc.city}, ${loc.adminDistrictCode} ${loc.countryCode}"
+        def loc = getTwcLocation(zipCode)?.location
+        def cityValue = "${loc?.city}, ${loc?.adminDistrictCode} ${loc?.countryCode}"
         if (cityValue != device.currentValue("city")) {
             send(name: "city", value: cityValue, isStateChange: true)
         }
@@ -275,7 +255,7 @@ def pollUsingZipCode(String zipCode) {
         def sunsetDate = dtf.parse(obs.sunsetTimeLocal)
 
         def tf = new java.text.SimpleDateFormat("h:mm a")
-        tf.setTimeZone(TimeZone.getTimeZone(loc.ianaTimeZone))
+        tf.setTimeZone(TimeZone.getTimeZone(loc?.ianaTimeZone))
 
         def localSunrise = "${tf.format(sunriseDate)}"
         def localSunset = "${tf.format(sunsetDate)}"
@@ -287,22 +267,26 @@ def pollUsingZipCode(String zipCode) {
         // Forecast
         def f = getTwcForecast(zipCode)
         if (f) {
-            def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
-            def precip = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
+            def icon = f.daypart[0].iconCode[0] != null ? f.daypart[0].iconCode[0] : f.daypart[0].iconCode[1]
+            def precip = f.daypart[0].precipChance[0] != null ? f.daypart[0].precipChance[0] : f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
 
             send(name: "percentPrecip", value: precip, unit: "%")
             send(name: "forecastIcon", value: icon, displayed: false)
-            send(name: "forecastToday", value: narrative[0] ?: "-")
-            send(name: "forecastTonight", value: narrative[1] ?: "-")
-            send(name: "forecastTomorrow", value: narrative[2] ?: "-")
-        }
-        else {
+            send(name: "forecastToday", value: narrative[0] ?: "n/a")
+            send(name: "forecastTonight", value: narrative[1] ?: "n/a")
+            send(name: "forecastTomorrow", value: narrative[2] ?: "n/a")
+        } else {
             log.warn "Forecast not found"
+            send(name: "percentPrecip", value: 0, unit: "%", descriptionText: "Chance of precipitation could not be found")
+            send(name: "forecastIcon", value: "", displayed: false)
+            send(name: "forecastToday", value: "n/a", descriptionText: "Today's forecast could not be found")
+            send(name: "forecastTonight", value: "n/a", descriptionText: "Tonight's forecast could not be found")
+            send(name: "forecastTomorrow", value: "n/a", descriptionText: "Tomorrow's forecast could not be found")
         }
 
         // Alerts
-        def alerts = getTwcAlerts("${loc.latitude},${loc.longitude}")
+        def alerts = getTwcAlerts("${loc?.latitude},${loc?.longitude}")
         if (alerts) {
             alerts.each {alert ->
                 def msg = alert.headlineText
@@ -314,12 +298,10 @@ def pollUsingZipCode(String zipCode) {
                 }
                 send(name: "alert", value: msg, descriptionText: msg)
             }
-        }
-        else {
+        } else {
             send(name: "alert", value: "No current alerts", descriptionText: msg)
         }
-    }
-    else {
+    } else {
         log.warn "No response from TWC API"
     }
 
@@ -339,33 +321,77 @@ def pollUsingPwsId(String stationId) {
     if (obsWrapper && obsWrapper.observations && obsWrapper.observations.size()) {
         def obs = obsWrapper.observations[0]
         def dataScale = obs.imperial ? 'imperial' : 'metric'
+
         send(name: "temperature", value: convertTemperature(obs[dataScale].temp, dataScale, tempUnits), unit: tempUnits)
         send(name: "feelsLike", value: convertTemperature(obs[dataScale].windChill, dataScale, tempUnits), unit: tempUnits)
 
         send(name: "humidity", value: obs.humidity, unit: "%")
-        send(name: "weather", value: "n/a")
-        send(name: "weatherIcon", value: "", displayed: false)
-        send(name: "wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits), unit: windUnits)
-        send(name: "windVector", value: "${obs.winddir}° ${convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)} ${windUnits}")
+
+        def windSpeed = convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)
+        send(name: "wind", value: windSpeed, unit: windUnits)
+        send(name: "windspeed", value: new BigDecimal(convertWindSpeed(obs[dataScale].windSpeed, dataScale, "metric") / 3.6).setScale(2, BigDecimal.ROUND_HALF_UP), unit: "m/s")
+        send(name: "windVector", value: "${obs.winddir}° ${windSpeed} ${windUnits}")
+
         def cityValue = obs.neighborhood
         if (cityValue != device.currentValue("city")) {
             send(name: "city", value: cityValue, isStateChange: true)
         }
 
         send(name: "ultravioletIndex", value: obs.uv)
-        send(name: "uvDescription", value: "n/a")
 
-        send(name: "localSunrise", value: "n/a", descriptionText: "Sunrise is not supported when using PWS")
-        send(name: "localSunset", value: "n/a", descriptionText: "Sunset is not supported when using PWS")
-        send(name: "illuminance", value: null)
+        def cond = getTwcConditions("${obs.lat},${obs.lon}")
+        if (cond) {
+            def loc = getTwcLocation("${obs.lat},${obs.lon}")?.location
 
-        // Forecast not supported
-        send(name: "percentPrecip", value: "n/a", unit: "%")
-        send(name: "forecastIcon", value: "", displayed: false)
-        send(name: "forecastToday", value: "n/a")
-        send(name: "forecastTonight", value: "n/a")
-        send(name: "forecastTomorrow", value: "n/a")
-        log.warn "Forecast not supported when using PWS"
+            send(name: "weather", value: cond.wxPhraseShort)
+            send(name: "weatherIcon", value: cond.iconCode, displayed: false)
+            send(name: "uvDescription", value: cond.uvDescription)
+
+            def dtf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+            def sunriseDate = dtf.parse(cond.sunriseTimeLocal)
+            log.debug "'${cond.sunriseTimeLocal}'"
+
+            def sunsetDate = dtf.parse(cond.sunsetTimeLocal)
+            def tf = new java.text.SimpleDateFormat("h:mm a")
+            tf.setTimeZone(TimeZone.getTimeZone(loc?.ianaTimeZone))
+
+            def localSunrise = "${tf.format(sunriseDate)}"
+            def localSunset = "${tf.format(sunsetDate)}"
+            send(name: "localSunrise", value: localSunrise, descriptionText: "Sunrise today is at $localSunrise")
+            send(name: "localSunset", value: localSunset, descriptionText: "Sunset today at is $localSunset")
+
+            send(name: "illuminance", value: estimateLux(cond, sunriseDate, sunsetDate))
+        } else {
+            log.warn "Conditions not found"
+            send(name: "weather", value: "n/a", descriptionText: "Weather summary could not be found")
+            send(name: "weatherIcon", value: "", displayed: false)
+            send(name: "uvDescription", value: "n/a")
+
+            send(name: "localSunrise", value: "n/a", descriptionText: "Sunrise time could not be found")
+            send(name: "localSunset", value: "n/a", descriptionText: "Sunset time could not be found")
+            send(name: "illuminance", value: 0, descriptionText: "Illuminance could not be found")
+        }
+
+        // Forecast
+        def f = getTwcForecast("${obs.lat},${obs.lon}")
+        if (f) {
+            def icon = f.daypart[0].iconCode[0] != null ? f.daypart[0].iconCode[0] : f.daypart[0].iconCode[1]
+            def precip = f.daypart[0].precipChance[0] != null ? f.daypart[0].precipChance[0] : f.daypart[0].precipChance[1]
+            def narrative = f.daypart[0].narrative
+
+            send(name: "percentPrecip", value: precip, unit: "%")
+            send(name: "forecastIcon", value: icon, displayed: false)
+            send(name: "forecastToday", value: narrative[0] ?: "n/a")
+            send(name: "forecastTonight", value: narrative[1] ?: "n/a")
+            send(name: "forecastTomorrow", value: narrative[2] ?: "n/a")
+        } else {
+            log.warn "Forecast not found"
+            send(name: "percentPrecip", value: 0, unit: "%", descriptionText: "Chance of precipitation could not be found")
+            send(name: "forecastIcon", value: "", displayed: false)
+            send(name: "forecastToday", value: "n/a", descriptionText: "Today's forecast could not be found")
+            send(name: "forecastTonight", value: "n/a", descriptionText: "Tonight's forecast could not be found")
+            send(name: "forecastTomorrow", value: "n/a", descriptionText: "Tomorrow's forecast could not be found")
+        }
 
         // Alerts
         def alerts = getTwcAlerts("${obs.lat},${obs.lon}")
@@ -380,12 +406,10 @@ def pollUsingPwsId(String stationId) {
                 }
                 send(name: "alert", value: msg, descriptionText: msg)
             }
-        }
-        else {
+        } else {
             send(name: "alert", value: "No current alerts", descriptionText: msg)
         }
-    }
-    else {
+    } else {
         log.warn "No response from TWC API"
     }
 
@@ -431,66 +455,16 @@ private localDate(timeZone) {
     df.format(new Date())
 }
 
-// Create the new custom capability event if needed,
-// but also send a legacy custom event for any DM-backed SmartApps using them.
 private send(Map map) {
-    def eventConversion = [
-            // Apparent Temperature
-            "feelsLike": ["name": "stsmartweather.apparentTemperature.feelsLike", "attrType": "number"],
-            // Astronomical Data
-            "localSunrise": ["name": "stsmartweather.astronomicalData.localSunrise", "attrType": "string"],
-            "localSunset": ["name": "stsmartweather.astronomicalData.localSunset", "attrType": "string"],
-            "sunriseDate": ["name": "stsmartweather.astronomicalData.sunriseDate", "attrType": "string"],
-            "sunsetDate": ["name": "stsmartweather.astronomicalData.sunsetDate", "attrType": "string"],
-            "city": ["name": "stsmartweather.astronomicalData.city", "attrType": "string"],
-            "timeZoneOffset": ["name": "stsmartweather.astronomicalData.timeZoneOffset", "attrType": "string"],
-            // Precipitation
-            "percentPrecip": ["name": "stsmartweather.precipitation.percentPrecip", "attrType": "integer"],
-            // Smart Weather
-            "lastUpdate": ["name": "stsmartweather.smartWeather.lastUpdate", "attrType": "string"],
-            // Ultraviolet Description
-            "uvDescription": ["name": "stsmartweather.ultravioletDescription.uvDescription", "attrType": "string"],
-            // Weather Alert
-            "alert": ["name": "stsmartweather.weatherAlert.alert", "attrType": "string"],
-            "alertKeys": ["name": "stsmartweather.weatherAlert.alertKeys", "attrType": "string"],
-            // Weather Forecast
-            "forecastIcon": ["name": "stsmartweather.weatherForecast.forecastIcon", "attrType": "string"],
-            "forecastToday": ["name": "stsmartweather.weatherForecast.forecastToday", "attrType": "string"],
-            "forecastTonight": ["name": "stsmartweather.weatherForecast.forecastTonight", "attrType": "string"],
-            "forecastTomorrow": ["name": "stsmartweather.weatherForecast.forecastTomorrow" "attrType": "string"],
-            // Weather Summary
-            "weather": ["name": "stsmartweather.weatherSummary.weather", "attrType": "string"],
-            "weatherIcon": ["name": "stsmartweather.weatherSummary.weatherIcon", "attrType": "string"],
-            // Wind Direction
-            "windVector": ["name": "stsmartweather.windDirection.windVector", "attrType": "string"],
-            // Wind Speed
-            "wind": ["name": "stsmartweather.windSpeed.wind", "attrType": "string"]
-        ]
-
     //log.trace "WUSTATION: event: $map"
     sendEvent(map)
-    if (map.name && eventConversion.containsKey(map.name)) {
-        def newMap = map.clone()
-        def converter = eventConversion[map.name]
-
-        newMap.name = converter.name
-        if (map.value == "n/a" && converter.attrType != "string") {
-            newMap.value = null
-        } else if (map.value == null && converter.attrType == "string") {
-            newMap.value = ""
-        }
-
-        //log.trace "WUSTATION: NEW event: $newMap"
-        sendEvent(newMap)
-    }
 }
 
 private estimateLux(obs, sunriseDate, sunsetDate) {
     def lux = 0
     if (obs.dayOrNight == 'N') {
         lux = 10
-    }
-    else {
+    } else {
         //day
         switch(obs.iconCode) {
             case 4:
@@ -516,7 +490,7 @@ private estimateLux(obs, sunriseDate, sunsetDate) {
         def beforeSunset = sunsetDate.time - now
         def oneHour = 1000 * 60 * 60
 
-        if(afterSunrise < oneHour) {
+        if (afterSunrise < oneHour) {
             //dawn
             lux = (long)(lux * (afterSunrise/oneHour))
         } else if (beforeSunset < oneHour) {
@@ -556,7 +530,7 @@ private convertWindSpeed(value, fromScale, toScale) {
         return value
     }
     if (ts == 'imperial') {
-        return value * 1.608
+        return value / 1.609
     }
-    return value / 1.608
+    return value * 1.609
 }

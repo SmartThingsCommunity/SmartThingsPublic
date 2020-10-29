@@ -6,30 +6,9 @@
         "type": "object",
         "properties": {
           "value": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string",
-            "enum": [
-              "%"
-            ],
-            "default": "%"
-          }
-        },
-        "additionalProperties": false,
-        "required": [
-          "value"
-        ]
-      }
-    },
-    "precipitation": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "value": {
             "title": "IntegerPercent",
             "type": "integer",
-            "minimum": -1,
+            "minimum": 0,
             "maximum": 100
           },
           "unit": {
