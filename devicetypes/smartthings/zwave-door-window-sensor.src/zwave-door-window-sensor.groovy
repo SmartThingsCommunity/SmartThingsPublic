@@ -55,6 +55,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor Gen5
 		fingerprint mfr: "0371", prod: "0102", model: "0007", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor 7
 		fingerprint mfr: "0371", prod: "0002", model: "0007", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Door/Window Sensor 7
+		fingerprint mfr: "0371", prod: "0202", model: "0007", deviceJoinName: "Aeotec Open/Closed Sensor" //AU //Aeotec Door/Window Sensor 7
 		fingerprint mfr: "0060", prod: "0002", model: "0003", deviceJoinName: "Everspring Open/Closed Sensor" //US & EU //Everspring Door/Window Sensor
 		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Recessed Door Sensor 7
 		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Recessed Door Sensor 7
