@@ -186,12 +186,18 @@ def parse(String description) {
 }
 
 def installed() {
+    schedulePoll()
     poll()
-    runEvery30Minutes(poll)
+}
+
+def schedulePoll() {
+    unschedule()
+    runEvery3Hours("poll")
 }
 
 def updated() {
-    poll
+    schedulePoll()
+    poll()
 }
 
 def uninstalled() {
