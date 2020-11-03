@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true, mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeotec_Doorbell_Siren_6") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Tamper Alert"
