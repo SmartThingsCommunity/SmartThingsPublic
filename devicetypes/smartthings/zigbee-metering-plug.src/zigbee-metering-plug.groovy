@@ -23,6 +23,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
         capability "Configuration"
+        capability "Power Consumption Report"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0000",  deviceJoinName: "Outlet" //Smart Plug
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0005",  deviceJoinName: "Outlet" //Smart Plug
@@ -108,6 +109,17 @@ def parse(String description) {
                         map.name = "energy"
                         map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
                         map.unit = "kWh"
+                        
+                        if (isDawonOutlet()) { 
+                            def currentEnergy = map.value
+                            def curConsum = device.currentState("powerConsumption")?.value
+                            Map previousMap = curConsum ? new groovy.json.JsonSlurper().parseText(curConsum) : [:]
+                            def deltaEnergy = calculateDelta (currentEnergy, previousMap)
+                            Map reportMap = [:]
+                            reportMap["energy"] = currentEnergy
+                            reportMap["deltaEnergy"] = deltaEnergy 
+                            sendEvent("name": "powerConsumption", "value": reportMap.encodeAsJSON(), displayed: false)
+                        }
                 }
 
                 if (map) {
@@ -173,6 +185,14 @@ private int getEnergyDiv() {
     } else {
         100
     }
+}
+
+BigDecimal calculateDelta (BigDecimal currentEnergy, Map previousMap) {
+        if (previousMap == null || previousMap ['energy'] == null) {
+                return 0;
+        }
+        BigDecimal lastAcumulated = BigDecimal.valueOf(previousMap ['energy']);
+        return currentEnergy.subtract(lastAcumulated).max(BigDecimal.ZERO);
 }
 
 private boolean isSengledOutlet() {
