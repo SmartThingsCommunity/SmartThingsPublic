@@ -359,8 +359,8 @@ def pollDevice() {
 	def cmds = []
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
 	cmds << zwave.thermostatFanModeV3.thermostatFanModeGet()
-	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 1) // current temperature
-	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 5) // current relative humidity
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1) // current temperature
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 5) // current relative humidity
 	cmds << zwave.thermostatOperatingStateV1.thermostatOperatingStateGet()
 	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
