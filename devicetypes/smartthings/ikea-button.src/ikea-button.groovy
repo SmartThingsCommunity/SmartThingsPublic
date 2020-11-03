@@ -32,6 +32,7 @@ metadata {
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 	}
 
 	tiles {
@@ -325,7 +326,9 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSE_BUTTONS.DOWN
 			}
 		}
-	} else if (isSomfySituo()){
+	} else if (isSomfySituo() && descMap.data?.size() == 0){
+		// Somfy Situo Remotes query their shades directly after "My"(stop) button  is pressed (that's intended behavior)
+		// descMap contains 'data':['00', '00'] in such cases, so we have to ignore those redundant misinterpreted UP events
 		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
 			buttonState = "pushed"
 			if (descMap.commandInt == 0x00) {
@@ -366,7 +369,7 @@ private boolean isIkea() {
 }
 
 private boolean isSomfySituo() {
-	device.getDataValue("model") == "Situo 4 Zigbee"
+	device.getDataValue("manufacturer") == "SOMFY"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {
