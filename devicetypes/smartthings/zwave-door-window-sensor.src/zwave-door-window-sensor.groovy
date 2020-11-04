@@ -374,12 +374,3 @@ def retypeBasedOnMSR() {
 	}
 	dthChanged
 }
-
-// this is present in zwave-motion-sensor.groovy DTH too
-private isEnerwave() {
-	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
-}
-
-def clearTamper() {
-	sendEvent(name: "tamper", value: "clear")
-}
