@@ -41,7 +41,7 @@ metadata {
 		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80", deviceJoinName: "Thermostat"
 		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Thermostat" //Linear Z-Wave Thermostat
 		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "GoControl Thermostat" //GoControl Z-Wave Thermostat
-		fingerprint mfr: "0039", prod: "0011", model: "0008", deviceJoinName: "Honeywell Thermostat" //Honeywell T6 Pro Z-Wave Thermostat
+		fingerprint mfr: "0039", prod: "0011", model: "0008", deviceJoinName: "Honeywell Thermostat", mnmn: "SmartThings", vid: "honeywell-t6-pro" //Honeywell T6 Pro Z-Wave Thermostat
 	}
 
 	tiles {
@@ -359,8 +359,8 @@ def pollDevice() {
 	def cmds = []
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
 	cmds << zwave.thermostatFanModeV3.thermostatFanModeGet()
-	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 1) // current temperature
-	cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType: 5) // current relative humidity
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1) // current temperature
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 5) // current relative humidity
 	cmds << zwave.thermostatOperatingStateV1.thermostatOperatingStateGet()
 	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
