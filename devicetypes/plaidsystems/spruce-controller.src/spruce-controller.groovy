@@ -50,7 +50,7 @@ def getOUT_OF_SERVICE_IDENTIFIER() {0x0051}
 def getPRESENT_VALUE_IDENTIFIER() {0x0055}
 
 metadata {
-	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "566e4d4f-93bc-3c86-b7e1-8a4e212683b0"){
+	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "19bed5c0-a5b4-3485-a96d-d3ea4caae99f"){
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
@@ -192,13 +192,8 @@ def commandType(endpoint, cluster){
 
 //--------------------end zigbee parse-------------------------------//
 
-def installed() {
-	if (!childDevices) {
-		removeChildDevices()
-		createChildDevices()
-		response(refresh() + configure())
-	}
-	initialize()
+def installed() {	
+    //configure() called after installed()
 }
 
 def updated() {
@@ -213,7 +208,7 @@ def initialize(){
 	sendEvent(name: "controllerState", value: "off", displayed: false)
 	sendEvent(name: "status", value: "Initialize")
 	//update zigbee device settings
-	response(setDeviceSettings() + setTouchButtonDuration() + setRainSensor())
+	response(setDeviceSettings() + setTouchButtonDuration() + setRainSensor() + refresh())
 }
 
 
@@ -493,7 +488,7 @@ def configure() {
 	configureHealthCheck()
 
 	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Configuring Reporting and Bindings ${device.label} ${device.deviceNetworkId} ${device.zigbeeId}"
+	log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.zigbeeId}"
 
 	//setup binding for 18 endpoints
 	def bindCmds = []
