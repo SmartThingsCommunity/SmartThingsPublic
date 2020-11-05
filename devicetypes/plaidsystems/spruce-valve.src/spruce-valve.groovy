@@ -10,15 +10,16 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- */
+ *
 
-/*
-remove duration slider from presentation until SmartThings fixes Slider setter command
-vid: "558e73d3-c800-3669-b276-1d4352eda12b"
-*/
- 
+11-2020
+ * valveDuration slider capability added back to presentation
+ * tabs and trim whitespace
+
+**/
+
 metadata {
-	definition (name: "Spruce Valve", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "ed1871a2-7ee6-31a4-bdb1-d638121226c0"){
+	definition (name: "Spruce Valve", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "558e73d3-c800-3669-b276-1d4352eda12b"){
 		capability "Actuator"
 		capability "Valve"
 		capability "Sensor"
@@ -30,16 +31,6 @@ metadata {
 		command "setValveDuration"
 
 		attribute "valveDuration", "NUMBER"
-	}
-
-	// tile definitions
-	tiles {
-		standardTile("valve", "device.valve", width: 2, height: 2) {
-			state "closed", label: "closed", action: "open"
-			state "open", label: "open", action: "close"
-		}
-		main "valve"
-		details(["valve"])
 	}
 }
 
@@ -63,7 +54,6 @@ private initialize() {
 }
 
 def parse(String onOff) {
-	log.debug "Child Desc: ${onOff}"
 	sendEvent(name: "valve", value: onOff)
 }
 
@@ -78,7 +68,6 @@ def close() {
 }
 
 def setValveDuration(duration) {
-	log.debug duration
 	sendEvent(name: "valveDuration", value: duration, unit: "mins")
 }
 
