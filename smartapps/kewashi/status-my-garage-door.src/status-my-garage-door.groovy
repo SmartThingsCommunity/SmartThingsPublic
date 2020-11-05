@@ -14,6 +14,7 @@
  *  Author: SmartThings
  *
  *  Date: 2013-05-01
+ *  09/21/2019 - updated to handle switches properly
  */
 
 definition(
@@ -60,12 +61,17 @@ def initialize() {
 
 def buttonHit(evt) {
     def swval = theOpener.currentValue("switch")
-    log.debug "Door switch: " + theOpener.name + ", generated value: " + evt.value + ", switch val: " + swval
     
-    // turn button off is state is on after hit
-    if ( swval == "on" ) {
-       theOpener.off()
+    // ensure button state is always set to off
+    // if this is a regular switch without push support
+    if (  !theOpener.hasCommand("push") && swval == "on" ) {
+        log.debug "Door switch: " + theOpener.name + ", forcing to off from val: " + swval
+        delayBetween( [ pass, theOpener.off()], 3000 )
     }
+}
+
+def noop() {
+    def x = 1
 }
 
 def switchHit(evt) {
@@ -75,7 +81,7 @@ def switchHit(evt) {
 
     // if the sensor state is closed and open button is pushed activate
     // it is more reliable to check the virtual opening state instead of open
-    if (evt.value == "opening" && current.value == "closed") {
+    if (evt.value == "opening" && current.value != "open") {
         if ( theOpener.hasCommand("push") ) { 
             theOpener.push()
         } else {
@@ -85,7 +91,7 @@ def switchHit(evt) {
     // if sensor state is open and closed button is pushed then activate
     // it is more reliable to check the virtual closing state instead of close
      
-    else if (evt.value == "closing" && current.value == "open" ) {
+    else if (evt.value == "closing" && current.value != "closed" ) {
         if ( theOpener.hasCommand("push") ) { 
             theOpener.push()
         } else {
