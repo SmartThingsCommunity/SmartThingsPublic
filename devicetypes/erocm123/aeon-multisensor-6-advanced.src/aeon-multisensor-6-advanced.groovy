@@ -527,7 +527,7 @@ def convertParam(number, value) {
 	switch (number){
         case 41:
             //Parameter difference between firmware versions
-        	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
+        	if (settings."41"?.toInteger() != null && device.currentValue("currentFirmware") != null) {
                     if (device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > 1.09) {
                         if (value < 10) {
                             logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
@@ -563,14 +563,14 @@ def convertParam(number, value) {
         break
         case 45:
             //Parameter difference between firmware versions
-        	if (settings."45".toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.08")
+        	if (settings."45"?.toInteger() != null && device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware") != "1.08")
             	2
             else
                 value
         break
         case 101:
-        	if (settings."40".toInteger() != null) {
-                if (settings."40".toInteger() == 1) {
+        	if (settings."40"?.toInteger() != null) {
+                if (settings."40"?.toInteger() == 1) {
                    0
                 } else {
                    value
