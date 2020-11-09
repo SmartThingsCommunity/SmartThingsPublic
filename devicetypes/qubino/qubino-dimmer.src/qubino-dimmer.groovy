@@ -158,6 +158,8 @@ def excludeParameterFromSync(preference){
 		if (isDINDimmer() || isFlushDimmer010V()) {
 			exclude = true
 		}
+	} else if (preference.key == "minimumDimmingValue"){
+		exclude = true
 	}
 
 	if (exclude) {
@@ -232,13 +234,6 @@ def configure() {
 	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands += getRefreshCommands()
-
-	// 1% is default Minimum dimming value for dimmers,
-	// when device is set to 1% - it turns off and device does not send any level reports
-	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
-	// Still, for users it will relatively be 1-100% on the UI and device will report it.
-	// Parameter no. 60 – Minimum dimming value
-	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
 	commands += getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
@@ -383,7 +378,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	def value = (cmdValue ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmdValue && cmdValue <= 100) {
-		cmdValue = adjustValueToRange(cmd.value)
+		//cmdValue = adjustValueToRange(cmd.value)
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
 	}
 
@@ -400,8 +395,7 @@ Integer adjustValueToRange(value){
 		return 0
 	}
 	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
-	def adjustedValue = (((value - minDimmingLvlPref)/(100 - minDimmingLvlPref)) * 100) as Integer
-	return Math.max(adjustedValue, 1)
+	return Math.max(value, minDimmingLvlPref)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
@@ -492,7 +486,9 @@ def setLevel(value, duration = null) {
 		getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
 	}
 
-	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
+	def adjustedLevel = adjustValueToRange(level)
+
+	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: adjustedLevel, dimmingDuration: dimmingDuration)
 	commands << zwave.switchMultilevelV3.switchMultilevelGet()
 
 	encapCommands(commands, getStatusDelay)
