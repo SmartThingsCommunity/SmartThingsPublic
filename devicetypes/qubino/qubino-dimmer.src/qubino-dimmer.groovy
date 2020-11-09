@@ -378,7 +378,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	def value = (cmdValue ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmdValue && cmdValue <= 100) {
-		//cmdValue = adjustValueToRange(cmd.value)
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
 	}
 
