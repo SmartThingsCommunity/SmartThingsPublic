@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 SmartThings
+ *  Copyright 2016 SmartThings, contributions by RBoy Apps
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -124,7 +124,7 @@ private Map getBatteryResult(rawValue) {
     if (!(rawValue == 0 || rawValue == 255)) {
         result.name = 'battery'
         result.translatable = true
-        result.descriptionText = "${ device.displayName } battery was ${ value }%"
+        result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 
         def minVolts = 2.1
         def maxVolts = 3.0
