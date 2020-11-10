@@ -224,12 +224,9 @@ def configure() {
 		Group 5: Multilevel sensor report (external temperature sensor report).
 
 	*/
-	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId:[])
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands += getRefreshCommands()
 
@@ -335,26 +332,8 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 	dimmerEvents(cmd)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
-	log.debug "BasicSet: ${cmd}"
-	def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
-
-	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
-		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
-	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
-		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
-		dimmerEvents(cmd)
-	}
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
 	log.debug "SwitchMultilevelReport: ${cmd}"
-	dimmerEvents(cmd)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
-	log.debug "SwitchMultilevelSet: ${cmd}"
 	dimmerEvents(cmd)
 }
 
@@ -384,11 +363,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmdValue && cmdValue <= 100) {
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
-	}
-
-	if(supportsPowerMeter()){
-		log.debug "query device for power meter values"
-		sendHubCommand(encapCommands(getPowerMeterCommands()))
 	}
 
 	return result
