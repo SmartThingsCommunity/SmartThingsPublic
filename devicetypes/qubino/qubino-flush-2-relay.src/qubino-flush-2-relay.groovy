@@ -291,7 +291,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(createMeterEventMap(cmd))
-		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
+		sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
 }
 
