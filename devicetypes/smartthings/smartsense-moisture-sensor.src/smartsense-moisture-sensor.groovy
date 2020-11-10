@@ -34,6 +34,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-IM6001"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-WTD03", deviceJoinName: "Sercomm Water Leak Sensor" //Sercomm Water Leak Detector
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"FLSZB-110", deviceJoinName: "frient Water Leak Detector"
 	}
 
 	simulator {
@@ -192,7 +193,7 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
-			def minVolts = 2.1
+			def minVolts = isFrientSensor() ? 2.3 : 2.1
 			def maxVolts = 3.0
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
 			def roundedPct = Math.round(pct * 100)
@@ -273,7 +274,23 @@ def configure() {
 	} else {
 		configCmds += zigbee.batteryConfig()
 	}
-	configCmds += zigbee.temperatureConfig(30, 300)
+    if (isFrientSensor()) {
+        configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0x64, temperatureEndpoint())
+    } else {
+        configCmds += zigbee.temperatureConfig(30, 300)
+    }
 
 	return refresh() + configCmds + refresh() // send refresh cmds as part of config
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
+}
+
+private Map temperatureEndpoint() {
+    if (isFrientSensor()) {
+        [destEndpoint: 0x26]
+    } else {
+        [:]
+    }
 }
