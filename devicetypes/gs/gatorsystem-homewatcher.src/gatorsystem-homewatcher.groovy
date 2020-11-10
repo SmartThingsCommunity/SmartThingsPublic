@@ -25,7 +25,7 @@ def parse(String description) {
 	log.debug "Parse returned map $map"
 	if (map != null) {    
 		def result = map ? createEvent(map) : null
-        return result
+       	return result
 	}
 }
 
@@ -33,14 +33,14 @@ private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Map resultMap = [:]
 	def seconds01 = 60
-    def seconds02 = 120
+  	def seconds02 = 120
 	def resultOccupied = '0x8000'
 	def resultOpenned = '0x4000'
 	def resultClosed = '0x2000'
 	def resultBatteryNew = '0x1000'
 	def resultBatteryOut = '0x0800'
-    if (zs.isAlarm1Set()) {
-    	runIn(seconds02, stopMotion) 
+	if (zs.isAlarm1Set()) {
+		runIn(seconds02, stopMotion) 
     	resultMap = getMotionResult('active')  
  	} else if (zs.isBatterySet()){
     	resultMap = getBatteryResult(10)
@@ -51,7 +51,7 @@ private Map parseIasMessage(String description) {
     	resultMap = getMotionResult('openned') 
     } else if (description.contains(resultClosed)) {    
     	resultMap = getMotionResult('closed')  	 	
-    } else if (description.contains(resultBatteryNew)) {
+   	} else if (description.contains(resultBatteryNew)) {
     	resultMap = getBatteryResult(100)
     } else if (description.contains(resultBatteryOut)) {
     	resultMap = getBatteryResult(0)
@@ -69,7 +69,7 @@ private Map getMotionResult(value) {
         String descriptionText = "{{ device.displayName }} detected intrusion"
         createEvent(
         	name: 'motion',
-            value: value,
+        	value: value,
             descriptionText: descriptionText,
             translatable: true
         )
@@ -77,7 +77,7 @@ private Map getMotionResult(value) {
     	log.debug 'detected occupancy'
         String descriptionText = "{{ device.displayName }} detected occupant"
 		createEvent(
-            name: 'presence',
+        	name: 'presence',
             value: "present",
             descriptionText: descriptionText,
             translatable: true
