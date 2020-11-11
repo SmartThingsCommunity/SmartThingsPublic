@@ -43,7 +43,7 @@ metadata {
         //AduroSmart
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.0
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.1
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor Pro"
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
 	}
 
 	simulator {
