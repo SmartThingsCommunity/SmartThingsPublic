@@ -217,9 +217,9 @@ def configure() {
 		cmds += configureEcolink()
 	} else if (isBoschRadionMultiSensor()) {
 		cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, IAS_ZONE_TYPE_ATTRIBUTE)
-    } else if (isFrientSensor()) {
-        cmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 60 * 30, 0x64, temperatureEndpoint())
-    }
+	} else if (isFrientSensor()) {
+		cmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 60 * 30, 0x64, temperatureEndpoint())
+	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	return cmds
