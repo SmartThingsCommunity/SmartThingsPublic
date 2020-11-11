@@ -211,7 +211,7 @@ def configure() {
 	def cmds = refresh() +
 		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
 		zigbee.batteryConfig() +
-        zigbee.temperatureConfig(30, 60 * 30) +
+		zigbee.temperatureConfig(30, 60 * 30) +
 		zigbee.enrollResponse()
 	if (isEcolink()) {
 		cmds += configureEcolink()
