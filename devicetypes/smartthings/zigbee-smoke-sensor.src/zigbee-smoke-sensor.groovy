@@ -1,4 +1,4 @@
-/*
+ /*
   *  Copyright 2018 SmartThings
   *
   *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -32,7 +32,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "Orvibo Smoke Detector" //欧瑞博 烟雾报警器(SF21)
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-EM", deviceJoinName: "HEIMAN Smoke Detector" //HEIMAN Smoke Sensor (HS1SA-E)
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-N-3.0", deviceJoinName: "HEIMAN Smoke Detector" //HEIMAN Smoke Sensor (HS3SA)
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"SMSZB-120", deviceJoinName: "frient Intelligent Smoke Alarm"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"SMSZB-120", deviceJoinName: "frient Intelligent Smoke Alarm"
 	}
 
 	tiles {
@@ -118,11 +118,11 @@ private Map getBatteryResult(rawValue) {
 		result.translatable = true
 		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 
-        def minValue = 23
-        def maxValue = 30
-        def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
-        pct = pct > 0 ? pct : 1
-        result.value = Math.min(100, pct)
+		def minValue = 23
+		def maxValue = 30
+		def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
+		pct = pct > 0 ? pct : 1
+		result.value = Math.min(100, pct)
 	}
 
 	return result
@@ -155,7 +155,7 @@ def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
 	def batteryAttr = isFrientSensor() ? 0x0020 : 0x0021
-    refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr) +
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
@@ -175,9 +175,9 @@ def configure() {
 	Integer maxReportTime = 180
 	Integer reportableChange = null
 	return refresh() + 
-    		zigbee.enrollResponse() +
-            (isFrientSensor() ? zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 1200, 0x1) : zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10)) +
-        	zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
+			zigbee.enrollResponse() +
+			(isFrientSensor() ? zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 1200, 0x1) : zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10)) +
+			zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
 }
 
 private Boolean isFrientSensor() {
