@@ -71,7 +71,7 @@ private Map getMotionResult(value) {
             name: 'motion',
             value: value,
             descriptionText: descriptionText,
-            translatable: true
+            translatable: false
         )
     } else if (value == 'occupied') {
         log.debug 'detected occupancy'
@@ -80,7 +80,7 @@ private Map getMotionResult(value) {
             name: 'presence',
             value: "present",
             descriptionText: descriptionText,
-            translatable: true
+            translatable: false
         )
     } else if (value == 'openned') {
         log.debug 'detected window openned'
@@ -89,7 +89,7 @@ private Map getMotionResult(value) {
             name: 'contact',
             value: "open",
             descriptionText: descriptionText,
-            translatable: true
+            translatable: false
         )
     } else if (value == 'closed') {
         log.debug 'detected  window closed'
@@ -98,7 +98,7 @@ private Map getMotionResult(value) {
             name: 'contact',
             value: "closed",
             descriptionText: descriptionText,
-            translatable: true
+            translatable: false
         )
     }
 }
@@ -112,4 +112,19 @@ def initialize() {
     sendEvent(name:"battery", value:"100")
     sendEvent(name:"presence", value:"not present")
     sendEvent(name:"contact", value:"closed")
+}
+
+def stopMotion() {
+    if (device.currentState('motion')?.value == "active") {
+        sendEvent(name:"motion", value:"inactive", isStateChange: true)
+        log.debug "${device.displayName} reset to monitoring; motion cleared manually"
+    }
+}
+
+def resetOccupancy() {
+    def seconds = 60
+    if (device.currentState('presence')?.value == "present") {
+        sendEvent(name:"presence", value:"not present", isStateChange: true)
+        log.debug "${device.displayName} reset to sensing after ${seconds} seconds"
+    }
 }
