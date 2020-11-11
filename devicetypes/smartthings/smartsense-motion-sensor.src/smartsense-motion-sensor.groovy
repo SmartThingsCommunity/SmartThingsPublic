@@ -219,7 +219,7 @@ private Map getBatteryResult(rawValue) {
 			def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
 			pct = pct > 0 ? pct : 1
 			result.value = Math.min(100, pct)
-        } else { // Centralite
+		} else { // Centralite
 			def useOldBatt = shouldUseOldBatteryReporting()
 			def minVolts = useOldBatt ? 2.1 : 2.4
 			def maxVolts = useOldBatt ? 3.0 : 2.7
