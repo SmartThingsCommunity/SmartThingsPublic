@@ -115,9 +115,10 @@ def initialize() {
 }
 
 def stopMotion() {
+    def seconds = 120
     if (device.currentState('motion')?.value == "active") {
         sendEvent(name:"motion", value:"inactive", isStateChange: true)
-        log.debug "${device.displayName} reset to monitoring; motion cleared manually"
+        log.debug "${device.displayName} reset to monitoring after ${seconds} seconds"
     }
 }
 
