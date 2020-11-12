@@ -33,7 +33,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Multipurpose Sensor" //Orvibo Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0009, 0402", manufacturer: "HEIMAN", model: "HT-EM", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0402, 0B05", manufacturer: "HEIMAN", model: "HT-EF-3.0", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
-
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0020,0402,0405", outClusters: "0003,000A,0019", manufacturer: "frient A/S", model :"HMSZB-110", deviceJoinName: "frient Multipurpose Sensor" // Develco Humidity Sensor
 	}
 
 	simulator {
@@ -52,7 +52,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState "temperature", label: '${currentValue}°',
+				attributeState "temperature", label: '${currentValue}Â°',
 						backgroundColors: [
 								[value: 31, color: "#153591"],
 								[value: 44, color: "#1e9cbb"],
@@ -104,7 +104,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
-		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}Â°C' : '{{ device.displayName }} was {{ value }}Â°F'
 		map.translatable = true
 	} else if (map.name == "humidity") {
 		if (humidityOffset) {
@@ -139,7 +139,7 @@ private Map getBatteryResult(rawValue) {
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
-		def minVolts = 2.1
+		def minVolts = isFrientSensor() ? 2.3 : 2.1
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
@@ -170,6 +170,10 @@ def refresh() {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+	} else if (isFrientSensor()) {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
+		        zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
+		        zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
 	} else {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
 		        zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
@@ -193,11 +197,20 @@ def configure() {
 		        zigbee.temperatureConfig(30, 300) +
 		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
 		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
-	} else {
+	} else if (isFrientSensor()) {
+		return refresh() + 
+		        zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
+		        zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
+		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
+    } else {
 		return refresh() +
 		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
 		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
 		        zigbee.batteryConfig() +
 		        zigbee.temperatureConfig(30, 300)
 	}
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "Develco Products A/S"
 }
