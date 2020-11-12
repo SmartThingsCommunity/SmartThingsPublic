@@ -428,7 +428,6 @@ def createChildDevice(childDthNamespace, childDthName, childDni, childComponentL
 def on() {
 	def commands = [
 		zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF, dimmingDuration: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
 
 	encapCommands(commands, 3000)
@@ -437,7 +436,6 @@ def on() {
 def off() {
 	def commands = [
 		zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00, dimmingDuration: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
 
 	encapCommands(commands, 3000)
@@ -460,9 +458,7 @@ def setLevel(value, duration = null) {
 	}
 
 	def adjustedLevel = adjustValueToRange(level)
-
 	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: adjustedLevel, dimmingDuration: dimmingDuration)
-	commands << zwave.switchMultilevelV3.switchMultilevelGet()
 
 	encapCommands(commands, getStatusDelay)
 }
