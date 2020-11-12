@@ -1,10 +1,12 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+
 metadata {
     definition (name: "GatorSystem HomeWatcher", namespace: "GS", author: "GS_coder000") {
     capability "Motion Sensor"
     capability "Battery"
     capability "Contact Sensor"
     capability "Presence Sensor"   
+        
     // Raw Description 08 0104 0402 00 02 0000 0500 01 0502
     fingerprint deviceJoinName: "GatorSystem Multipurpose Sensor", manufacturer: "GatorSystem", model: "GSHW01"
     }
@@ -15,11 +17,9 @@ def parse(String description) {
     Map map = [:]
     if (description?.startsWith('catchall:')) { //raw commands that smartthings does not or cannot interpret
         map = zigbee.parseDescriptionAsMap(description)   
-    }
-    else if (description?.startsWith('read attr -')) {
+    } else if (description?.startsWith('read attr -')) {
         map = zigbee.parseDescriptionAsMap(description)
-    }
-    else if (description?.startsWith('zone status')) {
+    } else if (description?.startsWith('zone status')) {
         map = parseIasMessage(description)
     }
     log.debug "Parse returned map $map"
