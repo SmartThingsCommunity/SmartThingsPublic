@@ -104,7 +104,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
-		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}Â°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
 	} else if (map.name == "humidity") {
 		if (humidityOffset) {
