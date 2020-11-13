@@ -33,7 +33,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Multipurpose Sensor" //Orvibo Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0009, 0402", manufacturer: "HEIMAN", model: "HT-EM", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0402, 0B05", manufacturer: "HEIMAN", model: "HT-EF-3.0", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
-		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0020,0402,0405", outClusters: "0003,000A,0019", manufacturer: "frient A/S", model :"HMSZB-110", deviceJoinName: "frient Multipurpose Sensor" // Develco Humidity Sensor
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0020,0402,0405", outClusters: "0003,000A,0019", manufacturer: "frient A/S", model :"HMSZB-110", deviceJoinName: "frient Multipurpose Sensor" // frient Humidity Sensor
 	}
 
 	simulator {
@@ -212,5 +212,5 @@ def configure() {
 }
 
 private Boolean isFrientSensor() {
-	device.getDataValue("manufacturer") == "Develco Products A/S"
+	device.getDataValue("manufacturer") == "frient A/S"
 }
