@@ -40,10 +40,10 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "Bosch", model: "RFDL-ZB-MS", deviceJoinName: "Bosch Motion Sensor" //Bosch Motion Sensor
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "motion", deviceJoinName: "Motion Sensor" // This is the only ST sensor that shouldn't use SmartThings-smartthings-SmartSense_Motion_Sensor
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "PIRZB1-ECO", deviceJoinName: "Ecolink Motion Sensor" //Ecolink Motion Detector
-        //AduroSmart
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.0
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.1
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
+		//AduroSmart
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.0
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.1
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
 	}
 
 	simulator {
