@@ -37,10 +37,10 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006, 0702, 0B04", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "ST-B550-ZB",  deviceJoinName: "Dawon Outlet" // DAWON DNS Smart Plug
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0006, 0702, 0B04", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "PM-C150-ZB",  deviceJoinName: "Dawon Outlet" // DAWON DNS In-Wall Outlet
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0006, 0702, 0B04", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "PM-C250-ZB",  deviceJoinName: "Dawon Outlet" // DAWON DNS In-Wall Outlet
-        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-131",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
-		fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-132",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
-        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-134",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
-        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SMRZB-143",  deviceJoinName: "frient Outlet" //     frient smart cable, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+	fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-131",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+	fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-132",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+	fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-134",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+	fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SMRZB-143",  deviceJoinName: "frient Outlet" //     frient smart cable, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
 
     }
 
