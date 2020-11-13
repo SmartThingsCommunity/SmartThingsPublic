@@ -1,5 +1,4 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-
 metadata {
     definition (name: "GatorSystem HomeWatcher", namespace: "GS", author: "GS_coder000") {
     capability "Motion Sensor"
