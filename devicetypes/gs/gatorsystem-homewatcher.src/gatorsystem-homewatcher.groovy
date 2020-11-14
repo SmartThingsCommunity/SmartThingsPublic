@@ -65,7 +65,7 @@ private Map getBatteryResult(rawValue) {
 
 private Map getMotionResult(value) {
 	if (value == 'active') {
-		log.debug 'intrusion'
+		log.debug 'detected intrusion'
 		String descriptionText = "{{ device.displayName }} detected intrusion"
 		createEvent(
 			name: 'motion',
@@ -75,7 +75,7 @@ private Map getMotionResult(value) {
 		)
 	} else if (value == 'occupied') {
 		log.debug 'detected occupancy'
-		String descriptionText = "{{ device.displayName }} detected occupant"
+		String descriptionText = "{{ device.displayName }} detected occupancy"
 		createEvent(
 			name: 'presence',
 			value: "present",
@@ -92,7 +92,7 @@ private Map getMotionResult(value) {
 			translatable: false
 		)
 	} else if (value == 'closed') {
-		log.debug 'detected  window closed'
+		log.debug 'detected window closed'
 		String descriptionText = "{{ device.displayName }} detected window closed"
 		createEvent(
 			name: 'contact',
