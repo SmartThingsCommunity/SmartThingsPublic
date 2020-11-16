@@ -7,7 +7,7 @@ metadata {
 	capability "Presence Sensor"   
 		
 	// Raw Description 08 0104 0402 00 02 0000 0500 01 0502
-	fingerprint manufacturer: "GatorSystem", deviceJoinName: "GatorSystem Multipurpose Sensor", model: "GSHW01"
+	fingerprint manufacturer: "GatorSystem", model: "GSHW01", deviceJoinName: "GatorSystem Multipurpose Sensor"
 	}
 }
 
@@ -24,8 +24,6 @@ def parse(String description) {
 	log.debug "Parse returned map $map"
 	if (map != null) {	
 		createEvent(map)
-	} else {
-		return null
 	}
 }
 
