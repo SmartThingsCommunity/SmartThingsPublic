@@ -247,9 +247,9 @@ private Boolean isFrientSensor() {
 }
 
 private Map temperatureEndpoint() {
-    if (isFrientSensor()) {
-        [destEndpoint: 0x26]
-    } else {
-        [:]
-    }
+	if (isFrientSensor()) {
+		[destEndpoint: 0x26]
+	} else {
+		[:]
+	}
 }
