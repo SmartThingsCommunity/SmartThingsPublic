@@ -179,9 +179,11 @@ def configure() {
 	Integer minReportTime = 0
 	Integer maxReportTime = 180
 	Integer reportableChange = null
+	Integer batteryAttr = isFrientSensor() ? BATTERY_VOLTAGE_ATTR : BATTERY_PERCENT_ATTR
+	Integer batteryReportChange = isFrientSensor() ? 0x1 : 0x10
 	return refresh() + 
 			zigbee.enrollResponse() +
-			(isFrientSensor() ? zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR, DataType.UINT8, 30, 1200, 0x1) : zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 1200, 0x10)) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr, DataType.UINT8, 30, 1200, batteryReportChange) +
 			zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
 }
 
