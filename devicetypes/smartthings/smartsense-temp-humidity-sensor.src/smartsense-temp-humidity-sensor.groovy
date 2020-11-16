@@ -135,7 +135,7 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-  def result = [:]
+	def result = [:]
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
