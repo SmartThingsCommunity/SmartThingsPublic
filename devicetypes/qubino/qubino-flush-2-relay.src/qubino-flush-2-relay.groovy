@@ -132,7 +132,9 @@ def excludeParameterFromSync(preference){
 def addToAssociationGroupIfNeeded() {
 	def cmds = []
 	if (zwaveInfo?.model?.equals("0052")) {
-		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: [zwaveHubNodeId]))
+		//Hub automatically adds device to multiChannelAssosciationGroup and this needs to be removed
+		cmds += encap(zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId:[])) 
+		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId]))
 	}
 	cmds
 }
@@ -243,17 +245,6 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
 	changeSwitch(ep, cmd)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) { 
-	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
-	[
-		changeSwitch(ep, cmd), 
-		response([
-			"delay 2000",
-			encap(zwave.meterV3.meterGet(scale: 2), endpoint)
-		])
-	]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
