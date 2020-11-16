@@ -218,7 +218,7 @@ def configure() {
 	} else if (isBoschRadionMultiSensor()) {
 		cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, IAS_ZONE_TYPE_ATTRIBUTE)
 	} else if (isFrientSensor()) {
-		cmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 60 * 30, 0x64, temperatureEndpoint())
+		cmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 60 * 30, 0x64, [destEndpoint: 0x26])
 	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
@@ -244,12 +244,4 @@ private Boolean isBoschRadionMultiSensor() {
 
 private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "frient A/S"
-}
-
-private Map temperatureEndpoint() {
-	if (isFrientSensor()) {
-		[destEndpoint: 0x26]
-	} else {
-		[:]
-	}
 }

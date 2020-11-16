@@ -315,13 +315,13 @@ def configure() {
 	if (device.getDataValue("manufacturer") == "Samjin") {
 		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
 	} else if (isFrientSensor()) {
-		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1, powerEndpoint())
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1, [destEndpoint: 0x23])
 	} else {
 		configCmds += zigbee.batteryConfig()
 	}
     
 	if (isFrientSensor()) {
-		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, temperatureEndpoint())
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, [destEndpoint: 0x26])
 	} else {
 		configCmds += zigbee.temperatureConfig(30, 300)
 	}
@@ -352,20 +352,4 @@ private shouldUseOldBatteryReporting() {
 
 private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "frient A/S"
-}
-
-private Map temperatureEndpoint() {
-	if (isFrientSensor()) {
-		[destEndpoint: 0x26]
-	} else {
-		[:]
-	}
-}
-
-private Map powerEndpoint() {
-	if (isFrientSensor()) {
-		[destEndpoint: 0x23]
-	} else {
-		[:]
-	}
 }
