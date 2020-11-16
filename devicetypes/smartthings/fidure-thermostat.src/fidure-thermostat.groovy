@@ -12,11 +12,6 @@ metadata {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
-		capability "Thermostat Heating Setpoint"
-		capability "Thermostat Cooling Setpoint"
-		capability "Thermostat Operating State"
-		capability "Thermostat Mode"
-		capability "Thermostat Fan Mode"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
@@ -45,6 +40,8 @@ metadata {
 		attribute "holdExpiary", "string"
 
 		attribute "lastTimeSync", "string"
+
+		attribute "thermostatOperatingState", "string"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019", deviceJoinName: "Fidure Thermostat"
 		fingerprint manufacturer: "Fidure", model: "A1732R3" , deviceJoinName: "Fidure Thermostat"// same clusters as above
@@ -97,7 +94,9 @@ metadata {
 		}
 
 		standardTile("hvacStatus", "thermostatOperatingState", inactiveLabel: false, decoration: "flat") {
-			state "thermostatOperatingState", label:'${currentValue}'
+			state "Resting",  label: 'Resting'
+			state "Heating",  icon:"st.thermostat.heating"
+			state "Cooling",  icon:"st.thermostat.cooling"
 		}
 
 
@@ -497,7 +496,7 @@ def Program() {
 
 
 def getThermostatOperatingState(value) {
-	String[] m = [ "heating", "cooling", "fan only", "heating", "cooling", "fan only", "fan only"]
+	String[] m = [ "heating", "cooling", "fan", "Heat2", "Cool2", "Fan2", "Fan3"]
 	String desc = 'idle'
 	value = Integer.parseInt(''+value, 16)
 
