@@ -56,6 +56,9 @@ metadata {
 	}
 }
 
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
+
 def installed(){
 	log.debug "installed"
 
@@ -85,10 +88,12 @@ def parse(String description) {
 def parseAttrMessage(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrId == "0020" && descMap.commandInt != 0x07 && descMap.value) {
-		map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-	} else if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+		if (descMap.attrInt == BATTERY_VOLTAGE_ATTR) {
+			map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+		} else {
+			map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+		}
 	} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 		map = translateZoneStatus(zs)
@@ -154,7 +159,7 @@ def getDetectedResult(value) {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	def batteryAttr = isFrientSensor() ? 0x0020 : 0x0021
+	def batteryAttr = isFrientSensor() ? BATTERY_VOLTAGE_ATTR : BATTERY_PERCENT_ATTR
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
