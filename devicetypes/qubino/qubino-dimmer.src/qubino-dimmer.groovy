@@ -34,6 +34,10 @@ metadata {
 		// Qubino Flush Dimmer 0-10V - ZMNHVD
 		// Raw Description: zw:L type:1100 mfr:0159 prod:0001 model:0053 ver:2.04 zwv:4.34 lib:03 cc:5E,86,5A,72,73,27,25,26,85,8E,59,70 ccOut:20,26 role:05 ff:9C00 ui:9C00
 		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"generic-dimmer"
+
+		//Qubino Mini Dimmer
+		// Raw Description: zw:Ls type:1101 mfr:0159 prod:0001 model:0055 ver:20.02 zwv:5.03 lib:03 cc:5E,6C,55,98,9F sec:86,25,26,85,59,72,5A,70,32,71,73
+		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Dimmer"
 	}
 
 	tiles(scale: 2) {
