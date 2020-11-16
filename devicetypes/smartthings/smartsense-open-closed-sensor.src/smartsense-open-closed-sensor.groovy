@@ -22,7 +22,7 @@ metadata {
 		capability "Configuration"
 		capability "Contact Sensor"
 		capability "Refresh"
-        capability "Temperature Measurement"
+		capability "Temperature Measurement"
 		capability "Health Check"
 		capability "Sensor"
 
@@ -37,12 +37,12 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Open/Closed Sensor" //Iris Contact Sensor
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Bosch Open/Closed Sensor" //Bosch multi-sensor
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Megaman", model: "MS601/z1", deviceJoinName: "INGENIUM Open/Closed Sensor" //INGENIUM ZB Magnetic ON/OFF Sensor
-        //AduroSmart
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.1
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.0
+		//AduroSmart
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.1
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.0
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Sercomm Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" //Sercomm Door Window Sensor
-        //Dawon
-        fingerprint inClusters: "0000, 0003, 0006, 0500", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "SS-B100-ZB", deviceJoinName: "Dawon Signal Interlock", mnmn: "0AIg", vid: "dawon-zigbee-signal-interlock2"
+		//Dawon
+		fingerprint inClusters: "0000, 0003, 0006, 0500", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "SS-B100-ZB", deviceJoinName: "Dawon Signal Interlock", mnmn: "0AIg", vid: "dawon-zigbee-signal-interlock2"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"WISZB-120", deviceJoinName: "frient Open/Closed Sensor"
 	}
 
