@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-    
+
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "Multipurpose Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Multipurpose Sensor" //Centralite Temp & Humidity Sensor
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Multipurpose Sensor"
@@ -88,10 +88,10 @@ def parse(String description) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 			if (descMap.attrInt == 0x0021) {
-            			map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
+				map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
 			} else {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-            		}
+			}
 		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 			if (descMap.data[0] == "00") {
 				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
@@ -168,9 +168,9 @@ def refresh() {
 
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
-		        zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
-		        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
-		} else if (isFrientSensor()) {
+			zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
+			zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+	} else if (isFrientSensor()) {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
@@ -194,9 +194,9 @@ def configure() {
 	def manufacturer = device.getDataValue("manufacturer")
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return refresh() +
-		        zigbee.temperatureConfig(30, 300) +
-		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
-		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
+			zigbee.temperatureConfig(30, 300) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
+			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
 	} else if (isFrientSensor()) {
 		return refresh() + 
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
@@ -204,10 +204,10 @@ def configure() {
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
 	} else {
 		return refresh() +
-		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
-		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
-		        zigbee.batteryConfig() +
-		        zigbee.temperatureConfig(30, 300)
+			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
+			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
+			zigbee.batteryConfig() +
+			zigbee.temperatureConfig(30, 300)
 	}
 }
 
