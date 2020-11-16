@@ -158,8 +158,6 @@ def excludeParameterFromSync(preference){
 		if (isDINDimmer() || isFlushDimmer010V()) {
 			exclude = true
 		}
-	} else if (preference.key == "minimumDimmingValue"){
-		exclude = true
 	}
 
 	if (exclude) {
@@ -231,6 +229,13 @@ def configure() {
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands += getRefreshCommands()
+
+	// 1% is default Minimum dimming value for dimmers,
+	// when device is set to 1% - it turns off and device does not send any level reports
+	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
+	// Still, for users it will relatively be 1-100% on the UI and device will report it.
+	// Parameter no. 60 – Minimum dimming value
+	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
 	commands += getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
@@ -363,14 +368,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	return result
 }
 
-Integer adjustValueToRange(value){
-	if(value == 0){
-		return 0
-	}
-	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
-	return Math.max(value, minDimmingLvlPref)
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
 	log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
 	def result = []
@@ -457,8 +454,7 @@ def setLevel(value, duration = null) {
 		getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
 	}
 
-	def adjustedLevel = adjustValueToRange(level)
-	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: adjustedLevel, dimmingDuration: dimmingDuration)
+	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 
 	encapCommands(commands, getStatusDelay)
 }
@@ -593,16 +589,6 @@ private getParameterMap() {[
 		optionInactive: 0, inactiveDescription: "Default value - dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
 		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to off position",
 		description: "Set whether the device stores or does not store the last output level in the event of a power outage."
-	],
-	[
-		name           : "Minimum dimming value",
-		key            : "minimumDimmingValue",
-		type           : "range",
-		parameterNumber: 60,
-		size           : 1,
-		defaultValue   : 1,
-		range          : "1..98",
-		description    : "Select minimum dimming value for this device. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
 	],
 	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
