@@ -233,7 +233,6 @@ def configure() {
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId:[])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
-	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	commands += getRefreshCommands()
 	commands += getReadConfigurationFromTheDeviceCommands()
 
