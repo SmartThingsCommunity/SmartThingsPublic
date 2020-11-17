@@ -85,6 +85,9 @@ metadata {
 	}
 }
 
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
+
 private List<Map> collectAttributes(Map descMap) {
 	List<Map> descMaps = new ArrayList<Map>()
 
@@ -112,13 +115,13 @@ def parse(String description) {
 				List<Map> descMaps = collectAttributes(descMap)
 
 				if (device.getDataValue("manufacturer") == "Samjin") {
-					def battMap = descMaps.find { it.attrInt == 0x0021 }
+					def battMap = descMaps.find { it.attrInt == BATTERY_PERCENT_ATTR }
 
 					if (battMap) {
 						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
 					}
 				} else {
-					def battMap = descMaps.find { it.attrInt == 0x0020 }
+					def battMap = descMaps.find { it.attrInt == BATTERY_VOLTAGE_ATTR }
 
 					if (battMap) {
 						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
@@ -248,9 +251,9 @@ def refresh() {
 	def refreshCmds = []
 
 	if (device.getDataValue("manufacturer") == "Samjin") {
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR)
 	} else {
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR)
 	}
 	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
@@ -270,13 +273,13 @@ def configure() {
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	if (device.getDataValue("manufacturer") == "Samjin") {
-		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 0x10)
 	} else {
 		configCmds += zigbee.batteryConfig()
 	}
 	
 	if (isFrientSensor()) {
-		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0x64, temperatureEndpoint())
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0x64, [destEndpoint: 0x26])
 	} else {
 		configCmds += zigbee.temperatureConfig(30, 300)
 	}
@@ -286,12 +289,4 @@ def configure() {
 
 private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "frient A/S"
-}
-
-private Map temperatureEndpoint() {
-	if (isFrientSensor()) {
-		[destEndpoint: 0x26]
-	} else {
-		[:]
-	}
 }
