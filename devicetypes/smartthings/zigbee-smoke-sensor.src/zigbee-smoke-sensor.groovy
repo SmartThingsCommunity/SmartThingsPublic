@@ -180,7 +180,7 @@ def configure() {
 	Integer maxReportTime = 180
 	Integer reportableChange = null
 	Integer batteryAttr = isFrientSensor() ? BATTERY_VOLTAGE_ATTR : BATTERY_PERCENT_ATTR
-	Integer batteryReportChange = isFrientSensor() ? 0x1 : 0x10
+	Integer batteryReportChange = isFrientSensor() ? 0x1 : 0xA
 	return refresh() + 
 			zigbee.enrollResponse() +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr, DataType.UINT8, 30, 1200, batteryReportChange) +
