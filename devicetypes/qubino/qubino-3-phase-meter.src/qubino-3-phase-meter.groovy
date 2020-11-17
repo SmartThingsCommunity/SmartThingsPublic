@@ -111,10 +111,7 @@ private handleMeterReport(cmd, endpoint) {
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(event)
 	} else {
-		[
-				createEvent(event),
-				response(pollEndpoints())
-		]
+		createEvent(event)
 	}
 }
 
@@ -161,7 +158,15 @@ def refresh() {
 
 def configure() {
 	log.debug "configure() has been called"
-	encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 1800)) // Report energy consumption every 30 minutes
+	def configCmds = []
+	configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 1800)) // Report energy consumption every 30 minutes
+	configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 10)) // Report every 10% power usage change on root endpoint
+
+	for (int endpoint : [2, 3, 4]) {
+		configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 10), endpoint) // Report every 10% power usage change on each endpoint
+	}
+
+	configCmds
 }
 
 private addChildMeters(numberOfMeters) {
@@ -202,7 +207,6 @@ private pollEndpoints() {
 	def meterId
 	childDevices.each {
 		meterId = getMeterId(it.deviceNetworkId) + 1
-		cmds += encap(zwave.meterV3.meterGet(scale: 0), meterId)
 		cmds += encap(zwave.meterV3.meterGet(scale: 2), meterId)
 	}
 	cmds
