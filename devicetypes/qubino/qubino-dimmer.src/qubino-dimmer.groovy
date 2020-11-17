@@ -332,10 +332,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
-	if(isDINDimmer()) {
-		sendHubCommand(encap(zwave.meterV2.meterGet(scale: 0)))
-		sendHubCommand(encap(zwave.meterV2.meterGet(scale: 2)))
-	}
 	dimmerEvents(cmd)
 }
 
@@ -389,6 +385,12 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	if (cmdValue && cmdValue <= 100) {
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
 	}
+
+	if(supportsPowerMeter()){
+		log.debug "query device for power meter values"
+		sendHubCommand(encapCommands(getPowerMeterCommands()))
+	}
+
 	return result
 }
 
@@ -452,11 +454,6 @@ def on() {
 		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
 
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
-
 	encapCommands(commands, 3000)
 }
 
@@ -465,11 +462,6 @@ def off() {
 		zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00, dimmingDuration: 0x00),
 		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
-
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
 
 	encapCommands(commands, 3000)
 }
@@ -493,11 +485,6 @@ def setLevel(value, duration = null) {
 	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
 	commands << zwave.switchMultilevelV3.switchMultilevelGet()
 
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
-
 	encapCommands(commands, getStatusDelay)
 }
 
@@ -516,9 +503,17 @@ def refresh() {
 
 def getRefreshCommands() {
 	def commands = []
-	commands << zwave.basicV1.basicGet()
 
-	if(isFlushDimmer() || isDINDimmer()) {
+	commands << zwave.basicV1.basicGet()
+	commands += getPowerMeterCommands()
+
+	commands
+}
+
+def getPowerMeterCommands() {
+	def commands = []
+
+	if(supportsPowerMeter()) {
 		commands << zwave.meterV2.meterGet(scale: 0)
 		commands << zwave.meterV2.meterGet(scale: 2)
 	}
