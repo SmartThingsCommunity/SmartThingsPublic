@@ -113,8 +113,18 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
 	log.debug "Wake Up Interval Report: ${cmd}"
 }
 
+def getRefreshCommands() {
+	def cmds = [secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)).format(), // humidity
+		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)).format(), // temperature
+		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)).format(), // dew point
+		secure(zwave.notificationV3.notificationGet(notificationType: 0x10)).format()] // mold detection
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	log.debug "Event: ${cmd.event}, Notification type: ${cmd.notificationType}"
+
+	getRefreshCommands()
+
 	def result = []
 	def value
 	def description
@@ -185,13 +195,10 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+	getRefreshCommands()
+
 	def cmds = []
 	def result = createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-
-	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)) // humidity
-	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) // temperature
-	cmds += secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x0B)) // dew point
-	cmds += secure(zwave.notificationV3.notificationGet(notificationType: 0x10)) // mold
 
 	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
 		cmds += ["delay 1000",
