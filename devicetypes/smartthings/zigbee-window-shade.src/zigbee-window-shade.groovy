@@ -235,10 +235,6 @@ def configure() {
 		cmds = zigbee.levelConfig()
 	}
 
-	if (usesLocalGroupBinding()) {
-		cmds += readDeviceBindingTable()
-	}
-
 	return refresh() + cmds
 }
 
