@@ -32,7 +32,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "KG0001", deviceJoinName: "Window Treatment" //Smart Curtain Motor(BCM300D)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Window Treatment" //Smart Curtain Motor(DT82TV)
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Curtain", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Ultra Curtain", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
 	}
 
@@ -122,8 +122,9 @@ def parse(String description) {
 def levelEventHandler(currentLevel) {
 	def lastLevel = device.currentValue("level")
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
-	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
+	if ((lastLevel == "undefined" || currentLevel == lastLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
+		state.invalidSameLevelEvent = true
 	} else {
 		sendEvent(name: "level", value: currentLevel)
 		if (currentLevel == 0 || currentLevel == 100) {
@@ -163,6 +164,12 @@ def open() {
 
 def setLevel(data, rate = null) {
 	log.info "setLevel()"
+	def currentLevel = device.currentValue("level")
+
+	if (isSomfy() && Math.abs(data - currentLevel) <= GLYDEA_MOVE_THRESHOLD) {
+		state.invalidSameLevelEvent = false
+	}
+
 	def cmd
 	if (supportsLiftPercentage()) {
 		if (shouldInvertLiftPercentage()) {
@@ -211,6 +218,7 @@ def refresh() {
 }
 
 def installed() {
+	state.invalidSameLevelEvent = true
 	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 }
 
@@ -265,3 +273,5 @@ def shouldInvertLiftPercentage() {
 def isSomfy() {
 	device.getDataValue("manufacturer") == "SOMFY"
 }
+
+private getGLYDEA_MOVE_THRESHOLD() { 3 }
