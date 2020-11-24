@@ -13,7 +13,6 @@
  */
 metadata {
 	definition (name: "Z-Wave Multi Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
-		capability "Zw Multichannel"
 		capability "Switch"
 		capability "Power Meter"
 		capability "Energy Meter"
@@ -31,12 +30,12 @@ metadata {
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch" //Zooz ZEN Power Strip
 		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch" //Zooz Double Plug
-		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Switch 1" //WYFY Touch 1-button Switch
-		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Switch 1" //WYFY Touch 2-button Switch
-		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Switch 1" //WYFY Touch 4-button Switch
-		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Switch 1" //WYFY Touch 1-button Switch
-		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Switch 1" //WYFY Touch 2-button Switch
-		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Switch 1" //WYFY Touch 4-button Switch
+		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
+		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
 	}
 
 	tiles(scale: 2){
@@ -64,30 +63,21 @@ metadata {
 	}
 }
 
-// Called when an instance of the app is installed. Typically subscribes to Events from the configured devices and creates any scheduled jobs.
 def installed() {
-	log.debug "Installed ${device.displayName} - ZwaveInfo: ${getZwaveInfo()}"
+	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
-// Called when the preferences of an installed app are updated. Typically unsubscribes and re-subscribes to Events from the configured devices and unschedules/reschedules jobs.
 def updated() {
-	log.debug "${device.displayName} - Executing update()"
 	sendHubCommand encap(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
-// Handles the configuration capability's configure command. This command will be called right after the device joins to set device-specific configuration commands.
 def configure() {
 	log.debug "${device.displayName} - Executing configure()"
 	response([
 			encap(zwave.multiChannelV3.multiChannelEndPointGet()),
 			encap(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 	])
-}
-
-// Called when an app is uninstalled. Does not need to be declared unless you have some external cleanup to do. subscriptions and scheduled jobs are automatically removed when an app is uninstalled, so you don’t need to do that here.
-def uninstalled(){
-	log.info "${device.displayName} - Executing uninstalled()"
 }
 
 // Main parser for Z-Wave Events
@@ -209,7 +199,7 @@ private handleSwitchReport(endpoint, cmd) {
 		// device also sends reports without any endpoint specified, therefore all endpoints must be queried
 		// sometimes it also reports 0.0 Wattage only until it's queried for it, then it starts reporting real values
 		endpoint ? [changeSwitch(endpoint, value), response(encap(zwave.meterV3.meterGet(scale: 0), endpoint))] : [response(refreshAll(false))]
-	}  else {
+	} else {
 		endpoint ? changeSwitch(endpoint, value) : []
 	}
 }
@@ -254,13 +244,6 @@ private createMeterEventMap(cmd) {
 	eventMap
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	def paramKey = parameterMap().find( {it.num == cmd.parameterNumber } ).key
-	log.debug "${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value
-	state."$paramKey".state = (state."$paramKey".value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
-	syncNext()
-}
-
 // This method handles unexpected commands
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 	// Handles all Z-Wave commands we aren't interested in
@@ -285,6 +268,14 @@ def ping() {
 def childOnOff(deviceNetworkId, value) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
+}
+
+def childOn(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0xFF)
+}
+
+def childOff(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0x00)
 }
 
 private onOffCmd(value, endpoint = 1) {
@@ -381,12 +372,19 @@ private addChildSwitches(numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
-			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
-					completedSetup	: true,
-					label			: componentLabel,
-					isComponent		: false
-			])			      
-
+			if (isWYFYTouch()) {
+				addChildDevice("Child Switch", childDni, device.getHub().getId(), [
+						completedSetup	: true,
+						label			: componentLabel,
+						isComponent		: false
+				])
+			} else {
+				addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
+						completedSetup	: true,
+						label			: componentLabel,
+						isComponent		: false
+				])
+			}
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
@@ -413,7 +411,7 @@ private getDeviceModel() {
 		"Zooz Switch"
 	} else if(zwaveInfo.mfr?.contains("015F")) {
 		"WYFY Touch"
-    } else {
+	} else {
 		""
 	}
 }
