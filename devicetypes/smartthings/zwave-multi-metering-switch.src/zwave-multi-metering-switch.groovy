@@ -73,23 +73,20 @@ def updated() {
 }
 
 def configure() {
-	log.debug "${device.displayName} - Executing configure()"
+	log.debug "Configure..."
 	response([
 			encap(zwave.multiChannelV3.multiChannelEndPointGet()),
 			encap(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 	])
 }
 
-// Main parser for Z-Wave Events
 def parse(String description) {
-	log.debug "${device.displayName} - Parsing: ${description}"
 	def result = null
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else if (description != "updated") {
 		def cmd = zwave.parse(description)
 		if (cmd) {
-			log.debug "${device.displayName} - Parsed: ${cmd}"
 			result = zwaveEvent(cmd, null)
 		}
 	}
@@ -184,7 +181,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	log.debug "${device.displayName} - Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
+	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
 	handleSwitchReport(ep, cmd)
 }
 
