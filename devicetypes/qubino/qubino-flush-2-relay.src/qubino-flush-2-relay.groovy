@@ -272,18 +272,24 @@ private changeSwitch(endpoint, cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+	def result = []
+
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
+
 	if (ep == defaultEndpoint()) {
-		[
-				createEvent(createMeterEventMap(cmd)),
-				cmd.scale == 2 ? response(encap(zwave.meterV3.meterGet(scale: 0x00), ep)) : null
-		]
+		result << createEvent(createMeterEventMap(cmd))
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
+
 		child?.sendEvent(createMeterEventMap(cmd))
-		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
+	// Query energy when we receive power reports
+	if (cmd.scale == 2) {
+		result << response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
+	}
+
+	result
 }
 
 private createMeterEventMap(cmd) {

@@ -70,9 +70,9 @@ def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description)
 	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+		result = zwaveEvent(cmd)
 	}
-	log.debug "Parse returned ${result?.descriptionText}"
+	log.debug "Parse returned ${result}"
 	return result
 }
 
@@ -158,7 +158,15 @@ def refresh() {
 
 def configure() {
 	log.debug "configure() has been called"
-	encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 1800)) // Report energy consumption every 30 minutes
+	def configCmds = []
+	configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 1800)) // Report energy consumption every 30 minutes
+	configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 10)) // Report every 10% power usage change on root endpoint
+
+	for (int endpoint : [2, 3, 4]) {
+		configCmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 10), endpoint) // Report every 10% power usage change on each endpoint
+	}
+
+	configCmds
 }
 
 private addChildMeters(numberOfMeters) {
@@ -185,11 +193,21 @@ private getMeterId(deviceNetworkId) {
 }
 
 private childRefresh(deviceNetworkId) {
-	def meterId = getMeterId(deviceNetworkId)
-	if (switchId != null) {
+	def meterId = getMeterId(deviceNetworkId) + 1
+	if (meterId != null) {
 		sendHubCommand delayBetween([
 				encap(zwave.meterV3.meterGet(scale: 0), meterId),
 				encap(zwave.meterV3.meterGet(scale: 2), meterId)
 		])
 	}
+}
+
+private pollEndpoints() {
+	def cmds = []
+	def meterId
+	childDevices.each {
+		meterId = getMeterId(it.deviceNetworkId) + 1
+		cmds += encap(zwave.meterV3.meterGet(scale: 2), meterId)
+	}
+	cmds
 }
