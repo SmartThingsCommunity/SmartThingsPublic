@@ -62,29 +62,6 @@ metadata {
 		main(["switch"])
 		details(["switch","power","energy","refresh","reset"])
 	}
-	
-	preferences {
-		parameterMap().each {
-			input (
-					title: "${it.title}",
-					description: it.descr,
-					type: "paragraph",
-					element: "paragraph"
-			)
-			def defVal = it.def as Integer
-			def descrDefVal = it.options ? it.options.get(defVal) : defVal
-			input (
-					name: it.key,
-					title: null,
-					description: "$descrDefVal",
-					type: it.type,
-					options: it.options,
-					range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
-					defaultValue: it.def,
-					required: false
-			)
-		}
-	}
 }
 
 // Called when an instance of the app is installed. Typically subscribes to Events from the configured devices and creates any scheduled jobs.
@@ -97,7 +74,6 @@ def installed() {
 def updated() {
 	log.debug "${device.displayName} - Executing update()"
 	sendHubCommand encap(zwave.multiChannelV3.multiChannelEndPointGet())
-	runIn(3, "syncStart")
 }
 
 // Handles the configuration capability's configure command. This command will be called right after the device joins to set device-specific configuration commands.
@@ -285,95 +261,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	syncNext()
 }
 
-def syncStart() {
-	log.debug "${device.displayName} - Executing syncStart()"
-	boolean syncNeeded = false
-	parameterMap().each {
-		if(settings."$it.key" != null) {
-			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-			if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
-				state."$it.key".value = settings."$it.key" as Integer
-				state."$it.key".state = "notSynced"
-				syncNeeded = true
-			}
-		}
-	}
-	if ( syncNeeded ) {
-		log.debug "${device.displayName} - starting sync."
-		multiStatusEvent("Sync in progress.", true, true)
-		syncNext()
-	}
-}
-
-private syncNext() {
-	log.debug "${device.displayName} - Executing syncNext()"
-	def cmds = []
-	for ( param in parameterMap() ) {
-		if ( state."$param.key"?.value != null && state."$param.key"?.state in ["notSynced","inProgress"] ) {
-			multiStatusEvent("Sync in progress. (param: ${param.num})", true)
-			state."$param.key"?.state = "inProgress"
-			cmds << response(encap(zwave.configurationV2.configurationSet(configurationValue: intToParam(state."$param.key".value, param.size), parameterNumber: param.num, size: param.size)))
-			cmds << response(encap(zwave.configurationV2.configurationGet(parameterNumber: param.num)))
-			break
-		}
-	}
-	if (cmds) {
-		runIn(10, "syncCheck")
-		log.debug("cmds!")
-		sendHubCommand(cmds,1000)
-	} else {
-		runIn(1, "syncCheck")
-	}
-}
-
-def syncCheck() {
-	log.debug "${device.displayName} - Executing syncCheck()"
-	def failed = []
-	def incorrect = []
-	def notSynced = []
-	parameterMap().each {
-		if (state."$it.key"?.state == "incorrect" ) {
-			incorrect << it
-		} else if ( state."$it.key"?.state == "failed" ) {
-			failed << it
-		} else if ( state."$it.key"?.state in ["inProgress","notSynced"] ) {
-			notSynced << it
-		}
-	}
-	if (failed) {
-		log.debug "${device.displayName} - Sync failed! Check parameter: ${failed[0].num}"
-		sendEvent(name: "syncStatus", value: "failed")
-		multiStatusEvent("Sync failed! Check parameter: ${failed[0].num}", true, true)
-	} else if (incorrect) {
-		log.debug "${device.displayName} - Sync mismatch! Check parameter: ${incorrect[0].num}"
-		sendEvent(name: "syncStatus", value: "incomplete")
-		multiStatusEvent("Sync mismatch! Check parameter: ${incorrect[0].num}", true, true)
-	} else if (notSynced) {
-		log.debug "${device.displayName} - Sync incomplete!"
-		sendEvent(name: "syncStatus", value: "incomplete")
-		multiStatusEvent("Sync incomplete! Open settings and tap Done to try again.", true, true)
-	} else {
-		log.debug "${device.displayName} - Sync Complete"
-		sendEvent(name: "syncStatus", value: "synced")
-		multiStatusEvent("Sync OK.", true, true)
-	}
-}
-
-private multiStatusEvent(String statusValue, boolean force = false, boolean display = false) {
-	if (!device.currentValue("multiStatus")?.contains("Sync") || device.currentValue("multiStatus") == "Sync OK." || force) {
-		sendEvent(name: "multiStatus", value: statusValue, descriptionText: statusValue, displayed: display)
-	}
-}
-
-private List intToParam(Long value, Integer size = 1) {
-	def result = []
-	size.times {
-		result = result.plus(0, (value & 0xFF) as Short)
-		value = (value >> 8)
-	}
-	return result
-}
-
 // This method handles unexpected commands
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 	// Handles all Z-Wave commands we aren't interested in
@@ -519,7 +406,6 @@ def isWYFYTouch() {
 	getDeviceModel() == "WYFY Touch"
 }
 
-
 private getDeviceModel() {
 	if ((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
 		"Aeotec Nano Switch"
@@ -531,86 +417,3 @@ private getDeviceModel() {
 		""
 	}
 }
-
-private parameterMap() {[
-		[key: "State before power failure", num: 2, size: 1, type: "enum", options: [ 
-				0: "Not saved. Switches will be off when powered is restored.",
-				1: "Saved. Switches will return to last state when power is restored."
-		], def: "1", title: "Parameter 2", descr: "This parameter determines if the switches will return to its state prior to power failure after power is restored" ],
-		[key: "LED panel brightness level", num: 4, size: 1, type: "enum", options: [ 
-				0: "LED disabled",
-				1: "Level 1",
-				2: "Level 2",
-				3: "Level 3",
-				4: "Level 4",
-				5: "Level 5",
-				6: "Level 6",
-				7: "Level 7",
-				8: "Level 8",
-				9: "Level 9",
-				10: "Level 10"				
-		], def: "10", title: "Parameter 4", descr: "This parameter determines the brightness of the LED backlight" ],
-		[key: "Pulse duration", num: 6, size: 2, type: "enum", options: [
-				0: "Infinite",
-				1: "1 s",
-				5: "5 s",
-				10: "10 s",
-				20: "20 s",
-				30: "30 s",
-				40: "44 s",
-				50: "50 s",
-				60: "60 s",
-				70: "70 s",
-				80: "80 s",
-				90: "90 s",
-				100: "100 s",
-				300: "300 s",
-				600: "600 s",
-				6000: "6000 s",
-				60000: "60000 s"
-		], def: 0, min: 1, max: 65535, title: "Parameter 6", descr: "This parameter defines the time period to automatically revert a switch that is configured in flashing mode."],
-		[key: "Switch 1 Mode", num: 10, size: 1, type: "enum", options: [
-				0: "Single click to switch on/off",
-				1: "Turn off automatically after the time period defined in parameter 6.",
-				2: "Turn on automatically after the time period defined in parameter 6.",
-				3: "Hold >3s to turn on. Upon release, it will off.",
-				4: "Single click to turn on/off. Hold >3s to turn on and upon release, it will off.",
-				5: "Hold to turn on and release to off.",
-				6: "Hold >3s to change state."
-		], def: 0, title: "Parameter 10", descr: "This parameter defines the mode for switch 1."],
-		[key: "Switch 2 Mode (if applicable)", num: 11, size: 1, type: "enum", options: [
-				0: "Single click to switch on/off",
-				1: "Turn off automatically after the time period defined in parameter 6.",
-				2: "Turn on automatically after the time period defined in parameter 6.",
-				3: "Hold >3s to turn on. Upon release, it will off.",
-				4: "Single click to turn on/off. Hold >3s to turn on and upon release, it will off.",
-				5: "Hold to turn on and release to off.",
-				6: "Hold >3s to change state."
-		], def: 0, title: "Parameter 11", descr: "This parameter defines the mode for switch 2 (if applicable)."],
-		[key: "Switch 3 Mode (if applicable)", num: 12, size: 1, type: "enum", options: [
-				0: "Single click to switch on/off",
-				1: "Turn off automatically after the time period defined in parameter 6.",
-				2: "Turn on automatically after the time period defined in parameter 6.",
-				3: "Hold >3s to turn on. Upon release, it will off.",
-				4: "Single click to turn on/off. Hold >3s to turn on and upon release, it will off. ",
-				5: "Hold to turn on and release to off.",
-				6: "Hold >3s to change state."
-		], def: 0, title: "Parameter 12", descr: "This parameter defines the mode for switch 3 (if applicable)."],
-		[key: "Switch 4 Mode (if applicable)", num: 13, size: 1, type: "enum", options: [
-				0: "Single click to switch on/off",
-				1: "Turn off automatically after the time period defined in parameter 6.",
-				2: "Turn on automatically after the time period defined in parameter 6.",
-				3: "Hold >3s to turn on. Upon release, it will off.",
-				4: "Single click to turn on/off. Hold >3s to turn on and upon release, it will off. ",
-				5: "Hold to turn on and release to off.",
-				6: "Hold >3s to change state."
-		], def: 0, title: "Parameter 13", descr: "This parameter defines the mode for switch 4 (if applicable)."],
-		[key: "Physical control", num: 14, size: 1, type: "enum", options: [
-				0: "Yes",
-				15: "No"
-		], def: 0, title: "Parameter 14", descr: "This parameter defines if the switches can be controlled physically."],
-		[key: "Wireless control", num: 15, size: 1, type: "enum", options: [
-				0: "Yes",
-				15: "No"
-		], def: 0, title: "Parameter 15", descr: "This parameter defines if the switches can be controlled wirelessly via Z-Wave."]
-]}
