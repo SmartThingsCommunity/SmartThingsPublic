@@ -259,7 +259,7 @@ def off() {
 // If the device hasn’t created any events within that amount of time, SmartThings executes the “ping()” command.
 // If ping() does not generate any events, SmartThings marks the device as offline. 
 def ping() {
-	refreshAll()
+	refresh()
 }
 
 def childOnOff(deviceNetworkId, value) {
@@ -276,22 +276,25 @@ def childOff(deviceNetworkId) {
 }
 
 private onOffCmd(value, endpoint = 1) {
-	if (isWYFYTouch()) {
-		sendHubCommand(response(encap(zwave.basicV1.basicSet(value: value),endpoint)))
-		sendHubCommand(response(encap(zwave.basicV1.basicGet(),endpoint)))
-	} else {
-		delayBetween([
-			encap(zwave.basicV1.basicSet(value: value), endpoint),
-			encap(zwave.basicV1.basicGet(), endpoint),
-			"delay 3000",
-			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-			encap(zwave.meterV3.meterGet(scale: 2), endpoint)
-		])
+	def cmds = []
+
+	cmds +=	encap(zwave.basicV1.basicSet(value: value), endpoint)
+	cmds += encap(zwave.basicV1.basicGet(), endpoint)
+
+	if (deviceIncludesMeter()) {
+		cmds += "delay 3000"
+		cmds += encap(zwave.meterV3.meterGet(scale: 0), endpoint)
+		cmds += encap(zwave.meterV3.meterGet(scale: 2), endpoint)
 	}
+
+	delayBetween(cmds)
 }
 
-private refreshAll(includeMeterGet = true) {
-	if (isWYFYTouch()) includeMeterGet = false
+private deviceIncludesMeter() {
+	return !isWyfyTouch()
+}
+
+private refreshAll(includeMeterGet = deviceIncludesMeter()) {
 	def endpoints = [1]
 	childDevices.each {
 		def switchId = getSwitchId(it.deviceNetworkId)
@@ -302,8 +305,7 @@ private refreshAll(includeMeterGet = true) {
 	sendHubCommand refresh(endpoints,includeMeterGet)
 }
 
-def childRefresh(deviceNetworkId, includeMeterGet = true) {
-	if (isWYFYTouch()) includeMeterGet = false
+def childRefresh(deviceNetworkId, includeMeterGet = deviceIncludesMeter()) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
 		sendHubCommand refresh([switchId],includeMeterGet)
@@ -369,19 +371,12 @@ private addChildSwitches(numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
-			if (isWYFYTouch()) {
-				addChildDevice("Child Switch", childDni, device.getHub().getId(), [
-						completedSetup	: true,
-						label			: componentLabel,
-						isComponent		: false
-				])
-			} else {
-				addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
-						completedSetup	: true,
-						label			: componentLabel,
-						isComponent		: false
-				])
-			}
+			def childDthName = deviceIncludesMeter() ? "Child Metering Switch" : "Child Switch"
+			addChildDevice(childDthName, childDni, device.getHub().getId(), [
+					completedSetup	: true,
+					label			: componentLabel,
+					isComponent		: false
+			])
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
