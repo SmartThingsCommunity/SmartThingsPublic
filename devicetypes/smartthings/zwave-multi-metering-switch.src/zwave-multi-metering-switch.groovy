@@ -290,10 +290,6 @@ private onOffCmd(value, endpoint = 1) {
 	delayBetween(cmds)
 }
 
-private deviceIncludesMeter() {
-	return !isWyfyTouch()
-}
-
 private refreshAll(includeMeterGet = deviceIncludesMeter()) {
 	def endpoints = [1]
 	childDevices.each {
@@ -386,12 +382,15 @@ private addChildSwitches(numberOfSwitches) {
 def isAeotec() {
 	getDeviceModel() == "Aeotec Nano Switch"
 }
+
 def isZoozZenStripV2() {
 	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")
 }
+
 def isZoozDoublePlug() {
 	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A003")
 }
+
 def isWYFYTouch() {
 	getDeviceModel() == "WYFY Touch"
 }
@@ -406,4 +405,8 @@ private getDeviceModel() {
 	} else {
 		""
 	}
+}
+
+private deviceIncludesMeter() {
+	return !isWYFYTouch()
 }
