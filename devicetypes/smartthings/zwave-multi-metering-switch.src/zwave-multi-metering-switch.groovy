@@ -30,11 +30,17 @@ metadata {
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch" //Zooz ZEN Power Strip
 		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch" //Zooz Double Plug
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0201 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:1
 		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0202 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:2
 		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0204 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:4
 		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3111 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:1
 		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3121 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:2
 		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3141 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:4
 		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
 	}
 
