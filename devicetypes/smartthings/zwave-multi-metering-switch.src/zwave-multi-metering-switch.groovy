@@ -308,7 +308,7 @@ def childRefresh(deviceNetworkId, includeMeterGet = deviceIncludesMeter()) {
 	}
 }
 
-def refresh(endpoints = [1], includeMeterGet = true) {
+def refresh(endpoints = [1], includeMeterGet = deviceIncludesMeter()) {
 	def cmds = []
 	endpoints.each {
 		cmds << [encap(zwave.basicV1.basicGet(), it)]
