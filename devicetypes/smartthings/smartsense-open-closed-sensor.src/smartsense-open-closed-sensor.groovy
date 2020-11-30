@@ -44,7 +44,7 @@ metadata {
 		//Dawon
 		fingerprint inClusters: "0000, 0003, 0006, 0500", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "SS-B100-ZB", deviceJoinName: "Dawon Signal Interlock", mnmn: "0AIg", vid: "dawon-zigbee-signal-interlock2"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"WISZB-120", deviceJoinName: "frient Open/Closed Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", manufacturer: "frient A/S", model :"WISZB-121", deviceJoinName: "frient Open/Closed Sensor", mnmn: "SmartThingsCommunity", vid: "aaca16c3-fade-3cb3-b742-e2237f4ffd76"
+		fingerprint manufacturer: "frient A/S", model :"WISZB-121", deviceJoinName: "frient Open/Closed Sensor", mnmn: "SmartThingsCommunity", vid: "aaca16c3-fade-3cb3-b742-e2237f4ffd76"
 	}
 
 	simulator {
