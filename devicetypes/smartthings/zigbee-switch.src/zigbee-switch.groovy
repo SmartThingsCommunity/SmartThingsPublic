@@ -98,6 +98,9 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140R-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140R-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S150-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S150-ZB
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S150-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch ST-S150-ZB
+
+		// Enbrighten/Jasco
+		fingerprint manufacturer: "Jasco Products", model: "43100", deviceJoinName: "Enbrighten Switch" //Enbrighten, Plug-in Outdoor Smart Switch, 43100, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 	}
 
 	// simulator metadata
