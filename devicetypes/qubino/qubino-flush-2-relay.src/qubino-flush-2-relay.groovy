@@ -81,7 +81,6 @@ def installed() {
  	if (!childDevices && state.numberOfSwitches > 1) {
 		addChildSwitches(state.numberOfSwitches)
 	}
-
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
@@ -94,8 +93,9 @@ def installed() {
 	}
 	// Preferences template end
 	response([
-			refresh((1..state.numberOfSwitches).toList())
-	])
+			refresh((1..state.numberOfSwitches).toList()),
+			addToAssociationGroupIfNeeded()
+	].flatten())
 }
 
 def updated() {
@@ -127,6 +127,16 @@ def excludeParameterFromSync(preference){
 		log.warn "Preference no ${preference.parameterNumber} - ${preference.key} is not supported by this device"
 	}
 	return exclude
+}
+
+def addToAssociationGroupIfNeeded() {
+	def cmds = []
+	if (zwaveInfo?.model?.equals("0052")) {
+		//Hub automatically adds device to multiChannelAssosciationGroup and this needs to be removed
+		cmds += encap(zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId:[])) 
+		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId]))
+	}
+	cmds
 }
 
 private syncConfiguration() {
@@ -242,9 +252,17 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	changeSwitch(ep, cmd)
 }
 
+def defaultEndpoint() {
+	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+		return null
+	} else {
+		return 1
+	}
+}
+
 private changeSwitch(endpoint, cmd) {
 	def value = cmd.value ? "on" : "off"
-	if (endpoint == 1) {
+	if (endpoint == defaultEndpoint()) {
 		createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else if (endpoint) {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
@@ -254,18 +272,24 @@ private changeSwitch(endpoint, cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+	def result = []
+
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
-	if (ep == 1) {
-		[
-				createEvent(createMeterEventMap(cmd)),
-				response(encap(zwave.meterV3.meterGet(scale: 0x00), 1))
-		]
+
+	if (ep == defaultEndpoint()) {
+		result << createEvent(createMeterEventMap(cmd))
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
+
 		child?.sendEvent(createMeterEventMap(cmd))
-		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
+	// Query energy when we receive power reports
+	if (cmd.scale == 2) {
+		result << response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
+	}
+
+	result
 }
 
 private createMeterEventMap(cmd) {
@@ -328,10 +352,10 @@ def childOnOff(deviceNetworkId, value) {
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
-private onOffCmd(value, endpoint = 1) {
+private onOffCmd(value, endpoint = defaultEndpoint()) {
 	delayBetween([
 			encap(zwave.basicV1.basicSet(value: value), endpoint),
-			encap(zwave.basicV1.basicGet(), endpoint),
+			encap(zwave.basicV1.basicGet(), endpoint)
 	])
 }
 
