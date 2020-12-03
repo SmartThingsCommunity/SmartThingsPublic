@@ -101,6 +101,7 @@ metadata {
 
 		// Enbrighten/Jasco
 		fingerprint manufacturer: "Jasco Products", model: "43100", deviceJoinName: "Enbrighten Switch" //Enbrighten, Plug-in Outdoor Smart Switch, 43100, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
+		fingerprint manufacturer: "Jasco Products", model: "43084", deviceJoinName: "Enbrighten Switch" //Enbrighten, In-Wall Smart Switch, Toggle, 43084, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 	}
 
 	// simulator metadata
