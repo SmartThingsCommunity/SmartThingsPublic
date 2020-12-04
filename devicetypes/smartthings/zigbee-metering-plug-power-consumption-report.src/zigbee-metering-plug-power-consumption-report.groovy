@@ -32,6 +32,7 @@ metadata {
 		fingerprint manufacturer: "DAWON_DNS", model: "ST-B550-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS Smart Plug
 		fingerprint manufacturer: "DAWON_DNS", model: "PM-C150-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS In-Wall Outlet
 		fingerprint manufacturer: "DAWON_DNS", model: "PM-C250-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS In-Wall Outlet
+		fingerprint manufacturer: "DAWON_DNS", model: "PM-B440-ZB", deviceJoinName: "Dawon Outlet" // DAWON DNS Smart Plug
 	}
 }
 
