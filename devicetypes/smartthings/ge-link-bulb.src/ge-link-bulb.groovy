@@ -50,7 +50,6 @@ metadata {
         capability "Sensor"
         capability "Switch"
         capability "Switch Level"
-        capability "Polling"
         capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Light" //GE Link Bulb
@@ -96,10 +95,6 @@ def parse(String description) {
         log.debug "DID NOT PARSE MESSAGE for description : $description"
         log.debug zigbee.parseDescriptionAsMap(description)
     }
-}
-
-def poll() {
-	return zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {
