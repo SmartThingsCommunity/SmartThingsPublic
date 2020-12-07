@@ -14,7 +14,6 @@
  */
 metadata {
 	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
-		capability "Thermostat Mode"
 		capability "Refresh"
 		capability "Battery"
 		capability "Thermostat Heating Setpoint"
