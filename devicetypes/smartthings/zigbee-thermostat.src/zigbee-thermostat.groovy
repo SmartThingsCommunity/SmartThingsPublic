@@ -372,9 +372,9 @@ def getTemperature(value) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if (temperatureScale == "C") {
-			return needsRounding() ? Math.round(celsius) : celsius
+			return celsius.toDouble().round(1)
 		} else {
-			return needsRounding() ? Math.round(celsiusToFahrenheit(celsius)) : celsiusToFahrenheit(celsius)
+			return Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
 }
@@ -514,10 +514,6 @@ def getHeatingSetpointRange() {
 	} else {
 		(getTemperatureScale() == "C") ? [7.22, 32.22] : [45, 90]
 	}
-}
-
-def needsRounding() {
-	return !isDanfossAlly()
 }
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
