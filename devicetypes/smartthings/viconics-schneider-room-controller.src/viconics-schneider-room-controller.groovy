@@ -397,7 +397,7 @@ def off() {
 }
 
 def getThermostatModeCommands(mode) {
-	if (mode) {
+	if (mode != null) {
 		delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
