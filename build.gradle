@@ -65,9 +65,10 @@ slackSendMessage {
     String token = project.hasProperty('slackToken') ? project.property('slackToken') : null
     String webhookUrl = project.hasProperty('slackWebhookUrl') ? project.property('slackWebhookUrl') : null
     String channel = project.hasProperty('slackChannel') ? project.property('slackChannel') : null
-    String drinks = 'https://dl.dropboxusercontent.com/s/m1z5mpd3c83lwev/minion_beer.jpeg?dl=0'
-    String wolverine = 'https://dl.dropboxusercontent.com/s/4lbjqzvm2v033u9/minion_wolverine.jpg?dl=0'
-    String beach = 'https://dl.dropboxusercontent.com/s/rqrfgxk53gfng69/minion_beach.png?dl=0'
+    String drinks = 'https://d2j2zbtzrapq2t.cloudfront.net/minion_beer.jpeg'
+    String wolverine = 'https://d2j2zbtzrapq2t.cloudfront.net/minion_wolverine.jpg'
+    String beach = 'https://d2j2zbtzrapq2t.cloudfront.net/minion_beach.png'
+    String captain = 'https://d2j2zbtzrapq2t.cloudfront.net/minion_captain.jpeg'
     String iconUrl
     String color
     String messageText
@@ -84,6 +85,12 @@ slackSendMessage {
             iconUrl = beach
             color = '#FFDE20'
             messageText = 'Began deployment of _SmartThingsPublic[staging]_ branch to the _Staging_ environments.'
+            break
+         case 'acceptance':
+            username = 'ACC'
+            iconUrl = captain
+            color = '#FFDE20'
+            messageText = 'Began deployment of _SmartThingsPublic[acceptance]_ branch to the _Acceptance_ environments.'
             break
         case 'production':
             username = 'PRD'
@@ -130,4 +137,18 @@ slackSendMessage {
         fallback: 'Deployment Notification',
         text: messageText
     )
+}
+
+task configure(type: Exec) {
+    description "Configures automatic spaces->tabs conversion on merge and a commit hook to detect syntax errors"
+    File attributeFile = new File("${projectDir}/.git/info/attributes")
+    attributeFile.write("*.groovy filter=tabspace\n")
+    commandLine "git", "config", "filter.tabspace.clean", "unexpand -t 2"
+    commandLine "git", "config", "core.hooksPath", ".githooks"
+}
+
+task unconfigure(type: Exec) {
+    description "Undoes configuration put in place by configure"
+    commandLine "git", "config", "--unset-all", "filter.tabspace.clean"
+    commandLine "git", "config", "core.hooksPath", "${projectDir}/.git/hooks"
 }

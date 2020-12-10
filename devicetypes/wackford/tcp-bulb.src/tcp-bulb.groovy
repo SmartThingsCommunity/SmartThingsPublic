@@ -65,7 +65,7 @@ metadata {
 	}
 
 	preferences {
-		input "stepsize", "number", title: "Step Size", description: "Dimmer Step Size", defaultValue: 5
+		input "stepsize", "number", title: "Step Size", description: "Dimmer level step size", defaultValue: 5
 	}
 
 	tiles {

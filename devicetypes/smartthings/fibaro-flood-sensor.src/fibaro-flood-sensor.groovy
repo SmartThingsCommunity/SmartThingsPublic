@@ -47,10 +47,10 @@ metadata {
 		command    "updateZwaveParam"
 		command    "test"
 
-		fingerprint deviceId: "0xA102", inClusters: "0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84"
-		fingerprint mfr:"010F", prod:"0000", model:"2002"
-		fingerprint mfr:"010F", prod:"0000", model:"1002"
-		fingerprint mfr:"010F", prod:"0B00", model:"1001"
+		fingerprint deviceId: "0xA102", inClusters: "0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0000", model:"2002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0000", model:"1002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0B00", model:"1001", deviceJoinName: "Fibaro Water Leak Sensor"
 	}
 
 	simulator {
@@ -128,6 +128,14 @@ def parse(String description)
 
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x30: 2, 0x31: 2]) // can specify command class versions here like in zwave.parse
 	log.debug ("Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}")
 	if (encapsulatedCommand) {

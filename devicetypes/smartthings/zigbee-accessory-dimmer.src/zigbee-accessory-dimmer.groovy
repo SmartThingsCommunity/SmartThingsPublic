@@ -23,8 +23,8 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
-		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "LDS", model: "ZBT-DIMController-D0800", deviceJoinName: "Müller Licht Tint Mobile Switch"
+		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Dimmer Switch" //Aurora Wireless Wall Remote
+		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "LDS", model: "ZBT-DIMController-D0800", deviceJoinName: "Tint Dimmer Switch" //Müller Licht Tint Mobile Switch
 	}
 
 	tiles(scale: 2) {
@@ -115,10 +115,16 @@ def on() {
 def setLevel(value, rate = null) {
 	if (value == 0) {
 		sendEvent(name: "switch", value: "off")
+		// OneApp expects a level event when the dimmer value is changed
+		value = device.currentValue("level")
 	} else {
 		sendEvent(name: "switch", value: "on")
-		sendEvent(name: "level", value: value)
 	}
+	runIn(1, delayedSend, [data: createEvent(name: "level", value: value), overwrite: true])
+}
+
+def delayedSend(data) {
+	sendEvent(data)
 }
 
 def installed() {

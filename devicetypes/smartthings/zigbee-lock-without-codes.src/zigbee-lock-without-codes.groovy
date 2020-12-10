@@ -26,8 +26,8 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock V3 Smart Lock"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0500, 0101", outClusters: "0019", model: "E261-KR0B0Z0-HA", deviceJoinName: "C2O Lock", mnmn: "SmartThings", vid: "C2O-ZigBee-Lock"
+		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock Door Lock" //Danalock V3 Smart Lock
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0500, 0101", outClusters: "0019", model: "E261-KR0B0Z0-HA", deviceJoinName: "C2O Door Lock", mnmn: "SmartThings", vid: "C2O-ZigBee-Lock" //C2O Lock
 
 	}
 
@@ -207,6 +207,15 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = "unknown"
 			responseMap.descriptionText = "Unknown state"
 		}
+		if (responseMap.value) {
+			/*  delay this event for a second in the hopes that we get the operation event (which has more info).
+				If we don't get one, then it's okay to send. If we send the event with more info first, the event
+				with less info will be marked as not displayed
+			 */
+			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
+			runIn(1, "delayLockEvent", [data : [map : responseMap]])
+			return [:]
+		}
 	} else {
 		return null
 	}
@@ -214,9 +223,14 @@ private def parseAttributeResponse(String description) {
 	return result
 }
 
+def delayLockEvent(data) {
+	log.debug "Sending cached lock operation: ${data.map}"
+	sendEvent(data.map)
+}
+
 private def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
 	return responseMap
 }
 
@@ -269,7 +283,7 @@ private def parseCommandResponse(String description) {
 		//isBatterySet() == false -> battery is ok -> send value 50
 		//isBatterySet() == true -> battery is low -> send value 5
 		//metadata can receive 2 values: 5 or 50 for C2O lock
-		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
 	}
 
 	result << createEvent(responseMap)

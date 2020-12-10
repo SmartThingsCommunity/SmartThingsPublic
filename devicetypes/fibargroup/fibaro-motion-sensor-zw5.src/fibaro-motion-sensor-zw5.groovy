@@ -25,9 +25,9 @@ metadata {
 		capability "Health Check"
 		capability "Three Axis"
 
-		fingerprint mfr: "010F", prod: "0801", model: "2001"
-		fingerprint mfr: "010F", prod: "0801", model: "1001"
-		fingerprint mfr: "010F", prod: "0801"
+		fingerprint mfr: "010F", prod: "0801", model: "2001", deviceJoinName: "Fibaro Motion Sensor"
+		fingerprint mfr: "010F", prod: "0801", model: "1001", deviceJoinName: "Fibaro Motion Sensor"
+		fingerprint mfr: "010F", prod: "0801", deviceJoinName: "Fibaro Motion Sensor"
 
 	}
 
@@ -81,17 +81,15 @@ metadata {
 		details(["FGMS", "battery", "temperature", "illuminance", "motionTile", "multiStatus"])
 	}
 	preferences {
-
 		input(
-			title: "Fibaro Motion Sensor ZW5 manual",
-			description: "Tap to view the manual.",
-			image: "http://manuals.fibaro.com/wp-content/uploads/2017/02/ms_icon.png",
-			url: "http://manuals.fibaro.com/content/manuals/en/FGMS-001/FGMS-001-EN-T-v2.1.pdf",
-			type: "href",
-			element: "href"
+			title: "Fibaro Motion Sensor settings",
+			description: "Device's settings update is executed when device wakes up.\n" +
+					"It may take up to 2 hours (for default wake up interval). \n" +
+					"If you want immediate change, manually wake up device by clicking B-button once.",
+			type: "paragraph",
+			element: "paragraph"
 		)
-
-		parameterMap().findAll { (it.num as Integer) != 54 }.each {
+		parameterMap().each {
 			input(
 				title: "${it.num}. ${it.title}",
 				description: it.descr,
@@ -103,7 +101,7 @@ metadata {
 			input(
 				name: it.key,
 				title: null,
-				description: "Default: $descrDefVal",
+				description: "$descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
@@ -272,10 +270,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	logging("${device.displayName} woke up", "debug")
 	def cmds = []
-	if (state.wakeUpInterval?.state == "notSynced" && state.wakeUpInterval?.value != null) {
-		cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds: state.wakeUpInterval.value as Integer, nodeid: zwaveHubNodeId)
-		state.wakeUpInterval.state = "synced"
-	}
 	def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
 	cmds << encap(zwave.batteryV1.batteryGet())
 	cmds << "delay 500"

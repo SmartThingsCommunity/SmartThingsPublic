@@ -25,8 +25,8 @@ metadata {
 
 		command "test"
 
-		fingerprint deviceId: "0x1100", inClusters: "0x26,0x71"
-		fingerprint mfr:"0084", prod:"0313", model:"010B", deviceJoinName: "FortrezZ Siren Strobe Alarm"
+		fingerprint deviceId: "0x1100", inClusters: "0x26,0x71", deviceJoinName: "Siren"
+		fingerprint mfr:"0084", prod:"0313", model:"010B", deviceJoinName: "FortrezZ Siren" //FortrezZ Siren Strobe Alarm
 	}
 
 	simulator {
@@ -136,8 +136,7 @@ def parse(String description) {
 	return result
 }
 
-def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def switchValue = cmd.value ? "on" : "off"
 	def alarmValue
 	if (cmd.value == 0) {
@@ -158,7 +157,7 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
+def createEvents(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
 }
 

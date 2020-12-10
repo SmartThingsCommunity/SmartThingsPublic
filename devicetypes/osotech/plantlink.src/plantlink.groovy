@@ -36,7 +36,7 @@ metadata {
         attribute "linkBatteryLevel","string"
         attribute "installSmartApp","string"
 
-        fingerprint profileId: "0104", inClusters: "0000,0001,0B04"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0B04", deviceJoinName: "Plant Link Humidity Sensor"
     }
 
     simulator {

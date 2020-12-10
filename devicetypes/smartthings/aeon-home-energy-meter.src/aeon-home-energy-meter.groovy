@@ -27,10 +27,10 @@ metadata {
 
 		command "reset"
 
-		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60"
-		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // US
-		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // EU
-		fingerprint mfr: "0159", prod: "0007", model: "0052", deviceJoinName: "Qubino Smart Meter"
+		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60", deviceJoinName: "Aeon Energy Monitor"
+		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Aeon Energy Monitor" // US //Home Energy Meter (Gen5)
+		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Aeon Energy Monitor" // EU //Home Energy Meter (Gen5)
+		fingerprint mfr: "0159", prod: "0007", model: "0052", deviceJoinName: "Qubino Energy Monitor" //Qubino Smart Meter
 	}
 
 	// simulator metadata
@@ -139,6 +139,8 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def refresh() {
 	log.debug "refresh()..."
 	delayBetween([
+			encap(zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId:[])), // Refresh Node ID in Group 1
+   			encap(zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId:zwaveHubNodeId)), //Assign Node ID of SmartThings to Group 1
 			encap(zwave.meterV2.meterGet(scale: 0)),
 			encap(zwave.meterV2.meterGet(scale: 2))
 	])
@@ -157,13 +159,12 @@ def configure() {
 	log.debug "configure()..."
 	if (isAeotecHomeEnergyMeter())
 		delayBetween([
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 4, scaledConfigurationValue: 1)), // Reset the device to the default settings
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1)), // report power in Watts...
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 3)), // report total power in Watts and total energy in kWh...
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 0)), // disable group 2...
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0)), // disable group 3...
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)), // report energy in kWh...
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
-				zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1).format(), // enabling automatic reports...
-				zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 10).format() // ...every 10W change
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: 0)), // enabling automatic reports, disabled selective reporting...
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 1, scaledConfigurationValue: 0)) //disable CRC16 encapsulation
 		], 500)
 	else if (isQubinoSmartMeter())
 		delayBetween([
@@ -184,7 +185,7 @@ def configure() {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		cmd.format()

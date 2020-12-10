@@ -28,9 +28,11 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Smart Door/Window Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "DS01", deviceJoinName: "eWeLink Open/Closed Sensor" //eWeLink Door Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99", deviceJoinName: "Orvibo Open/Closed Sensor"
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Open/Closed Sensor" //Aurora Smart Door/Window Sensor
+		fingerprint manufacturer: "Aurora", model: "DoorSensor50AU", deviceJoinName: "Aurora Open/Closed Sensor" // Raw Description: 01 0104 0402 00 06 0000 0001 0003 0020 0500 0B05 01 0019 //Aurora Smart Door/Window Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "HEIMAN", model: "DoorSensor-N", deviceJoinName: "HEIMAN Open/Closed Sensor" //HEIMAN Door Sensor
 	}
 
 	simulator {
@@ -74,14 +76,14 @@ def parse(String description) {
 			ZoneStatus zs = zigbee.parseZoneStatus(description)
 			map = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 			result = createEvent(map)
-		}else if(description?.startsWith('enroll request')){
+		} else if (description?.startsWith('enroll request')) {
 			List cmds = zigbee.enrollResponse()
 			log.debug "enroll response: ${cmds}"
 			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-		}else {
+		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap?.commandInt != 0x07 && descMap?.value) {
-				if(descMap?.attrInt==0x0021){
+				if (descMap?.attrInt==0x0021) {
 					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 				} else {
 					map = getBatteryResult(Integer.parseInt(descMap.value, 16))
@@ -101,7 +103,7 @@ def parse(String description) {
 	result
 }
 
-def installed(){
+def installed() {
 	log.debug "call installed()"
 	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
@@ -117,7 +119,7 @@ def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
 	def manufacturer = getDataValue("manufacturer")
 	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	if (manufacturer == "ORVIBO") {
+	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
@@ -126,12 +128,21 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def manufacturer = getDataValue("manufacturer")
+	
+	if (manufacturer == "eWeLink") {
+		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	} else {
+		sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	}
 	def cmds = []
+	
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
-	if (getDataValue("manufacturer") == "Aurora") {
+	if (manufacturer == "Aurora") {
 		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.batteryConfig()
+	} else if (manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
+		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 600, 1)
 	}
 	cmds += refresh()
 	cmds

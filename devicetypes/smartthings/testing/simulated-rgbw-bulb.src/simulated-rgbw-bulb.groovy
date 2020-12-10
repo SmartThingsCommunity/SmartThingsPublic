@@ -505,7 +505,7 @@ private Map buildColorHSMap(hue, saturation) {
     } catch (NumberFormatException nfe) {
         log.warn "Couldn't transform one of hue ($hue) or saturation ($saturation) to integers: $nfe"
     }
-    return colorHSmap
+    return colorHSMap
 }
 
 /**

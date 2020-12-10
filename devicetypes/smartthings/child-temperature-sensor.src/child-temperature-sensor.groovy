@@ -18,6 +18,7 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 		capability "Refresh"
+		capability "Configuration"
 	}
 
 	tiles(scale: 2) {
@@ -47,7 +48,7 @@ def updated() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	parent.configureChild()
 	refresh()
 }
 

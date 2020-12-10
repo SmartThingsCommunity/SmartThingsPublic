@@ -20,11 +20,15 @@ metadata {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Mode"
+		capability "Thermostat Fan Mode"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0201,0202,0204,0B05", outClusters: "000A, 0019"
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", deviceJoinName: "Centralite Thermostat"
 	}
 
 	// simulator metadata
