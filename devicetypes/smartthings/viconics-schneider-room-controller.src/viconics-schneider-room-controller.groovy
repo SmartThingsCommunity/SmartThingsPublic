@@ -334,7 +334,7 @@ def fanCirculate() {
 }
 
 def getThermostatFanModeCommands(mode) {
-	if (mode) {
+	if (mode != null) {
 		delayBetween([
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
