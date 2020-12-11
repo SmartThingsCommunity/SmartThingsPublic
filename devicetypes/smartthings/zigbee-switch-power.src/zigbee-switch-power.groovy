@@ -56,6 +56,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BDP3001", deviceJoinName: "Eria Switch" //Eria Zigbee Dimmable Plug
 
 		// Enbrighten
+		fingerprint manufacturer: "Jasco Products", model: "43078", deviceJoinName: "Enbrighten Switch" //Enbrighten In-Wall Smart Switch With Energy Monitoring 43078, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
 		fingerprint manufacturer: "Jasco Products", model: "43095", deviceJoinName: "Enbrighten Switch" //Enbrighten Plug-in Smart Switch With Energy Monitoring 43095, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
 	}
 
