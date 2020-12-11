@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"generic-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"qubino-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"
