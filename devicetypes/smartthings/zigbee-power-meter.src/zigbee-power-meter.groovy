@@ -21,8 +21,8 @@ metadata {
         capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Energy Monitor" //Smart Sub-meter(CT Type)
-        fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco)
-        fingerprint profileId: "0104", manufacturer: "Develco Products A/S", model: "EMIZB-132", deviceJoinName: "frient Energy Monitor" // frient Norwegian HAN (develco)
+		fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco)
+		fingerprint profileId: "0104", manufacturer: "Develco Products A/S", model: "EMIZB-132", deviceJoinName: "frient Energy Monitor" // frient Norwegian HAN (develco)
     }
 
     // tile definitions
@@ -47,8 +47,6 @@ metadata {
     }
 }
 
-private getFrientDivisor() { 1 }
-
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
@@ -61,11 +59,11 @@ def parse(String description) {
                 event.value = event.value/10
                 event.unit = "W"
             } else {
-                event.value = event.value/(isFrientSensor() ? frientDivisor : 1000)
+                event.value = event.value/divisor
                 event.unit = "W"
             }
         } else if (event.name == "energy") {
-            event.value = event.value/(isFrientSensor() ? frientDivisor * 1000 : 1000000)
+            event.value = event.value/(divisor * 1000)
             event.unit = "kWh"
         }
         log.info "event outer:$event"
@@ -85,7 +83,7 @@ def parse(String description) {
                     if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
                         log.debug "meter"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/(isFrientSensor() ? frientDivisor : 1000)
+                        map.value = zigbee.convertHexToInt(it.value)/divisor
                         map.unit = "W"
                     }
                     if (it.clusterInt == 0x0B04 && it.attrInt == 0x050b) {
@@ -97,7 +95,7 @@ def parse(String description) {
                     if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/(isFrientSensor() ? frientDivisor * 1000 : 1000000)
+                        map.value = zigbee.convertHexToInt(it.value)/(divisor * 1000)
                         map.unit = "kWh"
                     }
                 }
@@ -133,6 +131,16 @@ def configure() {
     return refresh() +
            zigbee.simpleMeteringPowerConfig() +
            zigbee.electricMeasurementPowerConfig()
+}
+
+private getDivisor() {
+	def divisor = 1000 // default
+
+	if (isFrientSensor()) {
+		divisor = 1
+	}
+
+	return divisor
 }
 
 private Boolean isFrientSensor() {
