@@ -327,6 +327,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
+	sendHubCommand(encapCommands(getPowerMeterCommands()))
 	dimmerEvents(cmd)
 }
 
