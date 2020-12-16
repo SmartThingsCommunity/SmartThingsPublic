@@ -56,14 +56,14 @@ def parse(String description) {
             def descMap = zigbee.parseDescriptionAsMap(description)
             log.debug "event : Desc Map: $descMap"
             if (descMap.clusterInt == 0x0B04 && descMap.attrInt == 0x050b) {
-                event.value = event.value/10
+                event.value = event.value/activePowerDivisor
                 event.unit = "W"
             } else {
-                event.value = event.value/divisor
+                event.value = event.value/powerDivisor
                 event.unit = "W"
             }
         } else if (event.name == "energy") {
-            event.value = event.value/(divisor * 1000)
+            event.value = event.value/(energyDivisor * 1000)
             event.unit = "kWh"
         }
         log.info "event outer:$event"
@@ -83,19 +83,19 @@ def parse(String description) {
                     if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
                         log.debug "meter"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/divisor
+                        map.value = zigbee.convertHexToInt(it.value)/powerDivisor
                         map.unit = "W"
                     }
                     if (it.clusterInt == 0x0B04 && it.attrInt == 0x050b) {
                         log.debug "meter"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/10
+                        map.value = zigbee.convertHexToInt(it.value)/activePowerDivisor
                         map.unit = "W"
                     }
                     if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/(divisor * 1000)
+                        map.value = zigbee.convertHexToInt(it.value)/(energyDivisor * 1000)
                         map.unit = "kWh"
                     }
                 }
@@ -133,15 +133,9 @@ def configure() {
            zigbee.electricMeasurementPowerConfig()
 }
 
-private getDivisor() {
-	def divisor = 1000 // default
-
-	if (isFrientSensor()) {
-		divisor = 1
-	}
-
-	return divisor
-}
+private getActivePowerDivisor() { 10 }
+private getPowerDivisor() { isFrientSensor() ? 1 : 1000 }
+private getEnergyDivisor() { isFrientSensor() ? 1 : 1000 }
 
 private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "Develco Products A/S" ||
