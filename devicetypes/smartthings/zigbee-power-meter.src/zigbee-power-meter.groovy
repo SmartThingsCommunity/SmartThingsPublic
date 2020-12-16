@@ -21,8 +21,8 @@ metadata {
         capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Energy Monitor" //Smart Sub-meter(CT Type)
-		fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco) 02 0104 0007 00 03 0000 0003 0702 01 000A
-		fingerprint profileId: "0104", manufacturer: "Develco Products A/S", model: "EMIZB-132", deviceJoinName: "frient Energy Monitor" // frient Norwegian HAN (develco) 02 0104 0053 00 06 0000 0003 0020 0702 0704 0B04 03 0003 000A 0019
+        fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco) 02 0104 0007 00 03 0000 0003 0702 01 000A
+        fingerprint profileId: "0104", manufacturer: "Develco Products A/S", model: "EMIZB-132", deviceJoinName: "frient Energy Monitor" // frient Norwegian HAN (develco) 02 0104 0053 00 06 0000 0003 0020 0702 0704 0B04 03 0003 000A 0019
     }
 
     // tile definitions
