@@ -73,6 +73,7 @@ metadata {
 		fingerprint mfr:"037B", prod:"0003", model:"0001", deviceJoinName: "KeyWe Door Lock" // GKW-1000Z //KeyWe Smart Rim Lock
 		// Philia
 		fingerprint mfr:"0366", prod:"0001", model:"0001", deviceJoinName: "Philia Door Lock" // PDS-100 //Philia Smart Door Lock
+        fingerprint mfr: "0123", prod: "0001", model: "2222", deviceJoinName: "Door Lock"
 	}
 
 	simulator {
