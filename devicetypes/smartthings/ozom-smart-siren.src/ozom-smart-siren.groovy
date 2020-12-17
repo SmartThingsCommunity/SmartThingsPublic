@@ -27,6 +27,7 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", vid: "generic-siren-8", deviceJoinName: "Ozom Siren" // Ozom Siren - SRAC-23ZBS //Ozom Smart Siren
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", deviceJoinName: "HEIMAN Siren" //HEIMAN Smart Siren
+		fingerprint manufacturer: "frient A/S", model :"SIRZB-110", deviceJoinName: "frient Siren", mnmn: "SmartThingsCommunity", vid: "33d3bbac-144c-3a31-b022-0fc5c74240a3" // frient Smart Siren, 2B 0104 0403 00 05 0000 0003 0502 0500 0001 02 000A 0019
 	}
 
 	tiles {
@@ -57,6 +58,9 @@ private getMODE_BOTH() { "17" }
 private getMODE_OFF() { "00" }
 private getSTROBE_DUTY_CYCLE() { "40" }
 private getSTROBE_LEVEL() { "03" }
+private getBASIC_DUTY_CYCLE() { "00" }
+private getBASIC_LEVEL() { "00" }
+private getFRIENT_MODE_SIREN() { "C1" }
 
 private getALARM_OFF() { 0x00 }
 private getALARM_SIREN() { 0x01 }
@@ -167,16 +171,21 @@ def startCmd(cmd) {
 	state.lastDuration = warningDuration
 
 	def paramMode;
-	def paramDutyCycle = STROBE_DUTY_CYCLE;
-	def paramStrobeLevel = STROBE_LEVEL;
+	def paramDutyCycle;
+	def paramStrobeLevel;
+    
 	if (cmd == ALARM_SIREN) {
-		paramMode = MODE_SIREN
-		paramDutyCycle = "00"
-		paramStrobeLevel = "00"
+		paramMode = isFrientSiren() ? FRIENT_MODE_SIREN : MODE_SIREN
+		paramDutyCycle = BASIC_DUTY_CYCLE 
+		paramStrobeLevel = BASIC_LEVEL 
 	} else if (cmd == ALARM_STROBE) {
-		paramMode = MODE_STROBE
+		paramMode = isFrientSiren() ? FRIENT_MODE_SIREN : MODE_STROBE
+		paramDutyCycle = isFrientSiren() ? BASIC_DUTY_CYCLE : STROBE_DUTY_CYCLE 
+		paramStrobeLevel = isFrientSiren() ? BASIC_LEVEL : STROBE_LEVEL 
 	} else if (cmd == ALARM_BOTH) {
-		paramMode = MODE_BOTH
+		paramMode = isFrientSiren() ? FRIENT_MODE_SIREN : MODE_BOTH
+		paramDutyCycle = isFrientSiren() ? BASIC_DUTY_CYCLE : STROBE_DUTY_CYCLE 
+		paramStrobeLevel = isFrientSiren() ? BASIC_LEVEL : STROBE_LEVEL 
 	}
     
     zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, paramMode, DataType.pack(warningDuration, DataType.UINT16), paramDutyCycle, paramStrobeLevel)
@@ -201,4 +210,8 @@ def off() {
 
 private isOzomSiren() {
 	device.getDataValue("manufacturer") == "ClimaxTechnology"
+}
+
+private Boolean isFrientSiren() {
+	device.getDataValue("manufacturer") == "frient A/S"
 }
