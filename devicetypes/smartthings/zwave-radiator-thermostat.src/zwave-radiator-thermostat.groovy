@@ -13,7 +13,8 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat",
+			mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Heat_Controller") {
 		capability "Refresh"
 		capability "Battery"
 		capability "Thermostat Heating Setpoint"

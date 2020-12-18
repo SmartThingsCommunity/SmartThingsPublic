@@ -16,7 +16,8 @@
  *	Date: 2013-12-02
  */
 metadata {
-	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
+			executeCommandsLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-Honeywell_TCC_8000/9000_Thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
