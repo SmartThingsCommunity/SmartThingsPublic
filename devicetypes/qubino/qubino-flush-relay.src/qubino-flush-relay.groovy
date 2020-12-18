@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Qubino Flush 2 Relay", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
+	definition (name: "Qubino Flush Relay", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Energy Meter"
