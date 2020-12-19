@@ -17,6 +17,7 @@ metadata {
 			executeCommandsLocally: false, minHubCoreVersion: '000.033.0001') {
 		capability "Actuator"
 		capability "Temperature Measurement"
+		capability "Thermostat"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Operating State"
