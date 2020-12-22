@@ -334,12 +334,10 @@ def fanCirculate() {
 }
 
 def getThermostatFanModeCommands(mode) {
-	if (mode) {
-		delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
-		], 500)
-	}
+	delayBetween([
+		zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE, DataType.ENUM8, mode),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_FAN_MODE)
+	], 500)
 }
 
 def setFanSpeed(speed) {
@@ -397,13 +395,11 @@ def off() {
 }
 
 def getThermostatModeCommands(mode) {
-	if (mode) {
-		delayBetween([
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
-			zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
-		], 500)
-	}
+	delayBetween([
+		zigbee.writeAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE, DataType.ENUM8, mode),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_MODE),
+		zigbee.readAttribute(THERMOSTAT_CLUSTER, CUSTOM_THERMOSTAT_OPERATING_STATE)
+	], 500)
 }
 
 def ping() {
