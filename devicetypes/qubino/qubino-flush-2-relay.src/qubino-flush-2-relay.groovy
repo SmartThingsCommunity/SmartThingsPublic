@@ -336,7 +336,6 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
 	changeSwitch(ep, cmd)
 }
 
-
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 	log.warn "Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
 }
