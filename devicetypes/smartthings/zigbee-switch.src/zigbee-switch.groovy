@@ -90,6 +90,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
 
 		// Third Reality
+		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch-Gen3 Zigbee Mode
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch Plus
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch
 
