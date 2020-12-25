@@ -1,21 +1,16 @@
 import groovy.json.JsonOutput
+import physicalgraph.zigbee.zcl.DataType
 
 /**
- *  Copyright 2017 SmartThings
+ *  Vision Zigbee Arrival Sensor
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *  1. Delete --> (runLocally: true, executeCommandsLocally: true) in definition method ; all log.debug would be run.
+ *  2. Delete --> (minHubCoreVersion: '000.025.00032') in definition method ; it don't care min Hub Core Version.
  *
  */
 metadata {
-    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings",
-            runLocally: true, minHubCoreVersion: '000.025.00032', executeCommandsLocally: true) {
+    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "Steven Chen") {
+    
         capability "Tone"
         capability "Actuator"
         capability "Presence Sensor"
@@ -25,6 +20,7 @@ metadata {
         capability "Health Check"
 
         fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019", manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "SmartThings Presence Sensor"
+        fingerprint profileId: "0104", deviceId: "000C", inClusters: "0000,0001,0003,0006,0020", outClusters: "0003,0019", manufacturer: "Vision", model: "ArrivalTagv1", deviceJoinName: "Vision Zigbee Arrival Sensor"
     }
 
     preferences {
@@ -37,6 +33,10 @@ metadata {
         section {
             input "checkInterval", "enum", title: "Presence timeout (minutes)", description: "Tap to set",
                     defaultValue:"2", options: ["2", "3", "5"], displayDuringSetup: false
+        }
+        section {
+            input "detectTime", "enum", title: "G Sensor detect time (base 16s)", description: "Tap to set",
+                    defaultValue:"2", options: ["1", "2", "3", "4", "5", "6"], displayDuringSetup: false
         }
     }
 
@@ -58,17 +58,24 @@ metadata {
 }
 
 def updated() {
-    stopTimer()
-    startTimer()
+	log.debug "updated()"
+    state.gsensor = 0
+    def thedetectTime = (detectTime ? detectTime as int : 2) * 1
+    def updatecmds = zigbee.writeAttribute(0x0000, 0x0000, 0x20, thedetectTime, [mfgCode: 0x120D]) 
+    log.debug "Updatecmds:  ${updatecmds}"
+	return response(updatecmds)
 }
 
 def installed() {
-    // Arrival sensors only goes OFFLINE when Hub is off
+	log.debug "installed()"
+	// Arrival sensors only goes OFFLINE when Hub is off
     sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 }
 
 def configure() {
-    def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
+    def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(60, 60, 0x01) +   //30  //3600 -> 1hour
+                zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig() //+ //zigbee.configureReporting(0x0006, 0x0000, DataType.BOOLEAN, 5, 5, 0x01)
+                //zigbee.readAttribute(0x0000, 0x0000,[mfgCode: 0x120D]) + zigbee.configureReporting(0x0000, 0x0000, DataType.UINT8, 60, 60, 0x00,[mfgCode: 0x120D])
     log.debug "configure -- cmds: ${cmds}"
     return cmds
 }
@@ -79,21 +86,30 @@ def beep() {
 }
 
 def parse(String description) {
-    state.lastCheckin = now()
-    handlePresenceEvent(true)
-
-    if (description?.startsWith('read attr -')) {
-        handleReportAttributeMessage(description)
+	log.debug "description: $description"
+	state.lastCheckin = now()
+    if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
+    	log.debug zigbee.parseDescriptionAsMap(description)
+    	def descMap = zigbee.parseDescriptionAsMap(description)
+        if (descMap.clusterInt == 0x0006) {
+            log.debug "Command: ${descMap.commandInt}"
+        	if(descMap.commandInt == 0x01)
+            {
+            	log.debug "True"
+				handlePresenceEvent(true)	
+                state.gsensor = 1
+            }    
+            else
+            {
+            	log.debug "False"
+                stopTimer()
+    		}
+	    } else if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
+            handleBatteryEvent(Integer.parseInt(descMap.value, 16))
+        }
     }
-
+    
     return []
-}
-
-private handleReportAttributeMessage(String description) {
-    def descMap = zigbee.parseDescriptionAsMap(description)
-    if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
-        handleBatteryEvent(Integer.parseInt(descMap.value, 16))
-    }
 }
 
 /**
@@ -107,10 +123,10 @@ private handleBatteryEvent(volts) {
         log.debug "Ignoring invalid value for voltage (${volts/10}V)"
     }
     else {
-        def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
-                          22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+        def batteryMap = [29:100, 28:90, 27:90, 26:70, 25:70, 24:50, 23:50,
+                          22:30, 21:30, 20:15, 19:8, 18:1, 17:0, 16:0, 15:0]
         def minVolts = 15
-        def maxVolts = 28
+        def maxVolts = 29
 
         if (volts < minVolts)
             volts = minVolts
@@ -133,8 +149,8 @@ private handleBatteryEvent(volts) {
 }
 
 private handlePresenceEvent(present) {
-    def wasPresent = device.currentState("presence")?.value == "present"
-    if (!wasPresent && present) {
+    //def wasPresent = device.currentState("presence")?.value == "present"
+    if (!state.gsensor && present) {
         log.debug "Sensor is present"
         startTimer()
     } else if (!present) {
@@ -156,7 +172,7 @@ private handlePresenceEvent(present) {
     ]
     log.debug "Creating presence event: ${device.displayName} ${eventMap.name} is ${eventMap.value}"
     sendEvent(eventMap)
-}
+}   
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
@@ -169,10 +185,11 @@ private stopTimer() {
     log.debug "Stopping periodic timer"
     // Always unschedule to handle the case where the DTH was running in the cloud and is now running locally
     unschedule("checkPresenceCallback", [forceForLocallyExecuting: true])
+    state.gsensor = 0
 }
 
 def checkPresenceCallback() {
-    def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
+	def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
     def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
     log.debug "Sensor checked in ${timeSinceLastCheckin} seconds ago"
     if (timeSinceLastCheckin >= theCheckInterval) {
