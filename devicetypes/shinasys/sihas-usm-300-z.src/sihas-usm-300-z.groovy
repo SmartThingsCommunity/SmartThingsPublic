@@ -28,7 +28,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		
-		fingerprint inClusters: "0000,0001,0003,0004,0020,0400,0402,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor"
+		fingerprint inClusters: "0000,0001,0003,0004,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor"
 	}
 
 	simulator {
