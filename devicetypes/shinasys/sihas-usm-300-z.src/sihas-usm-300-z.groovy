@@ -58,7 +58,7 @@ metadata {
 			}
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label: '${currentValue}°', unit: "F",
+			state("temperature", label: '${currentValue}°', unit: "C",
 					backgroundColors: [
 							[value: 31, color: "#153591"],
 							[value: 44, color: "#1e9cbb"],
