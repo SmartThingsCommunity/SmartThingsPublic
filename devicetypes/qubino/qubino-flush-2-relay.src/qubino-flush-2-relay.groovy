@@ -20,6 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Configuration"
 
 		command "reset"
 
@@ -127,6 +128,22 @@ def excludeParameterFromSync(preference){
 		log.warn "Preference no ${preference.parameterNumber} - ${preference.key} is not supported by this device"
 	}
 	return exclude
+}
+
+def configure() {
+	def cmds = []
+
+	if (zwaveInfo?.model?.equals("0051")) {
+		// parameters 40 and 41 - power consumption reporting threshold for Q1 and Q2 loads (respectively) - 5 %
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 5))
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 41, size: 1, scaledConfigurationValue: 5))
+		// parameters 42 and 43 - power consumption reporting time threshold for Q1 and Q2 (respectively) - 5 minutes
+		// additionally, manual states that default value for below parameters is 0, which disables power reporting
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 300))
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 43, size: 2, scaledConfigurationValue: 300))
+	}
+
+	delayBetween(cmds, 500)
 }
 
 def addToAssociationGroupIfNeeded() {
