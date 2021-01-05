@@ -138,14 +138,19 @@ private Map getBatteryResult(rawValue) {
 	if (!(rawValue == 0 || rawValue == 255)) {
 		result.name = 'battery'
 		result.translatable = true
-		def minVolts =	2.5
-		def maxVolts =	3.1
+		def minVolts =	2.3
+		def maxVolts =	3.2
 		// Get the current battery percentage as a multiplier 0 - 1
+        log.debug device.currentState("battery")?.value
+        
 		def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+        log.debug "rawvalue = " + rawValue + ",volts=" + volts  + ",curValVolts=" + curValVolts
 		// Find the corresponding voltage from our range
 		curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
 		// Round to the nearest 10th of a volt
 		curValVolts = Math.round(10 * curValVolts) / 10.0
+        
+        log.debug "rawvalue = " + rawValue + ",volts=" + volts  + ",curValVolts=" + curValVolts
 		// Only update the battery reading if we don't have a last reading,
 		// OR we have received the same reading twice in a row
 		// OR we don't currently have a battery reading

@@ -19,11 +19,11 @@ metadata {
     definition (name: "SiHAS TSM-300-Z", namespace: "shinasys", author: "Shina System Co., Ltd", vid: "generic-humidity") {
         capability "Configuration"
         capability "Battery"
+        capability "Refresh" 
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Health Check"
         capability "Sensor"
-        capability "Refresh" 
         
         fingerprint inClusters: "0000,0001,0003,0004,0402,0405", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor"
     }
@@ -114,6 +114,7 @@ def parse(String description) {
 	    if (tempOffset) {
 	        map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	    }
+        map.unit = "C"
         map.descriptionText = "${device.displayName} temperature was ${map.value}°C"
         map.translatable = true        
     } else if (map.name == "humidity") {
@@ -153,8 +154,8 @@ private Map getBatteryResult(rawValue) {
         result.name = 'battery'
         result.translatable = true
         result.unit = "%"
-        def minVolts =  2.5
-        def maxVolts =  3.1
+        def minVolts =  2.3
+        def maxVolts =  3.2
         // Get the current battery percentage as a multiplier 0 - 1
         def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
         // Find the corresponding voltage from our range
