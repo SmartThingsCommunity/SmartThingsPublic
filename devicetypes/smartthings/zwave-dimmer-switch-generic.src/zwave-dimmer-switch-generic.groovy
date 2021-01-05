@@ -52,6 +52,10 @@ metadata {
 		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Dimmer Switch
 		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Plug Dimmer
         fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch" //Minoston  ZW31S Dimmer 
+        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch" //Minoston Smart Toggle Dimmer Switch
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //Minoston Mini Smart Plug Dimmer
+        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Dimmer Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Toggle Dimmer Switch
 	}
 
 	simulator {
