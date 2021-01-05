@@ -73,15 +73,18 @@ metadata {
 		valueTile("humidity", "device.humidity", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label: '${currentValue}% humidity', unit: ""
 		}
+        valueTile("illuminance", "device.illuminance", width: 2, height: 2, decoration: "flat") {
+			state "luminosity", label:'${currentValue} lux', unit:"lux"
+		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-
+	
 		main(["motion", "temperature"])
-		details(["motion", "temperature", "humidity", "battery", "refresh"])
+		details(["motion", "temperature", "humidity", "illuminance", "battery", "refresh"])
 	}
 }
 
