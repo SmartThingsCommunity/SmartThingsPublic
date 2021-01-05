@@ -16,27 +16,21 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "SiHAS TSM-300-Z", namespace: "shinasys", author: "Shina System Co., Ltd", cstHandler: true) {
+    definition (name: "SiHAS TSM-300-Z", namespace: "shinasys", author: "Shina System Co., Ltd", vid: "generic-humidity") {
         capability "Configuration"
         capability "Battery"
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
-        capability "Refresh"
         capability "Health Check"
         capability "Sensor"
+        capability "Refresh" 
         
         fingerprint inClusters: "0000,0001,0003,0004,0402,0405", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor"
     }
 
     // simulator metadata
     simulator {
-        for (int i = 0; i <= 100; i += 10) {
-            status "${i}F": "temperature: $i C"
-        }
-
-        for (int i = 0; i <= 100; i += 10) {
-            status "${i}%": "humidity: ${i}%"
-        }
+   
     }
 
     preferences {
@@ -48,6 +42,7 @@ metadata {
     }
 
     tiles(scale: 2) {
+   
         valueTile("temperature", "device.temperature", width: 2, height: 2) {
             state("temperature", label:'${currentValue}°',
                 backgroundColors:[
@@ -62,17 +57,18 @@ metadata {
             )
         }
         valueTile("humidity", "device.humidity") {
-            state "humidity", label:'${currentValue}%', unit:""
+            state "humidity", label:'${currentValue}%', unit:"%"
         }
         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-            state "battery", label: '${currentValue}% battery', unit: ""
+            state "battery", label: '${currentValue}% battery', unit: "%"
         }
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
 
         main(["temperature", "humidity"])
-        details(["temperature", "humidity"])
+        details(["temperature", "humidity", "battery", "refresh"])
+        
     }
 }
 
@@ -118,8 +114,8 @@ def parse(String description) {
 	    if (tempOffset) {
 	        map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	    }
-        map.descriptionText = temperatureScale == 'C' ? "${device.displayName} temperature was ${map.value}°C" : "${device.displayName} temperature was ${map.value}°F"
-        map.translatable = true
+        map.descriptionText = "${device.displayName} temperature was ${map.value}°C"
+        map.translatable = true        
     } else if (map.name == "humidity") {
         if (humidityOffset) {
             map.value = (int) map.value + (int) humidityOffset
@@ -156,6 +152,7 @@ private Map getBatteryResult(rawValue) {
     if (!(rawValue == 0 || rawValue == 255)) {
         result.name = 'battery'
         result.translatable = true
+        result.unit = "%"
         def minVolts =  2.5
         def maxVolts =  3.1
         // Get the current battery percentage as a multiplier 0 - 1
@@ -224,7 +221,7 @@ def configure() {
     
     configCmds += 
         zigbee.configureReporting(0x0001/*power*/, 0x0020, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/) +
-        zigbee.configureReporting(0x0402/*temperature*/, 0x0000, DataType.INT16, 30, 300, 30/*30/100=0.3도*/) +
+        zigbee.configureReporting(0x0402/*temperature*/, 0x0000, DataType.INT16, 30, 300, 30/*30/100=0.3 degree*/) +
         zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER/*0x0405*/, 0x0000, DataType.UINT16, 30, 3600, 50/*50/100=0.5%*/) 
     
     return refresh() + configCmds
