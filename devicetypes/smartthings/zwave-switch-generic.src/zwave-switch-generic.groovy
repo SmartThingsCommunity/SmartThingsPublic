@@ -65,6 +65,8 @@ metadata {
         fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug", ocfDeviceType: "oic.d.smartplug" //Minoston Mini Smart Plug
         fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //Minoston Smart Switch
         fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //Minoston Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch", ocfDeviceType: "oic.d.smartplug" //Evalogik Smart on/off Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch", ocfDeviceType: "oic.d.smartplug" //Evalogik Smart on/off Toggle Switch
 	}
 
 	// simulator metadata
