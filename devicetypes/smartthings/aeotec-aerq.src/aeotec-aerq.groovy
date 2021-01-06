@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Aeotec aerQ Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
