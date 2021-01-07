@@ -10,6 +10,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ Version v3.3
+ * change to remotecontrol with components
+ 
  Version v3.2
  * add zigbee constants
  * update to zigbee commands
@@ -35,11 +38,12 @@
 
 **/
 
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 //dth version
-def getVERSION() {'v3.2 11-2020'}
-def getDEBUG() {false}
+def getVERSION() {'v3.3 12-2020'}
+def getDEBUG() {true}
 //zigbee cluster, attribute, identifiers
 def getON_OFF_CLUSTER() {0x0006}
 def getALARMS_CLUSTER() {0x0009}
@@ -50,14 +54,18 @@ def getOUT_OF_SERVICE_IDENTIFIER() {0x0051}
 def getPRESENT_VALUE_IDENTIFIER() {0x0055}
 
 metadata {
-	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "19bed5c0-a5b4-3485-a96d-d3ea4caae99f"){
-		capability "Actuator"
+	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity",
+    	ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true, vid: "292b4067-e1d7-3460-a36d-2ddd8ab03079") {
+		
+        capability "Actuator"
 		capability "Switch"
+        capability "Valve"
 		capability "Sensor"
 		capability "Health Check"
 		capability "heartreturn55003.status"
 		capability "heartreturn55003.controllerState"
 		capability "heartreturn55003.rainSensor"
+        capability "heartreturn55003.valveDuration"
 
 		capability "Configuration"
 		capability "Refresh"
@@ -65,16 +73,17 @@ metadata {
 		attribute "status", "string"
 		attribute "controllerState", "string"
 		attribute "rainSensor", "string"
+        attribute "valveDuration", "NUMBER"
 
 		command "on"
 		command "off"
 		command "setStatus"
 		command "setRainSensor"
 		command "setControllerState"
+        command "setValveDuration"
 
 		//new release
 		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Irrigation Controller"
-
 	}
 
 	preferences {
@@ -92,40 +101,24 @@ metadata {
 		input "valveDelay", "integer", title: "Delay between valves when a schedule runs? (seconds)", required: false, displayDuringSetup: true
 
 		input title: "Zone devices", displayDuringSetup: true, type: "paragraph", element: "paragraph",
-			description: "Enable Zones for manual control and automations. Set schedule minutes to water a zone anytime controller state is switched on."
-
-		input name: "z1", type: "bool", title: "Zone 1", displayDuringSetup: true
-		input name: "z1Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z2", type: "bool", title: "Zone 2", displayDuringSetup: true
-		input name: "z2Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z3", type: "bool", title: "Zone 3", displayDuringSetup: true
-		input name: "z3Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z4", type: "bool", title: "Zone 4", displayDuringSetup: true
-		input name: "z4Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z5", type: "bool", title: "Zone 5", displayDuringSetup: true
-		input name: "z5Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z6", type: "bool", title: "Zone 6", displayDuringSetup: true
-		input name: "z6Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z7", type: "bool", title: "Zone 7", displayDuringSetup: true
-		input name: "z7Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z8", type: "bool", title: "Zone 8", displayDuringSetup: true
-		input name: "z8Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z9", type: "bool", title: "Zone 9", displayDuringSetup: true
-		input name: "z9Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z10", type: "bool", title: "Zone 10", displayDuringSetup: true
-		input name: "z10Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z11", type: "bool", title: "Zone 11", displayDuringSetup: true
-		input name: "z11Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z12", type: "bool", title: "Zone 12", displayDuringSetup: true
-		input name: "z12Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z13", type: "bool", title: "Zone 13", displayDuringSetup: true
-		input name: "z13Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z14", type: "bool", title: "Zone 14", displayDuringSetup: true
-		input name: "z14Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z15", type: "bool", title: "Zone 15", displayDuringSetup: true
-		input name: "z15Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
-		input name: "z16", type: "bool", title: "Zone 16", displayDuringSetup: true
-		input name: "z16Duration", type: "integer", title: "schedule minutes", displayDuringSetup: true
+			description: "Set schedule minutes to water a zone anytime controller state is switched on."
+		
+		input name: "z1Duration", type: "integer", title: "Zone 1 schedule minutes"		
+		input name: "z2Duration", type: "integer", title: "Zone 2 schedule minutes"
+		input name: "z3Duration", type: "integer", title: "Zone 3 schedule minutes"
+		input name: "z4Duration", type: "integer", title: "Zone 4 schedule minutes"
+		input name: "z5Duration", type: "integer", title: "Zone 5 schedule minutes"
+		input name: "z6Duration", type: "integer", title: "Zone 6 schedule minutes"
+		input name: "z7Duration", type: "integer", title: "Zone 7 schedule minutes"
+		input name: "z8Duration", type: "integer", title: "Zone 8 schedule minutes"
+		input name: "z9Duration", type: "integer", title: "Zone 9 schedule minutes"
+		input name: "z10Duration", type: "integer", title: "Zone 10 schedule minutes"
+		input name: "z11Duration", type: "integer", title: "Zone 11 schedule minutes"
+		input name: "z12Duration", type: "integer", title: "Zone 12 schedule minutes"
+		input name: "z13Duration", type: "integer", title: "Zone 13 schedule minutes"
+		input name: "z14Duration", type: "integer", title: "Zone 14 schedule minutes"
+		input name: "z15Duration", type: "integer", title: "Zone 15 schedule minutes"
+		input name: "z16Duration", type: "integer", title: "Zone 16 schedule minutes"
 	}
 }
 
@@ -182,7 +175,7 @@ def parse(String description) {
 	return result
 }
 
-def commandType(endpoint, cluster){
+def commandType(endpoint, cluster) {
 	if (cluster == 9) return "alarm"
 	else if (endpoint == 1) return "schedule"
 	else if (endpoint in 2..17) return "zone"
@@ -192,25 +185,25 @@ def commandType(endpoint, cluster){
 
 //--------------------end zigbee parse-------------------------------//
 
-def installed() {	
-    //configure() called after installed()
+def installed() {
+    initialize()	//remove after test
+    createChildDevices()
 }
 
 def updated() {
 	log.debug "updated"
-
-	createChildDevices()
 	initialize()
 }
 
-def initialize(){
+def initialize() {
 	sendEvent(name: "switch", value: "off", displayed: false)
 	sendEvent(name: "controllerState", value: "off", displayed: false)
-	sendEvent(name: "status", value: "Initialize")
+	sendEvent(name: "status", value: "Initialize")    
+    if (device.latestValue("valveDuration") == null) sendEvent(name: "valveDuration", value: 10)
+    
 	//update zigbee device settings
 	response(setDeviceSettings() + setTouchButtonDuration() + setRainSensor() + refresh())
 }
-
 
 def createChildDevices() {
 	log.debug "create children"
@@ -219,30 +212,16 @@ def createChildDevices() {
 	//create, rename, or remove child
 	for (i in 1..16){
 		//endpoint is offset, zone number +1
-		def endpoint = i + 1
+		def endpoint = i + 1		
 		
-		if(settings."z${i}"){
-			def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
-			//create child
-			if (!child){
-				def childLabel = (state.oldLabel != null ? "${state.oldLabel} Zone${i}" : "Spruce Zone${i}")
-				if (pumpMasterZone == i) childLabel = "Spruce PM Zone${i}"
-				child = addChildDevice("Spruce Valve", "${device.deviceNetworkId}:${endpoint}", device.hubId,
-						[completedSetup: true, label: "${childLabel}",
-						 isComponent: false])
-						 log.debug "${child}"
-					child.sendEvent(name: "switch", value: "off", displayed: false)
-			}
-			//or rename child
-			else if (device.label != state.oldLabel){
-				def childLabel = (state.oldLabel != null ? "${state.oldLabel} Zone${i}" : "Spruce Zone${i}")
-				if (pumpMasterZone == i) childLabel = "Spruce PM Zone${i}"
-				child.setLabel("${childLabel}")
-			}
-		}
-		//remove child
-		else if (childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}){
-			deleteChildDevice("${device.deviceNetworkId}:${endpoint}")
+		def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
+		//create child
+		if (!child){
+			def childLabel = "Zone$i"
+			child = addChildDevice("Spruce Valve", "${device.deviceNetworkId}:${endpoint}", device.hubId,
+					[completedSetup: true, label: "${childLabel}", isComponent: true, componentName: "Zone$i", componentLabel: "Zone$i"])
+			log.debug "${child}"
+			child.sendEvent(name: "valve", value: "closed", displayed: false)
 		}
 
 	}
@@ -250,22 +229,24 @@ def createChildDevices() {
 	state.oldLabel = device.label
 }
 
-def removeChildDevices() {
-	log.debug "remove all children"
-
-	//get and delete children avoids duplicate children
-	def children = getChildDevices()
-	if(children != null){
-		children.each{
-			deleteChildDevice(it.deviceNetworkId)
-		}
-	}
+def open() {
+	log.debug "open"
+    sendEvent(name: "valve", value: "open")
 }
 
+def closed() {
+	log.debug "closed"
+    sendEvent(name: "valve", value: "closed")
+}
+
+def setValveDuration(duration) {
+	log.debug "valveDuration ${duration}"
+	sendEvent(name: "valveDuration", value: duration, unit: "mins")
+}
 
 //----------------------------------commands--------------------------------------//
 
-def setStatus(status){
+def setStatus(status) {
 	if (DEBUG) log.debug "status ${status}"
 	sendEvent(name: "status", value: status, descriptionText: "Initialized")
 }
@@ -284,10 +265,8 @@ def setDeviceSettings() {
 	def valveDelay = (valveDelay ? valveDelay.toInteger() : 0)
 	if (DEBUG) log.debug "Pump/Master: ${pumpMasterEndpoint} splitCycle: ${splitCycle} valveDelay: ${valveDelay}"
 
-	def endpointMap = [:]
-	int zone = 0
-	while(zone <= 17)
-	{
+	def endpointMap = [:]	
+    for (zone in 0..17) {
 		//setup zone, 1=single cycle, 2=split cycle, 4=pump/master
 		def zoneSetup = splitCycle
 		if (zone == pumpMasterZone) zoneSetup = 4
@@ -312,7 +291,7 @@ def setTouchButtonDuration(){
 }
 
 //controllerState
-def setControllerState(state){
+def setControllerState(state) {
 	if (DEBUG) log.debug "state ${state}"
 	sendEvent(name: "controllerState", value: state, descriptionText: "Initialized")
 
@@ -392,7 +371,7 @@ def scheduleOff() {
 def valveOn(valueMap) {
 	//get endpoint from deviceNetworkId
 	def endpoint = valueMap.dni.replaceFirst("${device.deviceNetworkId}:","").toInteger()
-	def duration = (valueMap.duration != null ? valueMap.duration.toInteger() : 0)
+	def duration = (device.latestValue("valveDuration").toInteger())
 
 	sendEvent(name: "status", value: "${valueMap.label} on for ${duration}min(s)", descriptionText: "Zone ${valueMap.label} on for ${duration}min(s)")
 	if (DEBUG) log.debug "state ${state.hasConfiguredHealthCheck} ${ON_OFF_CLUSTER}"
@@ -417,7 +396,7 @@ def zoneOff(endpoint) {
 	return zigbee.command(ON_OFF_CLUSTER, 0, "", [destEndpoint: endpoint]) + setTouchButtonDuration()
 }
 
-def zoneDuration(int duration){
+def zoneDuration(int duration) {
 	def sendCmds = []
 	sendCmds.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, duration, [destEndpoint: 1]))
 	return sendCmds
@@ -426,14 +405,15 @@ def zoneDuration(int duration){
 //------------------end commands----------------------------------//
 
 //get times from settings and send to controller, then start schedule
-def startSchedule(){
+def startSchedule() {
 	def startRun = false
 	def runTime, totalTime=0
 	def scheduleTimes = []
 
 	for (i in 1..16){
 		def endpoint = i + 1        
-		if (settings."z${i}" && settings."z${i}Duration" != null){
+		//if (settings."z${i}" && settings."z${i}Duration" != null){
+        if (settings."z${i}Duration" != null){
 			runTime = Integer.parseInt(settings."z${i}Duration")
 			totalTime += runTime
 			startRun = true
@@ -453,7 +433,7 @@ def startSchedule(){
 }
 
 //write switch time settings map
-def settingsMap(WriteTimes, attrType){
+def settingsMap(WriteTimes, attrType) {
 
 	def runTime
 	def sendCmds = []
@@ -469,12 +449,12 @@ def settingsMap(WriteTimes, attrType){
 }
 
 //send switch time
-def writeType(endpoint, cycle){
+def writeType(endpoint, cycle) {
 	zigbee.writeAttribute(ON_OFF_CLUSTER, ON_TIME_ATTRIBUTE, DataType.UINT16, cycle, [destEndpoint: endpoint])
 }
 
 //send switch off time
-def writeTime(endpoint, runTime){
+def writeTime(endpoint, runTime) {
 	zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint])
 }
 
@@ -486,9 +466,8 @@ def configure() {
 	sendEvent(name: "DeviceWatch-Enroll", value: 2* 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	configureHealthCheck()
-
-	String zigbeeId = swapEndianHex(device.hub.zigbeeId)
-	log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.zigbeeId}"
+	
+	if (DEBUG) log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.hub.zigbeeId}"
 
 	//setup binding for 18 endpoints
 	def bindCmds = []
@@ -556,10 +535,11 @@ private hextoint(String hex) {
 	Long.parseLong(hex, 16).toInteger()
 }
 
+/*
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
-
+//${zigbee.swapEndianHex(zigbee.convertToHexString(groupAddr, 4))}
 private String swapEndianHex(String hex) {
 	reverseArray(hex.decodeHex()).encodeHex()
 }
@@ -577,3 +557,4 @@ private byte[] reverseArray(byte[] array) {
 	}
 	return array
 }
+*/

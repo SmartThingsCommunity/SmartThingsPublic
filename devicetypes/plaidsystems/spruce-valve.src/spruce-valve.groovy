@@ -19,18 +19,14 @@
 **/
 
 metadata {
-	definition (name: "Spruce Valve", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity", vid: "558e73d3-c800-3669-b276-1d4352eda12b"){
+	definition (name: "Spruce Valve", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity") {//, vid: "558e73d3-c800-3669-b276-1d4352eda12b"){
 		capability "Actuator"
 		capability "Valve"
 		capability "Sensor"
 		capability "Health Check"
-		capability "heartreturn55003.valveDuration"
 
 		command "open"
 		command "close"
-		command "setValveDuration"
-
-		attribute "valveDuration", "NUMBER"
 	}
 }
 
@@ -46,7 +42,6 @@ private initialize() {
 	//log.trace "Executing 'initialize'"
 
 	sendEvent(name: "valve", value: "closed")
-	sendEvent(name: "valveDuration", value: 5, unit: "mins")
 
 	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
 	sendEvent(name: "healthStatus", value: "online")
@@ -58,17 +53,13 @@ def parse(String onOff) {
 }
 
 def open() {
-	def eventMap = createEvent(dni: device.deviceNetworkId, value: 'open', duration: device.latestValue("valveDuration").toInteger(), label: device.label)
-	parent.valveOn(eventMap)
+	//def eventMap = createEvent(dni: device.deviceNetworkId, value: 'open', duration: device.latestValue("valveDuration").toInteger(), label: device.label)
+	parent.valveOn(dni: device.deviceNetworkId, value: 'open', label: device.label)
 }
 
 def close() {
-	def eventMap = createEvent(dni: device.deviceNetworkId, value: 'closed', duration: 0, label: device.label)
-	parent.valveOff(eventMap)
-}
-
-def setValveDuration(duration) {
-	sendEvent(name: "valveDuration", value: duration, unit: "mins")
+	//def eventMap = createEvent(dni: device.deviceNetworkId, value: 'closed', duration: 0, label: device.label)
+	parent.valveOff(dni: device.deviceNetworkId, value: 'closed', label: device.label)
 }
 
 def ping() {
