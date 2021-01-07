@@ -103,7 +103,7 @@ def authPage() {
 	} else {
 		return dynamicPage(name: "auth", title: "Log In", nextPage:"deviceList", install: false, uninstall:uninstallAllowed) {
 			section(){
-				paragraph "Tap Next to continue to setup your ecobee thermostats."
+				paragraph "Tap Next to continue to set up your ecobee thermostats."
 				href url:redirectUrl, style:"embedded", state:"complete", title:"ecobee", description:description
 			}
 		}
@@ -599,7 +599,7 @@ def poll() {
 	// No need to keep trying to poll if authToken is null
 	if (!state.authToken) {
 		log.info "poll failed due to authToken=null"
-		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) Linked Service and re-enter your account login credentials."
 		sendPushAndFeeds(notificationMessage)
 		markChildrenOffline(true)
 		unschedule()
@@ -958,7 +958,7 @@ def toQueryString(Map m) {
 
 boolean refreshAuthToken() {
 	log.debug "refreshing auth token"
-	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) Linked Service and re-enter your account login credentials."
 	def isSuccess = false
 
 	if(!state.refreshToken) {

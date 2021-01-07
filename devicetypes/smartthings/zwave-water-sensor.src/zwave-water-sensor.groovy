@@ -24,11 +24,13 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint deviceId: '0xA102', inClusters: '0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84,0x7A'
-		fingerprint mfr: "021F", prod: "0003", model: "0085", deviceJoinName: "Dome Leak Sensor"
-		fingerprint mfr: "0258", prod: "0003", model: "1085", deviceJoinName: "NEO Coolcam Water Sensor" //NAS-WS03ZE
-		fingerprint mfr: "0086", prod: "0102", model: "007A", deviceJoinName: "Aeotec Water Sensor 6" //US
-		fingerprint mfr: "0086", prod: "0002", model: "007A", deviceJoinName: "Aeotec Water Sensor 6" //EU
+		fingerprint deviceId: '0xA102', inClusters: '0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84,0x7A', deviceJoinName: "Water Leak Sensor"
+		fingerprint mfr: "021F", prod: "0003", model: "0085", deviceJoinName: "Dome Water Leak Sensor" //Dome Leak Sensor
+		fingerprint mfr: "0258", prod: "0003", model: "1085", deviceJoinName: "NEO Coolcam Water Leak Sensor" //NAS-WS03ZE //NEO Coolcam Water Sensor
+		fingerprint mfr: "0086", prod: "0102", model: "007A", deviceJoinName: "Aeotec Water Leak Sensor" //US //Aeotec Water Sensor 6
+		fingerprint mfr: "0086", prod: "0002", model: "007A", deviceJoinName: "Aeotec Water Leak Sensor" //EU //Aeotec Water Sensor 6
+		fingerprint mfr: "0086", prod: "0202", model: "007A", deviceJoinName: "Aeotec Water Leak Sensor" //AU //Aeotec Water Sensor 6
+		fingerprint mfr: "000C", prod: "0201", model: "000A", deviceJoinName: "HomeSeer Water Leak Sensor" //HomeSeer LS100+ Water Sensor
 	}
 
 	simulator {
@@ -56,12 +58,13 @@ metadata {
 }
 
 def initialize() {
-	if (zwaveInfo.mfr.equals("0086"))
-		// 8 hour (+ 2 minutes) ping for Aeotec
-		sendEvent(name: "checkInterval", value: (8 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	else
-		// 12 hours for other devices
-		sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if (isAeotec() || isNeoCoolcam() || isDome()) {
+		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	} else {
+		// 12 hours (+ 2 minutes) for other devices
+		sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 }
 
 def installed() {
@@ -77,11 +80,19 @@ def updated() {
 }
 
 def configure() {
-	if (zwaveInfo.mfr.equals("0086") && zwaveInfo.model.equals("007A")) {
+	if (isAeotec()) {
 		def commands = []
+		commands << encap(zwave.associationV2.associationSet(groupingIdentifier:3, nodeId: [zwaveHubNodeId]))
+		commands << encap(zwave.associationV2.associationSet(groupingIdentifier:4, nodeId: [zwaveHubNodeId]))
+		// send basic sets to devices in groups 3 and 4 when water is detected
+		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x58, scaledConfigurationValue: 1, size: 1))
+		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x59, scaledConfigurationValue: 1, size: 1))
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
+	} else if (isNeoCoolcam() || isDome()) {
+		// wakeUpInterval set to 4 h for NEO Coolcam, Dome
+		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
 
@@ -249,6 +260,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def result = null
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
 	if (encapsulatedCommand) {
@@ -282,7 +301,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s") || state.sec == 1) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		cmd.format()
@@ -295,4 +314,16 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 
 private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private isDome() {
+	zwaveInfo.mfr == "021F" && zwaveInfo.model == "0085"
+}
+
+private isNeoCoolcam() {
+	zwaveInfo.mfr == "0258" && zwaveInfo.model == "1085"
+}
+
+private isAeotec() {
+	zwaveInfo.mfr == "0086" && zwaveInfo.model == "007A"
 }

@@ -23,17 +23,16 @@ metadata {
         capability "Health Check"
         capability "Temperature Measurement"
 
-        fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"015D", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"0312", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Temp Sensor"
+        fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Inovelli Open/Closed Sensor" //Inovelli Door/Temp Sensor
+        fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Open/Closed Sensor" //Inovelli Door/Temp Sensor
+        fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Open/Closed Sensor" //Inovelli Door/Temp Sensor
+        fingerprint mfr:"015D", prod:"C100", model:"C100", deviceJoinName: "Inovelli Open/Closed Sensor" //Inovelli Door/Temp Sensor
+        fingerprint mfr:"0312", prod:"C100", model:"C100", deviceJoinName: "Inovelli Open/Closed Sensor" //Inovelli Door/Temp Sensor
     }
 
     preferences {
         section {
-            input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-            input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+            input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
         }
     }
 

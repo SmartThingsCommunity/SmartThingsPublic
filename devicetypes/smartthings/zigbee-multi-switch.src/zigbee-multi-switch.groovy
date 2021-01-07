@@ -5,7 +5,7 @@
  *  use this file except in compliance with the License. You may obtain a copy
  *  of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -27,7 +27,39 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		// EZEX
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Switch 1" //Orvibo 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo Switch 1" //Orvibo 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "GDKES Switch 1" //GDKES 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0002", deviceJoinName: "GDKES Switch 1" //GDKES 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0097", deviceJoinName: "HONYAR Switch 1" //HONYAR 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR Switch 1" //HONYAR 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+
+		// Dawon
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240R-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S340R-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S340R-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S250-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S250-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "PM-S350-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S350-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S250-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S250-ZB
+		fingerprint profileId: "0104", inClusters: "0000, 0002,0003, 0006", manufacturer: "DAWON_DNS", model: "ST-S350-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch ST-S350-ZB
+		
+		// eWeLink
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch" //eWeLink 2 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch" //eWeLink 3 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch" //eWeLink 4 Gang Switch 1
 	}
 	// simulator metadata
 	simulator {
@@ -60,33 +92,37 @@ metadata {
 def installed() {
 	createChildDevices()
 	updateDataValue("onOff", "catchall")
+	refresh()
 }
 
 def updated() {
 	log.debug "updated()"
 	updateDataValue("onOff", "catchall")
+	for (child in childDevices) {
+		if (!child.deviceNetworkId.startsWith(device.deviceNetworkId) || //parent DNI has changed after rejoin
+				!child.deviceNetworkId.split(':')[-1].startsWith('0')) {
+			child.setDeviceNetworkId("${device.deviceNetworkId}:0${getChildEndpoint(child.deviceNetworkId)}")
+		}
+	}
+	refresh()
 }
 
-// Parse incoming device messages to generate events
 def parse(String description) {
-	log.debug "description is $description"
-	Map map = zigbee.getEvent(description)
-	if (map) {
-		if (description?.startsWith('on/off')) {
-			log.debug "receive on/off message without endpoint id"
-			sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
-		} else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			log.debug "$descMap"
+	Map eventMap = zigbee.getEvent(description)
+	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
-			if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
-				sendEvent(map)
-			} else if (descMap?.clusterId == "0006") {
+	if (eventMap) {
+		if (eventDescMap && eventDescMap?.attrId == "0000") {//0x0000 : OnOff attributeId
+			if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
+				sendEvent(eventMap)
+			} else {
 				def childDevice = childDevices.find {
-					it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
+					it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
 				}
 				if (childDevice) {
-					childDevice.sendEvent(map)
+					childDevice.sendEvent(eventMap)
+				} else {
+					log.debug "Child device: $device.deviceNetworkId:${eventDescMap.sourceEndpoint} was not found"
 				}
 			}
 		}
@@ -94,9 +130,13 @@ def parse(String description) {
 }
 
 private void createChildDevices() {
-	def i = 2
-	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-			[completedSetup: true, label: "${device.displayName.split("1")[-1]}${i}", isComponent : false])
+	if (!childDevices) {
+		def x = getChildCount()
+		for (i in 2..x) {
+			addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+				[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+		}
+	}
 }
 
 private getChildEndpoint(String dni) {
@@ -115,12 +155,14 @@ def off() {
 
 def childOn(String dni) {
 	log.debug(" child on ${dni}")
-	zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: childEndpoint])
 }
 
 def childOff(String dni) {
 	log.debug(" child off ${dni}")
-	zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: childEndpoint])
 }
 
 /**
@@ -131,7 +173,16 @@ def ping() {
 }
 
 def refresh() {
-	return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
+	if (isOrvibo()) {
+		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
+	} else {
+		def cmds = zigbee.onOffRefresh()
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
+		}
+		return cmds
+	}
 }
 
 def poll() {
@@ -163,6 +214,44 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-	//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+
+	if (isOrvibo()) {
+		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+		def cmds = zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+		cmds += refresh()
+		return cmds
+	} else {
+		//other devices supported by this DTH in the future
+		def cmds = zigbee.onOffConfig(0, 120)
+		def x = getChildCount()
+		for (i in 2..x) {
+			cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
+		}
+		cmds += refresh()
+		return cmds
+	}
+}
+
+private Boolean isOrvibo() {
+	device.getDataValue("manufacturer") == "ORVIBO"
+}
+
+private getChildCount() {
+	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494" || device.getDataValue("model") == "HY0003" || device.getDataValue("model") == "HY0097" || device.getDataValue("model") == "HS2SW3L-EFR-3.0" ) {
+		return 3
+	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
+		return 2
+	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03") {
+		return 3
+	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04") {
+		return 4
+	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA") {
+		return 5
+	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
+		return 6 
+	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
+		return 3
+	} else {
+		return 2
+	}
 }

@@ -21,35 +21,47 @@ metadata {
 		capability "Sensor"
 		capability "Light"
 
-		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module"
-		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S
-		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Plug-in Outdoor Switch"
-		fingerprint mfr: "0063", prod: "4F50", model: "3032", deviceJoinName: "GE Plug-in Outdoor Switch"
-		fingerprint mfr: "0063", prod: "5250", model: "3130", deviceJoinName: "GE Plug-in Outdoor Switch"
-		fingerprint mfr: "001D", prod: "1D04", model: "0334", deviceJoinName: "Leviton Outlet"
-		fingerprint mfr: "001D", prod: "1C02", model: "0334", deviceJoinName: "Leviton Switch"
-		fingerprint mfr: "001D", prod: "0301", model: "0334", deviceJoinName: "Leviton 15A Switch"
-		fingerprint mfr: "001D", prod: "0F01", model: "0334", deviceJoinName: "Leviton 5A Incandescent Switch"
-		fingerprint mfr: "001D", prod: "1603", model: "0334", deviceJoinName: "Leviton 15A Split Duplex Receptacle"
-		fingerprint mfr: "011A", prod: "0101", model: "0102", deviceJoinName: "Enerwave On/Off Switch"
-		fingerprint mfr: "011A", prod: "0101", model: "0603", deviceJoinName: "Enerwave Duplex Receptacle"
-		fingerprint mfr: "0039", prod: "5052", model: "3038", deviceJoinName: "Honeywell Z-Wave Plug-in Switch"
-		fingerprint mfr: "0039", prod: "5052", model: "3033", deviceJoinName: "Honeywell Z-Wave Plug-in Switch (Dual Outlet)"
-		fingerprint mfr: "0039", prod: "4F50", model: "3032", deviceJoinName: "Honeywell Z-Wave Plug-in Outdoor Smart Switch"
-		fingerprint mfr: "0039", prod: "4952", model: "3036", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Switch"
-		fingerprint mfr: "0039", prod: "4952", model: "3037", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Switch"
-		fingerprint mfr: "0039", prod: "4952", model: "3133", deviceJoinName: "Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle"
-		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton RF Receptacle"
-		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch"
-		fingerprint mfr: "001A", prod: "5354", model: "0003", deviceJoinName: "Eaton RF Appliance Plug-In Module"
-		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
-		fingerprint mfr: "014F", prod: "5753", model: "3535", deviceJoinName: "GoControl Smart In-Wall Switch"
-		fingerprint mfr: "014F", prod: "5257", model: "3033", deviceJoinName: "GoControl Wall Relay Switch"
+		fingerprint inClusters: "0x25", deviceJoinName: "Switch" //Z-Wave Switch
+		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Appliance Module
+		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S //Leviton Switch
+		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Outlet", ocfDeviceType: "oic.d.smartplug" //GE Plug-in Outdoor Switch
+		fingerprint mfr: "0063", prod: "4F50", model: "3032", deviceJoinName: "GE Outlet", ocfDeviceType: "oic.d.smartplug" //GE Plug-in Outdoor Switch
+		fingerprint mfr: "0063", prod: "5250", model: "3130", deviceJoinName: "GE Outlet", ocfDeviceType: "oic.d.smartplug" //GE Plug-in Outdoor Switch
+		fingerprint mfr: "001D", prod: "1D04", model: "0334", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Outlet
+		fingerprint mfr: "001D", prod: "1C02", model: "0334", deviceJoinName: "Leviton Switch" //Leviton Switch
+		fingerprint mfr: "001D", prod: "0301", model: "0334", deviceJoinName: "Leviton Switch" //Leviton 15A Switch
+		fingerprint mfr: "001D", prod: "0F01", model: "0334", deviceJoinName: "Leviton Switch" //Leviton 5A Incandescent Switch
+		fingerprint mfr: "001D", prod: "1603", model: "0334", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton 15A Split Duplex Receptacle
+		fingerprint mfr: "011A", prod: "0101", model: "0102", deviceJoinName: "Enerwave Switch" //Enerwave On/Off Switch
+		fingerprint mfr: "011A", prod: "0101", model: "0603", deviceJoinName: "Enerwave Outlet", ocfDeviceType: "oic.d.smartplug" //Enerwave Duplex Receptacle
+		fingerprint mfr: "0039", prod: "5052", model: "3038", deviceJoinName: "Honeywell Outlet", ocfDeviceType: "oic.d.smartplug" //Honeywell Z-Wave Plug-in Switch
+		fingerprint mfr: "0039", prod: "5052", model: "3033", deviceJoinName: "Honeywell Outlet", ocfDeviceType: "oic.d.smartplug" //Honeywell Z-Wave Plug-in Switch (Dual Outlet)
+		fingerprint mfr: "0039", prod: "4F50", model: "3032", deviceJoinName: "Honeywell Outlet", ocfDeviceType: "oic.d.smartplug" //Honeywell Z-Wave Plug-in Outdoor Smart Switch
+		fingerprint mfr: "0039", prod: "4952", model: "3036", deviceJoinName: "Honeywell Switch" //Honeywell Z-Wave In-Wall Smart Switch
+		fingerprint mfr: "0039", prod: "4952", model: "3037", deviceJoinName: "Honeywell Switch" //Honeywell Z-Wave In-Wall Smart Toggle Switch
+		fingerprint mfr: "0039", prod: "4952", model: "3133", deviceJoinName: "Honeywell Outlet", ocfDeviceType: "oic.d.smartplug" //Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle
+		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton Outlet", ocfDeviceType: "oic.d.smartplug" //Eaton RF Receptacle
+		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton Outlet", ocfDeviceType: "oic.d.smartplug" //Eaton RF Master Switch
+		fingerprint mfr: "001A", prod: "5354", model: "0003", deviceJoinName: "Eaton Outlet", ocfDeviceType: "oic.d.smartplug" //Eaton RF Appliance Plug-In Module
+		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton Switch" //Eaton RF Accessory Switch
+		fingerprint mfr: "014F", prod: "5753", model: "3535", deviceJoinName: "GoControl Switch" //GoControl Smart In-Wall Switch
+		fingerprint mfr: "014F", prod: "5257", model: "3033", deviceJoinName: "GoControl Switch" //GoControl Wall Relay Switch
 		//zw:L type:1001 mfr:0307 prod:4447 model:3033 ver:5.16 zwv:4.34 lib:03 cc:5E,86,72,5A,85,59,73,25,27,70,2C,2B,5B,7A ccOut:5B role:05 ff:8700 ui:8700
-		fingerprint mfr: "0307", prod: "4447", model: "3033", deviceJoinName: "Satco In-Wall Light Switch"
+		fingerprint mfr: "0307", prod: "4447", model: "3033", deviceJoinName: "Satco Switch" //Satco In-Wall Light Switch
 		//zw:L type:1001 mfr:0307 prod:4447 model:3031 ver:5.06 zwv:4.05 lib:03 cc:5E,86,72,85,59,25,27,73,70,2C,2B,5A,7A role:05 ff:8700 ui:8700
-		fingerprint mfr: "0307", prod: "4447", model: "3031", deviceJoinName: "Satco Plug-In Module"
+		fingerprint mfr: "0307", prod: "4447", model: "3031", deviceJoinName: "Satco Outlet", ocfDeviceType: "oic.d.smartplug" //Satco Plug-In Module
+		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch" //Zooz Switch
+		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch" //Zooz Switch ZEN23
+		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug" //Everspring On/Off Plug
+		fingerprint mfr: "0312", prod: "C000", model: "C001", deviceJoinName: "EVA Outlet", ocfDeviceType: "oic.d.smartplug" //EVA LOGIK Smart Plug 1CH
+		fingerprint mfr: "0312", prod: "FF00", model: "FF07", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "FF00", model: "FF06", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston Smart Plug 1CH
+		fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston on/off Toggle Switch
+		fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston Switch" //Minoston Smart On/Off Switch
+		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
+		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
+		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
 	}
 
 	// simulator metadata

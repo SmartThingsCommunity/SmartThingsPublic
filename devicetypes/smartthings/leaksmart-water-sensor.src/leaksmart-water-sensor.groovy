@@ -17,7 +17,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak-3") {
+	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
@@ -26,14 +26,14 @@ metadata {
 		capability "Water Sensor"
 		capability "Temperature Measurement"
 
-		fingerprint inClusters: "0000,0001,0003,0402,0B02,FC02", outClusters: "0003,0019", manufacturer: "WAXMAN", model: "leakSMART Water Sensor V2", deviceJoinName: "leakSMART Water Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0B02,FC02", outClusters: "0003,0019", manufacturer: "WAXMAN", model: "leakSMART Water Sensor V2", deviceJoinName: "leakSMART Water Leak Sensor" //leakSMART Water Sensor
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#3277e5")
-				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#edbd00")
+				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
 			}
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
@@ -74,7 +74,7 @@ def parse(String description) {
 		map = parseAttrMessage(description)
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true

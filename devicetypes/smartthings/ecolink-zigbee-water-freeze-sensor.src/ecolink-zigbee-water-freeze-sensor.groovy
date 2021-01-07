@@ -28,14 +28,14 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Temperature Alarm"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0019", manufacturer: "Ecolink", model: "FLZB1-ECO", deviceJoinName: "Ecolink Water/Freeze Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0019", manufacturer: "Ecolink", model: "FLZB1-ECO", deviceJoinName: "Ecolink Water Leak Sensor" //Ecolink Water/Freeze Sensor
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#3277e5")
-				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#edbd00")
+				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
 			}
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", width: 4, height: 2, decoration: "flat") {
@@ -75,6 +75,7 @@ private getDEVICE_CHECK_IN_INTERVAL_VAL_INT() { 30 * 60 }
 
 def installed() {
 	sendEvent(name: "water", value: "dry", displayed: false)
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	refresh()
 }
 
@@ -89,7 +90,7 @@ def parse(String description) {
 	} else if (map.name == "temperature") {
 		freezeStatus(map.value)
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true

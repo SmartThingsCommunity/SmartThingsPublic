@@ -17,40 +17,51 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
+		capability "Tamper Alert"
 
-		fingerprint deviceId: "0x2001", inClusters: "0x30,0x80,0x84,0x85,0x86,0x72"
-		fingerprint deviceId: "0x07", inClusters: "0x30"
-		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98"
-		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
-		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters: "0x20"
+		fingerprint deviceId: "0x2001", inClusters: "0x30,0x80,0x84,0x85,0x86,0x72", deviceJoinName: "Open/Closed Sensor"
+		fingerprint deviceId: "0x07", inClusters: "0x30", deviceJoinName: "Open/Closed Sensor"
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98", deviceJoinName: "Open/Closed Sensor"
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82", deviceJoinName: "Open/Closed Sensor"
+		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters: "0x20", deviceJoinName: "Open/Closed Sensor"
 		// Philio multi+
-		fingerprint mfr: "0086", prod: "0002", model: "001D", deviceJoinName: "Aeotec Door/Window Sensor (Gen 5)"
-		fingerprint mfr: "0086", prod: "0102", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //US
-		fingerprint mfr: "0086", prod: "0002", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //EU
-		fingerprint mfr: "0086", prod: "0102", model: "0059", deviceJoinName: "Aeotec Recessed Door Sensor"
-		fingerprint mfr: "014A", prod: "0001", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
-		fingerprint mfr: "014A", prod: "0001", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
-		fingerprint mfr: "014A", prod: "0004", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
-		fingerprint mfr: "011A", prod: "0601", model: "0903", deviceJoinName: "Enerwave Magnetic Door/Window Sensor"
-		fingerprint mfr: "014F", prod: "2001", model: "0102", deviceJoinName: "Nortek GoControl Door/Window Sensor"
-		fingerprint mfr: "0063", prod: "4953", model: "3031", deviceJoinName: "Jasco Hinge Pin Door Sensor"
-		fingerprint mfr: "019A", prod: "0003", model: "0003", deviceJoinName: "Sensative Strips"
-		fingerprint mfr: "0258", prod: "0003", model: "0082", deviceJoinName: "NEO Coolcam Door/Window Sensor"
-		fingerprint mfr: "0258", prod: "0003", model: "1082", deviceJoinName: "NEO Coolcam Door/Window Sensor" // NAS-DS01ZE
-		fingerprint mfr: "021F", prod: "0003", model: "0101", deviceJoinName: "Dome Door/Window Sensor"
+		fingerprint mfr: "0086", prod: "0002", model: "001D", deviceJoinName: "Aeotec Open/Closed Sensor" //Aeotec Door/Window Sensor (Gen 5)
+		fingerprint mfr: "0086", prod: "0102", model: "0070", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Door/Window Sensor 6
+		fingerprint mfr: "0086", prod: "0002", model: "0070", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor 6
+		fingerprint mfr: "0086", prod: "0202", model: "0070", deviceJoinName: "Aeotec Open/Closed Sensor" //AU //Aeotec Door/Window Sensor 6
+		fingerprint mfr: "0086", prod: "0102", model: "0059", deviceJoinName: "Aeotec Open/Closed Sensor" //Aeotec Recessed Door Sensor
+		fingerprint mfr: "014A", prod: "0001", model: "0002", deviceJoinName: "Ecolink Open/Closed Sensor" //Ecolink Door/Window Sensor
+		fingerprint mfr: "014A", prod: "0001", model: "0003", deviceJoinName: "Ecolink Open/Closed Sensor" //Ecolink Tilt Sensor
+		fingerprint mfr: "014A", prod: "0004", model: "0003", deviceJoinName: "Ecolink Open/Closed Sensor" //Ecolink Tilt Sensor
+		fingerprint mfr: "011A", prod: "0601", model: "0903", deviceJoinName: "Enerwave Open/Closed Sensor" //Enerwave Magnetic Door/Window Sensor
+		fingerprint mfr: "014F", prod: "2001", model: "0102", deviceJoinName: "Nortek Open/Closed Sensor" //Nortek GoControl Door/Window Sensor
+		fingerprint mfr: "0063", prod: "4953", model: "3031", deviceJoinName: "Jasco Open/Closed Sensor" //Jasco Hinge Pin Door Sensor
+		fingerprint mfr: "019A", prod: "0003", model: "0003", deviceJoinName: "Sensative Open/Closed Sensor" //Sensative Strips
+		fingerprint mfr: "0258", prod: "0003", model: "0082", deviceJoinName: "NEO Coolcam Open/Closed Sensor" //NEO Coolcam Door/Window Sensor
+		fingerprint mfr: "0258", prod: "0003", model: "1082", deviceJoinName: "NEO Coolcam Open/Closed Sensor" // NAS-DS01ZE //NEO Coolcam Door/Window Sensor
+		fingerprint mfr: "021F", prod: "0003", model: "0101", deviceJoinName: "Dome Open/Closed Sensor" //Dome Door/Window Sensor
 		//zw:S type:0701 mfr:014A prod:0004 model:0002 ver:10.01 zwv:4.05 lib:06 cc:5E,86,72,73,80,71,85,59,84,30,70 ccOut:20 role:06 ff:8C07 ui:8C00
-		fingerprint mfr: "014A", prod: "0004", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
+		fingerprint mfr: "014A", prod: "0004", model: "0002", deviceJoinName: "Ecolink Open/Closed Sensor" //Ecolink Door/Window Sensor
 		//zw:Ss type:0701 mfr:0086 prod:0002 model:0059 ver:1.14 zwv:3.92 lib:03 cc:5E,86,72,98,5A ccOut:82 sec:30,80,84,70,85,59,71,7A,73 role:06 ff:8C00 ui:8C00
-		fingerprint mfr: "0086", prod: "0002", model: "0059", deviceJoinName: "Aeon Recessed Door Sensor"
+		fingerprint mfr: "0086", prod: "0002", model: "0059", deviceJoinName: "Aeon Open/Closed Sensor" //Aeon Recessed Door Sensor
 		//zw:S type:0701 mfr:0214 prod:0002 model:0001 ver:6.38 zwv:4.38 lib:06 cc:5E,30,84,80,86,72,71,70,85,59,73,5A role:06 ff:8C06 ui:8C06
-		fingerprint mfr: "0214", prod: "0002", model: "0001", deviceJoinName: "BeSense Door/Window Detector"
-		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Door/Window Sensor Gen5" //EU
+		fingerprint mfr: "0214", prod: "0002", model: "0001", deviceJoinName: "BeSense Open/Closed Sensor" //BeSense Door/Window Detector
+		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor Gen5
+		fingerprint mfr: "0371", prod: "0102", model: "0007", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Door/Window Sensor 7
+		fingerprint mfr: "0371", prod: "0002", model: "0007", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Door/Window Sensor 7
+		fingerprint mfr: "0060", prod: "0002", model: "0003", deviceJoinName: "Everspring Open/Closed Sensor" //US & EU //Everspring Door/Window Sensor
+		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //US //Aeotec Recessed Door Sensor 7
+		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Open/Closed Sensor" //EU //Aeotec Recessed Door Sensor 7
+		fingerprint mfr: "0109", prod: "2022", model: "2201", deviceJoinName: "Vision Open/Closed Sensor" //AU //Vision Recessed Door Sensor
+		fingerprint mfr: "0371", prod: "0002", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //EU //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0102", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //US //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0202", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //AU //Aeotec Door/Window Sensor 7 Pro
 	}
 
 	// simulator metadata
@@ -85,7 +96,7 @@ private getCommandClassVersions() {
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err 106")) {
-		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
+		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
 			log.debug description
 		} else {
 			result = createEvent(
@@ -112,6 +123,7 @@ def installed() {
 	// this is the nuclear option because the device often goes to sleep before we can poll it
 	sendEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
 	sendEvent(name: "battery", unit: "%", value: 100)
+	sendEvent(name: "tamper", value: "clear")
 	response(initialPoll())
 }
 
@@ -121,7 +133,11 @@ def updated() {
 }
 
 def configure() {
-	// currently supported devices do not require initial configuration
+	//Recessed Door Sensor 7 - Enable Binary Sensor Report for S2 Authenticated
+	if (zwaveInfo.mfr == "0371" || zwaveInfo.model == "00BB") {
+		result << response(command(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: 1)))
+		result
+	}
 }
 
 def sensorValueEvent(value) {
@@ -161,10 +177,13 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else if (cmd.notificationType == 0x07) {
 		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice door/window sensors
 			result << sensorValueEvent(cmd.v1AlarmLevel)
+		} else if (cmd.event == 0x00) {
+			result << createEvent(name: "tamper", value: "clear")
 		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
 			result << sensorValueEvent(1)
 		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
+			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 			if (!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
@@ -269,6 +288,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def result = null
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
 	if (encapsulatedCommand) {
@@ -302,7 +329,7 @@ def initialPoll() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
+	if ((zwaveInfo?.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -351,4 +378,8 @@ def retypeBasedOnMSR() {
 // this is present in zwave-motion-sensor.groovy DTH too
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }

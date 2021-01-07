@@ -1,0 +1,27 @@
+{
+  "name": "Wind Speed",
+  "attributes": {
+    "wind": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "PositiveNumber",
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["KPH", "MPH"]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value", "unit"
+        ]
+      }
+    }
+  },
+  "commands": {
+  }
+}
