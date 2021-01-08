@@ -109,7 +109,7 @@ metadata {
 	preferences {
 		section {
 			input(
-				title: "Threshold settings - These settings are checked once per hour, if enough change to temperature or humidity to send a report. Operates at the same time as Periodic reports.",
+				title: "Threshold settings - These settings are checked once every 15 minutes, if enough change to temperature or humidity to send a report. Operates at the same time as Periodic reports.",
 				type: "paragraph",
 				element: "paragraph"
 			)
