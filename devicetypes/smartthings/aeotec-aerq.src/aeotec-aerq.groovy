@@ -257,25 +257,25 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-    switch (cmd.parameterNumber) {
-    	case 0x01:
-            state.parameter1 = cmd.scaledConfigurationValue
-            sendEvent(name: "parameter1", value: cmd.scaledConfigurationValue, displayed: false) 
-        break
-        case 0x02:
-            state.parameter2 = cmd.scaledConfigurationValue
-            sendEvent(name: "parameter2", value: cmd.scaledConfigurationValue, displayed: false) 
-        break
-        case 0x04:
-            state.parameter4 = cmd.scaledConfigurationValue
-            sendEvent(name: "parameter4", value: cmd.scaledConfigurationValue, displayed: false) 
-        break
-        default:
-        	log.debug "Setting unknown parameter"
-        break
-    }
+	switch (cmd.parameterNumber) {
+    		case 0x01:
+			state.parameter1 = cmd.scaledConfigurationValue
+			sendEvent(name: "parameter1", value: cmd.scaledConfigurationValue, displayed: false) 
+			break
+        	case 0x02:
+			state.parameter2 = cmd.scaledConfigurationValue
+			sendEvent(name: "parameter2", value: cmd.scaledConfigurationValue, displayed: false) 
+			break
+        	case 0x04:
+			state.parameter4 = cmd.scaledConfigurationValue
+			sendEvent(name: "parameter4", value: cmd.scaledConfigurationValue, displayed: false) 
+			break
+        	default:
+			log.debug "Setting unknown parameter"
+			break
+	}
     
-    checkParameterValues()
+	checkParameterValues()
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -284,10 +284,10 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def checkParameterValues() {
-    //if parameter settings fail somehow, wakeup can cause parameter settings to update again the next time. When all settings are true, then stop parameter updates the next time. 
-    if (state.parameter1 == thresholdTemperatureValue && state.parameter2 == thresholdHumidityValue && state.parameter4 == periodicReportValue) {
-        sendEvent(name: "updateNeeded", value: "false", displayed: false) 
-    } 
+	//if parameter settings fail somehow, wakeup can cause parameter settings to update again the next time. When all settings are true, then stop parameter updates the next time. 
+	if (state.parameter1 == thresholdTemperatureValue && state.parameter2 == thresholdHumidityValue && state.parameter4 == periodicReportValue) {
+		sendEvent(name: "updateNeeded", value: "false", displayed: false) 
+	} 
 }
 
 private secure(cmd) {
