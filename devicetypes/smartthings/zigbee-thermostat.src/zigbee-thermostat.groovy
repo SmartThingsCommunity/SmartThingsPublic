@@ -36,7 +36,8 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX Thermostat" //LUX KONOz Thermostat
 		fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela Thermostat" //Umbrela UTee
-		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019 //Danfoss Thermostat
+		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
+		fingerprint manufacturer: "D5X84YU", model: "eT093WRO", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019 (new firmware)
 	}
 
 	tiles {
