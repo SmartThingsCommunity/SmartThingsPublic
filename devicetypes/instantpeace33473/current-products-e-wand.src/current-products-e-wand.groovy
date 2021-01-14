@@ -15,6 +15,8 @@
 metadata {
 	definition (name: "Current Products E-Wand", namespace: "instantpeace33473", author: "Tyler Kass", mnmn: "SmartThingsCommunity", vid: "5f006ef2-6b52-3357-bc06-615dbce3701a") {
         capability "instantpeace33473.tilt"
+        
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 0020, 0102, 0B05, FC10", outClusters: "0003, 0019", manufacturer: "Current Products Corp", model: "E-Wand", deviceJoinName: "CPC E-Wand"    
 	}
 
 	simulator {}
@@ -28,9 +30,7 @@ private getADDITIONAL_PARAMS() { [mfgCode:0x1263] }
 
 // parse events into attributes
 def parse(String description) {
-    //DEBUG ///////////////////////////////
 	log.trace "Parsing '${description}'"
-	///////////////////////////////////////
 
 	String[] descArr = description.split(" ", 0)
 	int len = descArr.length
@@ -55,12 +55,6 @@ def parse(String description) {
 			sendEvent(name: "tiltAngle", value: posInt)
         }
         else {
-        	//TEST: May need to modify this later, depending on if backoff is fixed. Should be fixed on actual device
-            //      rather than on SmartThings.
-            //posInt = posInt + 1 //Values tend to be 1 off due to backoff, but this can vary from device to device
-            //if (posInt > 100) { posInt = 100 } //Cap value here
-        	//log.debug "DEBUG: Setting tiltAngle to ${posInt}"
-
 	    	//TEST: Make sure that this is "tiltAngle" and not "Tilt Angle"
         	//sendEvent(name: "Tilt Angle", value: posInt)
 			sendEvent(name: "tiltAngle", value: posInt)
