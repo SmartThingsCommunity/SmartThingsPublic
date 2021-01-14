@@ -105,6 +105,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
+	results += response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])))
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results += response([
 				secure(zwave.batteryV1.batteryGet()),
