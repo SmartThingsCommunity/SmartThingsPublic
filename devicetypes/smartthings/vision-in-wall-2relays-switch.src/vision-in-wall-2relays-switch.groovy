@@ -1,16 +1,11 @@
 /**
- *  Vision In-Wall 2Relays Switch
- *  (Models: ZL7435xx-5)
+ *  Vision In-Wall 2Relays Switch (Models: ZL7435xx-5)
  *
  *  Author:
  *    Lan, Kuo Wei 
  *
- *	Product Link: 
+ *  Product Link: 
  *    http://www.visionsecurity.com.tw/index.php?option=product&lang=en&task=pageinfo&id=335&belongid=334&index=0
- * 
- *  Changelog:
- *    1.0 (2020/11)
- *    - First version, based on SmartThings Hub v3.0 + SmartThings APP.  
 */
 metadata {
 	definition(
@@ -26,30 +21,19 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Configuration"
+		// This DTH uses 2 switch endpoints. Parent DTH controls endpoint 1 so please use '1' at the end of deviceJoinName
+		// Child device (isComponent : false) representing endpoint 2 will substitute 1 with 2 for easier identification.
 		fingerprint manufacturer: "0109", prod: "2017", model: "171B", deviceJoinName: "Vision 2Relays Switch 1"
 		fingerprint manufacturer: "0109", prod: "2017", model: "171C", deviceJoinName: "Vision 2Relays Switch 1"
-	}
-
-	// tile definitions
-	tiles(scale: 2) {
-		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			}
-		}
-
-		main(["switch"])
-		details(["switch"])
 	}
 
 	preferences {
 		parameterMap.each {
 			input (title: it.name, description: it.description, type: "paragraph", element: "paragraph")
-            switch(it.type) {
+			switch(it.type) {
 				case "boolean":
 					input(type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" +
-							"Option disabled: ${it.inactiveDescription}"
+						"Option disabled: ${it.inactiveDescription}"
 					)
 					input(name: it.key, type: "boolean", title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false)
 					break
@@ -91,7 +75,7 @@ def installed() {
 
 def firstCommand(){
 	def commands = []
-    commands << zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()
+	commands << zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()
 	commands << "delay 300"
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format()
 	commands << "delay 300"
@@ -125,21 +109,9 @@ def configure() {
 	response(commands + refresh())
 }
 
-/* Mapping of command classes and associated versions used for this DTH */
-private getCommandClassVersions() {
-	[
-		0x20: 1,  // Basic
-		0x25: 1,  // Switch Binary
-		0x60: 3,  // Multi-Channel
-		0x70: 1,  // Configuration
-	    0x8E: 2,  // Multi Channel Association
-		0x98: 1   // Security
-	]
-}
-
 def parse(String description) {
 	def result = null
-	def cmd = zwave.parse(description, commandClassVersions)
+	def cmd = zwave.parse(description)
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
