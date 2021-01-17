@@ -13,52 +13,49 @@
  *  for the specific language governing permissions and limitations under the License.
  */
 metadata {
-	definition (name: "ThirdReality WaterLeak Sensor", namespace: "smartthings", author: "THIRDREALITY", cstHandler: true) {
-		capability "Battery"
-		capability "Switch"
-		capability "Water Sensor"
+    definition (name: "ThirdReality WaterLeak Sensor", namespace: "smartthings", author: "THIRDREALITY", cstHandler: true) {
+        capability "Battery"
+        capability "Switch"
+        capability "Water Sensor"
         capability "Refresh"
         capability "Configuration"
-        
+
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "Water Leak Sensor"		//ThirdReality WaterLeak Sensor
-	}
+    }
 
+    simulator {
+        // When simulating, define status and reply messages here
+    }
 
-	simulator {
-		// When simulating, define status and reply messages here
-	}
-
-	tiles {		//Seems no use
-		// define your main and details tiles here
+    tiles {		//Seems no use
+        // define your main and details tiles here
         main("water")
         details(["water", "battery", "switch"])
-	}
+    }
 }
 
 // parse events into attributes
 def parse(String description) {
-	log.trace "[parse] Parsing '${description}'"
+    log.trace "[parse] Parsing '${description}'"
     def resMap = [:]
-    
-    def descMap = zigbee.parseDescriptionAsMap(description)
+
     log.debug "[parse] descMap: $descMap"
-	if (description?.startsWith("zone status")) {
+    if (description?.startsWith("zone status")) {
         resMap = createEvent(name: "water", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "wet" : "dry")
         sendEvent(name: "switch", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "on" : "off")
-    }
-    else if (description?.startsWith("read attr")) {
+    } else if (description?.startsWith("on/off")) {
+        def event = zigbee.getEvent(description)
+        sendEvent(event)
+    } else if (description?.startsWith("read attr")) {
+    	def descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap?.cluster == "0001" && descMap?.attrId == "0021") {
             resMap = createEvent(getBatteryPercentageResult(Integer.parseInt(descMap.value, 16)))
         } 
         else {
             log.warn "[WARN][parse] Unknown cluster: $descMap.cluster or attrId: $descMap.attrId"
         }
-    }
-    else if (description?.startsWith("on/off")) {
-        def event = zigbee.getEvent(description)
-        sendEvent(event)
-    }
-    else if (description?.startsWith("catchall")) {
+    } else if (description?.startsWith("catchall")) {
+    	def descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap?.clusterId == "0500" && descMap?.attrId == "0002") {			//ZoneStatus
             resMap = createEvent(name: "water", value: descMap.value ? "wet" : "dry")
         }
@@ -89,12 +86,12 @@ def refresh() {
 }
 
 def on() {
-	log.trace "[on]"
+    log.trace "[on]"
     zigbee.on()
 }
 
 def off() {
-	log.trace "[off]"
+    log.trace "[off]"
     zigbee.off()
 }
 
