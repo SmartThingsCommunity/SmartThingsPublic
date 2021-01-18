@@ -29,7 +29,6 @@ metadata {
 						defaultValue: getConfigurationInfo(idx, "default"),
 						required: true, displayDuringSetup: true
 					break
-					
 				case "number":
 					input name: getConfigurationInfo(idx, "name"),
 						title: getConfigurationInfo(idx, "title"),
@@ -54,7 +53,6 @@ metadata {
 
 def installed() {
 	def cmds = []
-	def lightEnableDefault = [:]
 	def configDefault = [:]
 	def wakeupDefault = [:]
 	
@@ -110,7 +108,6 @@ def configure() {
 					optionValue = getConfigurationInfo(idx, "enumMap").find { it.key == state."${getConfigurationInfo(idx, "name")}" }?.value
 					value = integer2Array(optionValue, getConfigurationInfo(idx, "size"))
 					break
-					
 				case "number":
 					value = integer2Array(state."${getConfigurationInfo(idx, "name")}", getConfigurationInfo(idx, "size"))
 					break
@@ -335,7 +332,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
 	if (cmd.nodeid == zwaveHubNodeId) {
 		def interval = [:]
-		interval."${getWakeUpInfo("name")}" = second2Hour(cmd.seconds)
+		interval."${getWakeUpInfo("name")}" = cmd.seconds / 3600
 		wakeUpIntervalCheck(interval)
 	}
 	[]
@@ -369,7 +366,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 					config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = optionName
 				}
 				break
-				
 			case "number":
 				config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = value
 				break
@@ -390,8 +386,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			cmd.eventParameter.each {
 				if (it == 0x03) {
 					result = createEvent(name: "tamper", value: "clear") 
-				}
-				else if( it == 0x08) {
+				} else if( it == 0x08) {
 					result = createEvent(name: "motion", value: "inactive") 
 				}
 			}
@@ -415,20 +410,17 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.name = "temperature"
 			map.value = cmd.scaledSensorValue
 			map.unit = cmd.scale == 0 ? "C": "F"
-			break
-			
+			break			
 		case 0x03:
 			map.name = "illuminance"
 			map.value = getLuxFromPercentage(cmd.scaledSensorValue)
 			map.unit = "lux"
 			break
-			
 		case 0x05:
 			map.name = "humidity"
 			map.value = cmd.scaledSensorValue
 			map.unit = "%"
 			break
-			
 		default:
 			map.descriptionText = cmd.toString()
 			break
@@ -477,10 +469,6 @@ def integer2Array(value, size) {
 
 def hour2Second(hour) {
 	return hour * 3600
-}
-
-def second2Hour(second) {
-	return second / 3600
 }
 
 private getLuxFromPercentage(percentageValue) {
