@@ -142,6 +142,7 @@ def configure() {
 		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 300))
 		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 43, size: 2, scaledConfigurationValue: 300))
 	} else if (zwaveInfo?.model?.equals("0052")) {
+		//parameter 40 - power reporting threshold for Q1 load - 75%
 		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 75))
 	}
 
