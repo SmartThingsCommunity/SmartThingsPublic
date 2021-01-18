@@ -354,10 +354,10 @@ def handleMeterReport(cmd) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
 			log.debug("createEvent power")
-			[
-				createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"),
+			if (isDINDimmer()) {
 				sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)))
-			]
+			}
+			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		}
 	}
 }
