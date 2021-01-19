@@ -114,9 +114,7 @@ private Map parseIasMessage(String description) {
 }
 
 private Map translateZoneStatus(ZoneStatus zs) {
-    if (zs.isAlarm1Set()) {
-        return getButtonResult('pushed')
-    } else if (isFrientButton() && zs.isAlarm2Set()) {
+    if (zs.isAlarm1Set() || (isFrientButton() && zs.isAlarm2Set()) {
         return getButtonResult('pushed')
     }
 }
@@ -205,8 +203,7 @@ def configure() {
     return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		   zigbee.enrollResponse() + 
 		   zigbee.batteryConfig() +
-           //(isFrientButton() ? zigbee.onOffConfig() : [])
-           (isFrientButton() ? zigbee.configureReporting(0x000f, 0x0055, DataType.BOOLEAN, 0, 600, null) : [])
+           (isFrientButton() ? zigbee.configureReporting(BINARY_INPUT_CLUSTER, ATTRIBUTE_PRESENT_VALUE, DataType.BOOLEAN, 0, 600, null) : [])
 }
 
 private Boolean isFrientButton() {
