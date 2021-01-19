@@ -309,8 +309,7 @@ def parse(String description) {
 	
 	if (cmd) {
 		result += zwaveEvent(cmd)
-	}
-	else {
+	} else {
 		logDebug "Unable to parse description: ${description}"
 	}
 	
@@ -390,11 +389,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 					result = createEvent(name: "motion", value: "inactive") 
 				}
 			}
-		}
-		else if (cmd.event == 0x03) {
+		} else if (cmd.event == 0x03) {
 			result = createEvent(name: "tamper", value: "detected") 
-		}
-		else if (cmd.event == 0x08) {
+		} else if (cmd.event == 0x08) {
 			result = createEvent(name: "motion", value: "active") 
 		}
 	}
