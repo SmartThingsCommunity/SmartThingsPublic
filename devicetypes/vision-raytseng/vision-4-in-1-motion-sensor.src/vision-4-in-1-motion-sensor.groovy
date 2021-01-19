@@ -13,7 +13,7 @@ metadata {
 		capability "Tamper Alert"
 		capability "Health Check"
 		
-		fingerprint mfr:"0109", prod:"2021", model:"2112", deviceJoinName: "Vision Multipurpose Sensor" // zw:Ss2a type:0701 mfr:0109 prod:2021 model:2112 ver:32.32 zwv:7.13 lib:03 cc:5E,22,98,9F,6C,55 sec:85,59,80,70,5A,7A,87,8E,72,71,73,31,86,84
+		fingerprint mfr:"0109", prod:"2021", model:"2112", deviceJoinName: "Vision Multipurpose Sensor" // Raw description: zw:Ss2a type:0701 mfr:0109 prod:2021 model:2112 ver:32.32 zwv:7.13 lib:03 cc:5E,22,98,9F,6C,55 sec:85,59,80,70,5A,7A,87,8E,72,71,73,31,86,84
 	}
 	
 	preferences {
