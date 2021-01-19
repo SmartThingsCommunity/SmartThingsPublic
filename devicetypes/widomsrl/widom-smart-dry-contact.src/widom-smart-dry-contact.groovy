@@ -323,13 +323,7 @@ private Map cmdVersions() {
 
 private parameterMap() {[
 		[key: "numClickLoad", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to controlthe loads",
-			descr: "Define which sequences of clicks control the load (see device manual)."],
-		[key: "valuesGroup2", num: 4, size: 1, type: "number", min: -1, max: 100, def: 100, title: "Value used for devices belonging to Group 2",
-			descr: "Value  used  for  devices  belonging  to  Group  2  when  the  external switch receives 1 Click"],
-		[key: "valuesGroup3", num: 5, size: 1, type: "number", min: -1, max: 100, def: 100, title: "Value used for devices belonging to Group 3",
-			descr: "Value used for devices belonging to Group 3 whenthe external switch receives 2 Clicks"],
-		[key: "valuesGroup4", num: 6, size: 1, type: "number", min: -1, max: 100, def: 100, title: "Value used for devices belonging to Group 4",
-			descr: "Value used for devices belonging to Group 4 when external switch receives 3 Clicks"],      
+			descr: "Define which sequences of clicks control the load (see device manual)."],     
 		[key: "OffTimer", num: 10, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch OFF the Relay",
 			descr: "Defines the time after which the relay is switched OFF. Time unit is set by parameter 15(see device manual)"],
 		[key: "OnTimer", num: 11, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch ON the Relay",
