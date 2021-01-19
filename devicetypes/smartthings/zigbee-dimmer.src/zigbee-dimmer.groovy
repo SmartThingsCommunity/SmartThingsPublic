@@ -83,6 +83,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL1KD", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Lumina RF Dimmer Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "ZSD07", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Lumina RF 0-10V Dimming Wall Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0301, 0B05", outClusters: "0019", manufacturer: "Leviton", model: "DG3HL", deviceJoinName: "Leviton Dimmer Switch" //Leviton Zigbee Plug-in DImmer DG3HL
+		fingerprint manufacturer: "Leviton", model: "DG6HD", deviceJoinName: "Leviton Dimmer Switch" //Leviton Zigbee Dimmer DG6HD, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0301 0B05
 
 		// LINKIND
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "lk", model: "ZBT-DIMLight-GLS0010", deviceJoinName: "Linkind Light" //Linkind Dimmable A19 Bulb
