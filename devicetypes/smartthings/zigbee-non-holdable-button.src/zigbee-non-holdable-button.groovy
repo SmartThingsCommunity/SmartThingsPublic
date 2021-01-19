@@ -203,7 +203,7 @@ def configure() {
     return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		   zigbee.enrollResponse() + 
 		   zigbee.batteryConfig() +
-           (isFrientButton() ? zigbee.configureReporting(BINARY_INPUT_CLUSTER, ATTRIBUTE_PRESENT_VALUE, DataType.BOOLEAN, 0, 600, null) : [])
+		   (isFrientButton() ? zigbee.configureReporting(BINARY_INPUT_CLUSTER, ATTRIBUTE_PRESENT_VALUE, DataType.BOOLEAN, 0, 600, null) : [])
 }
 
 private Boolean isFrientButton() {
