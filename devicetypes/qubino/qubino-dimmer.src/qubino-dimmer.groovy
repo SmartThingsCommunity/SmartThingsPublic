@@ -233,6 +233,10 @@ def configure() {
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId:[])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+	if (isDINDimmer()) {
+		//parameter 42 - power reporting time threshold
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 2 * 15 * 60 + 2 * 60)
+	}
 	commands += getRefreshCommands()
 	commands += getReadConfigurationFromTheDeviceCommands()
 
@@ -327,7 +331,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
-	sendHubCommand(encapCommands(getPowerMeterCommands()))
 	dimmerEvents(cmd)
 }
 
@@ -351,6 +354,9 @@ def handleMeterReport(cmd) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
 			log.debug("createEvent power")
+			if (isDINDimmer()) {
+				sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)))
+			}
 			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		}
 	}
