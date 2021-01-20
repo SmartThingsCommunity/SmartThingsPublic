@@ -114,7 +114,7 @@ private Map parseIasMessage(String description) {
 }
 
 private Map translateZoneStatus(ZoneStatus zs) {
-    if (zs.isAlarm1Set() || (isFrientButton() && zs.isAlarm2Set()) {
+    if (zs.isAlarm1Set() || (isFrientButton() && zs.isAlarm2Set())) {
         return getButtonResult('pushed')
     }
 }
