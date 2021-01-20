@@ -56,13 +56,16 @@ def parse(String description) {
         }
     } else if (description?.startsWith("catchall")) {
     	def descMap = zigbee.parseDescriptionAsMap(description)
+        log.debug "[parse] descMap '${descMap}'"
         if (descMap?.clusterId == "0500" && descMap?.attrId == "0002") {			//ZoneStatus
             resMap = createEvent(name: "water", value: descMap.value ? "wet" : "dry")
         }
         else if (descMap?.clusterId == "0006" && descMap?.attrId == "0000") {			//On/Off
             sendEvent(name: "switch", value: descMap.value ? "off" : "on")
         }
-        else {
+        else if (descMap?.clusterId == "8021") {
+        	log.trace "[parse] got Bind Rsp"
+        } else {
             log.warn "[WARN][parse] Unknown clusterId: $descMap.clusterId or attrId: $descMap.attrId"
         }
     } 
@@ -77,7 +80,8 @@ def parse(String description) {
 // handle commands
 def configure() {
     log.trace "[configure]"
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
+    def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
+   	return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
 }
 
 def refresh() {
