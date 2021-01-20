@@ -4,7 +4,7 @@
  *  Author:
  *    Lan, Kuo Wei 
  *
- *  Product Link: 
+ *	Product Link: 
  *    http://www.visionsecurity.com.tw/index.php?option=product&lang=en&task=pageinfo&id=335&belongid=334&index=0
 */
 metadata {
@@ -23,8 +23,8 @@ metadata {
 		capability "Configuration"
 		// This DTH uses 2 switch endpoints. Parent DTH controls endpoint 1 so please use '1' at the end of deviceJoinName
 		// Child device (isComponent : false) representing endpoint 2 will substitute 1 with 2 for easier identification.
-		fingerprint manufacturer: "0109", prod: "2017", model: "171B", deviceJoinName: "Vision 2Relays Switch 1"
-		fingerprint manufacturer: "0109", prod: "2017", model: "171C", deviceJoinName: "Vision 2Relays Switch 1"
+		fingerprint manufacturer: "0109", prod: "2017", model: "171B", deviceJoinName: "Vision 2Relays Switch 1" //zw:Ls type:1001 mfr:0109 prod:2017 model:171B ver:16.11 zwv:4.38 lib:03 cc:98 sec:5E,72,86,85,59,70,5A,7A,60,8E,73,27,25 epc:2
+		fingerprint manufacturer: "0109", prod: "2017", model: "171C", deviceJoinName: "Vision 2Relays Switch 1" //zw:Ls type:1001 mfr:0109 prod:2017 model:171C ver:25.07 zwv:4.54 lib:03 cc:98 sec:5E,72,86,85,59,70,5A,7A,60,8E,73,27,25 epc:2
 	}
 
 	preferences {
@@ -33,7 +33,7 @@ metadata {
 			switch(it.type) {
 				case "boolean":
 					input(type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" +
-						"Option disabled: ${it.inactiveDescription}"
+							"Option disabled: ${it.inactiveDescription}"
 					)
 					input(name: it.key, type: "boolean", title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false)
 					break
@@ -74,12 +74,11 @@ def installed() {
 }
 
 def firstCommand(){
-	def commands = []
-	commands << zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()
-	commands << "delay 300"
-	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format()
-	commands << "delay 300"
-	sendHubCommand(commands, 100)
+	def endpointNumber = 1
+	delayBetween([
+		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()),
+		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format())
+	])	
 }
 
 def updated() {
@@ -148,7 +147,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.command = cmd.parameter[1]
 		cmd.parameter = cmd.parameter.drop(2)
 	}
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x25: 1, 0x20: 1])
 	if (cmd.sourceEndPoint == 1) {
 		zwaveEvent(encapsulatedCommand, 1)
 	} else { // sourceEndPoint == 2
@@ -204,18 +203,14 @@ def encap(endpointNumber, cmd) {
 		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
 	} else if (cmd.startsWith("delay")) {
 		cmd
-	} else {
+	}/* else {
 		def header = "600D00"
 		String.format("%s%02X%s", header, endpointNumber, cmd)
-	}
+	}*/
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo.zw.contains("s")) {
-		secEncap(cmd)
-	} else {
-		cmd.format()
-	}
+	secEncap(cmd)
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
