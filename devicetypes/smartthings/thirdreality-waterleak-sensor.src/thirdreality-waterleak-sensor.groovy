@@ -20,7 +20,7 @@ metadata {
         capability "Refresh"
         capability "Configuration"
 
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "Water Leak Sensor"		//ThirdReality WaterLeak Sensor
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
     }
 
     simulator {
@@ -39,41 +39,42 @@ def parse(String description) {
     log.trace "[parse] Parsing '${description}'"
     def resMap = [:]
 
-    log.debug "[parse] descMap: $descMap"
     if (description?.startsWith("zone status")) {
         resMap = createEvent(name: "water", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "wet" : "dry")
-        sendEvent(name: "switch", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "on" : "off")
+        if (zigbee.parseZoneStatus(description).isAlarm1Set()) {                                                                //Make it showed as Alarm and Active when Wet.
+            resMap = createEvent(name: "switch", value: "on")
+        }
     } else if (description?.startsWith("on/off")) {
-        def event = zigbee.getEvent(description)
-        sendEvent(event)
-    } else if (description?.startsWith("read attr")) {
-    	def descMap = zigbee.parseDescriptionAsMap(description)
-        if (descMap?.cluster == "0001" && descMap?.attrId == "0021") {
-            resMap = createEvent(getBatteryPercentageResult(Integer.parseInt(descMap.value, 16)))
-        } 
-        else {
-            log.warn "[WARN][parse] Unknown cluster: $descMap.cluster or attrId: $descMap.attrId"
-        }
-    } else if (description?.startsWith("catchall")) {
-    	def descMap = zigbee.parseDescriptionAsMap(description)
-        log.debug "[parse] descMap '${descMap}'"
-        if (descMap?.clusterId == "0500" && descMap?.attrId == "0002") {			//ZoneStatus
-            resMap = createEvent(name: "water", value: descMap.value ? "wet" : "dry")
-        }
-        else if (descMap?.clusterId == "0006" && descMap?.attrId == "0000") {			//On/Off
-            sendEvent(name: "switch", value: descMap.value ? "off" : "on")
-        }
-        else if (descMap?.clusterId == "8021") {
-        	log.trace "[parse] got Bind Rsp"
+        resMap = zigbee.getEvent(description)
+        sendEvent(resMap)
+    } else if (description?.startsWith("read attr") || description?.startsWith("catchall")) {
+        def descMap = zigbee.parseDescriptionAsMap(description)
+        log.trace "[parse] descMap: ${descMap}"
+
+        if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap?.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {           //Water: Zone Status
+            resMap = createEvent(name: "water", value: (descMap.value=="0000") ? "dry" : "wet")
+        } else if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER ) {                                                //Battery: Power Config
+            if (descMap?.attrInt == 0x0021) {
+        	    resMap = createEvent(getBatteryPercentageResult(Integer.parseInt(descMap.value, 16)))
+            } else if (descMap?.attrInt == 0x0020) {
+                log.debug "[parse] Got Battery Voltage Value: 0x${descMap.value} * 100mV"
+            }
+        } else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER) {
+            if (descMap?.attrInt == 0x0000) {                                                                                   //Switch: On/Off
+                resMap = createEvent(name: "switch", value: (descMap.value=="00") ? "off" : "on")
+            } else if (descMap?.commandInt == 0x0B) {
+                log.trace "[parse] Cmd On/Off"
+            }
+        } else if (descMap?.clusterInt == 0x8021) {                                                                             //Bind Rsp
+            log.trace "[parse] got Bind Rsp"
         } else {
-            log.warn "[WARN][parse] Unknown clusterId: $descMap.clusterId or attrId: $descMap.attrId"
+            log.warn "[WARN][parse] Unknown descMap: $descMap"
         }
-    } 
-    else {
+    } else {
         log.warn "[WARN][parse] Unknown description: $description"
     }
 
-    log.debug "[parse] return '${resMap}'"
+    log.trace "[parse] return '${resMap}'"
     return resMap
 }
 
