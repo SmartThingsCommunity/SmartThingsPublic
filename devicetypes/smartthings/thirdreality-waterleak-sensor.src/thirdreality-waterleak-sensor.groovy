@@ -83,13 +83,13 @@ def parse(String description) {
 // handle commands
 def configure() {
     log.trace "[configure]"
-    def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
+    def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000)
    	return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
 }
 
 def refresh() {
     log.trace "[refresh]"
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
+    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000)
 }
 
 def on() {
