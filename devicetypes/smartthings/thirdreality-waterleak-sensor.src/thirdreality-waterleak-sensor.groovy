@@ -34,6 +34,8 @@ metadata {
     }
 }
 
+def getBIND_CLUSTER() {0x8021}
+
 // parse events into attributes
 def parse(String description) {
     log.trace "[parse] Parsing '${description}'"
@@ -65,7 +67,7 @@ def parse(String description) {
             } else if (descMap?.commandInt == 0x0B) {
                 log.trace "[parse] Cmd On/Off"
             }
-        } else if (descMap?.clusterInt == 0x8021) {                                                                             //Bind Rsp
+        } else if (descMap?.clusterInt == BIND_CLUSTER) {                                                                             //Bind Rsp
             log.trace "[parse] got Bind Rsp"
         } else {
             log.warn "[WARN][parse] Unknown descMap: $descMap"
