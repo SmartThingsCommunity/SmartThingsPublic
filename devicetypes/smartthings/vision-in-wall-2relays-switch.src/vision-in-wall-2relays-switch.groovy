@@ -76,8 +76,8 @@ def installed() {
 def firstCommand(){
 	def endpointNumber = 1
 	delayBetween([
-		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01)),
-		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]))
+		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()),
+		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format())
 	])	
 }
 
@@ -200,8 +200,8 @@ def sendCommand(endpointDevice, commands) {
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		cmd = command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		def cmdTemp = command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmdTemp).format()
 	} else if (cmd.startsWith("delay")) {
 		cmd.format()
 	}
