@@ -76,8 +76,8 @@ def installed() {
 def firstCommand(){
 	def endpointNumber = 1
 	delayBetween([
-		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()),
-		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format())
+		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01)),
+		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]))
 	])	
 }
 
@@ -200,21 +200,11 @@ def sendCommand(endpointDevice, commands) {
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
+		cmd = command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else if (cmd.startsWith("delay")) {
-		cmd
-	}/* else {
-		def header = "600D00"
-		String.format("%s%02X%s", header, endpointNumber, cmd)
-	}*/
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	secEncap(cmd)
-}
-
-private secEncap(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		cmd.format()
+	}
 }
 
 private getParameterMap() {[[
