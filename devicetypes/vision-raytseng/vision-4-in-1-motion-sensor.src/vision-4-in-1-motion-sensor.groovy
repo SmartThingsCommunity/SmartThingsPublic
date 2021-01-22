@@ -222,11 +222,11 @@ def getConfigurationInfo(num, text) {
 	parameter.parameter7description = ""
 	parameter.parameter7type = "enum"
 	parameter.parameter7options = ["LED off when Temperature report/Motion active",
-	                               "LED blink when Temperature report/Motion active",
-	                               "LED blink when Motion active/LED off when Temperature report"]
+		"LED blink when Temperature report/Motion active",
+		"LED blink when Motion active/LED off when Temperature report"]
 	parameter.parameter7enumMap = ["LED off when Temperature report/Motion active": 1,
-	                               "LED blink when Temperature report/Motion active": 2,
-	                               "LED blink when Motion active/LED off when Temperature report": 3]
+		"LED blink when Temperature report/Motion active": 2,
+		"LED blink when Motion active/LED off when Temperature report": 3]
 	parameter.parameter7default = "LED off when Temperature report/Motion active"
 	parameter.parameter7size = 1
 	
