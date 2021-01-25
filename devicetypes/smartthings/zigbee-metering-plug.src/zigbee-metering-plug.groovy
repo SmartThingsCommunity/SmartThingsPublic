@@ -162,13 +162,17 @@ def configure() {
 }
 
 private int getPowerDiv() {
-    isSengledOutlet() ? 10 : 1
+	(isSengledOutlet() || isJascoProductsOutlet()) ? 10 : 1
 }
 
 private int getEnergyDiv() {
-    isSengledOutlet() ? 10000 : 100
+	(isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : 100
 }
 
 private boolean isSengledOutlet() {
-    device.getDataValue("model") == "E1C-NB7"
+	device.getDataValue("model") == "E1C-NB7"
+}
+
+private boolean isJascoProductsOutlet() {
+	device.getDataValue("manufacturer") == "Jasco Products"
 }
