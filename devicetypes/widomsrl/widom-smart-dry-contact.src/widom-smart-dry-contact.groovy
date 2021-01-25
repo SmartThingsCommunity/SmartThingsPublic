@@ -53,7 +53,6 @@ metadata {
 	}
 }
 
-
 def on() {
 	encap(zwave.basicV1.basicSet(value: 255))
 }
@@ -61,7 +60,6 @@ def on() {
 def off() {
 	encap(zwave.basicV1.basicSet(value: 0))
 }
-
 
 //Configuration and synchronization
 def updated() {
@@ -77,10 +75,10 @@ private syncStart() {
 	boolean syncNeededGroup = false
 	Integer settingValue = null
 	parameterMap().each {
-		if(settings."$it.key" != null) {
+		if (settings."$it.key" != null) {
 			settingValue = settings."$it.key" as Integer
 			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-			if (state."$it.key".value != settingValue || state."$it.key".state != "synced" ) {
+			if ( state."$it.key".value != settingValue || state."$it.key".state != "synced" ) {
 				state."$it.key".value = settingValue
 				state."$it.key".state = "notSynced"
 				syncNeeded = true
@@ -88,12 +86,11 @@ private syncStart() {
 		}
 	}
     
-
-	if ( syncNeeded ) {
+	if (syncNeeded) {
 		logging("sync needed.", "info")
 		syncNext()
 	}
-	if ( syncNeededGroup ) {
+	if (syncNeededGroup) {
 		logging("${device.displayName} - starting sync.", "info")
 		multiStatusEvent("Sync in progress.", true, true)
 		syncNext()
@@ -114,7 +111,6 @@ private syncNext() {
 		}
 	}
     
-
 	if (cmds) {
 		runIn(10, "syncCheck")
 		sendHubCommand(cmds,1000)
@@ -129,15 +125,14 @@ private syncCheck() {
 	def incorrect = []
 	def notSynced = []
 	parameterMap().each {
-		if (state."$it.key"?.state == "incorrect" ) {
+		if (state."$it.key"?.state == "incorrect") {
 			incorrect << it
-		} else if ( state."$it.key"?.state == "failed" ) {
+		} else if (state."$it.key"?.state == "failed") {
 			failed << it
-		} else if ( state."$it.key"?.state in ["inProgress","notSynced"] ) {
+		} else if (state."$it.key"?.state in ["inProgress","notSynced"]) {
 			notSynced << it
 		}
 	}
-
 
 	if (failed) {
 		multiStatusEvent("Sync failed! Verify parameter: ${failed[0].num}", true, true)
@@ -151,7 +146,7 @@ private syncCheck() {
 }
 
 private multiStatusEvent(String statusValue, boolean force = false, boolean display = false) {
-	if (!device.currentValue("multiStatus")?.contains("Sync") || device.currentValue("multiStatus") == "Sync OK." || force) {
+	if ( !device.currentValue("multiStatus")?.contains("Sync") || device.currentValue("multiStatus") == "Sync OK." || force ) {
 		sendEvent(name: "multiStatus", value: statusValue, descriptionText: statusValue, displayed: display)
 	}
 }
@@ -171,7 +166,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejectedRequest cmd) {
 	logging("rejected request!","warn")
 	for ( param in parameterMap() ) {
-		if ( state."$param.key"?.state == "inProgress" ) {
+		if (state."$param.key"?.state == "inProgress") {
 			state."$param.key"?.state = "failed"
 			break
 		}
@@ -275,14 +270,6 @@ private encap(physicalgraph.zwave.Command cmd, Integer ep) {
 	encap(multiEncap(cmd, ep))
 }
 
-//private encap(List encapList) {
-//	encap(encapList[0], encapList[1])
-//}
-
-//private encap(Map encapMap) {
-//	encap(encapMap.cmd, encapMap.ep)
-//}
-
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
@@ -307,10 +294,9 @@ private List intToParam(Long value, Integer size = 1) {
 	size.times {
 		result = result.plus(0, (value & 0xFF) as Short)
 		value = (value >> 8)
-		}
+	}
 	return result
 }
-
 
 /*
 ##########################
