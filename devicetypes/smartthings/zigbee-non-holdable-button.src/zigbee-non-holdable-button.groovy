@@ -26,6 +26,7 @@ metadata {
         capability "Sensor"
 
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0500", outClusters: "0019", manufacturer: "HEIMAN", model: "SOS-EM", deviceJoinName: "HEIMAN Button" //HEIMAN Emergency Button
+        fingerprint manufacturer: "frient A/S", model: "MBTZB-110", deviceJoinName: "frient Button" // Frient Smart Button, 20 0104 0007 00 05 0000 0001 0003 000F 0020 04 0003 0006 000A 0019
     }
 
     tiles(scale: 2) {
@@ -50,6 +51,9 @@ def installed() {
     sendEvent(name: "supportedButtonValues", value: ["pushed"].encodeAsJSON(), displayed: false)
     sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 }
+
+private getBINARY_INPUT_CLUSTER() { 0x000f }
+private getATTRIBUTE_PRESENT_VALUE() { 0x0055 }
 
 private List<Map> collectAttributes(Map descMap) {
     List<Map> descMaps = new ArrayList<Map>()
@@ -86,6 +90,8 @@ def parse(String description) {
                 map = translateZoneStatus(zs)
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
                 map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
+            } else if (isFrientButton() && descMap?.clusterInt == BINARY_INPUT_CLUSTER && descMap.attrInt == ATTRIBUTE_PRESENT_VALUE && descMap?.value == "01") {
+                map = getButtonResult('pushed')
             }
         }
     }
@@ -108,7 +114,7 @@ private Map parseIasMessage(String description) {
 }
 
 private Map translateZoneStatus(ZoneStatus zs) {
-	if (zs.isAlarm1Set()) {
+    if (zs.isAlarm1Set() || (isFrientButton() && zs.isAlarm2Set())) {
         return getButtonResult('pushed')
     }
 }
@@ -126,13 +132,17 @@ private Map getBatteryResult(rawValue) {
         result.translatable = true
         result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 
-        def minVolts = 2.1
-        def maxVolts = 3.0
-        def pct = (volts - minVolts) / (maxVolts - minVolts)
-        def roundedPct = Math.round(pct * 100)
-        if (roundedPct <= 0)
-            roundedPct = 1
-        result.value = Math.min(100, roundedPct)
+        if (isFrientButton()) {
+            result.value = liIon3VTable.find { threshold, perc -> (threshold <= volts) }.value
+        } else {
+            def minVolts = 2.1
+            def maxVolts = 3.0
+            def pct = (volts - minVolts) / (maxVolts - minVolts)
+            def roundedPct = Math.round(pct * 100)
+            if (roundedPct <= 0)
+                roundedPct = 1
+            result.value = Math.min(100, roundedPct)
+        }
     }
 
     return result
@@ -192,5 +202,26 @@ def configure() {
 
     return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		   zigbee.enrollResponse() + 
-		   zigbee.batteryConfig()
+		   zigbee.batteryConfig() +
+		   (isFrientButton() ? zigbee.configureReporting(BINARY_INPUT_CLUSTER, ATTRIBUTE_PRESENT_VALUE, DataType.BOOLEAN, 0, 600, null) : [])
 }
+
+private Boolean isFrientButton() {
+    device.getDataValue("manufacturer") == "frient A/S"
+}
+
+// Capacity discharge curve for 3v Lithium Ion (voltage: remaining %)
+private getLiIon3VTable() {[
+    2.9: 100,
+    2.8: 80,
+    2.75: 60,
+    2.7: 50,
+    2.65: 40,
+    2.6: 30,
+    2.5: 20,
+    2.4: 15,
+    2.2: 10,
+    2.0: 1,
+    1.9: 0,
+    0.0: 0
+]}
