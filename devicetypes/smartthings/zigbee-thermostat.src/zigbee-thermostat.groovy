@@ -36,7 +36,8 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX Thermostat" //LUX KONOz Thermostat
 		fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela Thermostat" //Umbrela UTee
-		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019 //Danfoss Thermostat
+		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
+		fingerprint manufacturer: "D5X84YU", model: "eT093WRO", deviceJoinName: "POPP Thermostat", vid: "SmartThings-smartthings-Danfoss_Ally_Radiator_Thermostat" //POPP Smart Thermostat POPE701721, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
 	}
 
 	tiles {
@@ -281,7 +282,7 @@ private parseAttrMessage(description) {
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	if (isDanfossAlly()) {
+	if (isDanfossAlly() || isPOPP()) {
 		state.supportedThermostatModes = ["heat"]
 	} else {
 		state.supportedThermostatModes = ["off", "heat", "cool", "emergency heat"]
@@ -309,7 +310,7 @@ def refresh() {
 }
 
 def getBatteryRemainingCommand() {
-	if (isDanfossAlly()) {
+	if (isDanfossAlly() || isPOPP()) {
 		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING)
 	} else {
 		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE)
@@ -324,7 +325,7 @@ def configure() {
 	def binding = zigbee.addBinding(THERMOSTAT_CLUSTER) + zigbee.addBinding(FAN_CONTROL_CLUSTER)
 	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x07D0)
 
-	if (isDanfossAlly()) {
+	if (isDanfossAlly() || isPOPP()) {
 		// setting Min/Max HeatSetPointLimits for Danfoss Ally - MinHeatSetpointLimit: 500 (0x01F4), MaxHeatSetpointLimit: 3500 (0x0DAC)
 		startValues += zigbee.writeAttribute(THERMOSTAT_CLUSTER, MIN_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x01F4) +
 				zigbee.writeAttribute(THERMOSTAT_CLUSTER, MAX_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x0DAC)
@@ -360,7 +361,7 @@ def getBatteryPercentage(rawValue) {
 }
 
 def getVoltageRange() {
-	if (isDanfossAlly()) {
+	if (isDanfossAlly() || isPOPP()) {
 		// Danfoss Ally's volage ranges: 2.4V - 0%, 3.2V - 100% (for some types of batteries it will be 3.4V - 100%)
 		[minVolts: 2.4, maxVolts: 3.2]
 	} else {
@@ -504,12 +505,16 @@ private boolean isDanfossAlly() {
 	device.getDataValue("model") == "eTRV0100"
 }
 
+private boolean isPOPP() {
+	device.getDataValue("model") == "eT093WRO"
+}
+
 // TODO: Get these from the thermostat; for now they are set to match the UI metadata
 def getCoolingSetpointRange() {
 	(getTemperatureScale() == "C") ? [10, 35] : [50, 95]
 }
 def getHeatingSetpointRange() {
-	if (isDanfossAlly()) {
+	if (isDanfossAlly() || isPOPP()) {
 		(getTemperatureScale() == "C") ? [4, 35] : [39, 95]
 	} else {
 		(getTemperatureScale() == "C") ? [7.22, 32.22] : [45, 90]

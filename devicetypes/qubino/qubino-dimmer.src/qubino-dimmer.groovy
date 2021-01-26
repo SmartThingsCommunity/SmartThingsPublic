@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"generic-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"qubino-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"
@@ -33,7 +33,7 @@ metadata {
 
 		// Qubino Flush Dimmer 0-10V - ZMNHVD
 		// Raw Description: zw:L type:1100 mfr:0159 prod:0001 model:0053 ver:2.04 zwv:4.34 lib:03 cc:5E,86,5A,72,73,27,25,26,85,8E,59,70 ccOut:20,26 role:05 ff:9C00 ui:9C00
-		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"generic-dimmer"
+		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"qubino-dimmer"
 
 		//Qubino Mini Dimmer
 		// Raw Description: zw:Ls type:1101 mfr:0159 prod:0001 model:0055 ver:20.02 zwv:5.03 lib:03 cc:5E,6C,55,98,9F sec:86,25,26,85,59,72,5A,70,32,71,73
@@ -233,6 +233,10 @@ def configure() {
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId:[])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
 	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+	if (isDINDimmer()) {
+		//parameter 42 - power reporting time threshold
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 2 * 15 * 60 + 2 * 60)
+	}
 	commands += getRefreshCommands()
 	commands += getReadConfigurationFromTheDeviceCommands()
 
@@ -327,7 +331,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
-	sendHubCommand(encapCommands(getPowerMeterCommands()))
 	dimmerEvents(cmd)
 }
 
@@ -351,6 +354,9 @@ def handleMeterReport(cmd) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
 			log.debug("createEvent power")
+			if (isDINDimmer()) {
+				sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)))
+			}
 			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		}
 	}
