@@ -105,19 +105,19 @@ def ping() {
 def refresh() {
 	log.debug "refresh"
 	zigbee.onOffRefresh() +
-			zigbee.levelRefresh() +
-			zigbee.simpleMeteringPowerRefresh() +
-			zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET)
+	zigbee.levelRefresh() +
+	zigbee.simpleMeteringPowerRefresh() +
+	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET)
 }
 
 def configure() {
 	log.debug "Configuring Reporting and Bindings."
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	return refresh() +
-			zigbee.onOffConfig() +
-			zigbee.levelConfig() +
-			zigbee.simpleMeteringPowerConfig() +
-			zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
+	zigbee.onOffConfig() +
+	zigbee.levelConfig() +
+	zigbee.simpleMeteringPowerConfig() +
+	zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
 }
 
 private int getPowerDiv() {
