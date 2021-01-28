@@ -85,11 +85,10 @@ def updated() {
 def configure() {
 	def cmds = []
 	def value
-	def optionValue
 	
 	if (device?.currentValue("temperature") == null) {
-		optionValue = getConfigurationInfo(1, "enumMap").find { it.key == state."${getConfigurationInfo(1, "name")}" }?.value
-		cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: optionValue?:0x00).format()
+		value = getConfigurationInfo(1, "enumMap").find { it.key == state."${getConfigurationInfo(1, "name")}" }?.value
+		cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: value?:0x00).format()
 	}
 	if (device?.currentValue("illuminance") == null) {
 		cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03, scale: 0x00).format()
@@ -105,18 +104,17 @@ def configure() {
 		if (state."${getConfigurationInfo(idx, "name")}Refresh" == true) {
 			switch (getConfigurationInfo(idx, "type")) {
 				case "enum":
-					optionValue = getConfigurationInfo(idx, "enumMap").find { it.key == state."${getConfigurationInfo(idx, "name")}" }?.value
-					value = integer2Array(optionValue, getConfigurationInfo(idx, "size"))
+					value = getConfigurationInfo(idx, "enumMap").find { it.key == state."${getConfigurationInfo(idx, "name")}" }?.value
 					break
 				case "number":
-					value = integer2Array(state."${getConfigurationInfo(idx, "name")}", getConfigurationInfo(idx, "size"))
+					value = state."${getConfigurationInfo(idx, "name")}"
 					break
 			}
 			if (value != null) {
-				cmds << zwave.configurationV2.configurationSet(parameterNumber: idx, defaultValue: false, size: getConfigurationInfo(idx, "size"), configurationValue: value).format()
+				cmds << zwave.configurationV2.configurationSet(parameterNumber: idx, defaultValue: false, scaledConfigurationValue: value).format()
 				cmds << zwave.configurationV2.configurationGet(parameterNumber: idx).format()
 				if (idx == 1) {
-					cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: optionValue?:0x00).format()
+					cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: value?:0x00).format()
 				}
 				value = null
 			}
@@ -339,19 +337,18 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def size = getConfigurationInfo(cmd.parameterNumber, "size")
-	def value = array2Integer(cmd.configurationValue)
 	def config = [:]
 	
 	if (size && size == cmd.size) {
 		switch (getConfigurationInfo(cmd.parameterNumber, "type")) {
 			case "enum":
-				def optionName = getConfigurationInfo(cmd.parameterNumber, "enumMap").find { it.value == value}?.key
+				def optionName = getConfigurationInfo(cmd.parameterNumber, "enumMap").find { it.value == cmd.scaledConfigurationValue}?.key
 				if (optionName) {
 					config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = optionName
 				}
 				break
 			case "number":
-				config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = value
+				config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = cmd.scaledConfigurationValue
 				break
 		}
 		
@@ -419,34 +416,6 @@ def canReportBattery() {
 	def reportEveryMS = (getBatteryReportIntervalSeconds() * 1000)
 		
 	return (!state.lastBatteryReport || ((new Date().time) - state?.lastBatteryReport > reportEveryMS))
-}
-
-def array2Integer(array) {
-	switch (array.size()) {
-		case 1:
-			array[0]
-			break
-		case 2:
-			((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
-			break
-		case 4:
-			((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
-			break
-	}
-}
-
-def integer2Array(value, size) {
-	switch (size) {
-		case 1:
-			[value]
-			break
-		case 2:
-			[(value >> 8) & 0xFF, value & 0xFF]
-			break
-		case 4:
-			[(value >> 24) & 0xFF, (value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF]
-			break
-	}
 }
 
 def hour2Second(hour) {
