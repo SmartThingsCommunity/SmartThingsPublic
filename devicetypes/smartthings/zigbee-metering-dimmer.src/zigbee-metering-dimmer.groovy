@@ -13,7 +13,7 @@
  */
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
+	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy", runLocally: true, executeCommandsLocally: true, genericHandler: "Zigbee") {
 
 		capability "Actuator"
 		capability "Configuration"
@@ -63,13 +63,15 @@ def parse(String description) {
 			if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
 				log.debug "power"
 				map.name = "power"
-				map.value = zigbee.convertHexToInt(it.value)/getPowerDiv()
+				def powerDiv = device.getDataValue("powerDivisor")
+				map.value = zigbee.convertHexToInt(it.value)/powerDiv
 				map.unit = "W"
 			}
 			else if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
 				log.debug "energy"
 				map.name = "energy"
-				map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
+				def energyDiv = device.getDataValue("energyDivisor")
+				map.value = zigbee.convertHexToInt(it.value)/energyDiv
 				map.unit = "kWh"
 			}
 
@@ -112,20 +114,21 @@ def refresh() {
 
 def configure() {
 	log.debug "Configuring Reporting and Bindings."
+
+	if (isJascoProducts())  {
+		device.updateDataValue("powerDivisor", "10")
+		device.updateDataValue("energyDivisor", "10000")
+	} else {
+		device.updateDataValue("powerDivisor", "1")
+		device.updateDataValue("energyDivisor", "100")
+	}
+
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	return refresh() +
 	zigbee.onOffConfig() +
 	zigbee.levelConfig() +
 	zigbee.simpleMeteringPowerConfig() +
 	zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
-}
-
-private int getPowerDiv() {
-	isJascoProducts() ? 10 : 1
-}
-
-private int getEnergyDiv() {
-	isJascoProducts() ? 10000 : 100
 }
 
 private boolean isJascoProducts() {
