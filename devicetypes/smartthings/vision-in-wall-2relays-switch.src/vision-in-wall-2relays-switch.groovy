@@ -198,7 +198,7 @@ def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
 		def cmdTemp = zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint: 0x01, destinationEndPoint: endpointNumber).encapsulate(cmd)
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmdTemp).format()
-	} else {
+	} else if (cmd.startsWith("delay")) {
 		cmd.format()
 	}
 }
