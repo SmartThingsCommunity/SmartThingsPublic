@@ -13,7 +13,7 @@
  */
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy", runLocally: true, executeCommandsLocally: true, genericHandler: "Zigbee") {
+	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy", runLocally: true, executeCommandsLocally: true, genericHandler: "Zigbee", minHubCoreVersion: '000.019.00012') {
 
 		capability "Actuator"
 		capability "Configuration"
