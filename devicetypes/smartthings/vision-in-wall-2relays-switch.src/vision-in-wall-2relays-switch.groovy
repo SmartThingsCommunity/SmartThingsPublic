@@ -75,10 +75,9 @@ def installed() {
 
 def firstCommand(){
 	def commands = []
-	commands << zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()
-	commands << "delay 300"
-	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format()
-	commands << "delay 300"
+	commands << encap(0, zwave.configurationV1.configurationGet(parameterNumber: 0x01))
+	commands << "delay 300"			
+	commands << encap(0, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]))
 	sendHubCommand(commands, 100)
 }
 
@@ -100,9 +99,9 @@ def configure() {
 	def commands = []
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".status == "syncPending") {
-			commands << zwave.configurationV1.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size).format()
-			commands << "delay 300"
-			commands << zwave.configurationV1.configurationGet(parameterNumber: it.parameterNumber).format()
+			commands << encap(0, zwave.configurationV1.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
+			commands << "delay 300"			
+			commands << encap(0, zwave.configurationV1.configurationGet(parameterNumber: it.parameterNumber))
 		}
 	}		
 	response(commands + refresh())
@@ -195,12 +194,15 @@ def sendCommand(endpointDevice, commands) {
 }
 
 def encap(endpointNumber, cmd) {
-	if (cmd instanceof physicalgraph.zwave.Command) {
+	if (endpointNumber == 0) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	}
+	else if (cmd instanceof physicalgraph.zwave.Command) {
 		def cmdTemp = zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint: 0x01, destinationEndPoint: endpointNumber).encapsulate(cmd)
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmdTemp).format()
-	} else if (cmd.startsWith("delay")) {
+	} else {
 		cmd.format()
-	}
+	} 
 }
 
 private getParameterMap() {[[
@@ -219,9 +221,9 @@ private syncConfiguration() {
 	parameterMap.each {
 		try {
 			if (state.currentPreferencesState."$it.key".status == "syncPending") {
-				commands << zwave.configurationV1.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size).format()
-				commands << "delay 300"
-				commands << zwave.configurationV1.configurationGet(parameterNumber: it.parameterNumber).format()
+				commands << encap(0, zwave.configurationV1.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
+				commands << "delay 300"			
+				commands << encap(0, zwave.configurationV1.configurationGet(parameterNumber: it.parameterNumber))
 		    }
 		} catch (e) {
 			log.warn "There's been an issue with preference: ${it.key}"
