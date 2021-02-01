@@ -18,53 +18,36 @@ metadata {
 	
 	preferences {
 		input title: "", description: "Vision 4-in-1 Motion Sensor", type: "paragraph", element: "paragraph", displayDuringSetup: true, required: true
-		
-		getConfigurationNumber().each {idx ->
-			switch (getConfigurationInfo(idx, "type")) {
-				case "enum":
-					input name: getConfigurationInfo(idx, "name"),
-						title: getConfigurationInfo(idx, "title"),
-						description: getConfigurationInfo(idx, "description"),
-						type: getConfigurationInfo(idx, "type"), options: getConfigurationInfo(idx, "options"),
-						defaultValue: getConfigurationInfo(idx, "default"),
-						required: true, displayDuringSetup: true
-					break
-				case "number":
-					input name: getConfigurationInfo(idx, "name"),
-						title: getConfigurationInfo(idx, "title"),
-						description: getConfigurationInfo(idx, "description"),
-						type: getConfigurationInfo(idx, "type"), range: getConfigurationInfo(idx, "options"),
-						defaultValue: getConfigurationInfo(idx, "default"),
-						required: true, displayDuringSetup: true
-					break
-			}
+		parameterMap().each {
+			input name: it.name,
+				title: it.title,
+				description: it.description,
+				type: it.type, 
+				options: (it.type == "enum")? it.options: null,
+				range: (it.type == "number")? it.options: null,
+				defaultValue: it.default,
+				required: true, displayDuringSetup: true
 		}
 		
 		input title: "", description: "Wake up settings", 
 			type: "paragraph", element: "paragraph", displayDuringSetup: true, required: true
-		input name: getWakeUpInfo("name"),
-			title: getWakeUpInfo("title"),
-			description: getWakeUpInfo("description"),
-			type: getWakeUpInfo("type"), range: getWakeUpInfo("range"),
-			defaultValue: getWakeUpInfo("default"),
+		input name: wakeUpInfoMap.name,
+			title: wakeUpInfoMap.title,
+			description: wakeUpInfoMap.description,
+			type: wakeUpInfoMap.type, range: wakeUpInfoMap.range,
+			defaultValue: wakeUpInfoMap.default,
 			required: true, displayDuringSetup: true
 	}
 }
 
 def installed() {
 	def cmds = []
-	def configDefault = [:]
-	def wakeupDefault = [:]
 	
-	getConfigurationNumber().each { idx ->
-		configDefault."${getConfigurationInfo(idx, "name")}" = getConfigurationInfo(idx, "default")
-		state."${getConfigurationInfo(idx, "name")}Refresh" = false
+	parameterMap().each {
+		if (state."${it.name}" == null) { state."${it.name}" = [value: it.default, refresh: true] }
 	}
-	configurationUpdate(configDefault)
 	
-	wakeupDefault."${getWakeUpInfo("name")}" = getWakeUpInfo("default")
-	state."${getWakeUpInfo("name")}Refresh" = false
-	wakeUpIntervalUpdate(wakeupDefault)
+	if (state."${wakeUpInfoMap.name}" == null) { state."${wakeUpInfoMap.name}" = [value: wakeUpInfoMap.default, refresh: true] }
 	
 	cmds += configure()
 	if (cmds) {
@@ -78,8 +61,17 @@ def installed() {
 }
 
 def updated() {
-	configurationUpdate(settings)
-	wakeUpIntervalUpdate(settings)
+	parameterMap().each {
+		if (settings."${it.name}" != null && settings."${it.name}" != state."${it.name}".value) {
+			state."${it.name}".value = settings."${it.name}"
+			state."${it.name}".refresh = true
+		}
+	}
+	
+	if (settings."${wakeUpInfoMap.name}" != null && settings."${wakeUpInfoMap.name}" != state."${wakeUpInfoMap.name}".value) {
+		state."${wakeUpInfoMap.name}".value = settings."${wakeUpInfoMap.name}"
+		state."${wakeUpInfoMap.name}".refresh = true
+	}
 }
 
 def configure() {
@@ -87,8 +79,11 @@ def configure() {
 	def value
 	
 	if (device?.currentValue("temperature") == null) {
-		value = getConfigurationInfo(1, "enumMap").find { it.key == state."${getConfigurationInfo(1, "name")}" }?.value
-		cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: value?:0x00).format()
+		def param = parameterMap().find { it.num == 1 }
+		if (param != null) {
+			value = param.enumMap.find { it.key == state."${param.name}".value }?.value
+			cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: value?:0x00).format()
+		}
 	}
 	if (device?.currentValue("illuminance") == null) {
 		cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03, scale: 0x00).format()
@@ -100,180 +95,125 @@ def configure() {
 		cmds << zwave.batteryV1.batteryGet().format()
 	}
 	
-	getConfigurationNumber().each { idx ->
-		if (state."${getConfigurationInfo(idx, "name")}Refresh" == true) {
-			switch (getConfigurationInfo(idx, "type")) {
-				case "enum":
-					value = getConfigurationInfo(idx, "enumMap").find { it.key == state."${getConfigurationInfo(idx, "name")}" }?.value
-					break
-				case "number":
-					value = state."${getConfigurationInfo(idx, "name")}"
-					break
-			}
+	for (param in parameterMap()) {
+		if (state."${param.name}".refresh == true) {
+			value = (param.type == "enum")? param.enumMap.find { it.key == state."${param.name}".value }?.value: state."${param.name}".value
 			if (value != null) {
-				cmds << zwave.configurationV2.configurationSet(parameterNumber: idx, defaultValue: false, scaledConfigurationValue: value).format()
-				cmds << zwave.configurationV2.configurationGet(parameterNumber: idx).format()
-				if (idx == 1) {
+				cmds << zwave.configurationV2.configurationSet(parameterNumber: param.num, defaultValue: false, scaledConfigurationValue: value).format()
+				cmds << zwave.configurationV2.configurationGet(parameterNumber: param.num).format()
+				if (param.num == 1) {
 					cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01, scale: value?:0x00).format()
 				}
-				value = null
 			}
 		}
 	}
 	
-	if (state."${getWakeUpInfo("name")}Refresh" == true) {
-		 cmds << zwave.wakeUpV2.wakeUpIntervalSet(nodeid: zwaveHubNodeId, seconds: hour2Second(state.wakeUpInterval)).format()
+	if (state."${wakeUpInfoMap.name}".refresh == true) {
+		 cmds << zwave.wakeUpV2.wakeUpIntervalSet(nodeid: zwaveHubNodeId, seconds: hour2Second(state."${wakeUpInfoMap.name}".value)).format()
 		 cmds << zwave.wakeUpV2.wakeUpIntervalGet().format()
 	}
 	
-	sendEvent(name: "checkInterval", value: (hour2Second(state.wakeUpInterval) + 2 * 60) * 2, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: (hour2Second(state."${wakeUpInfoMap.name}".value) + 2 * 60) * 2, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	
 	return cmds ? delayBetween(cmds, 500) : []
 }
 
-def configurationUpdate(config) {
-	getConfigurationNumber().each { idx ->
-		if (config?."${getConfigurationInfo(idx, "name")}" != null) {
-			if (state."${getConfigurationInfo(idx, "name")}" != config?."${getConfigurationInfo(idx, "name")}") {
-				state."${getConfigurationInfo(idx, "name")}" = config?."${getConfigurationInfo(idx, "name")}"
-				state."${getConfigurationInfo(idx, "name")}Refresh" = true
-			}
-		}
-	}
+def parameterMap() {[
+		[num: 1,
+			name: "TemperatureUnit", 
+			title: "Temperature Unit [°C/°F]",
+			description: "", 
+			type: "enum", 
+			options: ["°C", "°F"], 
+			enumMap: ["°C": 0, "°F": 1], 
+			default: "°C", 
+			size: 1
+		],
+		[num: 2,
+			name: "TempReportWhenChanged", 
+			title: "Report when temperature difference is over the setting [unit is 0.1°C/°F]",
+			description: "", 
+			type: "number", 
+			options: "1..50", 
+			enumMap: [], 
+			default: 30, 
+			size: 1],
+		[num: 3,
+			name: "HumiReportWhenChanged", 
+			title: "Report when humidity difference is over the setting [%]", 
+			description: "",
+			type: "number", 
+			options: "1..50", 
+			enumMap: [], 
+			default: 20, 
+			size: 1
+		],
+		[num: 4,
+			name: "LightReportWhenChanged", 
+			title: "Report when illuminance difference is over the setting [%](1% is approximately equal to 4.5 lux)", 
+			description: "",
+			type: "number", 
+			options: "5..50", 
+			enumMap: [], 
+			default: 25, 
+			size: 1
+		],
+		[num: 5,
+			name: "MotionRestoreTime", 
+			title: "Motion inactive report time [Minutes] after active", 
+			description: "",
+			type: "number", 
+			options: "1..127", 
+			enumMap: [], 
+			default: 3, 
+			size: 1
+		],
+		[num: 6,
+			name: "MotionSensitivity", 
+			title: "Motion active sensitivity", 
+			description: "",
+			type: "enum", 
+			options: ["Highest", "Higher", "High", "Medium", "Low", "Lower", "Lowest"], 
+			enumMap: ["Highest": 1, "Higher": 2, "High": 3, "Medium": 4, "Low": 5, "Lower": 6, "Lowest": 7], 
+			default: "Medium", 
+			size: 1
+		],
+		[num: 7,
+			name: "LedDispMode", 
+			title: "LED display mode", 
+			description: "",
+			type: "enum", 
+			options: ["LED off when Temperature report/Motion active",
+				"LED blink when Temperature report/Motion active",
+				"LED blink when Motion active/LED off when Temperature report"], 
+			enumMap: ["LED off when Temperature report/Motion active": 1,
+				"LED blink when Temperature report/Motion active": 2,
+				"LED blink when Motion active/LED off when Temperature report": 3], 
+			default: "LED off when Temperature report/Motion active", 
+			size: 1
+		],
+		[num: 8,
+			name: "RetryTimes", 
+			title: "Motion notification retry times", 
+			description: "",
+			type: "number", 
+			options: "0..10", 
+			enumMap: [], 
+			default: 3, 
+			size: 1
+		]
+	]
 }
 
-def configurationCheck(config) {
-	getConfigurationNumber().each { idx ->
-		if (config?."${getConfigurationInfo(idx, "name")}" != null) {
-			if (config?."${getConfigurationInfo(idx, "name")}" == state."${getConfigurationInfo(idx, "name")}") {
-				if (state."${getConfigurationInfo(idx, "name")}Refresh" == true) {
-					state."${getConfigurationInfo(idx, "name")}Refresh" = false
-				}
-			}
-		}
-	}
-}
-
-def getConfigurationNumber() {
-	return [1, 2, 3, 4, 5, 6, 7, 8]
-}
-
-def getConfigurationInfo(num, text) {
-	def parameter = [:]
-	
-	parameter.parameter1name = "TemperatureUnit"
-	parameter.parameter1title = "Temperature Unit [°C/°F]"
-	parameter.parameter1description = ""
-	parameter.parameter1type = "enum"
-	parameter.parameter1options = ["°C", "°F"]
-	parameter.parameter1enumMap = ["°C": 0, "°F": 1]
-	parameter.parameter1default = "°C"
-	parameter.parameter1size = 1
-	
-	parameter.parameter2name = "TempReportWhenChanged"
-	parameter.parameter2title = "Report when temperature difference is over the setting [unit is 0.1°C/°F]"
-	parameter.parameter2description = ""
-	parameter.parameter2type = "number"
-	parameter.parameter2options = "1..50"
-	parameter.parameter2enumMap = []
-	parameter.parameter2default = 30
-	parameter.parameter2size = 1
-	
-	parameter.parameter3name = "HumiReportWhenChanged"
-	parameter.parameter3title = "Report when humidity difference is over the setting [%]"
-	parameter.parameter3description = ""
-	parameter.parameter3type = "number"
-	parameter.parameter3options = "1..50"
-	parameter.parameter3enumMap = []
-	parameter.parameter3default = 20
-	parameter.parameter3size = 1
-	
-	parameter.parameter4name = "LightReportWhenChanged"
-	parameter.parameter4title = "Report when illuminance difference is over the setting [%](1% is approximately equal to 4.5 lux)"
-	parameter.parameter4description = ""
-	parameter.parameter4type = "number"
-	parameter.parameter4options = "5..50"
-	parameter.parameter4enumMap = []
-	parameter.parameter4default = 25
-	parameter.parameter4size = 1
-	
-	parameter.parameter5name = "MotionRestoreTime"
-	parameter.parameter5title = "Motion inactive report time [Minutes] after active"
-	parameter.parameter5description = ""
-	parameter.parameter5type = "number"
-	parameter.parameter5options = "1..127"
-	parameter.parameter5enumMap = []
-	parameter.parameter5default = 3
-	parameter.parameter5size = 1
-	
-	parameter.parameter6name = "MotionSensitivity"
-	parameter.parameter6title = "Motion active sensitivity"
-	parameter.parameter6description = ""
-	parameter.parameter6type = "enum"
-	parameter.parameter6options = ["Highest", "Higher", "High", "Medium", "Low", "Lower", "Lowest"]
-	parameter.parameter6enumMap = ["Highest": 1, "Higher": 2, "High": 3, "Medium": 4, "Low": 5, "Lower": 6, "Lowest": 7]
-	parameter.parameter6default = "Medium"
-	parameter.parameter6size = 1
-	
-	parameter.parameter7name = "LedDispMode"
-	parameter.parameter7title = "LED display mode"
-	parameter.parameter7description = ""
-	parameter.parameter7type = "enum"
-	parameter.parameter7options = ["LED off when Temperature report/Motion active",
-		"LED blink when Temperature report/Motion active",
-		"LED blink when Motion active/LED off when Temperature report"]
-	parameter.parameter7enumMap = ["LED off when Temperature report/Motion active": 1,
-		"LED blink when Temperature report/Motion active": 2,
-		"LED blink when Motion active/LED off when Temperature report": 3]
-	parameter.parameter7default = "LED off when Temperature report/Motion active"
-	parameter.parameter7size = 1
-	
-	parameter.parameter8name = "RetryTimes"
-	parameter.parameter8title = "Motion notification retry times"
-	parameter.parameter8description = ""
-	parameter.parameter8type = "number"
-	parameter.parameter8options = "0..10"
-	parameter.parameter8enumMap = []
-	parameter.parameter8default = 3
-	parameter.parameter8size = 1
-	
-	return parameter."parameter${num}${text}"
-}
-
-def wakeUpIntervalUpdate(interval) {
-	def value = interval?.find { it.key == "${getWakeUpInfo("name")}" }?.value
-	
-	if (value != null) {
-		if (state."${getWakeUpInfo("name")}" != value) {
-			state."${getWakeUpInfo("name")}" = value
-			state."${getWakeUpInfo("name")}Refresh" = true
-		}
-	}
-}
-
-def wakeUpIntervalCheck(interval) {
-	def value = interval?.find { it.key == "${getWakeUpInfo("name")}" }?.value
-	
-	if (value != null) {
-		if (state."${getWakeUpInfo("name")}" == value) {
-			if (state."${getWakeUpInfo("name")}Refresh" == true) {		
-				state."${getWakeUpInfo("name")}Refresh" = false
-			}
-		}
-	}
-}
-
-def getWakeUpInfo(text) {
-	def wakeUp = [:]
-	
-	wakeUp.name = "wakeUpInterval"
-	wakeUp.title = "Wake up interval [Hours]"
-	wakeUp.description = ""
-	wakeUp.type = "number"
-	wakeUp.range = "1..4660"
-	wakeUp.default = 24
-	
-	return wakeUp."${text}"
+def getWakeUpInfoMap() {
+	[
+		name: "wakeUpInterval",
+		title: "Wake up interval [Hours]",
+		description: "",
+		type: "number",
+		range : "1..4660",
+		default: 24
+	]
 }
 
 private getCommandClassVersions() {
@@ -313,9 +253,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
 	if (cmd.nodeid == zwaveHubNodeId) {
-		def interval = [:]
-		interval."${getWakeUpInfo("name")}" = cmd.seconds / 3600
-		wakeUpIntervalCheck(interval)
+		if (state."${wakeUpInfoMap.name}".value == (cmd.seconds / 3600)) {
+			state."${wakeUpInfoMap.name}".refresh = false
+		}
 	}
 	[]
 }
@@ -336,24 +276,12 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	def size = getConfigurationInfo(cmd.parameterNumber, "size")
-	def config = [:]
+	def param = parameterMap().find { it.num == cmd.parameterNumber }
 	
-	if (size && size == cmd.size) {
-		switch (getConfigurationInfo(cmd.parameterNumber, "type")) {
-			case "enum":
-				def optionName = getConfigurationInfo(cmd.parameterNumber, "enumMap").find { it.value == cmd.scaledConfigurationValue}?.key
-				if (optionName) {
-					config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = optionName
-				}
-				break
-			case "number":
-				config."${getConfigurationInfo(cmd.parameterNumber, "name")}" = cmd.scaledConfigurationValue
-				break
-		}
-		
-		if (config) {
-			configurationCheck(config)
+	if (param != null && param.size != null && param.size == cmd.size) {
+		def value = (param.type == "enum")? param.enumMap.find { it.value == cmd.scaledConfigurationValue }?.key: cmd.scaledConfigurationValue
+		if (value != null && value == state."${param.name}".value) {
+			state."${param.name}".refresh = false
 		}
 	}
 	[]
@@ -389,7 +317,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.name = "temperature"
 			map.value = cmd.scaledSensorValue
 			map.unit = cmd.scale == 0 ? "C": "F"
-			break			
+			break
 		case 0x03:
 			map.name = "illuminance"
 			map.value = getLuxFromPercentage(cmd.scaledSensorValue)
@@ -414,7 +342,7 @@ def getBatteryReportIntervalSeconds() {
 
 def canReportBattery() {
 	def reportEveryMS = (getBatteryReportIntervalSeconds() * 1000)
-		
+	
 	return (!state.lastBatteryReport || ((new Date().time) - state?.lastBatteryReport > reportEveryMS))
 }
 
