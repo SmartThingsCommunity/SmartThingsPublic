@@ -74,11 +74,12 @@ def installed() {
 }
 
 def firstCommand(){
-	def endpointNumber = 1
-	delayBetween([
-		encap(endpointNumber, zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()),
-		encap(endpointNumber, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format())
-	])	
+	def commands = []
+	commands << zwave.configurationV1.configurationGet(parameterNumber: 0x01).format()
+	commands << "delay 300"
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]).format()
+	commands << "delay 300"
+	sendHubCommand(commands, 100)
 }
 
 def updated() {
@@ -103,8 +104,7 @@ def configure() {
 			commands << "delay 300"
 			commands << zwave.configurationV1.configurationGet(parameterNumber: it.parameterNumber).format()
 		}
-	}
-		
+	}		
 	response(commands + refresh())
 }
 
@@ -119,10 +119,6 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, endpoint=null) {
-	(endpoint == 1) ? [name: "switch", value: cmd.value ? "on" : "off"] : [:]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, endpoint=null) {
 	(endpoint == 1) ? [name: "switch", value: cmd.value ? "on" : "off"] : [:]
 }
 
@@ -200,9 +196,9 @@ def sendCommand(endpointDevice, commands) {
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		def cmdTemp = command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
+		def cmdTemp = zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint: 0x01, destinationEndPoint: endpointNumber).encapsulate(cmd)
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmdTemp).format()
-	} else if (cmd.startsWith("delay")) {
+	} else {
 		cmd.format()
 	}
 }
