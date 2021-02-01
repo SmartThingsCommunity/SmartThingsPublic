@@ -41,10 +41,14 @@ def parse(String description) {
 	if (event) {
 		log.info event
 		if (event.name == "power") {
-			event.value = event.value/getPowerDiv()
+			def powerDiv = device.getDataValue("powerDivisor")
+			powerDiv = powerDiv ? (powerDiv as int) : 1
+			event.value = event.value/powerDiv
 			event.unit = "W"
 		} else if (event.name == "energy") {
-			event.value = event.value/getEnergyDiv()
+			def energyDiv = device.getDataValue("energyDivisor")
+			energyDiv = energyDiv ? (energyDiv as int) : 100
+			event.value = event.value/energyDiv
 			event.unit = "kWh"
 		}
 		log.info "event: $event"
@@ -64,6 +68,7 @@ def parse(String description) {
 				log.debug "power"
 				map.name = "power"
 				def powerDiv = device.getDataValue("powerDivisor")
+				powerDiv = powerDiv ? (powerDiv as int) : 1
 				map.value = zigbee.convertHexToInt(it.value)/powerDiv
 				map.unit = "W"
 			}
@@ -71,6 +76,7 @@ def parse(String description) {
 				log.debug "energy"
 				map.name = "energy"
 				def energyDiv = device.getDataValue("energyDivisor")
+				energyDiv = energyDiv ? (energyDiv as int) : 100
 				map.value = zigbee.convertHexToInt(it.value)/energyDiv
 				map.unit = "kWh"
 			}
@@ -125,10 +131,10 @@ def configure() {
 
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	return refresh() +
-	zigbee.onOffConfig() +
-	zigbee.levelConfig() +
-	zigbee.simpleMeteringPowerConfig() +
-	zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
+		zigbee.onOffConfig() +
+		zigbee.levelConfig() +
+		zigbee.simpleMeteringPowerConfig() +
+		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
 }
 
 private boolean isJascoProducts() {
