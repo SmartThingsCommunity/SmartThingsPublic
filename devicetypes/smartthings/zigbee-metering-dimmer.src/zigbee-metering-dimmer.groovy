@@ -41,7 +41,7 @@ def parse(String description) {
 	if (event) {
 		log.info event
 		if (event.name == "power") {
-			def powerDiv = device.getDataValue("powerDivisor")
+			def powerDiv = device.getDataValue("divisor")
 			powerDiv = powerDiv ? (powerDiv as int) : 1
 			event.value = event.value/powerDiv
 			event.unit = "W"
@@ -67,7 +67,7 @@ def parse(String description) {
 			if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
 				log.debug "power"
 				map.name = "power"
-				def powerDiv = device.getDataValue("powerDivisor")
+				def powerDiv = device.getDataValue("divisor")
 				powerDiv = powerDiv ? (powerDiv as int) : 1
 				map.value = zigbee.convertHexToInt(it.value)/powerDiv
 				map.unit = "W"
@@ -122,10 +122,10 @@ def configure() {
 	log.debug "Configuring Reporting and Bindings."
 
 	if (isJascoProducts())  {
-		device.updateDataValue("powerDivisor", "10")
+		device.updateDataValue("divisor", "10")
 		device.updateDataValue("energyDivisor", "10000")
 	} else {
-		device.updateDataValue("powerDivisor", "1")
+		device.updateDataValue("divisor", "1")
 		device.updateDataValue("energyDivisor", "100")
 	}
 
