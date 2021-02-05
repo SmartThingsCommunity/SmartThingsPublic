@@ -13,6 +13,7 @@
  */
 metadata {
 	definition (name: "WiDom Smart Dry Contact", namespace: "WiDomsrl", author: "WiDom srl", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch") {
+		capability "Actuator"
 		capability "Switch"
 		capability "Configuration"
 		capability "Health Check"
@@ -216,7 +217,7 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
 	if (encapsulatedCommand) {
-    	logging("Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}")
+		logging("Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}")
 		zwaveEvent(encapsulatedCommand)
 	} else {
 		logging("Unable to extract Secure command from $cmd","warn")
