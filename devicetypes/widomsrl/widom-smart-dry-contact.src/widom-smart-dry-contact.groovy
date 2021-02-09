@@ -193,11 +193,11 @@ def parse(String description) {
 	logging("Parsing: ${description}")
 	if (description.startsWith("Err 106")) {
 	result = createEvent(
-				descriptionText: "Failed to complete the network security key exchange. If you are unable to receive data from it, you must remove it from your network and add it again.",
-				eventType: "ALERT",
-				name: "secureInclusion",
-				value: "failed",
-				displayed: true,
+			descriptionText: "Failed to complete the network security key exchange. If you are unable to receive data from it, you must remove it from your network and add it again.",
+			eventType: "ALERT",
+			name: "secureInclusion",
+			value: "failed",
+			displayed: true,
 		)
 	} else if (description == "updated") {
 		return null
@@ -310,7 +310,7 @@ private Map cmdVersions() {
 
 private parameterMap() {[
 		[key: "numClickLoad", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to controlthe loads",
-			descr: "Define which sequences of clicks control the load (see device manual)."],     
+			descr: "Define which sequences of clicks control the load (see device manual)."],
 		[key: "OffTimer", num: 10, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch OFF the Relay",
 			descr: "Defines the time after which the relay is switched OFF. Time unit is set by parameter 15(see device manual)"],
 		[key: "OnTimer", num: 11, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch ON the Relay",
