@@ -318,7 +318,7 @@ private parameterMap() {[
 		[key: "timerScale", num: 15, size: 1, type: "enum", options: [
 			1: "Tenth of seconds",
 			2: "Seconds",
-			], def: "1", title: "Timer scale", descr: "Defines the time unit used for parameters No.10 and No.11"],
+		], def: "1", title: "Timer scale", descr: "Defines the time unit used for parameters No.10 and No.11"],
 		[key: "oneClickScene", num: 20, size: 2, type: "number",min: 0, max: 255, def: 0, title: "One Click Scene ActivationSet",
 			descr: "Defines the Scene Activation Set value sent to the Lifeline group with 1 Clickon the external switch"],
 		[key: "twoClickScene", num: 21, size: 2, type: "number",min: 0, max: 255, def: 0, title: "Two Clicks Scene ActivationSet",
@@ -326,11 +326,11 @@ private parameterMap() {[
 		[key: "threeClickScene", num: 22, size: 2, type: "number",min: 0, max: 255, def: 0, title: "Three Clicks Scene ActivationSet",
 			descr: "Defines the Scene Activation Set value sent to the Lifeline group with 1 Clicks on the external switch"],
 		[key: "startUpStatus", num: 60, size: 1, type: "enum", options: [
-				1: "ON",
-				2: "OFF",
-				3: "PREVIOUS STATUS"
-				], def: "3", title: "Start-up status",
-				descr: "Defines the status of the device following a restart"],
+			1: "ON",
+			2: "OFF",
+			3: "PREVIOUS STATUS"
+		], def: "3", title: "Start-up status",
+			descr: "Defines the status of the device following a restart"],
 		[key: "externaSwitchType", num: 62, size: 1, type: "enum", options: [
 			0: "IGNORE",
 			1: "BUTTON",
