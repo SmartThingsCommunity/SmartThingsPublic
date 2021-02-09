@@ -253,7 +253,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def defaultEndpoint() {
-	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+	if (zwaveInfo?.model?.equals("0052")) {
 		return null
 	} else {
 		return 1
