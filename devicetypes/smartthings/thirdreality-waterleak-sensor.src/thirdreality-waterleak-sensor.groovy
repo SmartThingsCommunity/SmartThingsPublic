@@ -43,12 +43,12 @@ def parse(String description) {
 
     if (description?.startsWith("zone status")) {
         resMap = createEvent(name: "water", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "wet" : "dry")
-        if (getDataValue("onoff_state") != "on") {
+        if (getDataValue("buzzing_state") != "on") {
             sendEvent(name: "switch", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "on":"off")
         }
     } else if (description?.startsWith("on/off")) {
         resMap = zigbee.getEvent(description)
-        updateDataValue("onoff_state", resMap.value)
+        updateDataValue("buzzing_state", resMap.value)
         sendEvent(resMap)
     } else if (description?.startsWith("read attr") || description?.startsWith("catchall")) {
         def descMap = zigbee.parseDescriptionAsMap(description)
@@ -84,7 +84,7 @@ def parse(String description) {
 // handle commands
 def configure() {
     log.trace "[configure]"
-    updateDataValue("onoff_state", "off")
+    updateDataValue("buzzing_state", "off")
     def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
    	return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
 }
