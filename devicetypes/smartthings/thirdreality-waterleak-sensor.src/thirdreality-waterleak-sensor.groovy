@@ -86,7 +86,7 @@ def configure() {
     log.trace "[configure]"
     updateDataValue("buzzing_state", "off")
     def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
-   	return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
+    return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
 }
 
 def refresh() {
