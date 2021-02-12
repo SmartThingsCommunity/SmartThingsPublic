@@ -23,7 +23,7 @@ metadata {
         capability "Stateless Curtain Power Button"
         capability "Window Shade"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)" // SY-IoT201-BD
+        // This DTH is deprecated. Please use Zigbee Window Shade.
     }
 }
 

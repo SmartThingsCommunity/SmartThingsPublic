@@ -22,11 +22,11 @@ metadata {
 		capability "Tamper Alert"
 		capability "Temperature Alarm"
 
-		fingerprint mfr:"010F", prod:"0C02", model:"1002"
-		fingerprint mfr:"010F", prod:"0C02", model:"4002"
-		fingerprint mfr:"010F", prod:"0C02", model:"1003"
-		fingerprint mfr:"010F", prod:"0C02"
-		fingerprint mfr:"010F", prod:"0C02", model:"3002"
+		fingerprint mfr:"010F", prod:"0C02", model:"1002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"4002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"1003", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"3002", deviceJoinName: "Fibaro Smoke Detector"
 	}
 	simulator {
 		//battery
@@ -54,26 +54,26 @@ metadata {
 		input description: "Enter the menu by press and hold B-button for 3 seconds. Once indicator glows WHITE, release the B-button. Visual indicator will start changing colours in sequence. Press B-button briefly when visual indicator glows GREEN",
 				title: "To check smoke detection state", displayDuringSetup: true, type: "paragraph", element: "paragraph"
 		input description: "Please consult Fibaro Smoke Sensor operating manual for advanced setting options. You can skip this configuration to use default settings",
-				title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
-		input "smokeSensorSensitivity", "enum", title: "Smoke Sensor Sensitivity", options: ["High","Medium","Low"], defaultValue: "${smokeSensorSensitivity}", displayDuringSetup: true
-		input "zwaveNotificationStatus", "enum", title: "Notifications Status", options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
+				title: "Advanced settings", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+		input "smokeSensorSensitivity", "enum", title: "Smoke sensor sensitivity", options: ["High", "Medium", "Low"], defaultValue: "Medium", displayDuringSetup: true
+		input "zwaveNotificationStatus", "enum", title: "Notifications", options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
 			   // defaultValue: "${zwaveNotificationStatus}", displayDuringSetup: true
 			   //Setting the default to casing opened so it can work in SmartThings mobile app.
-				defaultValue: "casing opened", displayDuringSetup: true
-		input "visualIndicatorNotificationStatus", "enum", title: "Visual Indicator Notifications Status",
-				options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
-				defaultValue: "${visualIndicatorNotificationStatus}", displayDuringSetup: true
-		input "soundNotificationStatus", "enum", title: "Sound Notifications Status",
-				options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
-				defaultValue: "${soundNotificationStatus}", displayDuringSetup: true
-		input "temperatureReportInterval", "enum", title: "Temperature Report Interval",
-				options: ["reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${temperatureReportInterval}", displayDuringSetup: true
-		input "temperatureReportHysteresis", "number", title: "Temperature Report Hysteresis", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
-		input "temperatureThreshold", "number", title: "Overheat Temperature Threshold", description: "Available settings: 0 or 2-100 C", range: "0..100", displayDuringSetup: true
-		input "excessTemperatureSignalingInterval", "enum", title: "Excess Temperature Signaling Interval",
-				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${excessTemperatureSignalingInterval}", displayDuringSetup: true
-		input "lackOfZwaveRangeIndicationInterval", "enum", title: "Lack of Z-Wave Range Indication Interval",
-				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${lackOfZwaveRangeIndicationInterval}", displayDuringSetup: true
+				defaultValue: "Casing opened", displayDuringSetup: true
+		input "visualIndicatorNotificationStatus", "enum", title: "Visual indicator notifications status",
+				options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
+				defaultValue: "None", displayDuringSetup: true
+		input "soundNotificationStatus", "enum", title: "Sound notifications status",
+				options: ["None", "Casing opened", "Exceeding temperature threshold", "Lack of Z-Wave range", "All"],
+				defaultValue: "None", displayDuringSetup: true
+		input "temperatureReportInterval", "enum", title: "Temperature report interval",
+				options: ["Reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
+		input "temperatureReportHysteresis", "number", title: "Temperature report hysteresis", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
+		input "temperatureThreshold", "number", title: "Overheat temperature threshold", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
+		input "excessTemperatureSignalingInterval", "enum", title: "Excess temperature signaling interval",
+				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
+		input "lackOfZwaveRangeIndicationInterval", "enum", title: "Lack of Z-Wave range indication interval",
+				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "6 hours", displayDuringSetup: true
 	}
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
@@ -119,9 +119,28 @@ metadata {
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
+	if(!state.legacySettingsUpdated) updateLegacySettings()
 	setConfigured("false") //wait until the next time device wakeup to send configure command
 }
 
+def updateLegacySettings() {
+
+	def legacyNotificationOptionMap = [
+		"disabled" : "None",
+		"casing opened" : "Casing opened",
+		"exceeding temperature threshold" : "Exceeding temperature threshold",
+		"lack of Z-Wave range" : "Lack of Z-Wave range",
+		"all notifications" : "All"
+	]
+
+	device.updateSetting("temperatureReportInterval", temperatureReportInterval == "reports inactive" ?: "Reports inactive")
+
+	device.updateSetting("zwaveNotificationStatus", legacyNotificationOptionMap[zwaveNotificationStatus] ?: zwaveNotificationStatus)
+	device.updateSetting("visualIndicatorNotificationStatus", legacyNotificationOptionMap[visualIndicatorNotificationStatus] ?: visualIndicatorNotificationStatus)
+	device.updateSetting("soundNotificationStatus", legacyNotificationOptionMap[soundNotificationStatus] ?: soundNotificationStatus)
+
+	state.legacySettingsUpdated = true
+}
 
 
 def parse(String description) {
@@ -204,7 +223,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def isFibaro() {
-	(zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02")
+	(zwaveInfo?.mfr?.equals("010F") && zwaveInfo?.prod?.equals("0C02"))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -408,7 +427,7 @@ def configure() {
 		///3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
 		//if (state.initDefault) {
 		//	log.debug "Setting zwave notification default value to 1   "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
-		//		request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+		//request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
 		//	  state.initDefault = false
 		//} else if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
 		//	log.debug "else zwave notification "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
@@ -481,15 +500,15 @@ private def getTimeOptionValueMap() { [
 		"12 hours"	 : 4320,
 		"18 hours"	 : 6480,
 		"24 hours"	 : 8640,
-		"reports inactive" : 0,
+		"Reports inactive" : 0,
 ]}
 
 private def getNotificationOptionValueMap() { [
-		"disabled" : 0,
-		"casing opened" : 1,
-		"exceeding temperature threshold" : 2,
-		"lack of Z-Wave range" : 4,
-		"all notifications" : 7,
+		"None" : 0,
+		"Casing opened" : 1,
+		"Exceeding temperature threshold" : 2,
+		"Lack of Z-Wave range" : 4,
+		"All" : 7,
 ]}
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -519,7 +538,7 @@ private setSecured() {
 
 private isSecured() {
     if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
+        return zwaveInfo.zw.contains("s")
     } else {
         return getDataValue("secured") == "true"
     }

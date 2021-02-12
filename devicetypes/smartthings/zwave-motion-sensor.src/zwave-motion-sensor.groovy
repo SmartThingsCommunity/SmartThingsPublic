@@ -17,23 +17,39 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
+	definition(name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
 		capability "Tamper Alert"
+		capability "Configuration"
 
-		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"  // Schlage motion
-		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion
-		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion +
-		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"  // Everspring SP814
-		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
-		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
-		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
-		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Detector"
-		fingerprint mfr: "027A", prod: "0001", model: "0005", deviceJoinName: "Zooz Outdoor Motion Sensor"
-		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2"
+		// BeSense
+		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Sensor" // BeSense Motion Detector
+
+		// Ecolink
+		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor" // Ecolink motion //Ecolink Motion Sensor
+		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor" // Ecolink motion + //Ecolink Motion Sensor
+
+		// Enerwave
+		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor" // Enerwave ZWN-BPC //Enerwave Motion Sensor
+
+		// Everspring
+		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor" // Everspring SP814 //Everspring Motion Sensor
+		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor" // Everspring HSP02 //Everspring Motion Sensor
+		fingerprint mfr: "0060", prod: "0001", model: "0005", deviceJoinName: "Everspring Motion Sensor" // Everspring Motion Detector
+		fingerprint mfr: "0060", prod: "0001", model: "0006", deviceJoinName: "Everspring Motion Sensor" // Everspring SP817 //Everspring Motion Detector
+
+		// GE
+		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Motion Sensor" // GE Portable Smart Motion Sensor
+
+		// Shlage
+		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor" // Schlage motion //Schlage Motion Sensor
+
+		// Zooz
+		fingerprint mfr: "027A", prod: "0001", model: "0005", deviceJoinName: "Zooz Motion Sensor" //Zooz Outdoor Motion Sensor
+		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //Zooz Motion Sensor
 	}
 
 	simulator {
@@ -42,14 +58,14 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
-				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+				attributeState("active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC")
+				attributeState("inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#CCCCCC")
 			}
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state("battery", label:'${currentValue}% battery', unit:"")
+			state("battery", label: '${currentValue}% battery', unit: "")
 		}
 		valueTile("tamper", "device.tamper", height: 2, width: 2, decoration: "flat") {
 			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
@@ -59,18 +75,46 @@ metadata {
 		main "motion"
 		details(["motion", "battery", "tamper"])
 	}
+
+	// Preferences for  Everspring SP817
+	preferences {
+		section {
+			input(
+					title: "Settings Available For Everspring SP817 only",
+					description: "To apply updated device settings to the device press the tamper switch on the device three times or check the device manual.",
+					type: "paragraph",
+					element: "paragraph"
+			)
+			input(
+					title: "Re-trigger Interval Setting (Everspring SP817 only):",
+					description: "The setting adjusts the sleep period (in seconds) after the detector has been triggered. No response will be made during this interval if a movement is presented. Longer re-trigger interval will result in longer battery life.",
+					name: "retriggerIntervalSettings",
+					type: "number",
+					range: "10..3600",
+					defaultValue: 180
+			)
+		}
+	}
 }
 
 def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "tamper", value: "clear", displayed: false)
-	response(initialPoll())
 }
 
 def updated() {
+	log.debug "updated"
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	getConfigurationCommands()
+}
+
+def configure() {
+	if (isEverspringSP817()) {
+		state.configured = false
+	}
+	response(initialPoll())
 }
 
 private getCommandClassVersions() {
@@ -80,7 +124,7 @@ private getCommandClassVersions() {
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
-	    result = createEvent(descriptionText:description)
+		result = createEvent(descriptionText:description)
 	} else {
 		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
@@ -151,6 +195,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
 		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
+
 	result
 }
 
@@ -161,6 +206,11 @@ def clearTamper() {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
+
+	log.debug "isConfigured: $state.configured"
+	if (isEverspringSP817() && !state.configured) {
+		result = lateConfigure()
+	}
 
 	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
@@ -234,6 +284,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def result = null
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
 	if (encapsulatedCommand) {
@@ -269,8 +327,13 @@ def initialPoll() {
 	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
 	}
+	if (isEverspringSP817()) {
+		request += getConfigurationCommands()
+	}
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	request << zwave.notificationV3.notificationGet(notificationType: 0x07, event: 0x08) //motion for Everspiring
+	log.debug "Request is: ${request}"
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
@@ -289,6 +352,49 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
 
+def getConfigurationCommands() {
+	log.debug "getConfigurationCommands"
+	def result = []
+
+	if (isEverspringSP817()) {
+		Integer retriggerIntervalSettings = (settings.retriggerIntervalSettings as Integer) ?: 180 // default value (parameter 4) for Everspring SP817
+
+		if (!state.retriggerIntervalSettings) {
+			state.retriggerIntervalSettings = 180 // default value (parameter 4) for Everspring SP817
+		}
+
+		if (!state.configured || (retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+			// when state.configured is true but if there were changes made through the preferences section this flag needs to be reset
+			state.configured = false
+			result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
+			result << zwave.configurationV2.configurationGet(parameterNumber: 4)
+			}
+		}
+
+	return result
+}
+
+def lateConfigure() {
+	log.debug "lateConfigure"
+	sendHubCommand(getConfigurationCommands(), 200)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	if (isEverspringSP817()) {
+		if (cmd.parameterNumber == 4) {
+			state.retriggerIntervalSettings = scaledConfigurationValue
+			state.configured = true
+		}
+		log.debug "Everspring Configuration Report: ${cmd}"
+	}
+
+	return [:]
+}
+
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+private isEverspringSP817() {
+	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.model?.equals("0006")
 }

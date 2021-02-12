@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
+    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", ocfDeviceType: "x.com.st.d.energymeter", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Refresh"
@@ -20,8 +20,9 @@ metadata {
         capability "Sensor"
         capability "Configuration"
 
-        fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Smart Sub-meter(CT Type)"
-        
+        fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Energy Monitor" //Smart Sub-meter(CT Type)
+        fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco) 02 0104 0007 00 03 0000 0003 0702 01 000A
+        fingerprint profileId: "0104", manufacturer: "Develco Products A/S", model: "EMIZB-132", deviceJoinName: "frient Energy Monitor" // frient Norwegian HAN (develco) 02 0104 0053 00 06 0000 0003 0020 0702 0704 0B04 03 0003 000A 0019
     }
 
     // tile definitions
@@ -52,10 +53,17 @@ def parse(String description) {
     if (event) {
         log.info event
         if (event.name == "power") {
-            event.value = event.value/1000
-            event.unit = "W"
+            def descMap = zigbee.parseDescriptionAsMap(description)
+            log.debug "event : Desc Map: $descMap"
+            if (descMap.clusterInt == 0x0B04 && descMap.attrInt == 0x050b) {
+                event.value = event.value/activePowerDivisor
+                event.unit = "W"
+            } else {
+                event.value = event.value/powerDivisor
+                event.unit = "W"
+            }
         } else if (event.name == "energy") {
-            event.value = event.value/1000000
+            event.value = event.value/(energyDivisor * 1000)
             event.unit = "kWh"
         }
         log.info "event outer:$event"
@@ -65,23 +73,31 @@ def parse(String description) {
         def descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "Desc Map: $descMap"
                 
-        List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
+        List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value, isValidForDataType: descMap.isValidForDataType]]
         descMap.additionalAttrs.each {
-            attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value]
+            attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value, isValidForDataType: it.isValidForDataType]
         }
         attrData.each {
                 def map = [:]
-                if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
+                if (it.isValidForDataType && (it.value != null)) {
+                    if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
                         log.debug "meter"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/1000
+                        map.value = zigbee.convertHexToInt(it.value)/powerDivisor
                         map.unit = "W"
-                }
-                if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
-                         log.debug "energy"
-                         map.name = "energy"
-                         map.value = zigbee.convertHexToInt(it.value)/1000000
-                         map.unit = "kWh"
+                    }
+                    if (it.clusterInt == 0x0B04 && it.attrInt == 0x050b) {
+                        log.debug "meter"
+                        map.name = "power"
+                        map.value = zigbee.convertHexToInt(it.value)/activePowerDivisor
+                        map.unit = "W"
+                    }
+                    if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
+                        log.debug "energy"
+                        map.name = "energy"
+                        map.value = zigbee.convertHexToInt(it.value)/(energyDivisor * 1000)
+                        map.unit = "kWh"
+                    }
                 }
                 
                 if (map) {
@@ -115,4 +131,13 @@ def configure() {
     return refresh() +
            zigbee.simpleMeteringPowerConfig() +
            zigbee.electricMeasurementPowerConfig()
+}
+
+private getActivePowerDivisor() { 10 }
+private getPowerDivisor() { isFrientSensor() ? 1 : 1000 }
+private getEnergyDivisor() { isFrientSensor() ? 1 : 1000 }
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "Develco Products A/S" ||
+		device.getDataValue("manufacturer") == "Develco"
 }

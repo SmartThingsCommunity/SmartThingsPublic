@@ -18,7 +18,7 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint mfr: "014A", prod: "0005", model: "000F", deviceJoinName: "Ecolink Firefighter"
+		fingerprint mfr: "014A", prod: "0005", model: "000F", deviceJoinName: "Ecolink Sound Sensor" //Ecolink Firefighter
 	}
 
 	tiles (scale: 2) {

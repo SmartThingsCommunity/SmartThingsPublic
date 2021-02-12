@@ -16,15 +16,15 @@ metadata {
 		capability "Contact Sensor"
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
+		capability "Temperature Alarm"
 		capability "Configuration"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
-	
-		attribute "temperatureAlarm", "string"
+
 		attribute "multiStatus", "string"
 
-		fingerprint mfr: "010F", prod: "0702"
+		fingerprint mfr: "010F", prod: "0702", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	tiles (scale: 2) {
@@ -62,26 +62,17 @@ metadata {
 		
 		standardTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
 			state "default", label: "No temp. alarm", backgroundColor:"#ffffff"
-			state "clear", label:'', backgroundColor:"#ffffff", icon: "st.alarm.temperature.normal"
-			state "underheat", label:'underheat', backgroundColor:"#1e9cbb", icon: "st.alarm.temperature.freeze"
-			state "overheat", label:'overheat', backgroundColor:"#d04e00", icon: "st.alarm.temperature.overheat"
+			state "cleared", label:'', backgroundColor:"#ffffff", icon: "st.alarm.temperature.normal"
+			state "freeze", label:'freeze', backgroundColor:"#1e9cbb", icon: "st.alarm.temperature.freeze"
+			state "heat", label:'heat', backgroundColor:"#d04e00", icon: "st.alarm.temperature.overheat"
 		}
 
 		main "FGDW"
 		details(["FGDW","tamper","temperature","battery","temperatureAlarm"])
 	}
-		
+
+
 	preferences {
-		
- 		input (
-			title: "Fibaro Door/Window Sensor 2",
-			description: "Tap to view the manual.",
-			image: "http://manuals.fibaro.com/wp-content/uploads/2017/05/dws2.jpg",
-			url: "http://manuals.fibaro.com/content/manuals/en/FGDW-002/FGDW-002-EN-T-v1.0.pdf",
-			type: "href",
-			element: "href"
-		)
-		
 		input (
 			title: "Wake up interval",
 			description: "How often should your device automatically sync with the HUB. The lower the value, the shorter the battery life.\n0 or 1-18 (in hours)",
@@ -98,18 +89,19 @@ metadata {
 			required: false 
 		)
 		
-		parameterMap().findAll{(it.num as Integer) != 54}.each {
+		parameterMap().each {
 			input (
 				title: "${it.num}. ${it.title}",
 				description: it.descr,
 				type: "paragraph",
 				element: "paragraph"
 			)
-			
+			def defVal = it.def as Integer
+			def descrDefVal = it.options ? it.options.get(defVal) : defVal
 			input (
 				name: it.key,
 				title: null,
-				description: "Default: $it.def" ,
+				description: "$descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
@@ -127,6 +119,7 @@ def installed() {
 	// Initial states for OCF compatibility
 	sendEvent(name: "tamper", value: "clear", displayed: false)
 	sendEvent(name: "contact", value: "open", displayed: false)
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	sendEvent(name: "checkInterval", value: 21600 * 4 + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
@@ -139,12 +132,26 @@ def updated() {
 	}
 	logging("${device.displayName} - Executing updated()","debug")
 
-	if ( settings.temperatureHigh as Integer == 0 && settings.temperatureLow as Integer == 0 ) { 
-		sendEvent(name: "temperatureAlarm", value: null, displayed: false) 
-	} else if ( settings.temperatureHigh != null || settings.temperatureHigh != null ) {
-		sendEvent(name: "temperatureAlarm", value: "clear", displayed: false) 
+	def tempAlarmMap = ["clear": "cleared", "overheat": "heat", "underheat": "freeze"]
+	// Convert old device specific temperatureAlarm event to standard Temperature Alarm capability event
+	def temperatureAlarmCurrentValue = device.currentValue("temperatureAlarm")
+	if (tempAlarmMap.containsKey(temperatureAlarmCurrentValue)) {
+		sendEvent(name: "temperatureAlarm", value: tempAlarmMap[temperatureAlarmCurrentValue], displayed: true)
 	}
-	
+
+	def currentTemperature = device.currentValue("temperature")
+	def alarmCleared = device.currentValue("temperatureAlarm") == "cleared"
+	def alarmFreeze = device.currentValue("temperatureAlarm") == "freeze"
+	def alarmHeat = device.currentValue("temperatureAlarm") == "heat"
+	def temperatureHigh = (settings.temperatureHigh ? new BigDecimal(settings.temperatureHigh) * 0.1 : null)
+	def temperatureLow =  (settings.temperatureLow  ? new BigDecimal(settings.temperatureLow)  * 0.1 : null)
+	if (!alarmCleared) {
+		if ((temperatureHigh != null && (currentTemperature < temperatureHigh) && !alarmFreeze) ||
+			(temperatureLow != null && (currentTemperature > temperatureLow) && !alarmHeat)) {
+			sendEvent(name: "temperatureAlarm", value: "cleared")
+			}
+	}
+
 	syncStart()
 	state.lastUpdated = now()
 }
@@ -318,15 +325,15 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 				map.name = "temperatureAlarm"
 				switch (cmd.zwaveAlarmEvent) {
 					case 0:
-						map.value = "clear"
+						map.value = "cleared"
 						map.descriptionText = "Temperature alert cleared"
 						break
 					case 2:
-						map.value = "overheat"
+						map.value = "heat"
 						map.descriptionText = "Temperature alert: overheating detected"
 						break
 					case 6:
-						map.value = "underheat"
+						map.value = "freeze"
 						map.descriptionText = "Temperature alert: underheating detected"
 						break
 				}
@@ -430,7 +437,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) { 
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){ 
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","debug")

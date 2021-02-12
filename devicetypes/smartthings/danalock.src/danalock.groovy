@@ -20,7 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 
-		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98'
+		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98', deviceJoinName: "Danalock Door Lock"
 	}
 
 	simulator {

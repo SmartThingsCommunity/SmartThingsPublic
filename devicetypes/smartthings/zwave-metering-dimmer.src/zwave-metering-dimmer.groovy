@@ -31,13 +31,14 @@ metadata {
 
 		command "reset"
 
-		fingerprint inClusters: "0x26,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
-		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"  //US
-		fingerprint mfr:"0086", prod:"0003", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6" //EU
-		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
-		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
-		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
+		fingerprint inClusters: "0x26,0x32", deviceJoinName: "Dimmer Switch"
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Micro Smart Dimmer 2E
+		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Dimmer Switch"  //US //Aeotec Smart Dimmer 6
+		fingerprint mfr:"0086", prod:"0003", model:"0063", deviceJoinName: "Aeotec Dimmer Switch" //EU //Aeotec Smart Dimmer 6
+		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeotec_Nano_Dimmer" //Aeotec Nano Dimmer
+		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeotec_Nano_Dimmer" //Aeotec Nano Dimmer
+		fingerprint mfr:"0086", prod:"0203", model:"006F", deviceJoinName: "Aeotec Dimmer Switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeotec_Nano_Dimmer" //Aeotec Nano Dimmer, AU
+		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Dimmer Switch" //GoControl Plug-in Dimmer
 	}
 
 	simulator {
@@ -91,6 +92,24 @@ metadata {
 
 	main(["switch","power","energy"])
 	details(["switch", "power", "energy", "refresh", "reset"])
+
+	preferences {
+			section {
+				input(
+						title: "Settings Available For Aeotec Nano Dimmer Only",
+						type: "paragraph",
+						element: "paragraph"
+				)
+				input(
+						title: "Set the MIN brightness level (Aeotec Nano Dimmer Only):",
+						description: "This may need to be adjusted for bulbs that are not dimming properly.",
+						name: "minDimmingLevel",
+						type: "number",
+						range: "1..99",
+						defaultValue: 1
+				)
+			}
+	}
 }
 
 def getCommandClassVersions() {
@@ -111,7 +130,15 @@ def installed() {
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	response(refresh())
+
+	def results = []
+	results << refresh()
+
+	if (isAeotecNanoDimmer()) {
+		results << getAeotecNanoDimmerConfigurationCommands()
+	}
+
+	response(results)
 }
 
 // parse events into attributes
@@ -160,7 +187,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	return result
 }
 
-def handleMeterReport(cmd){
+def handleMeterReport(cmd) {
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
@@ -226,7 +253,13 @@ def setLevel(level, rate = null) {
 
 def configure() {
 	log.debug "configure()"
+
 	def result = []
+
+	if (isAeotecNanoDimmer()) {
+		state.configured = false
+		result << response(getAeotecNanoDimmerConfigurationCommands())
+	}
 
 	log.debug "Configure zwaveInfo: "+zwaveInfo
 
@@ -234,6 +267,14 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2)))	// basic report cc
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 12)))	// report power in watts
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)))	 // every 5 min
+		if (zwaveInfo.model == "006F") {  // Aeotec Nano Dimmer
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1)))    // enables parameter 91
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 1)))    // wattage report after 1 watt change
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 4)))   // meter report of wattage for group 2
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 103, size: 1, scaledConfigurationValue: 8)))   // meter report of energy for group 3
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300))) // automatic report for group 2 every 5 min
+			result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300))) // automatic report for group 3 every 5 min
+		}
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
@@ -246,20 +287,47 @@ def reset() {
 	])
 }
 
-def meterGet(scale)
-{
+def meterGet(scale) {
 	zwave.meterV2.meterGet(scale)
 }
 
-def meterReset()
-{
+def meterReset() {
 	zwave.meterV2.meterReset()
 }
 
-def normalizeLevel(level)
-{
+def normalizeLevel(level) {
 	// Normalize level between 1 and 100.
 	level == 99 ? 100 : level
+}
+
+def getAeotecNanoDimmerConfigurationCommands() {
+	def result = []
+	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: 1 // default value (parameter 131) for Aeotec Nano Dimmer
+
+	if (!state.minDimmingLevel) {
+		state.minDimmingLevel = 1 // default value (parameter 131) for Aeotec Nano Dimmer
+	}
+
+	if (!state.configured || (minDimmingLevel != state.minDimmingLevel)) {
+		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
+		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
+	}
+
+	return result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+	if (isAeotecNanoDimmer()) {
+		if (cmd.parameterNumber == 131) {
+			state.minDimmingLevel = cmd.scaledConfigurationValue
+			state.configured = true
+		}
+
+		log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
+	}
+
+	return [:]
 }
 
 /*
@@ -310,4 +378,8 @@ private encap(physicalgraph.zwave.Command cmd) {
 
 private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
+}
+
+private isAeotecNanoDimmer() {
+	zwaveInfo?.mfr?.equals("0086") && zwaveInfo?.model?.equals("006F")
 }

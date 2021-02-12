@@ -24,11 +24,19 @@ metadata {
         capability "Health Check"
         capability "Light"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-CIA19NAE26", deviceJoinName: "Sengled Element touch"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45852", deviceJoinName: "GE Zigbee Plug-In Dimmer"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45857", deviceJoinName: "GE Zigbee In-Wall Dimmer"
+        // Generic
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04", deviceJoinName: "Light"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702", deviceJoinName: "Light"
+
+        // GE/Jasco
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45852", deviceJoinName: "GE Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //GE Zigbee Plug-In Dimmer
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45857", deviceJoinName: "GE Dimmer Switch", ocfDeviceType: "oic.d.switch" //GE Zigbee In-Wall Dimmer
+
+        // Sengled
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-CIA19NAE26", deviceJoinName: "Sengled Light" //Sengled Element touch
+
+        // Enbrighten/Jasco
+        fingerprint manufacturer: "Jasco Products", model: "43082", deviceJoinName: "Enbrighten Switch" //Enbrighten, in-Wall Smart Dimmer With Energy Monitoring 43082, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0702 0B05 02 000A 0019
     }
 
     tiles(scale: 2) {

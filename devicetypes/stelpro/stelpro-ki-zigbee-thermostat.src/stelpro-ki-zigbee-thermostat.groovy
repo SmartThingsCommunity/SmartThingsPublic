@@ -43,8 +43,8 @@ metadata {
 		command "eco" // Command does not exist in "Thermostat Mode"
 		command "updateWeather"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Ki ZigBee Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro ORLÉANS Convector"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Thermostat" //Stelpro Ki ZigBee Thermostat
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro Thermostat" //Stelpro ORLÉANS Convector
 	}
 
 	// simulator metadata
@@ -53,11 +53,12 @@ metadata {
 	preferences {
 		section {
 			input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
-			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
+			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+			input(title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing). Do not use space. If you don't want a forecast, leave it blank.",
+					displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
 
@@ -308,9 +309,9 @@ def parse(String description) {
 				}
 
 				// If the user does not want to see the Idle and Heating events in the event history,
-				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
+				// don't show them. Otherwise, don't show them more frequently than 5 minutes.
 				if (settings.heatdetails == "No" ||
-					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
+						!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
 					map.displayed = false
 				}
 				map = validateOperatingStateBugfix(map)
@@ -418,7 +419,7 @@ def validateOperatingStateBugfix(map) {
 	if (state.rawSetpoint != null && state.rawTemp != null) {
 		def oldVal = map.value
 
-		if (state.rawSetpoint <= state.rawTemp) {
+		if (state.rawSetpoint <= state.rawTemp || device.currentValue("thermostatMode") == "off") {
 			map.value = "idle"
 		} else {
 			map.value = "heating"
@@ -429,6 +430,7 @@ def validateOperatingStateBugfix(map) {
 			map.data = [correctedValue: true]
 		}
 	}
+
 	map
 }
 

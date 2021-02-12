@@ -23,7 +23,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
        
-        fingerprint profileId: "0104", deviceId: "0107", inClusters: "0000, 0003, 0004, 0406", outClusters: "0006, 0019", model: "E280-KR0A0Z0-HA", deviceJoinName: "Smart Occupancy Sensor (AC Type)"
+        fingerprint profileId: "0104", deviceId: "0107", inClusters: "0000, 0003, 0004, 0406", outClusters: "0006, 0019", model: "E280-KR0A0Z0-HA", deviceJoinName: "eZEX Motion Sensor" //Smart Occupancy Sensor (AC Type)
     }
     tiles(scale: 2) {
         multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {

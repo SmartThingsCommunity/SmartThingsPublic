@@ -43,15 +43,14 @@ metadata {
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph", title: ""
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input "interval", "number", title: "Measurement Interval 1-120 minutes (default: 10 minutes)", description: "Set how often you would like to check soil moisture in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "-100..100", displayDuringSetup: false
+        input "interval", "number", title: "Report Interval", description: "How often the device should report in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
         input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
       }
 
@@ -133,7 +132,7 @@ def parse(String description) {
  	
     //check in configuration change
     if (!device.latestValue('configuration')) result = poll()
-    if (device.latestValue('configuration').toInteger() != interval && interval != null) {  	
+    if (device.latestValue('configuration') as float != interval && interval != null) {
         result = poll()            
     }
  	log.debug "result: $result"
@@ -156,7 +155,7 @@ private Map parseCatchAllMessage(String description) {
         sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration Successful")        
         //setConfig()
         log.debug "config complete"        
-        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]                
+        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]
     }
     else if (descMap.command == 0x0001){    
     	def hexString = "${hex(descMap.data[5])}" + "${hex(descMap.data[4])}"
@@ -259,9 +258,7 @@ private Map getTemperatureResult(value) {
 	def linkText = getLinkText(device)
         
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset        
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def descriptionText = "${linkText} is ${value}°${temperatureScale}"
 	return [
@@ -317,7 +314,7 @@ def updated(){
     if (!device.latestValue('configuration')) configure()
     else{
     	if (resetMinMax == true) resetHumidity()
-        if (device.latestValue('configuration').toInteger() != interval && interval != null){    	
+        if (device.latestValue('configuration') as float != interval && interval != null){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
