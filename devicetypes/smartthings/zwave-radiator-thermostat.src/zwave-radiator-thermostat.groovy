@@ -203,6 +203,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	if (cmd.notificationType == 0x08 && cmd.event == 0x01)
+		[response(zwave.batteryV1.batteryGet())]
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.warn "Unhandled command: ${cmd}"
 	[:]
