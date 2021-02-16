@@ -204,6 +204,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	// Power Management - Power has been applied
 	if (cmd.notificationType == 0x08 && cmd.event == 0x01)
 		[response(zwave.batteryV1.batteryGet())]
 }
