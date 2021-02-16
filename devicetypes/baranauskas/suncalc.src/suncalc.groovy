@@ -40,7 +40,8 @@
 metadata {
     definition (
        name: "SunCalc",
-       version: "3.82 (2020-09-17)",
+       description: "Create Sun sensors",
+       version: "3.83 (2020-09-27)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
@@ -259,6 +260,7 @@ def refreshSunPosition() {
     attr << p
     log.info "SunPosition: ${p}"
 
+    // update sun position from home
     def s = getValidatedSettings()
     attr << s
     log.info "Angles = ${s}"
@@ -266,7 +268,13 @@ def refreshSunPosition() {
     def afn       = s.angleFromNorth
     def aoi       = s.angleOfIncidence
     def azc       = compassArithmetic( 180 - p.azimuth + afn )
-    def sun_up    = (p.altitude >= -0.833)
+
+    def t = getCurrentTimes( attr )
+    //def sun_up    = (p.altitude >= -0.833)
+    def sun_up        = (t.sunrise <= t.now && t.now <= t.sunset)
+    def dawnDusk      = (t.dawn    <= t.now && t.now <= t.dusk)
+    def nightNightEnd = (t.night   <= t.now || t.now <= t.nightEnd)
+
     def sun_north = sun_up && ((360.0 - aoi) <= azc || azc <          aoi )
     def sun_west  = sun_up && (         aoi  <= azc && azc < (180.0 - aoi))
     def sun_south = sun_up && ((180.0 - aoi) <= azc && azc < (270.0 - aoi))
@@ -280,11 +288,18 @@ def refreshSunPosition() {
          sun_east: sun_east
     ]
 
+/*    Map parentSensors = [
+        contact:      boolContact( attr.sun_up ),
+        motion:       boolMotion( p.altitude >= -6 ),
+        acceleration: boolAcceleration( p.altitude >= -18 )
+    ]
+*/
     Map parentSensors = [
         contact:      boolContact( attr.sun_up ),
         motion:       boolMotion( p.altitude >= -6 ),
         acceleration: boolAcceleration( p.altitude >= -18 )
     ]
+
     //log.debug "attr[${attr.size()}]: ${attr}"
     sendEvents( attr )
     sendEvents( parentSensors )
@@ -303,6 +318,27 @@ def sendEvents( Map e ) {
 // get "HH:mm" from datetime "yyyy-MM-dd HH:mm:ss-0300" as string
 def getTimeFromDate( String date ){
     return date.substring( 11, 16 )
+}
+
+def getCurrentTimes( Map attr ) {
+  // Datetime as string
+  def t = [
+      nightEnd:     device.currentValue("nightEnd"),
+      dawn:         device.currentValue("dawn"),
+      sunrise:      device.currentValue("sunrise"),
+      midmorning:   device.currentValue("midmorning"),
+      noon:         device.currentValue("noon"),
+      midafternoon: device.currentValue("midafternoon"),
+      sunset:       device.currentValue("sunset"),
+      dusk:         device.currentValue("dusk"),
+      night:        device.currentValue("night"),
+      nadir:        device.currentValue("nadir"),
+      now:          attr.lastUpdatedSunPosition
+  ]
+  t.each { key, value ->
+    t[ key ] = getTimeFromDate( value )
+  }
+  return t
 }
 
 def childSensorValues( Map attr ) {
@@ -459,38 +495,38 @@ double remainder( double a, double b ) {
 // sun calculations are based on http://aa.quae.nl/en/reken/zonpositie.html formulas
 
 // shortcuts for easier to read formulas
-def PI()       { return Math.PI }
-def rad()      { return Math.PI / 180 }
-def sin(x)     { return Math.sin(x) }
-def asin(x)    { return Math.asin(x) }
-def cos(x)     { return Math.cos(x) }
-def acos(x)    { return Math.acos(x) }
-def tan(x)     { return Math.tan(x) }
-def atan(y, x) { return Math.atan2(y, x) }
+double PI()       { return Math.PI }
+double rad()      { return Math.PI / 180.0 }
+double sin(x)     { return Math.sin(x) }
+double asin(x)    { return Math.asin(x) }
+double cos(x)     { return Math.cos(x) }
+double acos(x)    { return Math.acos(x) }
+double tan(x)     { return Math.tan(x) }
+double atan(y, x) { return Math.atan2(y, x) }
 
 // date/time constants and conversions
 def dayMs() { return 1000 * 60 * 60 * 24 }
-def J1970() { 2440588 }
-def J2000() { 2451545 }
+def J1970() { return 2440588 }
+def J2000() { return 2451545 }
 
 def toJulian(date) { return date.getTime() / dayMs() - 0.5 + J1970() }
 def fromJulian(j)  { return new Date( (long) ((j + 0.5 - J1970()) * dayMs()) ) }
 def toDays(date)   { return toJulian(date) - J2000() }
 
 // general calculations for position
-def e() { rad() * 23.4397 } // obliquity of the Earth
+double e() { rad() * 23.4397 } // obliquity of the Earth
 
-def rightAscension(l, b) { return atan(sin(l) * cos(e()) - tan(b) * sin(e()), cos(l)); }
-def declination(l, b)    { return asin(sin(b) * cos(e()) + cos(b) * sin(e()) * sin(l)); }
+double rightAscension(l, b) { return atan(sin(l) * cos(e()) - tan(b) * sin(e()), cos(l)); }
+double declination(l, b)    { return asin(sin(b) * cos(e()) + cos(b) * sin(e()) * sin(l)); }
 
-def azimuth(H, phi, dec)  { return atan(sin(H), cos(H) * sin(phi) - tan(dec) * cos(phi)); }
-def altitude(H, phi, dec) { return asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(H)); }
+double azimuth(H, phi, dec)  { return atan(sin(H), cos(H) * sin(phi) - tan(dec) * cos(phi)); }
+double altitude(H, phi, dec) { return asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(H)); }
 
-def siderealTime(d, lw) { return rad() * (280.16 + 360.9856235 * d) - lw; }
+double siderealTime(d, lw) { return rad() * (280.16 + 360.9856235 * d) - lw; }
 
-def astroRefraction(h) {
+double astroRefraction(h) {
     if (h < 0) // the following formula works for positive altitudes only.
-        h = 0; // if h = -0.08901179 a div/0 would occur.
+        h = 0  // if h = -0.08901179 a div/0 would occur.
 
     // formula 16.4 of "Astronomical Algorithms" 2nd edition by Jean Meeus (Willmann-Bell, Richmond) 1998.
     // 1.02 / tan(h + 10.26 / (h + 5.10)) h in degrees, result in arc minutes -> converted to rad:
@@ -500,18 +536,18 @@ def astroRefraction(h) {
 // general sun calculations
 def solarMeanAnomaly(d) { return rad() * (357.5291 + 0.98560028 * d) }
 
-def eclipticLongitude(M) {
+def eclipticLongitude( M ) {
     def C = rad() * (1.9148 * sin(M) + 0.02 * sin(2 * M) + 0.0003 * sin(3 * M)) // equation of center
     def P = rad() * 102.9372 // perihelion of the Earth
     return M + C + P + PI()
 }
 
-def sunCoords(d) {
+def sunCoords( d ) {
     def M = solarMeanAnomaly(d)
     def L = eclipticLongitude(M)
     return [
         dec: declination(L, 0),
-        ra: rightAscension(L, 0)
+        ra:  rightAscension(L, 0)
     ]
 }
 
@@ -548,7 +584,7 @@ def addTime(angle, riseName, setName) {
 };
 
 // calculations for sun times
-def J0() { return 0.0009 }
+double J0() { return 0.0009 }
 
 def julianCycle(d, lw) { return Math.round(d - J0() - lw / (2 * PI())) }
 
