@@ -100,6 +100,8 @@ private getDOORLOCK_ATTR_SEND_PIN_OTA() { 0x0032 }
 private getALARM_ATTR_ALARM_COUNT() { 0x0000 }
 private getALARM_CMD_ALARM() { 0x00 }
 
+private getYALE_FINGERPRINT_MAX_CODES() { 0x1E }
+
 /**
  * Called on app installed
  */
@@ -512,7 +514,7 @@ private def parseAttributeResponse(String description) {
 		def maxCodeLength = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodeLength", value: maxCodeLength, descriptionText: "Maximum PIN length is ${maxCodeLength}", displayed: false]
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
-		def maxCodes = Integer.parseInt(descMap.value, 16)
+		def maxCodes = isYaleFingerprintLock() ? YALE_FINGERPRINT_MAX_CODES : Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
@@ -1137,6 +1139,10 @@ def getLittleEndianHexString(numStr) {
  */
 def isYaleLock() {
 	return "Yale" == device.getDataValue("manufacturer")
+}
+
+def isYaleFingerprintLock() {
+	return "ASSA ABLOY iRevo" == device.getDataValue("manufacturer") && ("iZBModule01" || "c700000202" || "0700000001" == device.getDataValue("model"))
 }
 
 /**
