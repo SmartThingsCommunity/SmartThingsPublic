@@ -15,7 +15,6 @@
 metadata {
     definition (name: "ThirdReality WaterLeak Sensor", namespace: "smartthings", author: "THIRDREALITY", cstHandler: true) {
         capability "Battery"
-        capability "Switch"
         capability "Water Sensor"
         capability "Refresh"
         capability "Configuration"
@@ -30,7 +29,7 @@ metadata {
     tiles {		//Seems no use
         // define your main and details tiles here
         main("water")
-        details(["water", "battery", "switch"])
+        details(["water", "battery"])
     }
 }
 
@@ -43,13 +42,6 @@ def parse(String description) {
 
     if (description?.startsWith("zone status")) {
         resMap = createEvent(name: "water", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "wet" : "dry")
-        if (getDataValue("buzzing_state") != "on") {
-            sendEvent(name: "switch", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "on":"off")
-        }
-    } else if (description?.startsWith("on/off")) {
-        resMap = zigbee.getEvent(description)
-        updateDataValue("buzzing_state", resMap.value)
-        sendEvent(resMap)
     } else if (description?.startsWith("read attr") || description?.startsWith("catchall")) {
         def descMap = zigbee.parseDescriptionAsMap(description)
         log.trace "[parse] descMap: ${descMap}"
@@ -61,12 +53,6 @@ def parse(String description) {
         	    resMap = createEvent(getBatteryPercentageResult(Integer.parseInt(descMap.value, 16)))
             } else if (descMap?.attrInt == 0x0020) {
                 log.debug "[parse] Got Battery Voltage Value: 0x${descMap.value} * 100mV"
-            }
-        } else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER) {
-            if (descMap?.attrInt == 0x0000) {                                                                                   //Switch: On/Off
-                resMap = createEvent(name: "switch", value: (descMap.value=="00") ? "off" : "on")
-            } else if (descMap?.commandInt == 0x0B) {
-                log.trace "[parse] Cmd On/Off"
             }
         } else if (descMap?.clusterInt == BIND_CLUSTER) {                                                                             //Bind Rsp
             log.trace "[parse] got Bind Rsp"
@@ -84,24 +70,13 @@ def parse(String description) {
 // handle commands
 def configure() {
     log.trace "[configure]"
-    updateDataValue("buzzing_state", "off")
-    def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
+    def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
     return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
 }
 
 def refresh() {
     log.trace "[refresh]"
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(0x0006, 0x0000)
-}
-
-def on() {
-    log.trace "[on]"
-    zigbee.on()
-}
-
-def off() {
-    log.trace "[off]"
-    zigbee.off()
+    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def getBatteryPercentageResult(rawValue) {
