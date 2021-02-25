@@ -41,7 +41,7 @@ metadata {
     definition (
        name: "SunCalc",
        description: "Create Sun sensors",
-       version: "3.83 (2020-09-27)",
+       version: "3.86 (2021-02-25)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
@@ -275,10 +275,10 @@ def refreshSunPosition() {
     def dawnDusk      = (t.dawn    <= t.now && t.now <= t.dusk)
     def nightNightEnd = (t.night   <= t.now || t.now <= t.nightEnd)
 
-    def sun_north = sun_up && ((360.0 - aoi) <= azc || azc <          aoi )
-    def sun_west  = sun_up && (         aoi  <= azc && azc < (180.0 - aoi))
-    def sun_south = sun_up && ((180.0 - aoi) <= azc && azc < (270.0 - aoi))
-    def sun_east  = sun_up && ((270.0 - aoi) <= azc && azc < (360.0 - aoi))
+    def sun_north = sun_up && ((270.0 + aoi) <= azc || azc < ( 90.0 - aoi))
+    def sun_west  = sun_up && ((  0.0 + aoi) <= azc && azc < (180.0 - aoi))
+    def sun_south = sun_up && (( 90.0 + aoi) <= azc && azc < (270.0 - aoi))
+    def sun_east  = sun_up && ((180.0 + aoi) <= azc && azc < (360.0 - aoi))
     attr << [
          azimuthCompass: azc,
          sun_up: sun_up,
