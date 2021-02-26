@@ -27,8 +27,13 @@ metadata {
 
 		command "pause"
 
+        // IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA KADRILJ Blinds
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
+
+		// Yookee yooksmart
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
+        fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
 	}
 
 	preferences {
@@ -69,6 +74,7 @@ metadata {
 	}
 }
 
+private getCLUSTER_BATTERY_LEVEL() { 0x0001 }
 private getCLUSTER_WINDOW_COVERING() { 0x0102 }
 private getCOMMAND_OPEN() { 0x00 }
 private getCOMMAND_CLOSE() { 0x01 }
@@ -87,6 +93,7 @@ private List<Map> collectAttributes(Map descMap) {
 	if (descMap.additionalAttrs) {
 		descMaps.addAll(descMap.additionalAttrs)
 	}
+
 	return descMaps
 }
 
@@ -122,6 +129,8 @@ def parse(String description) {
 		} else if (reportsBatteryPercentage() && descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && zigbee.convertHexToInt(descMap?.attrId) == BATTERY_PERCENTAGE_REMAINING && descMap.value) {
 			def batteryLevel = zigbee.convertHexToInt(descMap.value)
 			batteryPercentageEventHandler(batteryLevel)
+		} else if (reportBatteryPercentage() && descMap?.clusterInt == CLUSTER_BATTERY_LEVEL && descMap.value) {
+		    batteryPercentageEventHandler(zigbee.convertHexToInt(descMap.value))
 		}
 	}
 }
@@ -132,6 +141,8 @@ def levelEventHandler(currentLevel) {
 	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
+	    state.invalidSameLevelEvent = true
+        currentLevel = currentLevel < 0 ? 0 : currentLevel > 100 ? 100 : currentLevel
 		sendEvent(name: "level", value: currentLevel)
 		if (currentLevel == 0 || currentLevel == 100) {
 			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
@@ -149,6 +160,7 @@ def levelEventHandler(currentLevel) {
 def updateFinalState() {
 	def level = device.currentValue("level")
 	log.debug "updateFinalState: ${level}"
+	level = level < 0 ? 0 : level > 100 ? 100 : level
 	if (level > 0 && level < 100) {
 		sendEvent(name: "windowShade", value: "partially open")
 	}
@@ -184,7 +196,7 @@ def setLevel(data, rate = null) {
 	} else {
 		cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
 	}
-	cmd
+	return cmd
 }
 
 def pause() {
@@ -236,6 +248,7 @@ def configure() {
 	}
 
 	if (reportsBatteryPercentage()) {
+
 		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
 	}
 
@@ -271,7 +284,7 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee()
 }
 
 def shouldInvertLiftPercentage() {
@@ -282,10 +295,18 @@ def reportsBatteryPercentage() {
 	return isIkeaKadrilj() || isIkeaFyrtur()
 }
 
+def reportBatteryPercentage() {
+    return isYooksmartOrYookee()
+}
+
 def isIkeaKadrilj() {
 	device.getDataValue("model") == "KADRILJ roller blind"
 }
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isYooksmartOrYookee() {
+	device.getDataValue("model") == "D10110"
 }
