@@ -47,7 +47,7 @@ metadata {
 		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Switch" //Zooz Power Switch
 		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Outlet", ocfDeviceType: "oic.d.smartplug" //Qubino Smart Plug
 		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 7
-		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 7
+		fingerprint mfr: "0371", prod: "0103", model: "0017", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 7
 		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Everspring Smart Plug
 		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch" //US //Inovelli Switch Red Series
 		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug

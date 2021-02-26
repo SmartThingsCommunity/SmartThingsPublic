@@ -69,7 +69,7 @@ metadata {
 		input "temperatureReportInterval", "enum", title: "Temperature report interval",
 				options: ["Reports inactive", "5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
 		input "temperatureReportHysteresis", "number", title: "Temperature report hysteresis", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
-		input "temperatureThreshold", "number", title: "Overheat temperature threshold", description: "Available settings: 0 or 2-100 C", range: "0..100", displayDuringSetup: true
+		input "temperatureThreshold", "number", title: "Overheat temperature threshold", description: "Available settings: 1-100 C", range: "1..100", displayDuringSetup: true
 		input "excessTemperatureSignalingInterval", "enum", title: "Excess temperature signaling interval",
 				options: ["5 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "30 minutes", displayDuringSetup: true
 		input "lackOfZwaveRangeIndicationInterval", "enum", title: "Lack of Z-Wave range indication interval",

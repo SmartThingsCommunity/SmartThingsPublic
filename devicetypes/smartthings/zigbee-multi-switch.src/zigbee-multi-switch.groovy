@@ -55,11 +55,27 @@ metadata {
 		
 		// eWeLink
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
-		fingerprint manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch" //eWeLink 2 Gang Switch 1
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW02", deviceJoinName: "eWeLink Switch 1" //eWeLink 2 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
-		fingerprint manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch" //eWeLink 3 Gang Switch 1
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW03", deviceJoinName: "eWeLink Switch 1" //eWeLink 3 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
-		fingerprint manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch" //eWeLink 4 Gang Switch 1
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW04", deviceJoinName: "eWeLink Switch 1" //eWeLink 4 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW05", deviceJoinName: "eWeLink Switch 1" //eWeLink 5 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "eWeLink", model: "ZB-SW06", deviceJoinName: "eWeLink Switch 1" //eWeLink 6 Gang Switch 1
+
+		// LELLKI
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-002", deviceJoinName: "LELLKI Switch 1" //LELLKI 2 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-003", deviceJoinName: "LELLKI Switch 1" //LELLKI 3 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-004", deviceJoinName: "LELLKI Switch 1" //LELLKI 4 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-005", deviceJoinName: "LELLKI Switch 1" //LELLKI 5 Gang Switch 1
+		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
+		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
 	}
 	// simulator metadata
 	simulator {
@@ -241,13 +257,13 @@ private getChildCount() {
 		return 3
 	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
 		return 2
-	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03") {
+	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03" || device.getDataValue("model") == "JZ-ZB-003") {
 		return 3
-	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04") {
+	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04" || device.getDataValue("model") == "JZ-ZB-004") {
 		return 4
-	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA" || device.getDataValue("model") == "ZB-SW05" || device.getDataValue("model") == "JZ-ZB-005") {
 		return 5
-	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
+	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA" || device.getDataValue("model") == "ZB-SW06" || device.getDataValue("model") == "JZ-ZB-006") {
 		return 6 
 	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
 		return 3

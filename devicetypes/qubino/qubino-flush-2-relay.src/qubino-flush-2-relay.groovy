@@ -20,6 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Configuration"
 
 		command "reset"
 
@@ -129,10 +130,31 @@ def excludeParameterFromSync(preference){
 	return exclude
 }
 
+def configure() {
+	def cmds = []
+
+	if (zwaveInfo?.model?.equals("0051")) {
+		// parameters 40 and 41 - power consumption reporting threshold for Q1 and Q2 loads (respectively) - 5 %
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 5))
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 41, size: 1, scaledConfigurationValue: 5))
+		// parameters 42 and 43 - power consumption reporting time threshold for Q1 and Q2 (respectively) - 5 minutes
+		// additionally, manual states that default value for below parameters is 0, which disables power reporting
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 300))
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 43, size: 2, scaledConfigurationValue: 300))
+	} else if (zwaveInfo?.model?.equals("0052")) {
+		//parameter 40 - power reporting threshold for Q1 load - 75%
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 75))
+	}
+
+	delayBetween(cmds, 500)
+}
+
 def addToAssociationGroupIfNeeded() {
 	def cmds = []
 	if (zwaveInfo?.model?.equals("0052")) {
-		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: [zwaveHubNodeId]))
+		//Hub automatically adds device to multiChannelAssosciationGroup and this needs to be removed
+		cmds += encap(zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId:[])) 
+		cmds += encap(zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId]))
 	}
 	cmds
 }
@@ -245,24 +267,13 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 	changeSwitch(ep, cmd)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) { 
-	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
-	[
-		changeSwitch(ep, cmd), 
-		response([
-			"delay 2000",
-			encap(zwave.meterV3.meterGet(scale: 2), endpoint)
-		])
-	]
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
 	log.debug "Binary ${cmd}" + (ep ? " from endpoint $ep" : "")
 	changeSwitch(ep, cmd)
 }
 
 def defaultEndpoint() {
-	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+	if (zwaveInfo?.model?.equals("0052")) {
 		return null
 	} else {
 		return 1
@@ -281,18 +292,24 @@ private changeSwitch(endpoint, cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
+	def result = []
+
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
+
 	if (ep == defaultEndpoint()) {
-		[
-				createEvent(createMeterEventMap(cmd)),
-				cmd.scale == 2 ? response(encap(zwave.meterV3.meterGet(scale: 0x00), ep)) : null
-		]
+		result << createEvent(createMeterEventMap(cmd))
 	} else if (ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
+
 		child?.sendEvent(createMeterEventMap(cmd))
-		response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
 	}
+	// Query energy when we receive power reports
+	if (cmd.scale == 2) {
+		result << response(encap(zwave.meterV3.meterGet(scale: 0x00), ep))
+	}
+
+	result
 }
 
 private createMeterEventMap(cmd) {
@@ -332,6 +349,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	}
 	child?.sendEvent(map)
 	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) { 
+	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
+	changeSwitch(ep, cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {

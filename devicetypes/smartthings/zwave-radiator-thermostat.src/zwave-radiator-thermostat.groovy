@@ -13,13 +13,14 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
-		capability "Thermostat Mode"
+	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat",
+			mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Heat_Controller") {
 		capability "Refresh"
 		capability "Battery"
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Thermostat Mode"
 		capability "Temperature Measurement"
 		capability "Configuration"
 
@@ -200,6 +201,12 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
 	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	// Power Management - Power has been applied
+	if (cmd.notificationType == 0x08 && cmd.event == 0x01)
+		[response(zwave.batteryV1.batteryGet())]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {

@@ -25,10 +25,12 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "MS01", deviceJoinName: "eWeLink Motion Sensor" //eWeLink Motion Sensor
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor" //Orvibo Motion Sensor
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "Megaman", model: "PS601/z1", deviceJoinName: "INGENIUM Motion Sensor" //INGENIUM ZB PIR Sensor
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001", outClusters: "0019", manufacturer: "HEIMAN", model: "PIRSensor-N", deviceJoinName: "HEIMAN Motion Sensor" //HEIMAN Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RMS16BZ", deviceJoinName: "ThirdReality Motion Sensor" //ThirdReality Motion Sensor
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
@@ -118,16 +120,22 @@ def parseIasMessage(ZoneStatus zs) {
 }
 
 def supportsRestoreNotify() {
-    getDataValue("manufacturer") == "eWeLink"
+	return (getDataValue("manufacturer") == "eWeLink") || (getDataValue("manufacturer") == "Third Reality, Inc")
 }
 
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
+	def manufacturer = getDataValue("manufacturer")
+
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		result.value = Math.round(rawValue / 2)
+		if (manufacturer == "Third Reality, Inc") {
+			result.value = Math.round(rawValue)
+		} else {
+			result.value = Math.round(rawValue / 2)
+		}
 		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 	return result
@@ -164,6 +172,8 @@ def configure() {
 	if (manufacturer == "eWeLink") {
 		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 		return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 3600, 0x10) + refresh()
+	} else if (manufacturer == "Third Reality, Inc") {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else {
 		sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 		return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) + refresh()

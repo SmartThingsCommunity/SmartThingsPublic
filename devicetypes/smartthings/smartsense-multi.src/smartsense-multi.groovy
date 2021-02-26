@@ -20,6 +20,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint profileId: "FC01", deviceId: "0139", deviceJoinName: "Multipurpose Sensor"
 	}
@@ -78,6 +79,10 @@ metadata {
 		main(["contact", "acceleration", "temperature"])
 		details(["contact", "acceleration", "temperature", "battery"])
 	}
+}
+
+def updated() {
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description) {

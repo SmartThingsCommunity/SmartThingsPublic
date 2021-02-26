@@ -31,6 +31,7 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Mode"
 		capability "Thermostat Fan Mode"
+		capability "Thermostat Operating State"
 
 		command "generateEvent"
 		command "resumeProgram"

@@ -30,7 +30,6 @@ metadata {
 		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Door Lock" // DB2 //Alfred Smart Home Touchscreen Deadbolt
 		//zw:Fs type:4001 mfr:0154 prod:0005 model:0001 ver:1.05 zwv:4.38 lib:03 cc:7A,73,80,5A,98 sec:5E,86,72,30,71,70,59,85,62
 		fingerprint mfr: "0154", prod: "0005", model: "0001", deviceJoinName: "POPP Door Lock" // POPP Strike Lock Control POPE012501
-		fingerprint mfr: "003B", prod: "0001", model: "0469", deviceJoinName: "Schlage Door Lock" //BE469ZP //Schlage Connect Smart Deadbolt Door Lock
 	}
 
 	simulator {
