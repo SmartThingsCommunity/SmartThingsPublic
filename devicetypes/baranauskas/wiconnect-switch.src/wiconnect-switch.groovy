@@ -1,5 +1,5 @@
 /**
- *  Copyright 2020 Jose Augusto Baranauskas
+ *  Copyright 2021 Jose Augusto Baranauskas
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,15 +15,13 @@
  metadata {
   definition (
     name: "WiConnect Switch",
-    version: "2.0 (2021-01-26)",
+    version: "1.0 (2021-02-26)",
     namespace: "baranauskas",
     author: "Jose Augusto Baranauskas",
     runLocally: true,
     minHubCoreVersion: '000.021.00001',
     vid:"generic-switch"
   ) {
-      capability "Actuator"
-      capability "Health Check"
       capability "Refresh"
       capability "Switch"
 
@@ -33,145 +31,53 @@
       attribute "nome",             "string"
   }
 }
-import groovy.json.JsonSlurper
+//----------------------------------------------------------------------
+// Core methods
+//----------------------------------------------------------------------
+//import groovy.json.JsonSlurper
 
 def installed() {
-  def id = device.currentValue("id")
-  log.debug "child installed id ${id}"
+  log.debug "child ${device.label} installed"
 }
 
 def on() {
-    def id = device.currentValue("id")
-    log.debug "child on ${id}"
     def endereco = device.currentValue("endereco")
-    // sendEvent( name: "switch", value: "on")
-    sendData("${endereco}/acionar/1", "on")
-    // parent.childOn( id )
+    sendData("${endereco}/acionar/1", onHandler )
 }
 
 def off() {
-  def id = device.currentValue("id")
-  log.debug "child off ${id}"
   def endereco = device.currentValue("endereco")
-  //  sendEvent( name: "switch", value: "off")
-  sendData("${endereco}/acionar/0", "off")
-  //  parent.childOff( id )
+  sendData("${endereco}/acionar/0", offHandler )
 }
 
-def sendData( message, event ) {
-  log.debug "sendData( ${message}, ${event} )"
-
-  def cmd = [
-    method: "POST",
-    path: "/dispositivos/${message}",
-    headers: [ HOST: "${parent.settings.serverIP}:${parent.settings.serverPort}",
-               "Content-Type": "application/json",
-               "Authorization": "${parent.getStateValue('token')}"
-    ]
-  ]
-  //log.debug "sendData cmd ${cmd}"
-  def hubAction
-  if( event == "on" )
-    hubAction = new physicalgraph.device.HubAction( cmd,
-                null,
-                [callback: sendDataHandlerOn ] )
-  else
-    hubAction = new physicalgraph.device.HubAction( cmd,
-                null,
-                [callback: sendDataHandlerOff ] )
-
-  try {
-    sendHubCommand( hubAction )
-  }
-  catch(Exception e) {
-    log.error "sendHubCommand Error: ${e}"
-  }
+def refresh() {
+    def endereco = device.currentValue("endereco")
+    log.debug "child.refresh() endereco=${endereco}: please refresh parent device"
 }
 
-void sendDataHandlerOn(physicalgraph.device.HubResponse hubResponse) {
-    log.debug "sendDataHandlerOn()"
+def parse(String description) {
+    def endereco = device.currentValue("endereco")
+    log.debug "child.parse endereco=${endereco} description $description"
+}
+//----------------------------------------------------------------------
+//
+//----------------------------------------------------------------------
+def onHandler(physicalgraph.device.HubResponse hubResponse) {
     def status = hubResponse.status
-    def body = hubResponse.body
-    //log.debug "hr  = ${hubResponse}"
-    //log.debug "status = ${status}"
-    //log.debug "body = ${body}"
-    if ( status == 202 ) // body == Accepted
-    {  sendEvent( name: "switch", value: "on")
-       log.debug "switch on sucessful"
-    }
+//    def body = hubResponse.body
+    if ( parent.statusOk( status ) ) // body == Accepted
+      sendEvent( name: "switch", value: "on")
     else
       log.error "switch on failed"
 }
 
-void sendDataHandlerOff(physicalgraph.device.HubResponse hubResponse) {
-    log.debug "sendDataHandlerOff()"
+def offHandler(physicalgraph.device.HubResponse hubResponse) {
     def status = hubResponse.status
-    def body = hubResponse.body
-    //log.debug "hr  = ${hubResponse}"
-    //log.debug "status = ${status}"
-    //log.debug "body = ${body}"
-    if ( status == 202 ) // body == Accepted
-    {  sendEvent( name: "switch", value: "off")
-       log.debug "switch off sucessful"
-    }
+//    def body = hubResponse.body
+    if ( parent.statusOk( status ) ) // body == Accepted
+      sendEvent( name: "switch", value: "off")
     else
       log.error "switch off failed"
-}
-
-def ping() {
-  log.debug "ping()"
-	refresh()
-}
-//--------------------------------------------------------------------
-def refresh() {
-  log.debug "CHILD refresh()"
-  def id = device.currentValue("id")
-  log.debug "id: ${id}"
-  //log.debug "device.deviceNetworkId: ${device.deviceNetworkId}"
-  //log.debug "parent.deviceNetworkId: ${parent.deviceNetworkId}"
-  //log.debug "parent.settings: ${parent.settings}"
-  //log.debug "parent.state.token: " + parent.getStateValue("token")
-
-  def cmd = [
-      method: "GET",
-      path: "/dispositivos/${id}",
-      headers: [ HOST: "${parent.settings.serverIP}:${parent.settings.serverPort}",
-                 "Content-Type": "application/json",
-                 "Authorization": "${parent.getStateValue('token')}"
-      ]
-  ]
-  //log.debug "refresh cmd ${cmd}"
-  def hubAction = new physicalgraph.device.HubAction( cmd,
-                  null,
-                  [callback: refreshHandler ] )
-
-  try {
-    sendHubCommand( hubAction )
-  }
-  catch(Exception e) {
-    log.error "sendHubCommand error: ${e}"
-  }
-}
-
-void refreshHandler(physicalgraph.device.HubResponse hubResponse) {
-//    log.debug "hubResponse: ${body}"
-    log.debug "refreshHandler()"
-    def status = hubResponse.status
-    def body = hubResponse.body
-    //log.debug "hr  = ${hubResponse}"
-    //log.debug "status = ${status}"
-    //log.debug "body = ${body}"
-    // {"id":42,"nome":"Entrada","endereco":727623301,"tipo":0,"status":1,"estado":0,"velocidade":0,"luminosidade":0,"comando":0,"posicao":0}
-
-    def jsonSlurper = new JsonSlurper()
-    def d = jsonSlurper.parseText( body )
-    if( ! d ) {
-      log.error "Nao achei o dispositivo"
-      return
-    }
-    log.debug "device.label: ${device.label}"
-    log.debug "evento (${d.estado}): ${wiconnectSwitch( d.estado )}"
-    refreshState( d.estado )
 }
 
 def refreshState( estado ) {
@@ -181,9 +87,38 @@ def refreshState( estado ) {
 def wiconnectSwitch( estado ) {
   return estado == 1 ? "on" : "off"
 }
+//----------------------------------------------------------------------
+// SmartThings Utilities
+//----------------------------------------------------------------------
+private sendCmd( cmd, handler ) {
+//  log.debug "sendCmd(${cmd})"
+  def hubAction = new physicalgraph.device.HubAction(
+        cmd,
+        null,
+        [callback: handler]
+  )
+  try {
+      sendHubCommand( hubAction )
+  }
+  catch(Exception e) {
+      log.error "Error sendHubCommand: ${e}"
+  }
+}
 
-def parse(String description) {
-    log.debug "CHILD parse description $description"
-    def id = device.currentValue("id")
-    log.debug "id: ${id}"
+private sendData( message, handler ) {
+//  log.debug "sendData( ${message} )"
+  if( ! parent.getStateValue("isAuthenticated") ) {
+    log.debug "Not authenticated, please check your settings or connection"
+    return
+  }
+  def theHeader = [ HOST: "${parent.settings.serverIP}:${parent.settings.serverPort}",
+                    "Content-Type": "application/json",
+                    "Authorization": "${parent.getStateValue('basic')}"
+  ]
+  def cmd = [ method: "POST",
+              path: "/dispositivos/${message}",
+              headers: theHeader
+  ]
+//  log.debug "cmd: ${cmd}"
+  sendCmd( cmd, handler )
 }
