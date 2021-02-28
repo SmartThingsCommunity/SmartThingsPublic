@@ -10,12 +10,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * This DH is used as a childDevice by Parent DH WiConnect
+ * This DH is used as a childDevice by Parent DH WiConnect Controller
+ *
  */
  metadata {
   definition (
     name: "WiConnect Shutter",
-    version: "1.0 (2021-02-27)",
+    version: "1.0 (2021-02-28)",
     namespace: "baranauskas",
     author: "Jose Augusto Baranauskas",
     runLocally: true,

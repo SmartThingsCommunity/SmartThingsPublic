@@ -10,33 +10,39 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * Notes: Please read remarks about attributes near theirs definitions.
+ *  This code was written for the WiConnect controller distributed by Legrand in Brazil. In this version,
+ *  commands (for authentication, obtaining devices, activating devices, etc.) are in Portuguese.
  *
+ *  If you have a controller distributed in another language, just change a few lines in the code:
+ *  search for "path:" (without quotes) in this PDH as well as on CDH code and replace them with
+ *  commands from your controller. Fell free to contact me if you need any help.
+ *  
  */
 metadata {
     definition (
        name: "WiConnect Controller",
        description: "Create Legrand WiConnect child devices",
-       version: "1.0 (2021-02-26)",
+       version: "1.0 (2021-02-28)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
        minHubCoreVersion: '000.021.00001'
-//       , vid:"generic-contact"
     ) {
         capability "Actuator"
         capability "Sensor"
+        // On forces a full update (add, delete and remove) on devices
+        // just like updating settings
         capability "Switch"
         capability "Refresh"
 
-        // isAuthenticated && Connection is okay
+        // Open if isAuthenticated && Connection is okay
         capability "Contact Sensor"
 
 //        capability "Motion Sensor"
 //        capability "Switch"
 //        capability "Acceleration Sensor"
 //        capability "Infrared Level"
-//      capability "Health Check"
+//        capability "Health Check"
 
 //        command "childOn"
 //        command "childOff"
@@ -107,7 +113,7 @@ def updated() {
 //    int ss = 1 + 58 * Math.random()
 //    def cronString = "${ss} 0 0 1/1 * ? *"
 //    log.debug "cron schedule: ${cronString}"
-//    schedule( cronString, refreshSunTimes )
+//    schedule( cronString, refresh )
 }
 
 def refresh()
