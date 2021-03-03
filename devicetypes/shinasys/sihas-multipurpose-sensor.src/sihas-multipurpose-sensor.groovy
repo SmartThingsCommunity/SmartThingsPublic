@@ -232,16 +232,16 @@ def refresh() {
     def refreshCmds = []
 
     refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
-    if(isUSM300() || isTSM300())
+    if (isUSM300() || isTSM300())
     {
         refreshCmds += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
         refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
     }
-    if(isUSM300())
+    if (isUSM300())
     {
         refreshCmds += zigbee.readAttribute(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
     }
-    if(isUSM300() || isOSM300())
+    if (isUSM300() || isOSM300())
     {
         refreshCmds += zigbee.readAttribute(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE)
         
@@ -272,16 +272,16 @@ def configure() {
     // and the amount of change needed to trigger a report is 1 unit (0x01).
     
     configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
-    if(isUSM300() || isTSM300())
+    if (isUSM300() || isTSM300())
     {
         configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 30, 300, 30/*30/100=0.3도*/)
         configCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 30, 3600, 50/*50/100=0.5%*/)
     }
-    if(isUSM300())
+    if (isUSM300())
     {
         configCmds += zigbee.configureReporting(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 30, 3600, 20/*20 lux*/)
     }
-    if(isUSM300() || isOSM300())
+    if (isUSM300() || isOSM300())
     {
         configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, 0x18/*bitmap8*/, 1, 600, 1)
     }
