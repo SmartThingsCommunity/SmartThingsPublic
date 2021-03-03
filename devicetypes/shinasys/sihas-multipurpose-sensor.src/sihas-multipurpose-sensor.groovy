@@ -122,7 +122,7 @@ def parse(String description) {
                 map = translateZoneStatus(zs)
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
                 map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
-            } else if (descMap?.clusterInt == OCCUPANCY_SENSING_CLUSTER && descMap.attrInt == OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE /*occupancy*/ && descMap?.value) {
+            } else if (descMap?.clusterInt == OCCUPANCY_SENSING_CLUSTER && descMap.attrInt == OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE && descMap?.value) {
                 map = getMotionResult(descMap.value == "01" ? "active" : "inactive")
             }
         }
@@ -283,7 +283,7 @@ def configure() {
     }
     if (isUSM300() || isOSM300())
     {
-        configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, 0x18/*bitmap8*/, 1, 600, 1)
+        configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, DataType.BITMAP8, 1, 600, 1)
     }
     return refresh() + configCmds
 }
