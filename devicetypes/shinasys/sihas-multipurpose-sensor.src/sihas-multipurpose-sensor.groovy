@@ -118,10 +118,8 @@ def parse(String description) {
                     map = getBatteryResult(Integer.parseInt(battMap.value, 16))
                 }
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap.commandInt != 0x07) {
-                def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+                def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 10))
                 map = translateZoneStatus(zs)
-            } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
-                map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
             } else if (descMap?.clusterInt == OCCUPANCY_SENSING_CLUSTER && descMap.attrInt == OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE && descMap?.value) {
                 map = getMotionResult(descMap.value == "01" ? "active" : "inactive")
             }
