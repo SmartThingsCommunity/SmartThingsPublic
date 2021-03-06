@@ -47,10 +47,6 @@ metadata {
 		fingerprint mfr: "027A", prod: "A000", model: "A002", deviceJoinName: "Zooz Dimmer Switch" //Zooz ZEN27 Dimmer
 		fingerprint mfr: "027A", prod: "B112", model: "261C", deviceJoinName: "Zooz Dimmer Switch" //Zooz ZEN24 Dimmer
 		fingerprint mfr: "0300", prod: "0003", model: "0005", deviceJoinName: "ilumin Light", ocfDeviceType: "oic.d.light" //ilumin Dimmable Bulb
-		fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston Dimmer Switch" //Minoston Smart Dimmer Switch
-		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Dimmer Switch" //Minoston Toggle Dimmer Switch
-		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Dimmer Switch
-		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Plug Dimmer
 	}
 
 	simulator {
