@@ -1,7 +1,7 @@
 /**
- *  EVA LOGIK In-Wall Smart Switch v1.0.2
+ *      Minoston Min Dim Plug v1.0.2
  *
- *  	Models: Eva Logik (ZW30) / MINOSTON (MS10Z)
+ *  	Models: MINOSTON (MP21ZD)
  *
  *  Author:
  *    Kevin LaFramboise (krlaframboise)
@@ -10,10 +10,13 @@
  *
  *  Changelog:
  *
- *    1.0.2 (06/05/2020)
+ *    1.0.2 (06/10/2020)
+ *      - Changed dimming duration options to 1-10 seconds.
+ *
+ *    1.0.1 (06/05/2020)
  *      - Swapped first 2 options of LED Control preference
  *
- *    1.0.1 (04/21/2020)
+ *    1.0 (04/20/2020)
  *      - Initial Release
  *
  *
@@ -35,15 +38,15 @@
 
 import groovy.json.JsonOutput
 import groovy.transform.Field
-
+def cmd = zwave.parse(description, [0x25: 1, 0x30: 1,  0x80: 1, 0x84: 1, 0x9C: 1])
 @Field static Map commandClassVersions = [
         0x20: 1,	// Basic
-        0x25: 1,	// Switch Binary
+        0x26: 3,	// Switch Multilevel
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
-        0x5B: 1,	// CentralScene (3)
-        0x5E: 2,	// ZwaveplusInfo
+        0x31: 5,    // SENSOR_MULTILEVEL_V11
+        0x71: 3,	// NOTIFICATION_V8
         0x6C: 1,	// Supervision
         0x70: 1,	// Configuration
         0x7A: 2,	// FirmwareUpdateMd
@@ -56,13 +59,15 @@ import groovy.transform.Field
         0x9F: 1		// Security S2
 ]
 
+@Field static Map buttons = [0:"upper", 1:"lower"]
+
 @Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
 
 @Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
 
-@Field static Map associationReportsOptions = [0:"None", 1:"Physical", 2:"3-way", 3:"3-way and Physical", 4:"Digital", 5:"Digital and Physical", 6:"Digital and 3-way", 7:"Digital, Physical, and 3-way", 8:"Timer", 9:"Timer and Physical", 10:"Timer and 3-way", 11:"Timer, 3-Way, and Physical", 12:"Timer and Digital", 13:"Timer, Digital, and Physical", 14:"Timer, Digital, and 3-way", 15:"All"]
+@Field static Map nightLightOptions = [1:"10%", 2:"20%", 3:"30%", 4:"40%", 5:"50%", 6:"60%", 7:"70%", 8:"80%", 9:"90%", 10:"100%"]
 
 @Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
 
@@ -70,36 +75,41 @@ import groovy.transform.Field
 
 @Field static Map noYesOptions = [0:"No", 1:"Yes"]
 
+@Field static Map dimmingDurationOptions0 = [0:"Disabled", 1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
+
+@Field static Map dimmingDurationOptions1 = [1:"1 Second", 2:"2 Seconds", 3:"3 Seconds", 4:"4 Seconds", 5:"5 Seconds", 6:"6 Seconds", 7:"7 Seconds", 8:"8 Seconds", 9:"9 Seconds", 10:"10 Seconds"]
+
+@Field static Map brightnessOptions = [0:"Disabled", 1:"1%", 5:"5%", 10:"10%", 15:"15%", 20:"20%", 25:"25%", 30:"30%", 35:"35%", 40:"40%", 45:"45%", 50:"50%", 55:"55%",60:"60%", 65:"65%", 70:"70%", 75:"75%", 80:"80%", 85:"85%", 90:"90%", 95:"95%", 99:"99%"]
+
+@Field static Map temperatureReportTimeOptions = [1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 35:"30 Minutes", 40:"30 Minutes", 45:"45 Minutes", 50:"30 Minutes", 55:"45 Minutes",60:"60 Minutes"]
+
+@Field static Map temperatureReportThresholdOptions = [1:"1℃/1.8°F", 2:"2℃/3.6°F", 3:"3℃/5.4°F", 4:"4℃/7.2°F", 5:"5℃/9.0°F", 6:"6℃/10.8°F", 7:"7℃/12.6°F", 8:"8℃/14.4°F", 9:"8℃/16.2°F", 10:"10℃/18°F"]
+
 metadata {
     definition (
-            name: "EVA LOGIK In-Wall Smart Switch",
+            name: "Minoston Min Dim Plug",
             namespace: "krlaframboise",
             author: "Kevin LaFramboise",
-            vid:"generic-switch",
+            vid:"generic-dimmer",
             ocfDeviceType: "oic.d.switch"
     ) {
-        capability "Actuator"
-        capability "Sensor"
-        capability "Switch"
-        capability "Light"
-        capability "Configuration"
-        capability "Refresh"
-        capability "Health Check"
+            capability "Actuator"
+            capability "Sensor"
+            capability "Switch"
+            capability "Switch Level"
+            capability "Light"
+            capability "Configuration"
+            capability "Refresh"
+            capability "Health Check"
+            capability "Temperature Measurement"
 
-        attribute "firmwareVersion", "string"
-        attribute "lastCheckIn", "string"
-        attribute "syncStatus", "string"
+            attribute "firmwareVersion", "string"
+            attribute "lastCheckIn", "string"
+            attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston In-Wall Switch",  ocfDeviceType: "oic.d.smartplug" // MS10Z
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch",    ocfDeviceType: "oic.d.smartplug" //MS10ZS Minoston Smart Switch   *
-
-        fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MS12Z Minoston on/off Toggle Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //MS12ZS Minoston Smart on/off Toggle Switch  *
-
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "EVA LOGIK In-Wall Switch", ocfDeviceType: "oic.d.smartplug" //ZW30   *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30S Evalogik Smart on/off Switch  *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30TS Evalogik Smart on/off Toggle Switch  *
-    }
+        fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW39 Evalogik Smart Plug Dimmer
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MP21ZD Minoston Mini Smart Plug Dimmer *
+	}
 
     simulator { }
 
@@ -111,7 +121,33 @@ metadata {
                 attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
                 attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
             }
+            tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
+                attributeState("temperature", label: '${currentValue}°', icon: "st.alarm.temperature.normal",
+                        backgroundColors: [
+                                // Celsius
+                                [value: 0, color: "#153591"],
+                                [value: 7, color: "#1e9cbb"],
+                                [value: 15, color: "#90d2a7"],
+                                [value: 23, color: "#44b621"],
+                                [value: 28, color: "#f1d801"],
+                                [value: 35, color: "#d04e00"],
+                                [value: 37, color: "#bc2323"],
+                                // Fahrenheit
+                                [value: 40, color: "#153591"],
+                                [value: 44, color: "#1e9cbb"],
+                                [value: 59, color: "#90d2a7"],
+                                [value: 74, color: "#44b621"],
+                                [value: 84, color: "#f1d801"],
+                                [value: 95, color: "#d04e00"],
+                                [value: 96, color: "#bc2323"]
+                        ]
+                )
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel"
+            }
         }
+
         standardTile("refresh", "device.refresh", width: 2, height: 2) {
             state "refresh", label:'Refresh', action: "refresh"
         }
@@ -133,9 +169,9 @@ metadata {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
         }
 
-        createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
+        //createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
 
-        createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
+        //createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
 }
 
@@ -154,6 +190,8 @@ def installed() {
         state.debugLoggingEnabled = true
         state.createButtonEnabled = true
     }
+    def cmds = [ zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01).format()]
+    response(cmds)
 }
 
 def updated() {
@@ -252,7 +290,7 @@ def executeConfigureCmds() {
     def cmds = []
 
     if (!device.currentValue("switch")) {
-        cmds << switchBinaryGetCmd()
+        cmds << switchMultilevelGetCmd()
     }
 
     if (state.resyncAll || !device.currentValue("firmwareVersion")) {
@@ -284,19 +322,32 @@ def executeConfigureCmds() {
 def ping() {
     logDebug "ping()..."
 
-    return [ switchBinaryGetCmd() ]
+    return [ switchMultilevelGetCmd() ]
 }
 
 def on() {
     logDebug "on()..."
 
-    return [ switchBinarySetCmd(0xFF) ]
+    return [ basicSetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
 
-    return [ switchBinarySetCmd(0x00) ]
+    return [ basicSetCmd(0x00) ]
+}
+
+def setLevel(level) {
+    logDebug "setLevel($level)..."
+    return setLevel(level, 1)
+}
+
+def setLevel(level, duration) {
+    logDebug "setLevel($level, $duration)..."
+    if (duration > 30) {
+        duration = 30
+    }
+    return [ switchMultilevelSetCmd(level, duration) ]
 }
 
 def refresh() {
@@ -304,7 +355,7 @@ def refresh() {
 
     refreshSyncStatus()
 
-    sendCommands([switchBinaryGetCmd()])
+    sendCommands([switchMultilevelGetCmd()])
 }
 
 private sendCommands(cmds) {
@@ -322,12 +373,20 @@ private versionGetCmd() {
     return secureCmd(zwave.versionV1.versionGet())
 }
 
-private switchBinaryGetCmd() {
-    return secureCmd(zwave.switchBinaryV1.switchBinaryGet())
+private basicSetCmd(val) {
+    return secureCmd(zwave.basicV1.basicSet(value: val))
 }
 
-private switchBinarySetCmd(val) {
-    return secureCmd(zwave.switchBinaryV1.switchBinarySet(switchValue: val))
+private switchMultilevelSetCmd(level, duration) {
+    def levelVal = validateRange(level, 99, 0, 99)
+
+    def durationVal = validateRange(duration, 1, 0, 100)
+
+    return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
+}
+
+private switchMultilevelGetCmd() {
+    return secureCmd(zwave.switchMultilevelV3.switchMultilevelGet())
 }
 
 private configSetCmd(param, value) {
@@ -447,18 +506,43 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
     return []
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
     logTrace "${cmd}"
     sendSwitchEvents(cmd.value, "digital")
     return []
 }
 
-private sendSwitchEvents(rawVal, type) {
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+    log.debug "SensorMultilevelReport: $cmd"
+    def map = [:]
+    switch (cmd.sensorType) {
+        case 1:
+            map.name = "temperature"
+            def cmdScale = cmd.scale == 1 ? "F" : "C"
+            def realTemperature = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+            map.value = getAdjustedTemp(realTemperature)
+            map.unit = getTemperatureScale()
+            log.debug "Temperature Report: $map.value"
+            break
+        default:
+            map.descriptionText = cmd.toString()
+            break
+    }
 
-    def switchVal = (rawVal == 0xFF) ? "on" : "off"
+    [createEvent(map)]
+}
+
+private sendSwitchEvents(rawVal, type) {
+    def oldSwitch = device.currentValue("switch")
+    def oldLevel = device.currentValue("level")
+
+    def switchVal = rawVal ? "on" : "off"
 
     sendEventIfNew("switch", switchVal, true, type)
 
+    if (rawVal) {
+        sendEventIfNew("level", rawVal, true, type, "%")
+    }
 
     def paddlesReversed = (paddleControlParam.value == reversePaddle)
 
@@ -469,6 +553,9 @@ private sendSwitchEvents(rawVal, type) {
         else {
             def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
 
+            if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
+                btnVal = "down"
+            }
 
             sendButtonEvent(btnVal)
         }
@@ -506,7 +593,9 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 private sendButtonEvent(value) {
-    if (childDevices) {
+    def child = childDevices?.first()
+    if (child) {
+        logDebug "${child.displayName} Button ${value}"
         childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
     }
 }
@@ -539,37 +628,68 @@ private setParamStoredValue(paramNum, value) {
 
 private getConfigParams() {
     return [
-            paddleControlParam,
+            // paddleControlParam,
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
-            // associationReportsParam,
-            powerFailureRecoveryParam
+            nightLightParam,
+            powerFailureRecoveryParam,
+            pushDimmingDurationParam,
+            holdDimmingDurationParam,
+            minimumBrightnessParam,
+            maximumBrightnessParam,
+            temperatureReportTimeParam,
+            temperatureReportThresholdParam
     ]
 }
 
-private getPaddleControlParam() {
-    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
-}
+//private getPaddleControlParam() {
+//	return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
+//}
 
 private getLedModeParam() {
-    return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
+	return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
+	return getParam(4, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
+	return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
 }
 
-private getAssociationReportsParam() {
-    return getParam(7, "Association Settings", 1, 1, associationReportsOptions)
+private getNightLightParam() {
+	return getParam(7, "Night Light Settings", 1, 2, nightLightOptions)
 }
 
 private getPowerFailureRecoveryParam() {
-    return getParam(8, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
+	return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
+}
+
+private getPushDimmingDurationParam() {
+    return getParam(9, "Push Dimming Duration", 1, 2, dimmingDurationOptions0)
+}
+
+private getHoldDimmingDurationParam() {
+    return getParam(10, "Hold Dimming Duration", 1, 4, dimmingDurationOptions1)
+}
+
+private getMinimumBrightnessParam() {
+    return getParam(11, "Minimum Brightness", 1, 10, brightnessOptions)
+}
+
+private getMaximumBrightnessParam() {
+    return getParam(12, "Maximum Brightness", 1, 99, brightnessOptions)
+}
+
+private getTemperatureReportTimeParam() {
+    return getParam(13, "Temperature report time", 1, 1, temperatureReportTimeOptions)
+}
+
+
+private getTemperatureReportThresholdParam() {
+    return getParam(14, "Temperature report threshold", 1, 5, temperatureReportThresholdOptions)
 }
 
 private getParam(num, name, size, defaultVal, options) {
@@ -592,8 +712,8 @@ private setDefaultOption(options, defaultVal) {
     }
 }
 
-private sendEventIfNew(name, value, displayed=true, type=null) {
-    def desc = "${name} is ${value}"
+private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
+    def desc = "${name} is ${value}${unit}"
     if (device.currentValue(name) != value) {
         logDebug(desc)
 
@@ -602,10 +722,26 @@ private sendEventIfNew(name, value, displayed=true, type=null) {
         if (type) {
             evt.type = type
         }
+        if (unit) {
+            evt.unit = unit
+        }
         sendEvent(evt)
     }
     else {
         logTrace(desc)
+    }
+}
+
+private validateRange(val, defaultVal, lowVal, highVal) {
+    val = safeToInt(val, defaultVal)
+    if (val > highVal) {
+        return highVal
+    }
+    else if (val < lowVal) {
+        return lowVal
+    }
+    else {
+        return val
     }
 }
 
@@ -624,5 +760,5 @@ private logDebug(msg) {
 }
 
 private logTrace(msg) {
-    // log.trace "$msg"
+    log.trace "$msg"
 }

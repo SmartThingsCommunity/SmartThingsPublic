@@ -1,7 +1,7 @@
 /**
- *  EVA LOGIK In-Wall Smart Switch v1.0.2
+ *      Minoston Min Smart Plug v1.0.2
  *
- *  	Models: Eva Logik (ZW30) / MINOSTON (MS10Z)
+ *  	Models: MINOSTON (MP21Z)
  *
  *  Author:
  *    Kevin LaFramboise (krlaframboise)
@@ -42,7 +42,7 @@ import groovy.transform.Field
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
-        0x5B: 1,	// CentralScene (3)
+        0x27: 1,	// Switch All
         0x5E: 2,	// ZwaveplusInfo
         0x6C: 1,	// Supervision
         0x70: 1,	// Configuration
@@ -56,13 +56,13 @@ import groovy.transform.Field
         0x9F: 1		// Security S2
 ]
 
-@Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
+//@Field static Map paddleControlOptions = [0:"Normal", 1:"Reverse", 2:"Toggle"]
 @Field static Integer reversePaddle = 1
 @Field static Integer togglePaddle = 2
 
-@Field static Map ledModeOptions = [0:"Off When On", 1:"On When On", 2:"Always Off", 3:"Always On"]
+@Field static Map ledModeOptions = [0:"On When On", 1:"Off When On", 2:"Always Off"]//, 3:"Always On"
 
-@Field static Map associationReportsOptions = [0:"None", 1:"Physical", 2:"3-way", 3:"3-way and Physical", 4:"Digital", 5:"Digital and Physical", 6:"Digital and 3-way", 7:"Digital, Physical, and 3-way", 8:"Timer", 9:"Timer and Physical", 10:"Timer and 3-way", 11:"Timer, 3-Way, and Physical", 12:"Timer and Digital", 13:"Timer, Digital, and Physical", 14:"Timer, Digital, and 3-way", 15:"All"]
+//@Field static Map associationReportsOptions = [0:"None", 1:"Physical", 2:"3-way", 3:"3-way and Physical", 4:"Digital", 5:"Digital and Physical", 6:"Digital and 3-way", 7:"Digital, Physical, and 3-way", 8:"Timer", 9:"Timer and Physical", 10:"Timer and 3-way", 11:"Timer, 3-Way, and Physical", 12:"Timer and Digital", 13:"Timer, Digital, and Physical", 14:"Timer, Digital, and 3-way", 15:"All"]
 
 @Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
 
@@ -72,7 +72,7 @@ import groovy.transform.Field
 
 metadata {
     definition (
-            name: "EVA LOGIK In-Wall Smart Switch",
+            name: "Minoston Min Smart Plug",
             namespace: "krlaframboise",
             author: "Kevin LaFramboise",
             vid:"generic-switch",
@@ -90,15 +90,13 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston In-Wall Switch",  ocfDeviceType: "oic.d.smartplug" // MS10Z
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch",    ocfDeviceType: "oic.d.smartplug" //MS10ZS Minoston Smart Switch   *
-
-        fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MS12Z Minoston on/off Toggle Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //MS12ZS Minoston Smart on/off Toggle Switch  *
-
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "EVA LOGIK In-Wall Switch", ocfDeviceType: "oic.d.smartplug" //ZW30   *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30S Evalogik Smart on/off Switch  *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30TS Evalogik Smart on/off Toggle Switch  *
+        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" // old MP21Z
+        fingerprint mfr: "0312", prod: "C000", model: "C001", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW36 EVA LOGIK Smart Plug 1CH
+		fingerprint mfr: "0312", prod: "FF00", model: "FF06", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Smart Plug 1CH
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug  *
+        fingerprint mfr: "0312", prod: "FF00", model: "FF07", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MP22Z Minoston Outdoor Smart Plug
+        fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW96 Evalogik Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW96S Evalogik Mini Outdoor Smart Plug
     }
 
     simulator { }
@@ -132,10 +130,10 @@ metadata {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
         }
+        
+       // createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
 
-        createEnumInput("createButton", "Create Button for Paddles?", 1, setDefaultOption(noYesOptions, 1))
-
-        createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
+       // createEnumInput("debugOutput", "Enable Debug Logging?", 1, setDefaultOption(noYesOptions, 1))
     }
 }
 
@@ -150,10 +148,10 @@ private createEnumInput(name, title, defaultVal, options) {
 def installed() {
     logDebug "installed()..."
 
-    if (state.debugLoggingEnabled == null) {
-        state.debugLoggingEnabled = true
-        state.createButtonEnabled = true
-    }
+ //   if (state.debugLoggingEnabled == null) {
+ //       state.debugLoggingEnabled = true
+ //       state.createButtonEnabled = true
+ //   }
 }
 
 def updated() {
@@ -162,8 +160,8 @@ def updated() {
 
         logDebug "updated()..."
 
-        state.debugLoggingEnabled = (safeToInt(settings?.debugOutput) != 0)
-        state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
+        state.debugLoggingEnabled = false//(safeToInt(settings?.debugOutput) != 0)
+        state.createButtonEnabled = false//(safeToInt(settings?.createButton) != 0)
 
         initialize()
 
@@ -468,8 +466,6 @@ private sendSwitchEvents(rawVal, type) {
         }
         else {
             def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-
-
             sendButtonEvent(btnVal)
         }
     }
@@ -539,7 +535,7 @@ private setParamStoredValue(paramNum, value) {
 
 private getConfigParams() {
     return [
-            paddleControlParam,
+            // paddleControlParam,
             ledModeParam,
             autoOffIntervalParam,
             autoOnIntervalParam,
@@ -548,28 +544,28 @@ private getConfigParams() {
     ]
 }
 
-private getPaddleControlParam() {
-    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
-}
+//private getPaddleControlParam() {
+//	return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
+//}
 
 private getLedModeParam() {
-    return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
+    return getParam(1, "LED Indicator Mode", 1, 0, ledModeOptions)
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(2, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(4, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
 }
 
-private getAssociationReportsParam() {
-    return getParam(7, "Association Settings", 1, 1, associationReportsOptions)
-}
+//private getAssociationReportsParam() {
+//	return getParam(7, "Association Settings", 1, 1, associationReportsOptions)
+//}
 
 private getPowerFailureRecoveryParam() {
-    return getParam(8, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
+    return getParam(6, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
 }
 
 private getParam(num, name, size, defaultVal, options) {
@@ -624,5 +620,5 @@ private logDebug(msg) {
 }
 
 private logTrace(msg) {
-    // log.trace "$msg"
+    log.trace "$msg"
 }
