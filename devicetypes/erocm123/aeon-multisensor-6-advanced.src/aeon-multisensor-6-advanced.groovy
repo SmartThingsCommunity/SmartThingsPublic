@@ -52,8 +52,10 @@
         
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A" // 1.06
         
-        fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeon MultiSensor 6"
-
+        fingerprint mfr:"0086", prod:"0002", model:"0064", deviceJoinName: "Aeon MultiSensor 6" //EU //Aeotec MultiSensor 6
+	fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeon MultiSensor 6" //US //Aeotec MultiSensor 6
+	fingerprint mfr:"0086", prod:"0202", model:"0064", deviceJoinName: "Aeon MultiSensor 6" //AU //Aeotec MultiSensor 6
+	
 	}
     preferences {
         input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
