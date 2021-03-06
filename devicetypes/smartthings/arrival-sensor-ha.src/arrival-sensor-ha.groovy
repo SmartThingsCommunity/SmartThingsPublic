@@ -24,8 +24,7 @@ metadata {
         capability "Configuration"
         capability "Health Check"
 
-        fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019",
-                        manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "Arrival Sensor"
+        fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019", manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "SmartThings Presence Sensor"
     }
 
     preferences {

@@ -1,50 +1,49 @@
 /**
-
-Copyright Sinopé Technologies 2019
-1.1.0
-SVN-571
+Copyright Sinopé Technologies
+1.3.0
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 **/
-preferences {
-    input("BacklightAutoDimParam", "enum", title:"Backlight setting (default: sensing)", description: "On Demand or Sensing", options: ["On Demand", "Sensing"], multiple: false, required: false)
-   	input("DisableOutdorTemperatureParam", "bool", title: "disable outdoor temperature", description: "Set it to true to Disable outdoor temperature on the thermostat")
-    input("keyboardLockParam", "bool", title: "enable the lock", description: "Set to true to enable the lock on the thermostat")
-    input("trace", "bool", title: "Trace", description:"Set it to true to enable tracing")
-	input("logFilter", "number", title: "(1=ERROR only,2=<1+WARNING>,3=<2+INFO>,4=<3+DEBUG>,5=<4+TRACE>)", range: "1..5",
-		description: "optional")
-}
-
 metadata {
-
+	preferences {
+		input("backlightAutoDimParam", "enum", title:"Backlight setting (Default: Always ON)", multiple: false, required: false, options: ["On Demand", "Always ON"],
+			description: "On Demand or Always ON")
+		input("disableOutdorTemperatureParam", "enum", title: "Secondary display (Default: Outside temp.)", multiple: false, required: false, options: ["Setpoint", "Outside temp."], 
+			description: "Information displayed in the secondary zone of the device")
+		input("keyboardLockParam", "enum", title: "Keypad lock (Default: Unlock)", multiple: false, required: false, options: ["Lock", "Unlock"], 
+			description: "Enable or disable the device's buttons")   	
+		input("timeFormatParam", "enum", title:"Time Format (Default: 24h)", options:["12h AM/PM","24h"], multiple: false, required: false,
+			description: "Time format displayed by the device.") 	
+		input("trace", "bool", title: "Trace", 
+			description:"Set it to true to enable tracing")
+	}
 	definition(name: "TH1123ZB-TH1124ZB Sinope Thermostat", namespace: "Sinope Technologies", author: "Sinope Technologies", ocfDeviceType: "oic.d.thermostat") {
- 		capability "thermostatHeatingSetpoint"
-		capability "thermostatMode"
-		capability "thermostatOperatingState"
-		capability "thermostatSetpoint"
- 		capability "Actuator"
 		capability "Temperature Measurement"
+ 		capability "Thermostat"
+ 		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Mode"
+		capability "Thermostat Operating State"
+ 		capability "Actuator"
  		capability "Configuration"
 		capability "Refresh"
-        capability "lock"
-		capability "Health check"
+		capability "Health check" 
+		capability "Sensor"
 
-		attribute "temperatureDisplayMode", "enum", ["Deg_C", "Deg_F"]
         attribute "heatingSetpointRangeHigh", "number"
         attribute "heatingSetpointRangeLow", "number"
         attribute "heatingSetpointRange", "VECTOR3"
-		attribute "outdoorTemp", "string"
-		attribute "verboseTrace", "string"
+		attribute "outdoorTemp", "number"
+		attribute "temperatureUnit", "string"
         
 		command "heatLevelUp"
 		command "heatLevelDown"
 
-        fingerprint manufacturer: "Sinope Technologies", model: "TH1123ZB", deviceJoinName: "Sinope TH1123ZB Thermostat"
+        fingerprint manufacturer: "Sinope Technologies", model: "TH1123ZB", deviceJoinName: "Sinope Thermostat" //Sinope TH1123ZB Thermostat
             
-        fingerprint manufacturer: "Sinope Technologies", model: "TH1124ZB", deviceJoinName: "Sinope TH1124ZB Thermostat" 
+        fingerprint manufacturer: "Sinope Technologies", model: "TH1124ZB", deviceJoinName: "Sinope Thermostat"  //Sinope TH1124ZB Thermostat
 
  	}
-
+	simulator { }
 	//--------------------------------------------------------------------------------------------------------
 	tiles(scale: 2) {
 
@@ -57,15 +56,14 @@ metadata {
 				attributeState("VALUE_DOWN", action: "heatLevelDown")
 			}
 			tileAttribute("device.heatingDemand", key: "SECONDARY_CONTROL") {
-				attributeState("default", label: '${currentValue}%', unit: "%")
+				attributeState("default", label: '${currentValue}%', unit: "%", icon:"st.Weather.weather2")
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle", backgroundColor: "#44b621")
 				attributeState("heating", backgroundColor: "#ffa81e")
-				attributeState("cooling", backgroundColor: "#269bd2")
 			}
 			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("default", label: '${currentValue}', unit: "dF")
+				attributeState("heatingSetpoint", label: '${currentValue}°', unit:"dF", range: "(5..30)", defaultState: true)
 			}
 		}
 		//-- Value Tiles -------------------------------------------------------------------------------------------
@@ -76,18 +74,17 @@ metadata {
 
 		//-- Standard Tiles ----------------------------------------------------------------------------------------
 
-		standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
+		standardTile("mode", "device.thermostatMode", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
 			state "off", label: '', action: "heat", icon: "st.thermostat.heating-cooling-off"
 			state "heat", label: '', action: "off", icon: "st.thermostat.heat", defaultState: true
 		}
 
-		standardTile("refresh", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		//-- Main & Details ----------------------------------------------------------------------------------------
 
-        controlTile("heatingSetpointSlider", "device.heatingSetpoint", "slider",
+        controlTile("heatingSetpoint", "device.heatingSetpoint", "slider",
         	sliderType: "HEATING",
             debouncePeriod: 1500,
             range: "device.heatingSetpointRange",
@@ -97,44 +94,36 @@ metadata {
             	label:'${currentValue}${unit}', backgroundColor: "#E86D13"
         }
 
+		//-- Main & Details ----------------------------------------------------------------------------------------
 
 		main("thermostatMulti")
-		details(["thermostatMulti",
-			"heatingSetpointSlider",
-			"thermostatMode",
-			"refresh"
-		])
+        details(["thermostatMulti", "heatingSetpoint", "mode", "refresh"])
 	}
 }
 
-def getBackgroundColors() {
-	def results
-	if (state?.scale == 'C') {
-		// Celsius Color Range
-		results = [
-			[value: 0, color: "#153591"],
-			[value: 7, color: "#1e9cbb"],
-			[value: 15, color: "#90d2a7"],
-			[value: 23, color: "#44b621"],
-			[value: 29, color: "#f1d801"],
-			[value: 35, color: "#d04e00"],
-			[value: 37, color: "#bc2323"]
-		]
-	} else {
-		results =
-			// Fahrenheit Color Range
-			[
-				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
-	}
-	return results
+def getSupportedThermostatModes() {
+	["heat", "off"]
+}
 
+def getHeatingSetpointRange() {
+		(temperatureScale == "C") ? [5.0, 30.0] : [41, 86]
+}
+def getThermostatSetpointRange() {
+		heatingSetpointRange
+}
+
+
+def getSetpointStep() {
+	(getTemperatureScale() == "C") ? 0.5 : 1.0
+}
+
+def configureSupportedRanges() {
+	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	
+	sendEvent(name: "thermostatSetpointRange", value: heatingSetpointRange, scale: temperatureScale, displayed: false)
+	
+	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, scale: temperatureScale, displayed: false)
+	
 }
 
 //-- Installation ----------------------------------------------------------------------------------------
@@ -147,7 +136,7 @@ def installed() {
 
 
 def updated() {
-	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 5000) {
+	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 1000) {
 		state.updatedLastRanAt = now() 
 
         traceEvent(settings.logFilter, "updated>Device is now updated", settings.trace)
@@ -165,12 +154,24 @@ def configure()
 {
     traceEvent(settings.logFilter, "Configuring Reporting and Bindings", settings.trace, get_LOG_DEBUG())
 
-	//allow 30 min without receiving temperature report
-	return sendEvent(name: "checkInterval", value: 30*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	def cmds = []
+	
+	cmds += zigbee.configureReporting(0x0201, 0x0000, 0x29, 19, 301, 50) 	//local temperature
+	cmds += zigbee.configureReporting(0x0201, 0x0008, 0x0020, 4, 300, 10) 	//heating demand
+	cmds += zigbee.configureReporting(0x0201, 0x0012, 0x0029, 15, 302, 40) 	//occupied heating setpoint
+
+	
+    if(cmds)
+    {
+        sendZigbeeCommands(cmds)
+    }
+
+	//allow 5 min without receiving temperature report
+	return sendEvent(name: "checkInterval", value: 300, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 void initialize() {
-	state?.scale = getTemperatureScale()
+	state?.scale = temperatureScale
     runIn(2,refresh)
 	
 	runEvery15Minutes(refresh_misc)
@@ -178,21 +179,15 @@ void initialize() {
 	def supportedThermostatModes = ['off', 'heat']
     state?.supportedThermostatModes = supportedThermostatModes
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes)
-    if(state?.scale == 'C')
-    {
-        sendEvent(name: "heatingSetpointRangeLow", value: 5.0, scale: scale)
-        sendEvent(name: "heatingSetpointRangeHigh", value: 30.0, scale: scale)
-    }
-    else if(state?.scale == 'F')
-    {
-        sendEvent(name: "heatingSetpointRangeLow", value: 41, scale: scale)
-        sendEvent(name: "heatingSetpointRangeHigh", value: 86, scale: scale)
-    }
-    sendEvent(name: "lock", value: "unlocked")
+    configureSupportedRanges();
+	
+	refresh();
 }
 
 def ping() {
-	refresh()
+	// refresh()
+	def cmds = zigbee.readAttribute(0x0201, 0x0000);
+	sendZigbeeCommands(cmds)
 }
 
 def uninstalled() {
@@ -204,12 +199,12 @@ def uninstalled() {
 // parse events into attributes
 def parse(String description) {
     def result = []
-	def scale = getTemperatureScale()
+	def scale = state?.scale
 	state?.scale = scale
 	traceEvent(settings.logFilter, "parse>Description :( $description )", settings.trace)
 	def cluster = zigbee.parse(description)
 	traceEvent(settings.logFilter, "parse>Cluster : $cluster", settings.trace)
-	if (description?.startsWith("read attr -")) {
+	if (description?.startsWith("read attr -") || description?.startsWith("write attr -")) {
     	def descMap = zigbee.parseDescriptionAsMap(description)
         result += createCustomMap(descMap)
         if(descMap.additionalAttrs){
@@ -229,54 +224,56 @@ def parse(String description) {
 def createCustomMap(descMap){
 	def result = null
 	def map = [: ]
-	def scale = getTemperatureScale()
+	def scale = temperatureScale
 	
  		if (descMap.cluster == "0201" && descMap.attrId == "0000") {
 			map.name = "temperature"
 			map.value = getTemperatureValue(descMap.value)
-            sendEvent(name: map.name, value: map.value, unit: scale)
+			map.unit = scale
 			traceEvent(settings.logFilter, "parse>${map.name}:  ${map.value}", settings.trace)
-			sendEvent(name: "checkInterval", value: 30*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+			//allow 5 min without receiving temperature report
+			sendEvent(name: "checkInterval", value: 300, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 		} 
 		else if (descMap.cluster == "0201" && descMap.attrId == "0008") {
 			map.name = "heatingDemand"
 			map.value = getHeatingDemand(descMap.value)
-            sendEvent(name: map.name, value: map.value)
             traceEvent(settings.logFilter, "parse>${map.name}: ${map.value}")
+
 			def operatingState = (map.value.toInteger() < 10) ? "idle" : "heating"
 			sendEvent(name: "thermostatOperatingState", value: operatingState)
 			traceEvent(settings.logFilter,"thermostatOperatingState: ${operatingState}", settings.trace)
 		} 
 		else if (descMap.cluster == "0201" && descMap.attrId == "0012") {
+			configureSupportedRanges();
             map.name = "heatingSetpoint"
             map.value = getTemperatureValue(descMap.value, true)
-            sendEvent(name: map.name, value: map.value, unit: scale)
+			map.unit = scale
             traceEvent(settings.logFilter, "parse>OCCUPY: ${map.name}: ${map.value}, scale: ${scale} ", settings.trace)
 		} 
-		else if (descMap.cluster == "0201" && descMap.attrId == "0014") {
+		else if (descMap.cluster == "0201" && descMap.attrId == "0014") { // UnpccupiedHeatingSetpoint
+			configureSupportedRanges();
             map.name = "heatingSetpoint"
             map.value = getTemperatureValue(descMap.value, true)
-            sendEvent(name: map.name, value: map.value, unit: scale)
+			map.unit = scale
             traceEvent(settings.logFilter, "parse>UNOCCUPY: ${map.name}: ${map.value}", settings.trace)
 		}
 		else if (descMap.cluster == "0201" && descMap.attrId == "001c") {
 			map.name = "thermostatMode"
 			map.value = getModeMap()[descMap.value]
-            sendEvent(name: map.name, value: map.value)
 			traceEvent(settings.logFilter, "parse>${map.name}: ${map.value}", settings.trace)
 		}
-		else if (descMap.cluster == "0204" && descMap.attrId == "0001") {
-			map.name = "lock"
-			map.value = getLockMap()[descMap.value]
-            sendEvent(name: map.name, value: map.value)
-			traceEvent(settings.logFilter, "parse>${map.name}: ${map.value}", settings.trace)
+		else{
+			result = "{cluster:"+descMap.cluster+", attrId:"+descMap.attrId+",value:"+descMap.value+"}";
 		}
+	if(map){
+		result = createEvent(map);
+	}
     return result
 }
 //-- Temperature -----------------------------------------------------------------------------------------
 
 def getTemperatureValue(value, doRounding = false) {
-	def scale = state?.scale
+	def scale = temperatureScale
 	if (value != null) {
 		double celsius = (Integer.parseInt(value, 16) / 100).toDouble()
 		if (scale == "C") {
@@ -316,7 +313,7 @@ def getHeatingDemand(value) {
 //-- Heating Setpoint ------------------------------------------------------------------------------------
 
 def heatLevelUp() {
-	def scale = getTemperatureScale()
+	def scale = temperatureScale
 	double nextLevel
 
 	if (scale == 'C') {
@@ -334,7 +331,7 @@ def heatLevelUp() {
 }
 
 def heatLevelDown() {
-	def scale = getTemperatureScale()
+	def scale = temperatureScale
 	double nextLevel
 
 	if (scale == 'C') {
@@ -351,7 +348,7 @@ def heatLevelDown() {
 }
 
 def setHeatingSetpoint(degrees) {
-	def scale = getTemperatureScale()
+	def scale = temperatureScale
 	degrees = checkTemperature(degrees)
 	def degreesDouble = degrees as Double
 	String tempValueString
@@ -360,29 +357,21 @@ def setHeatingSetpoint(degrees) {
 	} else {
 		tempValueString = String.format('%2d', degreesDouble.intValue())
 	}
-	sendEvent(name: "heatingSetpoint", value: tempValueString, unit: scale)
  	traceEvent(settings.logFilter, "setHeatingSetpoint> new setPoint: $tempValueString", settings.trace)
 	def celsius = (scale == "C") ? degreesDouble : (fahrenheitToCelsius(degreesDouble) as Double).round(1)
 	def cmds = []
 	cmds += zigbee.writeAttribute(0x201, 0x12, 0x29, hex(celsius * 100))
+	cmds += zigbee.readAttribute(0x0201, 0x0012)
 	sendZigbeeCommands(cmds)
 }
 
-//-- Thermostat and Fan Modes -------------------------------------------------------------------------------------
+//-- Thermostat Modes -------------------------------------------------------------------------------------
 void off() {
 	setThermostatMode('off')
 }
-void auto() {
-	setThermostatMode('auto')
-}
+
 void heat() {
 	setThermostatMode('heat')
-}
-void emergencyHeat() {
-	setThermostatMode('heat')
-}
-void cool() {
-	setThermostatMode('cool')
 }
 
 
@@ -397,20 +386,9 @@ def getModeMap() {
 	]
 }
 
-def getSupportedThermostatModes() {
-
-	if (!state?.supportedThermostatModes) {
-		state?.supportedThermostatModes = (device.currentValue("supportedThermostatModes")) ?
-			device.currentValue("supportedThermostatModes").toString().minus('[').minus(']').tokenize(',') : ['off', 'heat']
-	}
-	return state?.supportedThermostatModes
-}
-
 def setThermostatMode(mode) {
 	traceEvent(settings.logFilter, "setThermostatMode>switching thermostatMode", settings.trace)
 	mode = mode?.toLowerCase()
-	def supportedThermostatModes = getSupportedThermostatModes()
-
 	if (mode in supportedThermostatModes) {
  		"mode_$mode" ()
 	} else {
@@ -420,20 +398,18 @@ def setThermostatMode(mode) {
 
 def mode_off() {
 	traceEvent(settings.logFilter, "off>begin", settings.trace)
-	sendEvent(name: "thermostatMode", value: "off", data: [supportedThermostatModes: getSupportedThermostatModes()])
  	def cmds = []
 	cmds += zigbee.writeAttribute(0x0201, 0x001C, 0x30, 0)
-	cmds += zigbee.readAttribute(0x0201, 0x0008)
+	cmds += zigbee.readAttribute(0x0201, 0x001C)
 	sendZigbeeCommands(cmds)
 	traceEvent(settings.logFilter, "off>end", settings.trace)
 }
 
 def mode_heat() {
 	traceEvent(settings.logFilter, "heat>begin", settings.trace)
-	sendEvent(name: "thermostatMode", value: "heat", data: [supportedThermostatModes: getSupportedThermostatModes()])
  	def cmds = []
 	cmds += zigbee.writeAttribute(0x0201, 0x001C, 0x30, 4)
-	cmds += zigbee.readAttribute(0x0201, 0x0008)
+	cmds += zigbee.readAttribute(0x0201, 0x001C)
 	sendZigbeeCommands(cmds)
 	traceEvent(settings.logFilter, "heat>end", settings.trace)
 }
@@ -451,74 +427,56 @@ def getLockMap() {
 	]
 }
 
-def unlock() {
-	traceEvent(settings.logFilter, "unlock>begin", settings.trace)
-	sendEvent(name: "lock", value: "unlocked")
-	def cmds = []
-	cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x00)
-	sendZigbeeCommands(cmds)
-	traceEvent(settings.logFilter, "unlock>end", settings.trace)
-}
-
-def lock() {
-	traceEvent(settings.logFilter, "lock>begin", settings.trace)
-	sendEvent(name: "lock", value: "locked")
-	def cmds = []
-	cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x01)
-	sendZigbeeCommands(cmds)
-	traceEvent(settings.logFilter, "lock>end", settings.trace)
-}
-
 //---misc--------------------------------------------------------------------------------------------------------
 
 def refresh() {
-	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 20000) {
-		state.updatedLastRanAt = now()   
-
-    	state?.scale = getTemperatureScale()        
-		traceEvent(settings.logFilter, "refresh>scale=${state.scale}", settings.trace)
-		
-        def cmds = []
-
+	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 5000) {
+		def cmds = []
+			
+		state.updatedLastRanAt = now()  
 		cmds += zigbee.readAttribute(0x0201, 0x0000)	// Rd thermostat Local temperature
-    	cmds += zigbee.readAttribute(0x0201, 0x0012)	// Rd thermostat Occupied heating setpoint
-    	cmds += zigbee.readAttribute(0x0201, 0x0008)	// Rd thermostat PI heating demand
-   	 	cmds += zigbee.readAttribute(0x0201, 0x001C)	// Rd thermostat System Mode
-        cmds += zigbee.readAttribute(0x0204, 0x0001) 	// Rd thermostat Keypad lock
-
-        cmds += zigbee.configureReporting(0x0201, 0x0000, 0x29, 19, 301, 50) 	//local temperature
-        cmds += zigbee.configureReporting(0x0201, 0x0008, 0x0020, 4, 300, 10) 	//heating demand
-        cmds += zigbee.configureReporting(0x0201, 0x0012, 0x0029, 15, 302, 40) 	//occupied heating setpoint
-
+		cmds += zigbee.readAttribute(0x0201, 0x0012)	// Rd thermostat Occupied heating setpoint
+		cmds += zigbee.readAttribute(0x0201, 0x0008)	// Rd thermostat PI heating demand
+		cmds += zigbee.readAttribute(0x0201, 0x001C)	// Rd thermostat System Mode
+		cmds += zigbee.readAttribute(0x0204, 0x0001) 	// Rd thermostat Keypad lock
+		
         sendZigbeeCommands(cmds)
-        refresh_misc()	
+		refresh_misc() 
 	}
 	else {
-        traceEvent(settings.logFilter, "updated(): Ran within last 20 seconds so aborting", settings.trace, get_LOG_TRACE())
+        traceEvent(settings.logFilter, "updated(): Ran within last 5 seconds so aborting", settings.trace, get_LOG_TRACE())
 	}
 }
 
 
 void refresh_misc() {
+	
+	def constraint = ["heating","idle"]
 
     def weather = get_weather()
-	traceEvent(settings.logFilter,"refresh_misc>begin, settings.DisableOutdorTemperatureParam=${settings.DisableOutdorTemperatureParam}, weather=$weather", settings.trace)
+	traceEvent(settings.logFilter,"refresh_misc>begin, settings.disableOutdorTemperatureParam=${settings.disableOutdorTemperatureParam}, weather=$weather", settings.trace)
 	def cmds=[]
-
-	if (weather) {
+	state?.scale = temperatureScale 
+	
+	traceEvent(settings.logFilter, "refresh>scale=${state.scale}", settings.trace)
+	
+	if (weather || weather == 0) {
 		double tempValue    
 		int outdoorTemp = weather.toInteger()
-        if(state?.scale == 'F')
+        if(temperatureScale == 'F')
         {//the value sent to the thermostat must be in C
         //the thermostat make the conversion to F
         	outdoorTemp = fahrenheitToCelsius(outdoorTemp).toDouble().round()
         }
 		int outdoorTempValue
 		int outdoorTempToSend  
-
-        if(!settings.DisableOutdorTemperatureParam)
+        if(disableOutdorTemperatureParam == "Setpoint") {
+			//delete outdoorTemp
+			cmds += zigbee.writeAttribute(0xFF01, 0x0010, 0x29, 0x8000)
+        }
+        else
         {
-        	cmds += zigbee.writeAttribute(0xFF01, 0x0011, 0x21, 10800)//set the outdoor temperature timeout to 3 hours
+			cmds += zigbee.writeAttribute(0xFF01, 0x0011, 0x21, 10800)//set the outdoor temperature timeout to 3 hours
             if (outdoorTemp < 0) {
                 outdoorTempValue = -outdoorTemp*100 - 65536
                 outdoorTempValue = -outdoorTempValue
@@ -531,12 +489,6 @@ void refresh_misc() {
                 outdoorTempToSend = tempa + tempb
                 cmds += zigbee.writeAttribute(0xFF01, 0x0010, 0x29, outdoorTempToSend, [mfgCode: 0x119C])
             }
-        }
-        else
-        {//delete outdoorTemp
-        	//the outdoor temperature cannot be directly erased from the thermostat.
-            //to erase it rapidly, the external temperature timeout must be set to the minimal value (30sec)
-        	cmds += zigbee.writeAttribute(0xFF01, 0x0011, 0x21, 30)//set the outdoor temperature timeout to 30sec
         }
 
       	def mytimezone = location.getTimeZone()
@@ -551,51 +503,41 @@ void refresh_misc() {
 
 	}    
 
-    if(BacklightAutoDimParam == "On Demand"){ 	//Backlight when needed
+    if(backlightAutoDimParam == "On Demand"){ 	//Backlight when needed
         traceEvent(settings.logFilter,"Backlight on press",settings.trace)
         cmds += zigbee.writeAttribute(0x0201, 0x0402, 0x30, 0x0000)
     }
     else{										//Backlight sensing
-        traceEvent(settings.logFilter,"Backlight Sensing",settings.trace)
+        traceEvent(settings.logFilter,"Backlight Always ON",settings.trace)
         cmds += zigbee.writeAttribute(0x0201, 0x0402, 0x30, 0x0001)
     }       
 
     traceEvent(settings.logFilter,"keyboardLockParam: ${keyboardLockParam}",settings.trace)
-    if(keyboardLockParam != true){ 	//unlock
-        traceEvent(settings.logFilter,"unlock",settings.trace)
-        unlock()
-    }
-    else{								//lock
+    if(keyboardLockParam == "Lock"){								//lock
         traceEvent(settings.logFilter,"lock",settings.trace)
-        lock()
-    }       
+		cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x01)
+    }
+    else{ 	//unlock
+        traceEvent(settings.logFilter,"unlock",settings.trace)
+		cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x00)
+    }    
+
+	if(timeFormatParam == "12h AM/PM"){//12h AM/PM
+		traceEvent(settings.logFilter,"Set to 12h AM/PM",settings.trace)
+		cmds += zigbee.writeAttribute(0xFF01, 0x0114, 0x30, 0x0001)
+	}
+	else{//24h
+		traceEvent(settings.logFilter,"Set to 24h",settings.trace)
+		cmds += zigbee.writeAttribute(0xFF01, 0x0114, 0x30, 0x0000)
+	} 
 
 	traceEvent(settings.logFilter,"refresh_misc> about to  refresh other misc, scale=${state.scale}", settings.trace)
-    
-	if (state?.scale == 'C') {
+   if (state?.scale == 'C') {
 		cmds += zigbee.writeAttribute(0x0204, 0x0000, 0x30, 0)	// Wr °C on thermostat display
 	} else {
 		cmds += zigbee.writeAttribute(0x0204, 0x0000, 0x30, 1)	// Wr °F on thermostat display 
 	}
-
-    def heatingSetpointRangeHigh
-    def heatingSetpointRangeLow
-    if(state?.scale == 'C')
-    {
-    	heatingSetpointRangeLow = 5.0
-   		heatingSetpointRangeHigh = 30.0
-    }
-    else if(state?.scale == 'F')
-    {
-    	heatingSetpointRangeLow = 41
-   		heatingSetpointRangeHigh = 86
-    }
-    sendEvent(name: "heatingSetpointRangeLow", value: heatingSetpointRangeLow, scale: scale)
-    sendEvent(name: "heatingSetpointRangeHigh", value: heatingSetpointRangeHigh, scale: scale)
-	def low = heatingSetpointRangeLow.toFloat().round(1)
-	def high = heatingSetpointRangeHigh.toFloat().round(1)   
-	def heatingSetpointRange= [low,high]
-	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, scale: state.scale)
+    
 	traceEvent(settings.logFilter,"refresh_misc>end", settings.trace)
 
     if(cmds)
@@ -607,7 +549,7 @@ void refresh_misc() {
 
 
 //-- Private functions -----------------------------------------------------------------------------------
-void sendZigbeeCommands(cmds, delay = 1000) {
+void sendZigbeeCommands(cmds, delay = 250) {
 	cmds.removeAll { it.startsWith("delay") }
 	// convert each command into a HubAction
 	cmds = cmds.collect { new physicalgraph.device.HubAction(it) }
@@ -616,7 +558,7 @@ void sendZigbeeCommands(cmds, delay = 1000) {
 
 private def checkTemperature(def number)
 {
-	def scale = getTemperatureScale()
+	def scale = temperatureScale
 	if(scale == 'F')
     {
     	if(number < 41)
@@ -700,35 +642,25 @@ def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMes
 	int LOG_INFO = get_LOG_INFO()
 	int LOG_DEBUG = get_LOG_DEBUG()
 	int LOG_TRACE = get_LOG_TRACE()
-	int filterLevel = (logFilter) ? logFilter.toInteger() : get_LOG_WARN()
 
-	if ((displayEvent) || (sendMessage)) {
-		def results = [
-			name: "verboseTrace",
-			value: message,
-			displayed: ((displayEvent) ?: false)
-		]
-
-		if ((displayEvent) && (filterLevel >= traceLevel)) {
-			switch (traceLevel) {
-				case LOG_ERROR:
-					log.error "${message}"
-					break
-				case LOG_WARN:
-					log.warn "${message}"
-					break
-				case LOG_INFO:
-					log.info "${message}"
-					break
-				case LOG_TRACE:
-					log.trace "${message}"
-					break
-				case LOG_DEBUG:
-				default:
-					log.debug "${message}"
-					break
-			} /* end switch*/
-			if (sendMessage) sendEvent(results)
-		} /* end if displayEvent*/
+	if (displayEvent || traceLevel < 4) {
+		switch (traceLevel) {
+			case LOG_ERROR:
+				log.error "${message}"
+				break
+			case LOG_WARN:
+				log.warn "${message}"
+				break
+			case LOG_INFO:
+				log.info "${message}"
+				break
+			case LOG_TRACE:
+				log.trace "${message}"
+				break
+			case LOG_DEBUG:
+			default:
+				log.debug "${message}"
+				break
+		}
 	}
-}
+} 

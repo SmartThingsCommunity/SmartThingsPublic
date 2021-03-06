@@ -20,13 +20,14 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Thermostat Mode"
 		capability "Temperature Measurement"
 
 		command "setThermostatSetpointUp"
 		command "setThermostatSetpointDown"
 		command "switchMode"
 
-		fingerprint mfr: "010F", prod: "1301", model: "1000", deviceJoinName: "Fibaro Heat Controller"
+		fingerprint mfr: "010F", prod: "1301", model: "1000", deviceJoinName: "Fibaro Thermostat" //Fibaro Heat Controller
 	}
 
 	tiles(scale: 2) {
@@ -117,6 +118,14 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
 		log.debug "MultiChannel Encapsulation: ${encapsulatedCommand}"
@@ -143,7 +152,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 	result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd, sourceEndPoint = null) {
 	def mode
 	switch (cmd.mode) {
 		case 1:
@@ -160,29 +169,43 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	createEvent(name: "thermostatMode", value: mode, data: [supportedThermostatModes: state.supportedModes])
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, sourceEndPoint = null) {
 	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
 	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
-	sendEventToChild(map)
-	createEvent(map)
+	if (map.value != "-100.0") {
+		if (state.isTemperatureReportAbleToChangeStatus) {
+			changeTemperatureSensorStatus("online")
+			sendEventToChild(map)
+		}
+		createEvent(map)
+	} else {
+		changeTemperatureSensorStatus("offline")
+		response(secureEncap(zwave.configurationV2.configurationGet(parameterNumber: 3)))
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	if (cmd.parameterNumber == 3) {
 		if (cmd.scaledConfigurationValue == 1) {
 			if (!childDevices) {
-				state.isChildOnline = true
 				addChild()
 			} else {
-				changeTemperatureSensorStatus("online")
+				refreshChild()
 			}
+			state.isTemperatureReportAbleToChangeStatus = true
+			changeTemperatureSensorStatus("online")
 		} else if (cmd.scaledConfigurationValue == 0 && childDevices) {
+			state.isTemperatureReportAbleToChangeStatus = false
 			changeTemperatureSensorStatus("offline")
 		}
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, sourceEndPoint = null) {
+	log.debug "Notification: ${cmd}"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
@@ -276,7 +299,7 @@ private secureEncap(cmd, endpoint = null) {
 }
 
 private secure(cmd) {
-	if (zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -303,15 +326,15 @@ def switchMode() {
 	}
 }
 
-def sendEventToChild(event) {
+def sendEventToChild(event, forced = false) {
 	String childDni = "${device.deviceNetworkId}:2"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	if (state.isChildOnline)
+	if (state.isChildOnline || forced)
 		child?.sendEvent(event)
 }
 
 def configureChild() {
-	sendEventToChild(createEvent([name: "checkInterval", value: 6 * 60 * 60 + 36, displayed: false]))
+	sendEventToChild(createEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false), true)
 }
 
 private refreshChild() {
@@ -344,5 +367,5 @@ private getMinHeatingSetpointTemperature() {
 private changeTemperatureSensorStatus(status) {
 	state.isChildOnline = (status == "online")
 	def map = [name: "DeviceWatch-DeviceStatus", value: status]
-	sendEventToChild(map)
+	sendEventToChild(map, true)
 }

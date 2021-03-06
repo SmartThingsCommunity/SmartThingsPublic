@@ -24,11 +24,21 @@ metadata {
         capability "Sensor"
         capability "Configuration"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0000",  deviceJoinName: "Smart Plug"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0005",  deviceJoinName: "Smart Plug"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0105", deviceJoinName: "HONYAR Smart Outlet (USB)"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0104", deviceJoinName: "HONYAR Smart Outlet"
-    }
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0000",  deviceJoinName: "Outlet" //Smart Plug
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0005",  deviceJoinName: "Outlet" //Smart Plug
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0105", deviceJoinName: "HONYAR Outlet" //HONYAR Smart Outlet (USB)
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", outClusters: "0003", manufacturer: "REXENSE", model: "HY0104", deviceJoinName: "HONYAR Outlet" //HONYAR Smart Outlet
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0009, 0702, 0B04", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "E_Socket", deviceJoinName: "HEIMAN Outlet" //HEIMAN Smart Outlet
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "sengled", model: "E1C-NB7",  deviceJoinName: "Sengled Outlet" //Sengled Smart Plug with Energy Tracker
+        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-131",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-132",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-134",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-137",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SMRZB-143",  deviceJoinName: "frient Outlet" // frient smart cable, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint manufacturer: "Jasco Products", model: "43095", deviceJoinName: "Enbrighten Outlet" //Enbrighten Plug-in Smart Switch With Energy Monitoring 43095, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+        fingerprint manufacturer: "Jasco Products", model: "43132", deviceJoinName: "Jasco Outlet" //Enbrighten In-Wall Smart Outlet With Energy Monitoring 43132, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+        fingerprint manufacturer: "Jasco Products", model: "43078", deviceJoinName: "Enbrighten Switch", ocfDeviceType: "oic.d.switch" //Enbrighten In-Wall Smart Switch With Energy Monitoring 43078, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+	}
 
     tiles(scale: 2){
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
@@ -61,23 +71,24 @@ def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
-    def powerDiv = 1
-    def energyDiv = 100
+    def descMap = zigbee.parseDescriptionAsMap(description)
 
     if (event) {
         log.info "event enter:$event"
-        if (event.name== "power") {
-            event.value = event.value/powerDiv
+        if (event.name == "switch" && !descMap.isClusterSpecific && descMap.commandInt == 0x0B) {
+            log.info "Ignoring default response with desc map: $descMap"
+            return [:]
+        } else if (event.name== "power") {
+            event.value = event.value/getPowerDiv()
             event.unit = "W"
         } else if (event.name== "energy") {
-            event.value = event.value/energyDiv
+            event.value = event.value/getEnergyDiv()
             event.unit = "kWh"
         }
         log.info "event outer:$event"
         sendEvent(event)
     } else {
         List result = []
-        def descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "Desc Map: $descMap"
 
         List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
@@ -90,13 +101,13 @@ def parse(String description) {
                 if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "power"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/powerDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getPowerDiv()
                         map.unit = "W"
                 }
                 else if (it.value && it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/energyDiv
+                        map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
                         map.unit = "kWh"
                 }
 
@@ -110,11 +121,20 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off()
+    def cmds = zigbee.off()
+    if (device.getDataValue("model") == "HY0105") {
+        cmds += zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: 0x02])
+    }
+    return cmds
 }
 
+
 def on() {
-    zigbee.on()
+    def cmds = zigbee.on()
+    if (device.getDataValue("model") == "HY0105") {
+        cmds += zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: 0x02])
+    }
+    return cmds
 }
 
 /**
@@ -138,5 +158,22 @@ def configure() {
     return refresh() +
     	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
-           zigbee.electricMeasurementPowerConfig(1, 600, 1) 
+           zigbee.electricMeasurementPowerConfig(1, 600, 1) +
+           zigbee.simpleMeteringPowerConfig()
+}
+
+private int getPowerDiv() {
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10 : 1
+}
+
+private int getEnergyDiv() {
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : 100
+}
+
+private boolean isSengledOutlet() {
+    device.getDataValue("model") == "E1C-NB7"
+}
+
+private boolean isJascoProductsOutlet() {
+    device.getDataValue("manufacturer") == "Jasco Products"
 }

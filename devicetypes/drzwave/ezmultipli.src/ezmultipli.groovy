@@ -18,7 +18,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint mfr: "001E", prod: "0004", model: "0001"
+		fingerprint mfr: "001E", prod: "0004", model: "0001", deviceJoinName: "EZmultiPli Multipurpose Sensor"
 	}
 
 	simulator {
@@ -135,6 +135,8 @@ def setupHealthCheck() {
 def installed() {
 	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
+	state.setColor = [red: null, green: null, blue: null]
+	state.colorQueryFailures = 0
 	setupHealthCheck()
 }
 
@@ -247,13 +249,28 @@ def zwaveEvent(switchcolorv3.SwitchColorReport cmd) {
 		result << createEvent(name: "color", value: hexColor)
 		// Send the color as hue and saturation
 		def hsv = rgbToHSV(*colors)
-		result << createEvent(name: "hue", value: hsv.hue)
-		result << createEvent(name: "saturation", value: hsv.saturation)
-		// Reset the values
-		RGB_NAMES.collect { state.colorReceived[it] = null}
+		if (state.setColor.red == state.colorReceived.red && state.setColor.green == state.colorReceived.green && state.setColor.blue == state.colorReceived.blue) {
+			unschedule()
+			result << createEvent(name: "hue", value: hsv.hue)
+			result << createEvent(name: "saturation", value: hsv.saturation)
+			state.colorQueryFailures = 0
+		} else {
+			if (++state.colorQueryFailures >= 6) {
+				sendHubCommand(commands([
+						zwave.switchColorV3.switchColorSet(red: state.setColor.red, green: state.setColor.green, blue: state.setColor.blue),
+						queryAllColors()
+				]))
+			} else {
+				runIn(2, "sendColorQueryCommands", [overwrite: true])
+			}
+		}
 	}
 
 	result
+}
+
+private sendColorQueryCommands() {
+	sendHubCommand(commands(queryAllColors()))
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -324,6 +341,7 @@ def setColor(value) {
 		return
 	}
 
+	state.setColor = [red: myred, green: mygreen, blue: myblue]
 	cmds << zwave.switchColorV3.switchColorSet(red: myred, green: mygreen, blue: myblue)
 	cmds << zwave.basicV1.basicGet()
 
@@ -391,7 +409,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 private command(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")) {
+	} else if (zwaveInfo?.cc?.contains("56")) {
 		crcEncap(cmd)
 	} else {
 		cmd.format()

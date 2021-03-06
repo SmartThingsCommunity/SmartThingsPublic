@@ -28,8 +28,11 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Detector" //欧瑞博 烟雾报警器(SF21)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "Orvibo Smoke Detector" //欧瑞博 烟雾报警器(SF21)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-EM", deviceJoinName: "HEIMAN Smoke Detector" //HEIMAN Smoke Sensor (HS1SA-E)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-N-3.0", deviceJoinName: "HEIMAN Smoke Detector" //HEIMAN Smoke Sensor (HS3SA)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"SMSZB-120", deviceJoinName: "frient Smoke Detector" // frient Intelligent Smoke Alarm
 	}
 
 	tiles {
@@ -52,6 +55,9 @@ metadata {
 		details(["smoke", "battery", "refresh"])
 	}
 }
+
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
 
 def installed(){
 	log.debug "installed"
@@ -83,7 +89,11 @@ def parseAttrMessage(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+		if (descMap.attrInt == BATTERY_VOLTAGE_ATTR) {
+			map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+		} else {
+			map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+		}
 	} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 		map = translateZoneStatus(zs)
@@ -98,6 +108,29 @@ def parseIasMessage(String description) {
 
 private Map translateZoneStatus(ZoneStatus zs) {
 	return getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+}
+
+private Map getBatteryResult(rawValue) {
+	log.debug "Battery rawValue = ${rawValue}"
+	def linkText = getLinkText(device)
+
+	def result = [:]
+
+	def volts = rawValue / 10
+
+	if (!(rawValue == 0 || rawValue == 255)) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+
+		def minValue = 23
+		def maxValue = 30
+		def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
+		pct = pct > 0 ? pct : 1
+		result.value = Math.min(100, pct)
+	}
+
+	return result
 }
 
 private Map getBatteryPercentageResult(rawValue) {
@@ -126,7 +159,8 @@ def getDetectedResult(value) {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
+	def batteryAttr = isFrientSensor() ? BATTERY_VOLTAGE_ATTR : BATTERY_PERCENT_ATTR
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
@@ -141,10 +175,18 @@ def ping() {
 
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	Integer minReportTime = 0
 	Integer maxReportTime = 180
 	Integer reportableChange = null
-	return refresh() + zigbee.enrollResponse() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) +
-				zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
+	Integer batteryAttr = isFrientSensor() ? BATTERY_VOLTAGE_ATTR : BATTERY_PERCENT_ATTR
+	Integer batteryReportChange = isFrientSensor() ? 0x1 : 0x10
+	return refresh() + 
+			zigbee.enrollResponse() +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr, DataType.UINT8, 30, 1200, batteryReportChange) +
+			zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
 }

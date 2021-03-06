@@ -21,7 +21,7 @@ metadata {
 		//capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
-		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser", mnmn: "SmartThings", vid: "SmartThings-smartthings-Dome_Mouser"
+		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Pest Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Dome_Mouser" //Dome Mouser
 	}
 
 	tiles(scale: 2) {
@@ -198,7 +198,7 @@ def getConfigurationCommands() {
 	cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [255]).format()
 	// Set Firing Mode, default: 2 (Burst fire)
 	cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
-	// 	This parameter defines how long the Mouser will fire continuously before it starts to burst-fire, default: 360 seconds
+	// This parameter defines how long the Mouser will fire continuously before it starts to burst-fire, default: 360 seconds
 	cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, configurationValue: [360]).format()
 	// Enable/Disable LED Alarm, default: 1 (enabled)
 	cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1]).format()

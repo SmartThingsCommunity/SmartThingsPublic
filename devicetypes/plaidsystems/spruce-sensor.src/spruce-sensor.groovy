@@ -43,13 +43,13 @@ metadata {
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
 	}
 
 	preferences {
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "-100..100", displayDuringSetup: false
         input "interval", "number", title: "Report Interval", description: "How often the device should report in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
         input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
       }
@@ -155,7 +155,7 @@ private Map parseCatchAllMessage(String description) {
         sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration Successful")        
         //setConfig()
         log.debug "config complete"        
-        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]                
+        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]
     }
     else if (descMap.command == 0x0001){    
     	def hexString = "${hex(descMap.data[5])}" + "${hex(descMap.data[4])}"
@@ -258,9 +258,7 @@ private Map getTemperatureResult(value) {
 	def linkText = getLinkText(device)
         
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset        
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def descriptionText = "${linkText} is ${value}°${temperatureScale}"
 	return [

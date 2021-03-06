@@ -57,6 +57,10 @@ def selectButton() {
 
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
 		}
+
+		section([title: " ", mobileOnly:true]) {
+			label title: "Assign a name", required: false
+		}
 	}
 }
 

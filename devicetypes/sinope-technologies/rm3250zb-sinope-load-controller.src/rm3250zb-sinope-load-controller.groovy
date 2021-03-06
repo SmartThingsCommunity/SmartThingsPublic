@@ -1,7 +1,6 @@
 /**
-
-Copyright Sinopé Technologies 2019
-1.1.0
+Copyright Sinopé Technologies
+1.3.0
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
@@ -11,11 +10,11 @@ metadata {
 
 	preferences {
         input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
-		input("logFilter", "number", title: "Trace level", range: "1..5",
-			description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
+		// input("logFilter", "number", title: "Trace level", range: "1..5",
+		// 	description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
     }
     
-    definition (name: "RM3250ZB Sinope Load Controller", namespace: "Sinope Technologies", author: "Sinope Technologies", , ocfDeviceType: "oic.d.switch") {
+    definition (name: "RM3250ZB Sinope Load Controller", namespace: "Sinope Technologies", author: "Sinope Technologies", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-ZigBee_Switch_Power") {
 
         capability "Refresh"
         capability "Switch"        
@@ -24,7 +23,7 @@ metadata {
         capability "Power Meter"
         capability "Health Check"
 
-		fingerprint manufacturer: "Sinope Technologies", model: "RM3250ZB", deviceJoinName: "RM3250ZB"
+		fingerprint manufacturer: "Sinope Technologies", model: "RM3250ZB", deviceJoinName: "Sinope Switch" //RM3250ZB
     }
 
     tiles(scale: 2) {
@@ -92,18 +91,17 @@ def refresh() {
     traceEvent(settings.logFilter, "Refresh.", settings.trace, get_LOG_DEBUG())
     return zigbee.readAttribute(0x0006, 0x0000) + //read on/off
     zigbee.readAttribute(0x0B04, 0x050B) + //read active power
-    zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) + //configure reporting of on/off
-    zigbee.configureReporting(0x0B04, 0x050B, 0x29, 30, 599, 0x64) // configure reporting of active power
+    configure()
 }
 
 def configure() {
     traceEvent(settings.logFilter, "Configuring Reporting and Bindings.", settings.trace, get_LOG_DEBUG())
 
     //allow 30 minutes without receiving on/off state
-	sendEvent(name: "checkInterval", value: 30*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 300, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	return  zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) + // configure reporting of active power
-    zigbee.configureReporting(0x0B04, 0x050B, 0x29, 30, 599, 0x64) + //configure reporting of on/off
+	return  zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) + //configure reporting of on/off
+    zigbee.configureReporting(0x0B04, 0x050B, 0x29, 5, 300, 0x05) + // configure reporting of active power
     zigbee.readAttribute(0x0006, 0x0000) + //read on/off
     zigbee.readAttribute(0x0B04, 0x050B) //read active power
 }
@@ -130,35 +128,25 @@ def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMes
 	int LOG_INFO = get_LOG_INFO()
 	int LOG_DEBUG = get_LOG_DEBUG()
 	int LOG_TRACE = get_LOG_TRACE()
-	int filterLevel = (logFilter) ? logFilter.toInteger() : get_LOG_WARN()
-    
-	if ((displayEvent) || (sendMessage)) {
-		def results = [
-			name: "verboseTrace",
-			value: message,
-			displayed: ((displayEvent) ?: false)
-		]
 
-		if ((displayEvent) && (filterLevel >= traceLevel)) {
-			switch (traceLevel) {
-				case LOG_ERROR:
-					log.error "${message}"
-					break
-				case LOG_WARN:
-					log.warn "${message}"
-					break
-				case LOG_INFO:
-					log.info "${message}"
-					break
-				case LOG_TRACE:
-					log.trace "${message}"
-					break
-				case LOG_DEBUG:
-				default:
-					log.debug "${message}"
-					break
-			} /* end switch*/
-			if (sendMessage) sendEvent(results)
-		} /* end if displayEvent*/
+	if (displayEvent || traceLevel < 4) {
+		switch (traceLevel) {
+			case LOG_ERROR:
+				log.error "${message}"
+				break
+			case LOG_WARN:
+				log.warn "${message}"
+				break
+			case LOG_INFO:
+				log.info "${message}"
+				break
+			case LOG_TRACE:
+				log.trace "${message}"
+				break
+			case LOG_DEBUG:
+			default:
+				log.debug "${message}"
+				break
+		}
 	}
-}
+} 

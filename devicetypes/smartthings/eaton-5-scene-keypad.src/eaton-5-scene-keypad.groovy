@@ -20,7 +20,7 @@ metadata {
 		capability "Switch"
 
 		//zw:L type:0202 mfr:001A prod:574D model:0000 ver:2.05 zwv:2.78 lib:01 cc:87,77,86,22,2D,85,72,21,70
-		fingerprint mfr: "001A", prod: "574D", model: "0000", deviceJoinName: "Eaton 5-Scene Keypad"
+		fingerprint mfr: "001A", prod: "574D", model: "0000", deviceJoinName: "Eaton Switch" //Eaton 5-Scene Keypad
 	}
 
 	tiles(scale: 2) {

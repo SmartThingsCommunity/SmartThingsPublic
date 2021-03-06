@@ -23,7 +23,7 @@ metadata {
 		capability "Alarm"
 
 		//zw:L type:1005 mfr:014A prod:0005 model:000A ver:1.10 zwv:4.05 lib:03 cc:5E,86,72,5A,85,59,73,25,60,8E,20,7A role:05 ff:8F00 ui:8F00 epc:4 ep:['1005 20,25,5E,59,85']
-		fingerprint mfr: "014A", prod: "0005", model: "000A", deviceJoinName: "Ecolink Wireless Siren"	 
+		fingerprint mfr: "014A", prod: "0005", model: "000A", deviceJoinName: "Ecolink Siren"	  //Ecolink Wireless Siren
 	}
 
 	tiles {
@@ -96,6 +96,14 @@ def createEvents(value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	def srcEndpoint = cmd.sourceEndPoint
 	def destEnd = cmd.destinationEndPoint

@@ -12,7 +12,9 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", genericHandler: "Z-Wave") {
+	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings",
+			ocfDeviceType: "oic.d.thermostat", genericHandler: "Z-Wave", runLocally: true,
+			executeCommandsLocally: false, minHubCoreVersion: '000.033.0001') {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat Heating Setpoint"
@@ -20,12 +22,13 @@ metadata {
 		capability "Thermostat Operating State"
 		capability "Thermostat Mode"
 		capability "Thermostat Fan Mode"
+		capability "Relative Humidity Measurement"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Battery"
-		
+
 		attribute "thermostatFanState", "string"
 
 		command "switchMode"
@@ -35,9 +38,10 @@ metadata {
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
 
-		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80"
-		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Z-Wave Thermostat"
-		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "GoControl Z-Wave Thermostat"
+		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80", deviceJoinName: "Thermostat"
+		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Thermostat" //Linear Z-Wave Thermostat
+		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "GoControl Thermostat" //GoControl Z-Wave Thermostat
+		fingerprint mfr: "0039", prod: "0011", model: "0008", deviceJoinName: "Honeywell Thermostat", mnmn: "SmartThings", vid: "honeywell-t6-pro" //Honeywell T6 Pro Z-Wave Thermostat
 	}
 
 	tiles {
@@ -114,9 +118,9 @@ metadata {
 
 def installed() {
 	// Configure device
-	def cmds = [new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format())]
+	def cmds = [zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])]
 	sendHubCommand(cmds)
-	runIn(3, "initialize", [overwrite: true])  // Allow configure command to be sent and acknowledged before proceeding
+	runIn(3, "initialize", [overwrite: true, forceForLocallyExecuting: true])  // Allow configure command to be sent and acknowledged before proceeding
 }
 
 def updated() {
@@ -127,11 +131,14 @@ def initialize() {
 	// Device-Watch simply pings if no device events received for 24hrs
 	sendEvent(name: "checkInterval", value: 60 * 60 * 24, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	unschedule()
+	sendHubCommand([
+		zwave.thermostatModeV2.thermostatModeSupportedGet(),
+		zwave.thermostatFanModeV3.thermostatFanModeSupportedGet()
+	])
 	pollDevice()
 }
 
 def configure() {
-	def cmds = []
 	/*
 	Configuration of reporting values. Bitmask based on:
 	1	TEMPERATURE (CC_SENSOR_MULTILEVEL)
@@ -149,7 +156,7 @@ def configure() {
 	16384	MECH STATUS
 	32768	SCP STATUS
 	*/
-	cmds << zwave.configurationV1.configurationSet(parameterNumber: 23, size: 2, scaledConfigurationValue: 8319).format()
+	response(zwave.configurationV1.configurationSet(parameterNumber: 23, size: 2, scaledConfigurationValue: 8319))
 }
 
 def parse(String description)
@@ -179,11 +186,9 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	switch (cmd.setpointType) {
 		case 1:
 			sendEvent(name: "heatingSetpoint", value: setpoint, unit: unit, displayed: false)
-			updateThermostatSetpoint("heatingSetpoint", setpoint)
 			break;
 		case 2:
 			sendEvent(name: "coolingSetpoint", value: setpoint, unit: unit, displayed: false)
-			updateThermostatSetpoint("coolingSetpoint", setpoint)
 			break;
 		default:
 			log.debug "unknown setpointType $cmd.setpointType"
@@ -203,7 +208,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		map.value = getTempInLocalScale(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C")
 		map.unit = getTemperatureScale()
 		map.name = "temperature"
-		updateThermostatSetpoint(null, null)
 	} else if (cmd.sensorType == 5) {
 		map.value = cmd.scaledSensorValue
 		map.unit = "%"
@@ -238,7 +242,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev1.Thermosta
 			break
 	}
 	// Makes sure we have the correct thermostat mode
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format()))
+	sendHubCommand(zwave.thermostatModeV2.thermostatModeGet())
 	createEvent(map)
 }
 
@@ -259,7 +263,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanstatev1.ThermostatFanSt
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
-	def map = [name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes]]
+	def map = [name: "thermostatMode"]
 	switch (cmd.mode) {
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_OFF:
 			map.value = "off"
@@ -277,12 +281,11 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			map.value = "auto"
 			break
 	}
-	updateThermostatSetpoint(null, null)
 	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport cmd) {
-	def map = [name: "thermostatFanMode", data:[supportedThermostatFanModes: state.supportedFanModes]]
+	def map = [name: "thermostatFanMode"]
 	switch (cmd.fanMode) {
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_AUTO_LOW:
 			map.value = "auto"
@@ -348,21 +351,20 @@ def refresh() {
 	if (!state.refreshTriggeredAt || (2 * 60 * 1000 < (timeNow - state.refreshTriggeredAt))) {
 		state.refreshTriggeredAt = timeNow
 		// use runIn with overwrite to prevent multiple DTH instances run before state.refreshTriggeredAt has been saved
-		runIn(2, "pollDevice", [overwrite: true])
+		runIn(2, "pollDevice", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
 def pollDevice() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV2.sensorMultilevelGet().format()) // current temperature
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format())
-	cmds << new physicalgraph.device.HubAction(zwave.batteryV1.batteryGet().format())
+	cmds << zwave.thermostatModeV2.thermostatModeGet()
+	cmds << zwave.thermostatFanModeV3.thermostatFanModeGet()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1) // current temperature
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 5) // current relative humidity
+	cmds << zwave.thermostatOperatingStateV1.thermostatOperatingStateGet()
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
+	cmds << zwave.batteryV1.batteryGet()
 	sendHubCommand(cmds, 1200)
 }
 
@@ -404,11 +406,11 @@ def alterSetpoint(raise, setpoint) {
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetHeatingSetpoint && data.targetCoolingSetpoint) {
-		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true])
+		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true, forceForLocallyExecuting: true])
 	} else if (setpoint == "heatingSetpoint" && data.targetHeatingSetpoint) {
-		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true])
+		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true, forceForLocallyExecuting: true])
 	} else if (setpoint == "coolingSetpoint" && data.targetCoolingSetpoint) {
-		runIn(5, "updateCoolingSetpoint", [data: data, overwrite: true])
+		runIn(5, "updateCoolingSetpoint", [data: data, overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
@@ -421,7 +423,7 @@ def updateCoolingSetpoint(data) {
 }
 
 def enforceSetpointLimits(setpoint, data) {
-	def locationScale = getTemperatureScale() 
+	def locationScale = getTemperatureScale()
 	def minSetpoint = (setpoint == "heatingSetpoint") ? getTempInDeviceScale(40, "F") : getTempInDeviceScale(50, "F")
 	def maxSetpoint = (setpoint == "heatingSetpoint") ? getTempInDeviceScale(90, "F") : getTempInDeviceScale(99, "F")
 	def deadband = (state.scale == 1) ? 3 : 2  // 3°F, 2°C
@@ -436,7 +438,7 @@ def enforceSetpointLimits(setpoint, data) {
 	}
 	// Enforce 3 degrees F deadband between setpoints
 	if (setpoint == "heatingSetpoint") {
-		heatingSetpoint = targetValue 
+		heatingSetpoint = targetValue
 		coolingSetpoint = (heatingSetpoint + deadband > getTempInDeviceScale(data.coolingSetpoint, locationScale)) ? heatingSetpoint + deadband : null
 	}
 	if (setpoint == "coolingSetpoint") {
@@ -449,14 +451,14 @@ def enforceSetpointLimits(setpoint, data) {
 def setHeatingSetpoint(degrees) {
 	if (degrees) {
 		state.heatingSetpoint = degrees.toDouble()
-		runIn(2, "updateSetpoints", [overwrite: true])
+		runIn(2, "updateSetpoints", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
 def setCoolingSetpoint(degrees) {
 	if (degrees) {
 		state.coolingSetpoint = degrees.toDouble()
-		runIn(2, "updateSetpoints", [overwrite: true])
+		runIn(2, "updateSetpoints", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
@@ -496,33 +498,13 @@ def updateSetpoints(data) {
 	sendHubCommand(cmds, 1000)
 }
 
-// thermostatSetpoint is not displayed by any tile as it can't be predictable calculated due to
-// the device's quirkiness but it is defined by the capability so it must be set, set it to the most likely value
-def updateThermostatSetpoint(setpoint, value) {
-	def scale = getTemperatureScale()
-	def heatingSetpoint = (setpoint == "heatingSetpoint") ? value : getTempInLocalScale("heatingSetpoint")
-	def coolingSetpoint = (setpoint == "coolingSetpoint") ? value : getTempInLocalScale("coolingSetpoint")
-	def mode = device.currentValue("thermostatMode")
-	def thermostatSetpoint = heatingSetpoint    // corresponds to (mode == "heat" || mode == "emergency heat")
-	if (mode == "cool") {
-		thermostatSetpoint = coolingSetpoint
-	} else if (mode == "auto" || mode == "off") {
-		// Set thermostatSetpoint to the setpoint closest to the current temperature
-		def currentTemperature = getTempInLocalScale("temperature")
-		if (currentTemperature > (heatingSetpoint + coolingSetpoint)/2) {
-			thermostatSetpoint = coolingSetpoint
-		}
-	}
-	sendEvent(name: "thermostatSetpoint", value: thermostatSetpoint, unit: getTemperatureScale())
-}
-
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
 	log.debug "ping() called"
 	// Just get Operating State there's no need to flood more commands
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format()))
+	sendHubCommand(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet())
 }
 
 def switchMode() {
@@ -532,7 +514,7 @@ def switchMode() {
 	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		def next = { supportedModes[supportedModes.indexOf(it) + 1] ?: supportedModes[0] }
 		def nextMode = next(currentMode)
-		runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
+		runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true, forceForLocallyExecuting: true])
 	} else {
 		log.warn "supportedModes not defined"
 		getSupportedModes()
@@ -544,7 +526,7 @@ def switchToMode(nextMode) {
 	// Old version of supportedModes was as string, make sure it gets updated
 	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		if (supportedModes.contains(nextMode)) {
-			runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
+			runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true, forceForLocallyExecuting: true])
 		} else {
 			log.debug("ThermostatMode $nextMode is not supported by ${device.displayName}")
 		}
@@ -556,7 +538,7 @@ def switchToMode(nextMode) {
 
 def getSupportedModes() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
+	cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
 	sendHubCommand(cmds)
 }
 
@@ -567,7 +549,7 @@ def switchFanMode() {
 	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		def next = { supportedFanModes[supportedFanModes.indexOf(it) + 1] ?: supportedFanModes[0] }
 		def nextMode = next(currentMode)
-		runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
+		runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true, forceForLocallyExecuting: true])
 	} else {
 		log.warn "supportedFanModes not defined"
 		getSupportedFanModes()
@@ -579,7 +561,7 @@ def switchToFanMode(nextMode) {
 	// Old version of supportedFanModes was as string, make sure it gets updated
 	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		if (supportedFanModes.contains(nextMode)) {
-			runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
+			runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true, forceForLocallyExecuting: true])
 		} else {
 			log.debug("FanMode $nextMode is not supported by ${device.displayName}")
 		}
@@ -590,7 +572,7 @@ def switchToFanMode(nextMode) {
 }
 
 def getSupportedFanModes() {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())]
+	def cmds = [zwave.thermostatFanModeV3.thermostatFanModeSupportedGet()]
 	sendHubCommand(cmds)
 }
 
@@ -607,8 +589,8 @@ def setThermostatMode(String value) {
 }
 
 def setGetThermostatMode(data) {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode]).format()),
-			new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())]
+	def cmds = [zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode]),
+			zwave.thermostatModeV2.thermostatModeGet()]
 	sendHubCommand(cmds)
 }
 
@@ -623,8 +605,8 @@ def setThermostatFanMode(String value) {
 }
 
 def setGetThermostatFanMode(data) {
-	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode]).format()),
-			new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())]
+	def cmds = [zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode]),
+			zwave.thermostatFanModeV3.thermostatFanModeGet()]
 	sendHubCommand(cmds)
 }
 

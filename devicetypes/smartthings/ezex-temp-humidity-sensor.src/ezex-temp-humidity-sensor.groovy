@@ -23,13 +23,13 @@ metadata {
         capability "Sensor"
         capability "Health Check"
         
-        fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "Smart Temperature/Humidity Sensor (AC Type)"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "eZEX Multipurpose Sensor" //Smart Temperature/Humidity Sensor (AC Type)
     }
 
 
     preferences {
-        input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
+        input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
+        input "humidityOffset", "number", title: "Humidity offset", description: "Enter a percentage to adjust the humidity.", range: "*..*", displayDuringSetup: false
     }
 
     tiles(scale: 2) {
@@ -76,7 +76,7 @@ def parse(String description) {
         }
     } else if (map.name == "temperature") {
         if (tempOffset) {
-            map.value = (int) map.value + (int) tempOffset
+            map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
         }
         map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
         map.translatable = true

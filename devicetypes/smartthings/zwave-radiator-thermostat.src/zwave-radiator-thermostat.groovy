@@ -13,19 +13,22 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
-		capability "Thermostat Mode"
+	definition (name: "Z-Wave Radiator Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat",
+			mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Heat_Controller") {
 		capability "Refresh"
 		capability "Battery"
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Thermostat Mode"
 		capability "Temperature Measurement"
 		capability "Configuration"
 
-		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostatic Radiator Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat"
+		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostat", mnmn: "SmartThings", vid: "generic-radiator-thermostat" //Everspring Thermostatic Radiator Valve
 		//this DTH is sending temperature setpoint commands using Celsius scale and assumes that they'll be handled correctly by device
 		//if new device added to this DTH won't be able to do that, make sure to you'll handle conversion in a right way
+		fingerprint mfr: "0002", prod: "0115", model: "A010", deviceJoinName: "POPP Thermostat", mnmn: "SmartThings", vid: "generic-radiator-thermostat-2" //POPP Radiator Thermostat Valve
+		fingerprint mfr: "0371", prod: "0002", model: "0015", deviceJoinName: "Aeotec Thermostat", mnmn: "SmartThings", vid: "aeotec-radiator-thermostat" //Aeotec Radiator Thermostat ZWA021
 	}
 
 	tiles(scale: 2) {
@@ -85,13 +88,14 @@ metadata {
 }
 
 def initialize() {
-	sendEvent(name: "checkInterval", value: 4 * 60 * 60 + 24 * 60 , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: checkInterval , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "supportedThermostatModes", value: thermostatSupportedModes.encodeAsJson(), displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: [minHeatingSetpointTemperature, maxHeatingSetpointTemperature], displayed: false)
 	response(refresh())
 }
 
 def installed() {
+	state.isSetpointChangeRequestedByController = false
 	initialize()
 }
 
@@ -103,6 +107,8 @@ def configure() {
 	def cmds = []
 	if (isEverspringRadiatorThermostat()) {
 		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: 15)) //automatic temperature reports every 15 minutes
+	} else if (isPoppRadiatorThermostat()) {
+		cmds += secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 600, nodeid: zwaveHubNodeId))
 	}
 	return cmds
 }
@@ -130,6 +136,27 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	cmd.encapsulatedCommands().collect { encapsulatedCommand ->
+		isPoppRadiatorThermostat() ? zwaveEvent(encapsulatedCommand, true) : zwaveEvent(encapsulatedCommand) 	
+		//in case any future device would support MultiCmdEncap
+		//and won't need any special handler, like POPP does
+	}.flatten()
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+	def cmds = []
+	if (!isPoppRadiatorThermostat()) {
+		cmds += zwave.batteryV1.batteryGet() // POPP sends battery report automatically every wake up by itself, there's no need to duplicate it
+	}
+	cmds += [
+			zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: state.cachedSetpoint, setpointType: 1, size: 2]),
+			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1),
+			zwave.wakeUpV2.wakeUpNoMoreInformation()
+	]
+	[response(multiEncap(cmds))]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def value = cmd.batteryLevel == 255 ? 1 : cmd.batteryLevel
 	def map = [name: "battery", value: value, unit: "%"]
@@ -143,6 +170,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			map.value = "heat"
 			break
 		case 11:
+		case 15:
 			map.value = "emergency heat"
 			break
 		case 0:
@@ -152,14 +180,33 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+def updateSetpoint(cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
-	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+	def setpoint = Float.parseFloat(convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision))
+	state.cachedSetpoint = setpoint
+	createEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, isResponseOfWakeUp = false) {
+	if (!state.isSetpointChangeRequestedByController) {
+		updateSetpoint(cmd)
+	} else if (isResponseOfWakeUp) {
+		state.isSetpointChangeRequestedByController = false
+		updateSetpoint(cmd)
+	} else {
+		[:]
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
 	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	// Power Management - Power has been applied
+	if (cmd.notificationType == 0x08 && cmd.event == 0x01)
+		[response(zwave.batteryV1.batteryGet())]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -175,7 +222,11 @@ def setThermostatMode(String mode) {
 				modeValue = 1
 				break
 			case "emergency heat":
-				modeValue = 11
+				if (isAeotecRadiatorThermostat()) {
+					modeValue = 15
+				} else {
+					modeValue = 11
+				}
 				break
 			case "off":
 				modeValue = 0
@@ -187,7 +238,7 @@ def setThermostatMode(String mode) {
 
 	[
 			secure(zwave.thermostatModeV2.thermostatModeSet(mode: modeValue)),
-			"delay 2000",
+			"delay 5000",
 			secure(zwave.thermostatModeV2.thermostatModeGet())
 	]
 }
@@ -205,8 +256,13 @@ def off() {
 }
 
 def setHeatingSetpoint(setpoint) {
+	if (isPoppRadiatorThermostat() && device.status == "ONLINE") {
+		state.isSetpointChangeRequestedByController = true
+		sendEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
+	}
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
 	setpoint = Math.max(Math.min(setpoint, maxHeatingSetpointTemperature), minHeatingSetpointTemperature)
+	state.cachedSetpoint = setpoint
 	[
 			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2])),
 			"delay 2000",
@@ -237,9 +293,23 @@ private secure(cmd) {
 	}
 }
 
+def multiEncap(cmds) {
+	if (zwaveInfo?.cc?.contains("8F")) {
+		secure(zwave.multiCmdV1.multiCmdEncap().encapsulate(cmds.collect {
+			cmd -> cmd.format()
+		}))
+	} else {
+		delayBetween(cmds.collect {
+			cmd -> secure(cmd)
+		}, 2500)
+	}
+}
+
 private getMaxHeatingSetpointTemperature() {
 	if (isEverspringRadiatorThermostat()) {
 		temperatureScale == 'C' ? 35 : 95
+	} else if (isPoppRadiatorThermostat() || isAeotecRadiatorThermostat()) {
+		temperatureScale == 'C' ? 28 : 82
 	} else {
 		temperatureScale == 'C' ? 30 : 86
 	}
@@ -248,19 +318,41 @@ private getMaxHeatingSetpointTemperature() {
 private getMinHeatingSetpointTemperature() {
 	if (isEverspringRadiatorThermostat()) {
 		temperatureScale == 'C' ? 15 : 59
+	} else if (isPoppRadiatorThermostat()) {
+		temperatureScale == 'C' ? 4 : 39
+	} else if (isAeotecRadiatorThermostat()) {
+		temperatureScale == 'C' ? 8 : 47
 	} else {
 		temperatureScale == 'C' ? 10 : 50
 	}
 }
 
 private getThermostatSupportedModes() {
-	if (isEverspringRadiatorThermostat()) {
+	if (isEverspringRadiatorThermostat() || isAeotecRadiatorThermostat()) {
 		["off", "heat", "emergency heat"]
+	} else if (isPoppRadiatorThermostat()) { //that's just for looking fine in Classic
+		["heat"]
 	} else {
 		["off","heat"]
 	}
 }
 
+def getCheckInterval() {
+	if (isPoppRadiatorThermostat()) {
+		2 * 60 * 10 + 2 * 60
+	} else {
+		4 * 60 * 60 + 24 * 60
+	}
+}
+
 private isEverspringRadiatorThermostat() {
 	zwaveInfo.mfr == "0060" && zwaveInfo.prod == "0015"
+}
+
+private isPoppRadiatorThermostat() {
+	zwaveInfo.mfr == "0002" && zwaveInfo.prod == "0115"
+}
+
+private isAeotecRadiatorThermostat() {
+	zwaveInfo.mfr == "0371" && zwaveInfo.prod == "0002"
 }

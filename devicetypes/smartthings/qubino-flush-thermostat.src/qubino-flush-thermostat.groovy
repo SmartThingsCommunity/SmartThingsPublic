@@ -28,7 +28,7 @@ metadata {
 
 		command "changeMode"
 
-		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Flush On/Off Thermostat 2"
+		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Thermostat" //Qubino Flush On/Off Thermostat 2
 	}
 
 	tiles(scale: 2) {
@@ -278,7 +278,7 @@ def setCoolingSetpoint(setpoint) {
 
 def updateSetpoint(setpoint, setpointType) {
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
-	setpoint = Math.max(Math.min(setpoint, maxSetpointTemperature), minSetpointTemperature)
+	setpoint = Math.max(Math.min(setpoint.doubleValue(), maxSetpointTemperature.doubleValue()), minSetpointTemperature.doubleValue())
 	[
 			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: setpointType, size: 2])),
 			"delay 2000",
@@ -331,9 +331,9 @@ private getCurrentSetpointType() {
 }
 
 private getMaxSetpointTemperature() {
-		temperatureScale == 'C' ? 40 : 104
+		temperatureScale == 'C' ? 80 : 176
 }
 
 private getMinSetpointTemperature() {
-		temperatureScale == 'C' ? -12 : 11
+		temperatureScale == 'C' ? -25 : -13
 }

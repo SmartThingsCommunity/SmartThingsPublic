@@ -1,7 +1,6 @@
 /**
-
-Copyright Sinopé Technologies 2019
-1.1.0
+Copyright Sinopé Technologies
+1.3.0
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
@@ -14,8 +13,8 @@ preferences {
 
     input("LedIntensityParam", "number", title:"Indicator light intensity (1..100) (default: blank)", range:"1..100", description:"optional")
 	input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
-	input("logFilter", "number", title: "Trace level", range: "1..5",
-		description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
+	// input("logFilter", "number", title: "Trace level", range: "1..5",
+	// 	description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
 }
 
 metadata {
@@ -30,7 +29,7 @@ metadata {
         
         attribute "swBuild","string"// earliers versions of the DM2500ZB does not support the minimal intensity. theses dimmers can be identified by their swBuild under the value 106
         
-        fingerprint manufacturer: "Sinope Technologies", model: "DM2500ZB", deviceJoinName: "DM2500ZB"
+        fingerprint manufacturer: "Sinope Technologies", model: "DM2500ZB", deviceJoinName: "Sinope Dimmer Switch" //DM2500ZB
     }
 
     tiles(scale: 2) 
@@ -71,7 +70,7 @@ def parse(String description)
 		else {
             traceEvent(settings.logFilter, "send event : $event", settings.trace, get_LOG_DEBUG())
 			sendEvent(event)
-            sendEvent(name: "checkInterval", value: 30*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+            sendEvent(name: "checkInterval", value: 300, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 		}
     }
     else
@@ -313,35 +312,25 @@ def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMes
 	int LOG_INFO = get_LOG_INFO()
 	int LOG_DEBUG = get_LOG_DEBUG()
 	int LOG_TRACE = get_LOG_TRACE()
-	int filterLevel = (logFilter) ? logFilter.toInteger() : get_LOG_WARN()
-    
-	if ((displayEvent) || (sendMessage)) {
-		def results = [
-			name: "verboseTrace",
-			value: message,
-			displayed: ((displayEvent) ?: false)
-		]
 
-		if ((displayEvent) && (filterLevel >= traceLevel)) {
-			switch (traceLevel) {
-				case LOG_ERROR:
-					log.error "${message}"
-					break
-				case LOG_WARN:
-					log.warn "${message}"
-					break
-				case LOG_INFO:
-					log.info "${message}"
-					break
-				case LOG_TRACE:
-					log.trace "${message}"
-					break
-				case LOG_DEBUG:
-				default:
-					log.debug "${message}"
-					break
-			} /* end switch*/
-			if (sendMessage) sendEvent(results)
-		} /* end if displayEvent*/
+	if (displayEvent || traceLevel < 4) {
+		switch (traceLevel) {
+			case LOG_ERROR:
+				log.error "${message}"
+				break
+			case LOG_WARN:
+				log.warn "${message}"
+				break
+			case LOG_INFO:
+				log.info "${message}"
+				break
+			case LOG_TRACE:
+				log.trace "${message}"
+				break
+			case LOG_DEBUG:
+			default:
+				log.debug "${message}"
+				break
+		}
 	}
 }

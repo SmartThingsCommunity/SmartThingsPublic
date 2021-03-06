@@ -23,11 +23,11 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint inClusters: "0x66, 0x98, 0x71, 0x72"
-		fingerprint deviceId: "0x4007", inClusters: "0x98"
-		fingerprint deviceId: "0x4006", inClusters: "0x98"
-		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear GoControl Garage Door Opener"
-		fingerprint mfr:"014F", prod:"4744", model:"3530", deviceJoinName: "GoControl Smart Garage Door Controller"
+		fingerprint inClusters: "0x66, 0x98, 0x71, 0x72", deviceJoinName: "Garage Door"
+		fingerprint deviceId: "0x4007", inClusters: "0x98", deviceJoinName: "Garage Door"
+		fingerprint deviceId: "0x4006", inClusters: "0x98", deviceJoinName: "Garage Door"
+		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear Garage Door" //Linear GoControl Garage Door Opener
+		fingerprint mfr:"014F", prod:"4744", model:"3530", deviceJoinName: "GoControl Garage Door" //GoControl Smart Garage Door Controller
 	}
 
 	simulator {

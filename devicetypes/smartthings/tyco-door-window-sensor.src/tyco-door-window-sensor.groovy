@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA", deviceJoinName: "Tyco Open/Closed Sensor"
 	}
 
 	simulator {
@@ -33,7 +33,7 @@ metadata {
 	}
 
 	preferences {
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -208,9 +208,7 @@ private Map getTemperatureResult(value) {
 	log.debug 'TEMP'
 	def linkText = getLinkText(device)
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
 	return [

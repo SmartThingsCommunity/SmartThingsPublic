@@ -14,7 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mcdSync: true) {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -22,7 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint mfr: "0086", prod: "0001", model:"0003"
+		fingerprint mfr: "0086", prod: "0001", model:"0003", deviceJoinName: "Aeon Remote Control"
 	}
 
 	simulator {
@@ -120,7 +120,9 @@ def configure() {
 
 def installed() {
 	initialize()
-	createChildDevices()
+	if (!childDevices) {
+		createChildDevices()
+	}
 }
 
 def updated() {

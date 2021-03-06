@@ -26,11 +26,11 @@ metadata {
 		capability "Health Check"
 
 		// Generic
-		fingerprint profileId: "C05E", deviceId: "0200", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic RGB Light"
+		fingerprint profileId: "C05E", deviceId: "0200", inClusters: "0006, 0008, 0300", deviceJoinName: "Light" //Generic RGB Light
 
 		// IKEA
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 CWS opal 600lm", deviceJoinName: "IKEA TRÅDFRI bulb E27 CWS opal 600lm"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 CWS opal 600lm", deviceJoinName: "IKEA TRÅDFRI bulb E26 CWS opal 600lm"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 CWS opal 600lm", deviceJoinName: "IKEA Light" //IKEA TRÅDFRI bulb E27 CWS opal 600lm
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 CWS opal 600lm", deviceJoinName: "IKEA Light" //IKEA TRÅDFRI bulb E26 CWS opal 600lm
 	}
 
 	// UI tile definitions

@@ -1,5 +1,5 @@
 /**
- *  Copyright 2018 SmartThings
+ *  Copyright 2019 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -16,12 +16,11 @@ metadata {
 	definition(name: "Z-Wave Motion Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mmnm: "SmartThings", vid: "generic-motion-light") {
 		capability "Switch"
 		capability "Motion Sensor"
-		capability "Illuminance Measurement"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr: "0060", prod: "0012", model: "0001", deviceJoinName: "Everspring Outdoor Floodlight"
+		fingerprint mfr: "0060", prod: "0012", model: "0001", deviceJoinName: "Everspring Light" //Everspring Outdoor Floodlight
 	}
 
 	tiles(scale: 2) {
@@ -37,20 +36,9 @@ metadata {
 			state("active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC")
 			state("inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#CCCCCC")
 		}
-		valueTile("illuminance", "device.illuminance", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "illuminance", label: '${currentValue} lux', backgroundColors: [
-					[value: 40, color: "#999900"],
-					[value: 100, color: "#CCCC00"],
-					[value: 300, color: "#FFFF00"],
-					[value: 500, color: "#FFFF33"],
-					[value: 1000, color: "#FFFF66"],
-					[value: 2000, color: "#FFFF99"],
-					[value: 10000, color: "#FFFFCC"]
-			]
-		}
 
 		main "switch"
-		details(["switch", "motion", "illuminance"])
+		details(["switch", "motion"])
 	}
 }
 
@@ -68,15 +56,10 @@ def updated() {
 }
 
 def configure() {
-	def cmds =  [
-			secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
-			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03)),
-			secure(zwave.switchBinaryV1.switchBinaryGet())
+	[
+		secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
+		secure(zwave.switchBinaryV1.switchBinaryGet())
 	]
-	if (isEverspringFloodlight()) {
-		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 10)) //enables illuminance report every 10 minutes
-	}
-	cmds
 }
 
 def ping() {
@@ -132,27 +115,12 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x08) {                 // detected
+		if (cmd.event == 0x08) {				// detected
 			createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
-		} else if (cmd.event == 0x00) {          // inactive
+		} else if (cmd.event == 0x00) {			// inactive
 			createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 		}
 	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def map = [:]
-	switch (cmd.sensorType) {
-		case 3:
-			map.name = "illuminance"
-			map.value = cmd.scaledSensorValue.toInteger().toString()
-			map.unit = "lux"
-			map.isStateChange = true
-			break
-		default:
-			map.descriptionText = cmd.toString()
-	}
-	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {

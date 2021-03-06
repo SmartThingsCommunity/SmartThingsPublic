@@ -53,7 +53,7 @@ metadata {
 		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch" //Zooz Switch
 		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch" //Zooz Switch ZEN23
 		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug" //Everspring On/Off Plug
-        	fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
+    fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
 		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
 	}
 

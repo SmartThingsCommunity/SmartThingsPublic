@@ -1,7 +1,6 @@
 /**
-
-Copyright Sinopé Technologies 2019
-1.1.0
+Copyright Sinopé Technologies
+1.3.0
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -12,8 +11,8 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 preferences {
     section {
         input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
-        input("logFilter", "number", title: "Trace level", range: "1..5",
-            description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
+        // input("logFilter", "number", title: "Trace level", range: "1..5",
+        //     description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
     }
 }
 
@@ -29,8 +28,8 @@ metadata {
         
         attribute "sensor", "enum", ["disconnected", "connected"] //this attribute is used by the "sensor" tile
 
-        fingerprint manufacturer: "Sinope Technologies", model: "WL4200", deviceJoinName: "WL4200"
-        fingerprint manufacturer: "Sinope Technologies", model: "WL4200S", deviceJoinName: "WL4200S"
+        fingerprint manufacturer: "Sinope Technologies", model: "WL4200", deviceJoinName: "Sinope Water Leak Sensor" //WL4200
+        fingerprint manufacturer: "Sinope Technologies", model: "WL4200S", deviceJoinName: "Sinope Water Leak Sensor" //WL4200S
 	}
 
 	tiles(scale: 2) {
@@ -320,36 +319,26 @@ def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMes
 	int LOG_INFO = get_LOG_INFO()
 	int LOG_DEBUG = get_LOG_DEBUG()
 	int LOG_TRACE = get_LOG_TRACE()
-	int filterLevel = (logFilter) ? logFilter.toInteger() : get_LOG_WARN()
-    
-	if ((displayEvent) || (sendMessage)) {
-		def results = [
-			name: "verboseTrace",
-			value: message,
-			displayed: ((displayEvent) ?: false)
-		]
 
-		if ((displayEvent) && (filterLevel >= traceLevel)) {
-			switch (traceLevel) {
-				case LOG_ERROR:
-					log.error "${message}"
-					break
-				case LOG_WARN:
-					log.warn "${message}"
-					break
-				case LOG_INFO:
-					log.info "${message}"
-					break
-				case LOG_TRACE:
-					log.trace "${message}"
-					break
-				case LOG_DEBUG:
-				default:
-					log.debug "${message}"
-					break
-			} /* end switch*/
-			if (sendMessage) sendEvent(results)
-		} /* end if displayEvent*/
+	if (displayEvent || traceLevel < 4) {
+		switch (traceLevel) {
+			case LOG_ERROR:
+				log.error "${message}"
+				break
+			case LOG_WARN:
+				log.warn "${message}"
+				break
+			case LOG_INFO:
+				log.info "${message}"
+				break
+			case LOG_TRACE:
+				log.trace "${message}"
+				break
+			case LOG_DEBUG:
+			default:
+				log.debug "${message}"
+				break
+		}
 	}
 }
 

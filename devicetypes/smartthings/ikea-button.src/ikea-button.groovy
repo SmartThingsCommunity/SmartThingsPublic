@@ -27,8 +27,12 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0005, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI remote control", deviceJoinName: "IKEA TRÅDFRI Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_Remote_Control"
-		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA TRÅDFRI On/Off switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch"
+		fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0005, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI remote control", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_Remote_Control" //IKEA TRÅDFRI Remote
+		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch" //IKEA TRÅDFRI On/Off switch
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
+		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
+		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 	}
 
 	tiles {
@@ -48,6 +52,7 @@ metadata {
 
 private getCLUSTER_GROUPS() { 0x0004 }
 private getCLUSTER_SCENES() { 0x0005 }
+private getCLUSTER_WINDOW_COVERING() { 0x0102 }
 
 private getREMOTE_BUTTONS() {
 	[TOP:1,
@@ -60,6 +65,18 @@ private getREMOTE_BUTTONS() {
 private getONOFFSWITCH_BUTTONS() {
 	[TOP:2,
 	 BOTTOM:1]
+}
+
+private getOPENCLOSE_BUTTONS() {
+	[UP:1,
+	 DOWN:2]
+}
+
+private getOPENCLOSESTOP_BUTTONS() {
+	[UP:1,
+	 STOP:2,
+	 DOWN:3
+	]
 }
 
 private channelNumber(String dni) {
@@ -82,6 +99,21 @@ private getIkeaOnOffSwitchNames() {
 	]
 }
 
+private getOpenCloseRemoteNames() {
+	[
+		"Up", // Up button
+		"Down" // Down button
+	]
+}
+
+private getOpenCloseStopRemoteNames() {
+	[
+		"Up",	// Up button
+		"Stop",	// Stop button
+		"Down"	// Down button
+	]
+}
+
 private getButtonLabel(buttonNum) {
 	def label = "Button ${buttonNum}"
 
@@ -89,6 +121,10 @@ private getButtonLabel(buttonNum) {
 		label = ikeaRemoteControlNames[buttonNum - 1]
 	} else if (isIkeaOnOffSwitch()) {
 		label = ikeaOnOffSwitchNames[buttonNum - 1]
+	} else if (isIkeaOpenCloseRemote()) {
+		label = openCloseRemoteNames[buttonNum - 1]
+	} else if (isSomfySituo()) {
+		label = openCloseStopRemoteNames[buttonNum - 1]
 	}
 
 	return label
@@ -105,7 +141,7 @@ private void createChildButtonDevices(numberOfButtons) {
 
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
-		def supportedButtons = (isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) ? ["pushed"] : ["pushed", "held"]
+		def supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfySituo()) ? ["pushed"] : ["pushed", "held"]
 		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
 				[completedSetup: true, label: getButtonName(i),
 				 isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
@@ -121,15 +157,18 @@ def installed() {
 
 	if (isIkeaRemoteControl()) {
 		numberOfButtons = 5
-	} else if (isIkeaOnOffSwitch()) {
+	} else if (isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()) {
 		numberOfButtons = 2
+	} else if (isSomfySituo()) {
+		numberOfButtons = 3
 	}
 
 	if (numberOfButtons > 1) {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJSON(), displayed: false)
+	def supportedButtons = isIkeaOpenCloseRemote() || isSomfySituo() ? ["pushed"] : ["pushed", "held"]
+	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
 		sendEvent(name: "button", value: "pushed", data: [buttonNumber: it+1], displayed: false)
@@ -152,11 +191,19 @@ def updated() {
 def configure() {
 	log.debug "Configuring device ${device.getDataValue("model")}"
 
-	def cmds = zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
-			zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
-			readDeviceBindingTable() // Need to read the binding table to see what group it's using
+	def cmds = []
 
+	if (isSomfySituo()) {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, ["destEndpoint":0xE8]) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01, ["destEndpoint":0xE8]) +
+				zigbee.addBinding(CLUSTER_WINDOW_COVERING)
+	} else {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
+				zigbee.addBinding(zigbee.ONOFF_CLUSTER)
+	}
+
+	cmds += readDeviceBindingTable() // Need to read the binding table to see what group it's using
 	cmds
 }
 
@@ -170,10 +217,15 @@ def parse(String description) {
 		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
-				event = getBatteryEvent(zigbee.convertHexToInt(descMap.value))
+				def batteryValue = zigbee.convertHexToInt(descMap.value)
+				if (!isIkea()) {
+					batteryValue = batteryValue / 2
+				}
+				event = getBatteryEvent(batteryValue)
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
-					 descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
-					 descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
+					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
+					descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER ||
+					descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
 				event = getButtonEvent(descMap)
 			}
 		}
@@ -233,11 +285,11 @@ private Map getButtonEvent(Map descMap) {
 					 0x07: { [state: "", buttonNumber: 0] }],
 			(CLUSTER_SCENES):
 					[0x07: { it == "00"
-								? [state: "pushed", buttonNumber: REMOTE_BUTTONS.RIGHT]
-								: [state: "pushed", buttonNumber: REMOTE_BUTTONS.LEFT] },
+						? [state: "pushed", buttonNumber: REMOTE_BUTTONS.RIGHT]
+						: [state: "pushed", buttonNumber: REMOTE_BUTTONS.LEFT] },
 					 0x08: { it == "00"
-								? [state: "held", buttonNumber: REMOTE_BUTTONS.RIGHT]
-								: [state: "held", buttonNumber: REMOTE_BUTTONS.LEFT] },
+						? [state: "held", buttonNumber: REMOTE_BUTTONS.RIGHT]
+						: [state: "held", buttonNumber: REMOTE_BUTTONS.LEFT] },
 					 0x09: { [state: "", buttonNumber: 0] }]
 	]
 
@@ -265,12 +317,34 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = ONOFFSWITCH_BUTTONS.TOP
 			}
 		}
+	} else if (isIkeaOpenCloseRemote()){
+		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
+			buttonState = "pushed"
+			if (descMap.commandInt == 0x00) {
+				buttonNumber = OPENCLOSE_BUTTONS.UP
+			} else if (descMap.commandInt == 0x01) {
+				buttonNumber = OPENCLOSE_BUTTONS.DOWN
+			}
+		}
+	} else if (isSomfySituo() && descMap.data?.size() == 0){
+		// Somfy Situo Remotes query their shades directly after "My"(stop) button  is pressed (that's intended behavior)
+		// descMap contains 'data':['00', '00'] in such cases, so we have to ignore those redundant misinterpreted UP events
+		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
+			buttonState = "pushed"
+			if (descMap.commandInt == 0x00) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS.UP
+			} else if (descMap.commandInt == 0x01) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS.DOWN
+			} else if (descMap.commandInt == 0x02) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS.STOP
+			}
+		}
 	}
 
 	if (buttonNumber != 0) {
 		// Create old style
 		def descriptionText = "${getButtonName(buttonNumber)} was $buttonState"
-		result = [name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true]
+		result = [name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true, displayed: false]
 
 		// Create and send component event
 		sendButtonEvent(buttonNumber, buttonState)
@@ -284,6 +358,18 @@ private boolean isIkeaRemoteControl() {
 
 private boolean isIkeaOnOffSwitch() {
 	device.getDataValue("model") == "TRADFRI on/off switch"
+}
+
+private boolean isIkeaOpenCloseRemote() {
+	device.getDataValue("model") == "TRADFRI open/close remote"
+}
+
+private boolean isIkea() {
+	isIkeaRemoteControl() || isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()
+}
+
+private boolean isSomfySituo() {
+	device.getDataValue("manufacturer") == "SOMFY"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {

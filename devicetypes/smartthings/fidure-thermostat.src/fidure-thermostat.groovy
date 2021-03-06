@@ -12,6 +12,11 @@ metadata {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Operating State"
+		capability "Thermostat Mode"
+		capability "Thermostat Fan Mode"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
@@ -41,10 +46,8 @@ metadata {
 
 		attribute "lastTimeSync", "string"
 
-		attribute "thermostatOperatingState", "string"
-
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019"
-		fingerprint manufacturer: "Fidure", model: "A1732R3" // same clusters as above
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019", deviceJoinName: "Fidure Thermostat"
+		fingerprint manufacturer: "Fidure", model: "A1732R3" , deviceJoinName: "Fidure Thermostat"// same clusters as above
 
 	}
 
@@ -94,9 +97,7 @@ metadata {
 		}
 
 		standardTile("hvacStatus", "thermostatOperatingState", inactiveLabel: false, decoration: "flat") {
-			state "Resting",  label: 'Resting'
-			state "Heating",  icon:"st.thermostat.heating"
-			state "Cooling",  icon:"st.thermostat.cooling"
+			state "thermostatOperatingState", label:'${currentValue}'
 		}
 
 
@@ -496,7 +497,7 @@ def Program() {
 
 
 def getThermostatOperatingState(value) {
-	String[] m = [ "heating", "cooling", "fan", "Heat2", "Cool2", "Fan2", "Fan3"]
+	String[] m = [ "heating", "cooling", "fan only", "heating", "cooling", "fan only", "fan only"]
 	String desc = 'idle'
 	value = Integer.parseInt(''+value, 16)
 
@@ -519,7 +520,7 @@ def checkLastTimeSync(delay) {
 
 	long duration = (new Date()).getTime() - (new Date(lastSync)).getTime()
 
-  //  log.debug "check Time: $lastSync duration: ${duration} settings.sync_clock: ${settings.sync_clock}"
+  //log.debug "check Time: $lastSync duration: ${duration} settings.sync_clock: ${settings.sync_clock}"
 	if (duration > 86400000) {
 		sendEvent("name":"lastTimeSync", "value":"${new Date()}")
 		return setThermostatTime()

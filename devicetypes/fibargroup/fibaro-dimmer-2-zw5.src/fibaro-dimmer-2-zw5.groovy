@@ -16,10 +16,11 @@ metadata {
 
 		attribute "errorMode", "string"
 		attribute "scene", "string"
+		attribute "multiStatus", "string"
 
-		fingerprint mfr: "010F", prod: "0102", model: "2000"
-		fingerprint mfr: "010F", prod: "0102", model: "1000"
-		fingerprint mfr: "010F", prod: "0102", model: "3000"
+		fingerprint mfr: "010F", prod: "0102", model: "2000", deviceJoinName: "Fibaro Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "1000", deviceJoinName: "Fibaro Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "3000", deviceJoinName: "Fibaro Dimmer Switch"
 	}
 
 	tiles (scale: 2) {
@@ -31,7 +32,7 @@ metadata {
 				attributeState "turningOff", label:'Turning Off', action:"on", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dimmer/dimmer50.png", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
-				attributeState("combinedMeter", label:'${currentValue}')
+				attributeState("multiStatus", label:'${currentValue}')
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
@@ -67,15 +68,6 @@ metadata {
 	}
 
 	preferences {
-		input (
-				title: "Fibaro Dimmer 2 ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2017/02/d2_icon.png",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGD-212/FGD-212-EN-T-v1.3.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
 					title: "${it.num}. ${it.title}",
@@ -389,6 +381,24 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
+	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	log.debug "Unhandled: ${cmd.toString()}"
@@ -427,7 +437,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")

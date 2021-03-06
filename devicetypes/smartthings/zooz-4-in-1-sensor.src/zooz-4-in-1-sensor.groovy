@@ -23,7 +23,9 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 
-		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
+		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz Multipurpose Sensor" // Zooz 4-in-1 sensor
+		fingerprint mfr: "0109", prod: "2021", model: "2101", deviceJoinName: "Vision Multipurpose Sensor" // ZP3111US 4-in-1 Motion
+		fingerprint mfr: "0060", prod: "0001", model: "0004", deviceJoinName: "Everspring Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Everspring_Multisensor" // Everspring Immune Pet PIR Sensor SP815
 	}
 
 	tiles(scale: 2) {
@@ -62,7 +64,35 @@ metadata {
 		main(["motion", "temperature", "humidity", "illuminance"])
 		details(["motion", "temperature", "humidity", "illuminance", "battery", "tamper"])
 	}
+
+	preferences {
+		section {
+			input(
+					title: "Settings Available For Everspring SP815 only",
+					description: "To apply updated device settings to the device press the learn key on the device three times or check the device manual.",
+					type: "paragraph",
+					element: "paragraph"
+			)
+			input(
+					title: "Temperature and Humidity Auto Report (Everspring SP815 only):",
+					description: "This setting allows to adjusts report time (in seconds) of temperature and humidity report.",
+					name: "temperatureAndHumidityReport",
+					type: "number",
+					range: "600..1440",
+					defaultValue: 600
+			)
+			input(
+					title: "Re-trigger Interval Setting (Everspring SP815 only):",
+					description: "The setting adjusts the sleep period (in seconds) after the detector has been triggered. No response will be made during this interval if a movement is presented. Longer re-trigger interval will result in longer battery life.",
+					name: "retriggerIntervalSettings",
+					type: "number",
+					range: "10..3600",
+					defaultValue: 180
+			)
+		}
+	}
 }
+
 
 def initialize() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -75,6 +105,7 @@ def installed() {
 
 def updated() {
 	initialize()
+	getConfigurationCommands()
 }
 
 def parse(String description) {
@@ -94,6 +125,12 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
+
+	log.debug "isConfigured: $state.configured"
+	if (isEverspringSP815() && !state.configured) {
+		results += lateConfigure()
+	}
+
 	results += response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -181,6 +218,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else {
 		result = createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
+
 	return result
 }
 
@@ -193,12 +231,21 @@ def ping() {
 }
 
 def configure() {
+	if (isEverspringSP815()) {
+		state.configured = false
+		state.intervalConfigured = false
+		state.temperatureConfigured = false
+	}
 	def request = []
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.notificationV3.notificationGet(notificationType: 0x07, event: 0x08)  //motion
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
-	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
+	if (isEverspringSP815()) {
+		request += getConfigurationCommands()
+	} else {
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
+	}
 
 	secureSequence(request) + ["delay 20000", zwave.wakeUpV2.wakeUpNoMoreInformation().format()]
 }
@@ -234,4 +281,71 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay = 200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+def getConfigurationCommands() {
+	log.debug "getConfigurationCommands"
+	def result = []
+
+	if (isEverspringSP815()) {
+		Integer temperatureAndHumidityReport = (settings.temperatureAndHumidityReport as Integer) ?: everspringDefaults[1]
+		Integer retriggerIntervalSettings = (settings.retriggerIntervalSettings as Integer) ?: everspringDefaults[2]
+
+		if (!state.temperatureAndHumidityReport) {
+			state.temperatureAndHumidityReport = getEverspringDefaults[1]
+		}
+		if (!state.retriggerIntervalSettings) {
+			state.retriggerIntervalSettings = getEverspringDefaults[2]
+		}
+
+		if (!state.configured || (temperatureAndHumidityReport != state.temperatureAndHumidityReport || retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+			state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+
+			if (!state.temperatureConfigured || temperatureAndHumidityReport != state.temperatureAndHumidityReport) {
+				state.temperatureConfigured = false
+				result << zwave.configurationV2.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: temperatureAndHumidityReport)
+				result << zwave.configurationV2.configurationGet(parameterNumber: 1)
+			}
+			if (!state.intervalConfigured || retriggerIntervalSettings != state.retriggerIntervalSettings) {
+				state.intervalConfigured = false
+				result << zwave.configurationV2.configurationSet(parameterNumber: 2, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
+				result << zwave.configurationV2.configurationGet(parameterNumber: 2)
+			}
+		}
+	}
+
+	return result
+}
+
+def getEverspringDefaults() {
+	[1: 600,
+	 2: 180]
+}
+
+def lateConfigure() {
+	log.debug "lateConfigure"
+	sendHubCommand(getConfigurationCommands(), 200)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	if (isEverspringSP815()) {
+		if (cmd.parameterNumber == 1) {
+			state.temperatureAndHumidityReport = scaledConfigurationValue
+			state.temperatureConfigured = true
+		} else if (cmd.parameterNumber == 2) {
+			state.retriggerIntervalSettings = scaledConfigurationValue
+			state.intervalConfigured = true
+		}
+
+		if (state.intervalConfigured && state.temperatureConfigured) {
+			state.configured = true
+		}
+		log.debug "Everspring Configuration Report: ${cmd}"
+	}
+
+	return [:]
+}
+
+private isEverspringSP815() {
+	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.model?.equals("0004")
 }

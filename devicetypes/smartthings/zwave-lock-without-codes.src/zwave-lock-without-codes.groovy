@@ -23,11 +23,13 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint inClusters: "0x62"
-		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock V3 Smart Lock"
-		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Convert Deadbolt Door Lock" //99140
-		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
-		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Smart Home Touchscreen Deadbolt" // DB2
+		fingerprint inClusters: "0x62", deviceJoinName: "Door Lock"
+		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock Door Lock" //Danalock V3 Smart Lock
+		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Door Lock" //99140 //Kwikset Convert Deadbolt Door Lock
+		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Door Lock" //August Smart Lock Pro
+		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Door Lock" // DB2 //Alfred Smart Home Touchscreen Deadbolt
+		//zw:Fs type:4001 mfr:0154 prod:0005 model:0001 ver:1.05 zwv:4.38 lib:03 cc:7A,73,80,5A,98 sec:5E,86,72,30,71,70,59,85,62
+		fingerprint mfr: "0154", prod: "0005", model: "0001", deviceJoinName: "POPP Door Lock" // POPP Strike Lock Control POPE012501
 	}
 
 	simulator {
@@ -95,7 +97,7 @@ def installed() {
  * and check again.
  */
 def scheduleInstalledCheck() {
-	runIn(120, installedCheck, [forceForLocallyExecuting: true])
+	runIn(120, "installedCheck", [forceForLocallyExecuting: true])
 }
 
 def installedCheck() {
@@ -405,6 +407,12 @@ private def handleBatteryAlarmReport(cmd) {
 	def deviceName = device.displayName
 	def map = null
 	switch (cmd.zwaveAlarmEvent) {
+		case 0x01: //power has been applied, check if the battery level updated
+			log.debug "Batteries replaced. Queueing a battery get."
+			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+			state.batteryQueries = 0
+			result << response(secure(zwave.batteryV1.batteryGet()))
+			break;
 		case 0x0A:
 			map = [name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [lockName: deviceName]]
 			break
@@ -416,6 +424,102 @@ private def handleBatteryAlarmReport(cmd) {
 			break
 	}
 	result << createEvent(map)
+	result
+}
+
+/**
+ * Responsible for handling AlarmReport commands which are ignored by Access & Burglar handlers
+ *
+ * @param cmd: The AlarmReport command to be parsed
+ *
+ * @return The event(s) to be sent out
+ *
+ */
+private def handleAlarmReportUsingAlarmType(cmd) {
+	log.trace "[DTH] Executing 'handleAlarmReportUsingAlarmType' with cmd = $cmd"
+	def result = []
+	def map = null
+	def deviceName = device.displayName
+	switch(cmd.alarmType) {
+		case 9:
+		case 17:
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
+			break
+		case 16: // Note: for levers this means it's unlocked, for non-motorized deadbolt, it's just unsecured and might not get unlocked
+		case 19: // Unlocked with keypad
+			map = [ name: "lock", value: "unlocked" , method: "keypad"]
+			map.descriptionText = "Unlocked by keypad"
+			break
+		case 18: // Locked with keypad
+			codeID = readCodeSlotId(cmd)
+			map = [ name: "lock", value: "locked" ]
+			map.descriptionText = "Locked by keypad"
+			map.data = [ method: "keypad" ]
+			break
+		case 21: // Manually locked
+			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
+			map.descriptionText = "Locked manually"
+			break
+		case 22: // Manually unlocked
+			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
+			map.descriptionText = "Unlocked manually"
+			break
+		case 23:
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
+			map.data = [ method: "command" ]
+			break
+		case 24: // Locked by command
+			map = [ name: "lock", value: "locked", data: [ method: "command" ] ]
+			map.descriptionText = "Locked"
+			break
+		case 25: // Unlocked by command
+			map = [ name: "lock", value: "unlocked", data: [ method: "command" ] ]
+			map.descriptionText = "Unlocked"
+			break
+		case 26:
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
+			map.data = [ method: "auto" ]
+			break
+		case 27: // Auto locked
+			map = [ name: "lock", value: "locked", data: [ method: "auto" ] ]
+			map.descriptionText = "Auto locked"
+			break
+		case 130:  // Batteries replaced
+			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			break
+		case 161: // Tamper Alarm
+			if (cmd.alarmLevel == 2) {
+				map = [ name: "tamper", value: "detected", descriptionText: "Front escutcheon removed", isStateChange: true ]
+			}
+			break
+		case 167: // Low Battery Alarm
+			if (!state.lastbatt || now() - state.lastbatt > 12*60*60*1000) {
+				map = [ descriptionText: "Battery low", isStateChange: true ]
+				result << response(secure(zwave.batteryV1.batteryGet()))
+			} else {
+				map = [ name: "battery", value: device.currentValue("battery"), descriptionText: "Battery low", isStateChange: true ]
+			}
+			break
+		case 168: // Critical Battery Alarms
+			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true ]
+			break
+		case 169: // Battery too low to operate
+			map = [ name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true ]
+			break
+		default:
+			map = [ displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}" ]
+			break
+	}
+
+	if (map) {
+		if (map.data) {
+			map.data.lockName = deviceName
+		} else {
+			map.data = [ lockName: deviceName ]
+		}
+		result << createEvent(map)
+	}
+	result = result.flatten()
 	result
 }
 
@@ -438,6 +542,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbatt = now()
+	unschedule("queryBattery")
 	if (cmd.batteryLevel == 0 && device.latestValue("battery") > 20) {
 		// Danalock reports 00 when batteries are changed. We do not know what is the real level at this point.
 		// We will ignore this level to mimic normal operation of the device (battery level is refreshed only when motor is operating)
@@ -510,7 +615,7 @@ def unlockWithTimeout() {
  */
 def ping() {
 	log.trace "[DTH] Executing ping() for device ${device.displayName}"
-	runIn(30, followupStateCheck)
+	runIn(30, "followupStateCheck")
 	if (zwaveInfo.mfr == "010E") {
 		secure(zwave.doorLockV1.doorLockOperationGet())
 	} else {
@@ -587,5 +692,16 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (now() - timestamp) > (seconds * 1000)
+}
+
+private queryBattery() {
+	log.debug "Running queryBattery"
+	if (state.batteryQueries == null) state.batteryQueries = 0
+	if ((!state.lastbatt || now() - state.lastbatt > 10*1000) && state.batteryQueries < 5) {
+		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
+		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+		state.batteryQueries = state.batteryQueries + 1
+		sendHubCommand(secure(zwave.batteryV1.batteryGet()))
+	}
 }
 

@@ -24,7 +24,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint mfr:"0060", prod:"0007", model:"0001"
+		fingerprint mfr:"0060", prod:"0007", model:"0001", deviceJoinName: "Everspring Illuminance Sensor"
 	}
 
 	simulator {
