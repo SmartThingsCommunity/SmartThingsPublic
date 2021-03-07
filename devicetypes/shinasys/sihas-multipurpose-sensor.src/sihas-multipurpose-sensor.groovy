@@ -38,6 +38,7 @@ metadata {
         }
     }
 }
+
 private getILLUMINANCE_MEASUREMENT_CLUSTER() { 0x0400 }
 private getOCCUPANCY_SENSING_CLUSTER() { 0x0406 }
 private getPOWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE() { 0x0020 }
@@ -45,6 +46,7 @@ private getTEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getRALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getOCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE() { 0x0000 }
+
 private List<Map> collectAttributes(Map descMap) {
     List<Map> descMaps = new ArrayList<Map>()
     descMaps.add(descMap)
