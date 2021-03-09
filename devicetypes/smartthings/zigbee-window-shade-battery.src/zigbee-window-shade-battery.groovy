@@ -138,7 +138,6 @@ def levelEventHandler(currentLevel) {
 	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
-		state.invalidSameLevelEvent = true
 		currentLevel = currentLevel < 0 ? 0 : currentLevel > 100 ? 100 : currentLevel
 		sendEvent(name: "level", value: currentLevel)
 		if (currentLevel == 0 || currentLevel == 100) {
