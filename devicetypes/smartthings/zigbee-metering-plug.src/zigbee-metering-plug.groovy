@@ -167,7 +167,7 @@ private int getPowerDiv() {
 }
 
 private int getEnergyDiv() {
-    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : 100
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : isFrientOutlet() ? 1000 : 100
 }
 
 private boolean isSengledOutlet() {
@@ -176,4 +176,8 @@ private boolean isSengledOutlet() {
 
 private boolean isJascoProductsOutlet() {
     device.getDataValue("manufacturer") == "Jasco Products"
+}
+
+private boolean isFrientOutlet() {
+    device.getDataValue("manufacturer") == "frient A/S"
 }
