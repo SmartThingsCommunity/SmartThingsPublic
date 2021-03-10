@@ -106,9 +106,7 @@ metadata {
             attribute "firmwareVersion", "string"
             attribute "lastCheckIn", "string"
             attribute "syncStatus", "string"
-
-   //     fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW39 Evalogik Smart Plug Dimmer
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MP21ZD Minoston Mini Smart Plug Dimmer *
+	fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MP21ZD Minoston Mini Smart Plug Dimmer
 	}
 
     simulator { }
