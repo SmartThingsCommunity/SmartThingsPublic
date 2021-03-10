@@ -31,11 +31,6 @@ metadata {
 		parameterMap.each {
 			input (title: it.name, description: it.description, type: "paragraph", element: "paragraph")
 			switch(it.type) {
-				case "boolean":
-					input(type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" + "Option disabled: ${it.inactiveDescription}")
-					input(name: it.key, type: "boolean", title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false)
-					break
-					
 				case "enum":
 					input(name: it.key, title: "Select", type: "enum", options: it.values, defaultValue: it.defaultValue, required: false)
 					break
@@ -45,10 +40,6 @@ metadata {
 }
 
 def installed() {
-	/* Push main states */
-	sendEvent(name: "healthStatus", value: "online")
-	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 	/* Child device check */
 	if(!childDevices) {
 		def d = addChildDevice(
@@ -62,8 +53,6 @@ def installed() {
 				isComponent: false
 			]
 		)
-		d.sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
-		d.sendEvent(name: "healthStatus", value: "online")
 	}
 	// Preferences template
 	state.currentPreferencesState = [:]
@@ -81,7 +70,7 @@ def firstCommand(){
 	def commands = []
 	commands << encap(0, zwave.configurationV1.configurationGet(parameterNumber: 0x01))
 	commands << "delay 300"			
-	commands << encap(0, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01, 0x01]))
+	commands << encap(0, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [zwaveHubNodeId, 0x01]))
 	sendHubCommand(commands, 100)
 }
 
@@ -255,8 +244,6 @@ private getPreferenceValue(preference, value = "default") {
 	switch (preference.type) {
 		case "enum":
 			return String.valueOf(integerValue)
-		case "boolean":
-			return String.valueOf(preference.optionActive == integerValue)
 		default:
 			return integerValue
 	}
@@ -265,8 +252,6 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
-		case "boolean":
-			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
 		default:
 			return Integer.parseInt(settings."$parameterKey")
 	}
