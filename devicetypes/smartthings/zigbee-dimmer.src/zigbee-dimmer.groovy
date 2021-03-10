@@ -257,7 +257,5 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	def cmds = refresh() + zigbee.onOffConfig(0, 300)
-	cmds += isLeviton() ? zigbee.levelConfig(1,3600, 0x00) : zigbee.levelConfig()
-	return cmds
+	refresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig()
 }
