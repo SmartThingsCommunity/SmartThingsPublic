@@ -90,15 +90,12 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-   //     fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston In-Wall Switch",  ocfDeviceType: "oic.d.smartplug" // MS10Z
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch",    ocfDeviceType: "oic.d.smartplug" //MS10ZS Minoston Smart Switch   *
 
-   //     fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MS12Z Minoston on/off Toggle Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //MS12ZS Minoston Smart on/off Toggle Switch  *
-
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "EVA LOGIK In-Wall Switch", ocfDeviceType: "oic.d.smartplug" //ZW30   *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30S Evalogik Smart on/off Switch  *
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30TS Evalogik Smart on/off Toggle Switch  *
+        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Smart Switch",    ocfDeviceType: "oic.d.smartplug" //MS10ZS Minoston Smart Switch   
+        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Smart Switch", ocfDeviceType: "oic.d.smartplug" //MS12ZS Minoston Smart on/off Toggle Switch  
+        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "EVA LOGIK In-Wall Switch", ocfDeviceType: "oic.d.smartplug" //ZW30   
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30S Evalogik Smart on/off Switch  
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Smart Switch",    ocfDeviceType: "oic.d.smartplug" //ZW30TS Evalogik Smart on/off Toggle Switch  
     }
 
     simulator { }
