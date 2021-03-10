@@ -138,7 +138,6 @@ def levelEventHandler(currentLevel) {
 	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
-		currentLevel = currentLevel < 0 ? 0 : currentLevel > 100 ? 100 : currentLevel
 		sendEvent(name: "level", value: currentLevel)
 		if (currentLevel == 0 || currentLevel == 100) {
 			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
@@ -156,7 +155,6 @@ def levelEventHandler(currentLevel) {
 def updateFinalState() {
 	def level = device.currentValue("level")
 	log.debug "updateFinalState: ${level}"
-	level = level < 0 ? 0 : level > 100 ? 100 : level
 	if (level > 0 && level < 100) {
 		sendEvent(name: "windowShade", value: "partially open")
 	}
