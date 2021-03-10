@@ -53,7 +53,14 @@ metadata {
 		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch" //Zooz Switch
 		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch" //Zooz Switch ZEN23
 		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug" //Everspring On/Off Plug
-    	fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
+		fingerprint mfr: "0312", prod: "C000", model: "C001", deviceJoinName: "EVA Outlet", ocfDeviceType: "oic.d.smartplug" //EVA LOGIK Smart Plug 1CH
+		fingerprint mfr: "0312", prod: "FF00", model: "FF07", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "FF00", model: "FF06", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston Smart Plug 1CH
+		fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston on/off Toggle Switch
+		fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston Switch" //Minoston Smart On/Off Switch
+		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
+		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
 		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
 	}
 
