@@ -91,12 +91,7 @@ metadata {
         attribute "syncStatus", "string"
 
         fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" // old MP21Z
-   //     fingerprint mfr: "0312", prod: "C000", model: "C001", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW36 EVA LOGIK Smart Plug 1CH
-	//	fingerprint mfr: "0312", prod: "FF00", model: "FF06", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Smart Plug 1CH
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug  *
-  //      fingerprint mfr: "0312", prod: "FF00", model: "FF07", deviceJoinName: "Minoston Outlet",       ocfDeviceType: "oic.d.smartplug" //MP22Z Minoston Outdoor Smart Plug
-   //     fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW96 Evalogik Outdoor Smart Plug
-	//	fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet",       ocfDeviceType: "oic.d.smartplug" //ZW96S Evalogik Mini Outdoor Smart Plug
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug",    ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug  
     }
 
     simulator { }
