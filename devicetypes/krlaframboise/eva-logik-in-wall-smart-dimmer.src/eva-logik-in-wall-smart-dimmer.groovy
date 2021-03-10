@@ -100,13 +100,13 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston In-Wall Smart Dimmer" // MS11Z
+    //    fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston In-Wall Smart Dimmer" // MS11Z
         fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS11ZS Minoston Smart Dimmer Switch   *
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS13Z Minoston Toggle Dimmer Switch
+   //     fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS13Z Minoston Toggle Dimmer Switch
         fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //MS13ZS Minoston Smart Toggle Dimmer Switch  *
 
-        fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Eva Logik In-Wall Smart Dimmer" // ZW31
+   //     fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Eva Logik In-Wall Smart Dimmer" // ZW31
         fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW31S Evalogik Smart Dimmer Switch   *
         fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //ZW31TS Evalogik Smart Toggle Dimmer Switch   *
     }
