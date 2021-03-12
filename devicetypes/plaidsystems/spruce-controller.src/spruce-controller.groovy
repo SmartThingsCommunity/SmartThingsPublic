@@ -10,9 +10,17 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+
+ Version v3.4
+ * update presentation with 'patch' to rename 'valve' to 'Zone x'
+ * remove commands on, off
+ * add command setValveDuration
+ * update settings order and description
+ * fix controllerStatus -> status
+
  Version v3.3
  * change to remotecontrol with components
- 
+
  Version v3.2
  * add zigbee constants
  * update to zigbee commands
@@ -42,8 +50,8 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 //dth version
-def getVERSION() {'v3.3 12-2020'}
-def getDEBUG() {true}
+def getVERSION() {'v3.4 3-2021'}
+def getDEBUG() {false}
 //zigbee cluster, attribute, identifiers
 def getON_OFF_CLUSTER() {0x0006}
 def getALARMS_CLUSTER() {0x0009}
@@ -55,8 +63,8 @@ def getPRESENT_VALUE_IDENTIFIER() {0x0055}
 
 metadata {
 	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity",
-    	ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true, vid: "292b4067-e1d7-3460-a36d-2ddd8ab03079") {
-		
+    	ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true, vid: "2914a12b-504f-344f-b910-54008ba9408f") {
+
         capability "Actuator"
 		capability "Switch"
         capability "Valve"
@@ -75,8 +83,6 @@ metadata {
 		attribute "rainSensor", "string"
         attribute "valveDuration", "NUMBER"
 
-		command "on"
-		command "off"
 		command "setStatus"
 		command "setRainSensor"
 		command "setControllerState"
@@ -87,23 +93,26 @@ metadata {
 	}
 
 	preferences {
-		input title: "Version", description: VERSION, displayDuringSetup: true, type: "paragraph", element: "paragraph"
-
+    	//general device settings
 		input title: "Device settings", displayDuringSetup: true, type: "paragraph", element: "paragraph",
 			description: "Settings for automatic operations and device touch buttons."
-
-		input "touchButtonDuration", "integer", title: "Automatic turn off time when touch buttons are used on device? (minutes)", required: false, displayDuringSetup: true
 		input "rainSensorEnable", "bool", title: "Rain Sensor Attached?", required: false, displayDuringSetup: true
-
+		input "touchButtonDuration", "integer", title: "Automatic turn off time when touch buttons are used on device? (minutes)", required: false, displayDuringSetup: true
 		input name: "pumpMasterZone", type: "enum", title: "Pump or Master zone", description: "This zone will turn on and off anytime another zone is turned on or off", required: false,
 			options: ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6", "Zone 7", "Zone 8", "Zone 9", "Zone 10", "Zone 11", "Zone 12", "Zone 13", "Zone 14", "Zone 15", "Zone 16"]
-		input "splitCycle", "bool", title: "Cycle scheduled watering time to reduce runoff?", required: false, displayDuringSetup: true
+
+        //break for ease of reading settings
+        input title: "", description: "", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+
+        //schedule specific settings
+        input title: "Schedule setup", displayDuringSetup: true, type: "paragraph", element: "paragraph",
+			description: "These settings only effect when the controller is switched to the on state."
+        input "splitCycle", "bool", title: "Cycle scheduled watering time to reduce runoff?", required: false, displayDuringSetup: true
 		input "valveDelay", "integer", title: "Delay between valves when a schedule runs? (seconds)", required: false, displayDuringSetup: true
 
-		input title: "Zone devices", displayDuringSetup: true, type: "paragraph", element: "paragraph",
-			description: "Set schedule minutes to water a zone anytime controller state is switched on."
-		
-		input name: "z1Duration", type: "integer", title: "Zone 1 schedule minutes"		
+        input title: "Schedule times", displayDuringSetup: true, type: "paragraph", element: "paragraph",
+			description: "Set the minutes for each zone to water anytime the controller is switched on."
+		input name: "z1Duration", type: "integer", title: "Zone 1 schedule minutes"
 		input name: "z2Duration", type: "integer", title: "Zone 2 schedule minutes"
 		input name: "z3Duration", type: "integer", title: "Zone 3 schedule minutes"
 		input name: "z4Duration", type: "integer", title: "Zone 4 schedule minutes"
@@ -119,13 +128,15 @@ metadata {
 		input name: "z14Duration", type: "integer", title: "Zone 14 schedule minutes"
 		input name: "z15Duration", type: "integer", title: "Zone 15 schedule minutes"
 		input name: "z16Duration", type: "integer", title: "Zone 16 schedule minutes"
+
+		input title: "Version", description: VERSION, displayDuringSetup: true, type: "paragraph", element: "paragraph"
 	}
 }
 
 //----------------------zigbee parse-------------------------------//
 
 // Parse incoming device messages to generate events
-def parse(String description) {	
+def parse(String description) {
 	def result = []
 	def endpoint, value, command
 	def map = zigbee.parseDescriptionAsMap(description)
@@ -148,16 +159,22 @@ def parse(String description) {
 		break
 	  case "schedule":
 		def scheduleValue = (value == 1 ? "on" : "off")
-		if (scheduleValue == "off") result.push(createEvent(name: "status", value: "Schedule ${scheduleValue}"))
-		result.push(createEvent(name: "switch", value: scheduleValue, displayed: false))
-		result.push(createEvent(name: "controllerState", value: scheduleValue))
+		def scheduleState = device.latestValue("controllerState")
+		def scheduleStatus = device.latestValue("status")
+
+		if (scheduleState == "pause") log.debug "pausing schedule"
+		else {
+			if (scheduleStatus != "off" && scheduleValue == "off") result.push(createEvent(name: "status", value: "Schedule ${scheduleValue}"))
+			result.push(createEvent(name: "controllerState", value: scheduleValue))
+			result.push(createEvent(name: "switch", value: scheduleValue, displayed: false))
+		}
 		break
 	  case "zone":
 	  	def onoff = (value == 1 ? "open" : "closed")
 		def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
 		if (child) child.sendEvent(name: "valve", value: onoff)
 
-		if (device.latestValue("controllerStatus") == "off") return setTouchButtonDuration()
+		if (device.latestValue("controllerState") == "off") return setTouchButtonDuration()
 		break
 	  case "rainsensor":
 		def rainSensor = (value == 1 ? "wet" : "dry")
@@ -171,7 +188,7 @@ def parse(String description) {
 	  	//log.debug "not used command"
 		break
 	}
-	
+
 	return result
 }
 
@@ -190,6 +207,11 @@ def installed() {
     createChildDevices()
 }
 
+def uninstalled() {
+	log.debug "uninstalled"
+	removeChildDevices()
+}
+
 def updated() {
 	log.debug "updated"
 	initialize()
@@ -198,9 +220,9 @@ def updated() {
 def initialize() {
 	sendEvent(name: "switch", value: "off", displayed: false)
 	sendEvent(name: "controllerState", value: "off", displayed: false)
-	sendEvent(name: "status", value: "Initialize")    
+	sendEvent(name: "status", value: "Initialize")
     if (device.latestValue("valveDuration") == null) sendEvent(name: "valveDuration", value: 10)
-    
+
 	//update zigbee device settings
 	response(setDeviceSettings() + setTouchButtonDuration() + setRainSensor() + refresh())
 }
@@ -212,8 +234,8 @@ def createChildDevices() {
 	//create, rename, or remove child
 	for (i in 1..16){
 		//endpoint is offset, zone number +1
-		def endpoint = i + 1		
-		
+		def endpoint = i + 1
+
 		def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
 		//create child
 		if (!child){
@@ -229,24 +251,22 @@ def createChildDevices() {
 	state.oldLabel = device.label
 }
 
-def open() {
-	log.debug "open"
-    sendEvent(name: "valve", value: "open")
+def removeChildDevices() {
+	log.debug "remove all children"
+
+	//get and delete children avoids duplicate children
+	def children = getChildDevices()
+	if(children != null){
+		children.each{
+			deleteChildDevice(it.deviceNetworkId)
+		}
+	}
 }
 
-def closed() {
-	log.debug "closed"
-    sendEvent(name: "valve", value: "closed")
-}
-
-def setValveDuration(duration) {
-	log.debug "valveDuration ${duration}"
-	sendEvent(name: "valveDuration", value: duration, unit: "mins")
-}
 
 //----------------------------------commands--------------------------------------//
 
-def setStatus(status) {
+def setStatus(status){
 	if (DEBUG) log.debug "status ${status}"
 	sendEvent(name: "status", value: status, descriptionText: "Initialized")
 }
@@ -258,6 +278,12 @@ def setRainSensor() {
 	else return zigbee.writeAttribute(BINARY_INPUT_CLUSTER, OUT_OF_SERVICE_IDENTIFIER, DataType.BOOLEAN, 0, [destEndpoint: 18])
 }
 
+def setValveDuration(duration) {
+	if (DEBUG) log.debug "Valve Duration set to: ${duration}"
+
+	sendEvent(name: "valveDuration", value: duration, displayed: false)
+}
+
 //cahnge the device settings for automatically starting a pump or master zone, set the controller to split scheduled watering cycles, set a delay between scheduled valves
 def setDeviceSettings() {
 	def pumpMasterZone = (pumpMasterZone ? pumpMasterZone.replaceFirst("Zone ","").toInteger() : null)
@@ -265,7 +291,7 @@ def setDeviceSettings() {
 	def valveDelay = (valveDelay ? valveDelay.toInteger() : 0)
 	if (DEBUG) log.debug "Pump/Master: ${pumpMasterEndpoint} splitCycle: ${splitCycle} valveDelay: ${valveDelay}"
 
-	def endpointMap = [:]	
+	def endpointMap = [:]
     for (zone in 0..17) {
 		//setup zone, 1=single cycle, 2=split cycle, 4=pump/master
 		def zoneSetup = splitCycle
@@ -330,14 +356,14 @@ def off() {
 def pause() {
 	log.debug "pause"
 	sendEvent(name: "switch", value: "off", displayed: false)
-	sendEvent(name: "controllerStatus", value: "pause", descriptionText: "pause on")
+	sendEvent(name: "status", value: "paused schedule", descriptionText: "pause on")
 	scheduleOff()
 }
 
 def resume() {
 	log.debug "resume"
 	sendEvent(name: "switch", value: "on", displayed: false)
-	sendEvent(name: "controllerStatus", value: "resume", descriptionText: "resume on")
+	sendEvent(name: "status", value: "resumed schedule", descriptionText: "resume on")
 	scheduleOn()
 }
 
@@ -411,7 +437,7 @@ def startSchedule() {
 	def scheduleTimes = []
 
 	for (i in 1..16){
-		def endpoint = i + 1        
+		def endpoint = i + 1
 		//if (settings."z${i}" && settings."z${i}Duration" != null){
         if (settings."z${i}Duration" != null){
 			runTime = Integer.parseInt(settings."z${i}Duration")
@@ -466,7 +492,7 @@ def configure() {
 	sendEvent(name: "DeviceWatch-Enroll", value: 2* 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	configureHealthCheck()
-	
+
 	if (DEBUG) log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.hub.zigbeeId}"
 
 	//setup binding for 18 endpoints
@@ -534,27 +560,3 @@ def configureHealthCheck() {
 private hextoint(String hex) {
 	Long.parseLong(hex, 16).toInteger()
 }
-
-/*
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-//${zigbee.swapEndianHex(zigbee.convertToHexString(groupAddr, 4))}
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
-	}
-	return array
-}
-*/
