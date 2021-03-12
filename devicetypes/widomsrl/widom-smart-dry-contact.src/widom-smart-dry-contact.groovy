@@ -18,7 +18,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint mfr: "0149", prod: "1214", model: "0900", deviceJoinName: "WiDom Dry Contact" // WiDom Dry Contact allow to turn On/Off a load with indipendent power supply.
+		fingerprint mfr: "0149", prod: "1214", model: "0900", deviceJoinName: "WiDom Switch" // Raw Description WiDom Dry Contact allow to turn On/Off a load with indipendent power supply.
 	}
     
 	preferences {
@@ -257,11 +257,6 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private crcEncap(physicalgraph.zwave.Command cmd) {
-	logging("encapsulating command using CRC16 Encapsulation, command: $cmd","info")
-	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
-}
-
 private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
 	logging("encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd","info")
 	zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:ep).encapsulate(cmd)
@@ -274,20 +269,10 @@ private encap(physicalgraph.zwave.Command cmd, Integer ep) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
-		crcEncap(cmd)
 	} else {
 		logging("no encapsulation supported for command: $cmd","info")
 		cmd.format()
 	}
-}
-
-private encapSequence(cmds, Integer delay=250) {
-	delayBetween(cmds.collect{ encap(it) }, delay)
-}
-
-private encapSequence(cmds, Integer delay, Integer ep) {
-	delayBetween(cmds.collect{ encap(it, ep) }, delay)
 }
 
 private List intToParam(Long value, Integer size = 1) {
@@ -309,7 +294,7 @@ private Map cmdVersions() {
 }
 
 private parameterMap() {[
-		[key: "numClickLoad", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to controlthe loads",
+		[key: "numClickLoad", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to control the loads",
 			descr: "Define which sequences of clicks control the load (see device manual)."],
 		[key: "OffTimer", num: 10, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch OFF the Relay",
 			descr: "Defines the time after which the relay is switched OFF. Time unit is set by parameter 15(see device manual)"],
