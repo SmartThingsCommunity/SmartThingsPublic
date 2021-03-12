@@ -105,10 +105,11 @@ def updated() {
     // Schedules
     runEvery5Minutes( refresh )
 ///////////////////////////////    runEvery1Minute( autenticar )
-//    int ss = 1 + 58 * Math.random()
-//    def cronString = "${ss} 0 0 1/1 * ? *"
-//    log.debug "cron schedule: ${cronString}"
-//    schedule( cronString, refresh )
+    int ss = 1 + 58 * Math.random()
+    int mm = 1
+    def cronString = "${ss} ${mm} 0 1/1 * ? *"
+    log.debug "cron schedule: ${cronString}"
+    schedule( cronString, reautenticar )
 }
 
 def refresh()
@@ -208,6 +209,9 @@ def refreshComplete( dispositivos, scenes, macros ) {
       [id: 0, nome: device.label + " Off", endereco: "broadcast/0"],
       [id: 1, nome: device.label + " On",  endereco: "broadcast/1"]
     ]
+    scenes    = coerceToString( scenes, "endereco")
+    macros    = coerceToString( macros, "endereco")
+    broadcast = coerceToString( broadcast, "endereco")
 
     log.debug( "WiConnect has ${switches.size()} switches, ${dimmers.size()} dimmers, ${shutters.size()} shutters"
             + ", ${scenes.size()} scenes, ${macros.size()} macros, ${broadcast.size()} broadcasts"
@@ -267,6 +271,9 @@ def countOnDevices( dispositivos ) {
 // WiConnect reautenticar
 //----------------------------------------------------------------------
 def reautenticar() {
+  if( ! state.isAuthenticated ) {
+    return
+  }
   def user = [ nome:  "${settings.serverUser}",
                senha: "${md5( settings.serverPassword )}"
   ]
@@ -364,8 +371,8 @@ def refreshSimple( dispositivos ) {
 // Set Utilities
 //----------------------------------------------------------------------
 Map makeActionMap( dispositivos, String deviceType, String field ) {
-  def dSet = dispositivos[ field ] as Set
-//  def dSet = makeDevicesSet( dispositivos, field )
+//  def dSet = dispositivos[ field ] as Set
+  def dSet = makeDevicesSet( dispositivos, field )
   def cSet = makeChildDevicesSet( deviceType, field )
 //  log.debug "dSet: ${dSet}, cSet: ${cSet}"
   def m = [ add:     dSet.minus( cSet ),
@@ -433,22 +440,21 @@ def deleteDevices( dispositivos, String deviceType, deleteSet, int totalAllowed 
   def d, child
   Set deletedSet = []
   deleteSet.each { endereco ->
-    d = dispositivos.find{ it.endereco == endereco }
-    if( d ) {
-      child = childDevices.find{ it.deviceNetworkId == "${device.deviceNetworkId}-${d.endereco}" }
-      if( child ) {
-        if( totalAllowed > 0 ) {
-          try {
-            deleteChildDevice( child.deviceNetworkId )
-            deletedSet << endereco
-            totalAllowed--
-          }
-          catch (e) {
-            log.debug "Error deleting ${child.deviceNetworkId}: ${e}"
-          }
+    child = childDevices.find{ it.deviceNetworkId == "${device.deviceNetworkId}-${endereco}" }
+    if( child ) {
+      if( totalAllowed > 0 ) {
+        try {
+          deleteChildDevice( child.deviceNetworkId )
+          deletedSet << endereco
+          totalAllowed--
         }
-        else
-          return totalAllowed
+        catch (e) {
+          log.debug "Error deleting ${child.deviceNetworkId}: ${e}"
+        }
+      }
+      else {
+//        log.debug "Delete ${deviceType}: ${deleteSet.size()}, deleted ${deletedSet.size()}, undeleted ${deleteSet.minus( deletedSet )}"
+        return totalAllowed
       }
     }
   }
