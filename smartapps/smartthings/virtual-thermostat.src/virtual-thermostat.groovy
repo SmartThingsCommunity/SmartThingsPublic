@@ -26,31 +26,51 @@ definition(
 )
 
 preferences {
-	section("Choose a temperature sensor... "){
-		input "sensor", "capability.temperatureMeasurement", title: "Sensor"
-	}
-	section("Select the heater or air conditioner outlet(s)... "){
-		input "outlets", "capability.switch", title: "Outlets", multiple: true
-	}
-	section("Set the desired temperature..."){
-		input "setpoint", "decimal", title: "Set Temp"
-	}
-	section("When there's been movement from (optional, leave blank to not require motion)..."){
-		input "motion", "capability.motionSensor", title: "Motion", required: false
-	}
-	section("Within this number of minutes..."){
-		input "minutes", "number", title: "Minutes", required: false
-	}
-	section("But never go below (or above if A/C) this value with or without motion..."){
-		input "emergencySetpoint", "decimal", title: "Emer Temp", required: false
-	}
-	section("Select 'heat' for a heater and 'cool' for an air conditioner..."){
-		input "mode", "enum", title: "Heating or cooling?", options: ["heat","cool"]
+	page(name: "mainPage", install: true, uninstall: true)
+}
+
+def mainPage() {
+	dynamicPage(name: "mainPage", title: (state.installed ? "" : "Virtual Thermostat")) {
+		section("Select 'heat' for a heater and 'cool' for an air conditioner..."){
+			input "thermostatMode", "enum", title: "Heating or cooling?", options: ["heat","cool"], submitOnChange: true
+		}
+		if (thermostatMode) {
+			section("Choose a temperature sensor... "){
+				input "sensor", "capability.temperatureMeasurement", title: "Sensor", submitOnChange: true
+			}
+			if (sensor) {
+				section("Select the ${(thermostatMode == "heat") ? "heater" : "air conditioner"} outlet(s)... "){
+					input "outlets", "capability.outlet", title: "Outlets", multiple: true, submitOnChange: true
+				}
+			}
+			if (thermostatMode && outlets) {
+				section("Set the desired ${(thermostatMode == "heat") ? "heating" : "cooling"} temperature..."){
+					input "setpoint", "decimal", title: "${(thermostatMode == "heat") ? "Heating" : "Cooling"} setpoint", submitOnChange: true
+				}
+				section("When there's been movement from (optional, leave blank to not require motion)..."){
+					input "motion", "capability.motionSensor", title: "Motion", required: false, submitOnChange: true
+				}
+			}
+			if (motion) {
+				section("Within this number of minutes of motion keep the ${(thermostatMode == "heat") ? "heater" : "air conditioner"} on..."){
+					input "minutes", "number", title: "Minutes", required: false
+				}
+				section("Never ${(thermostatMode == "heat") ? "go below" : "exceed"} this temperature, with or without motion..."){
+					input "emergencySetpoint", "decimal", title: "${(thermostatMode == "heat") ? "Min" : "Max"} allowed temperature", required: false
+				}
+			}
+			if (setpoint) {
+				section([mobileOnly:true]) {
+					label title: "Assign a name", required: false
+				}
+			}
+		}
 	}
 }
 
 def installed()
 {
+	state.installed = true
 	subscribe(sensor, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "motion", motionHandler)
@@ -60,9 +80,13 @@ def installed()
 def updated()
 {
 	unsubscribe()
-	subscribe(sensor, "temperature", temperatureHandler)
-	if (motion) {
-		subscribe(motion, "motion", motionHandler)
+	if (outlets) {
+		subscribe(sensor, "temperature", temperatureHandler)
+		if (motion) {
+			subscribe(motion, "motion", motionHandler)
+		}
+	} else {
+		sendNotificationEvent("\"${app.label}\" will no longer function as the outlet(s) has been removed")
 	}
 }
 
@@ -103,7 +127,7 @@ private evaluate(currentTemp, desiredTemp)
 {
 	log.debug "EVALUATE($currentTemp, $desiredTemp)"
 	def threshold = 1.0
-	if (mode == "cool") {
+	if (thermostatMode == "cool") {
 		// air conditioner
 		if (currentTemp - desiredTemp >= threshold) {
 			outlets.on()
