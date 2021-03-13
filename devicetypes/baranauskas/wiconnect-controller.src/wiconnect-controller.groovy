@@ -22,64 +22,58 @@ metadata {
     definition (
        name: "WiConnect Controller",
        description: "Create Legrand WiConnect child devices",
-       version: "1.1 (2021-03-12)",
+       version: "1.2 (2021-03-13)",
        namespace: "baranauskas",
        author: "Jose Augusto Baranauskas",
        runLocally: true,
        minHubCoreVersion: '000.021.00001'
     ) {
-        capability "Actuator"
-        capability "Sensor"
+      capability "Actuator"
+      capability "Sensor"
 
-        // On forces a full update (add, delete and remove) on devices
-        // just like updating settings
-        capability "Switch"
+      // On forces a full update (add, delete and remove) on devices
+      // just like updating settings
+      capability "Switch"
 
-        // Open if isAuthenticated && Connection is okay
-        capability "Contact Sensor"
+      // Open if isAuthenticated && Connection is okay
+      capability "Contact Sensor"
 
-        // Number of switches and dimmers ON
-        capability "Air Quality Sensor"
+      // Number of switches and dimmers ON
+      capability "Air Quality Sensor"
+
 //        capability "Motion Sensor"
-//        capability "Switch"
 //        capability "Acceleration Sensor"
 //        capability "Infrared Level"
 //        capability "Health Check"
-        capability "Refresh"
-
-//        command "childOn"
-//        command "childOff"
-//        command "sendData", ["string"]
-
-//        attribute "altitude",               "number"
+      capability "Refresh"
     }
 
-    preferences{
-        input("serverIP", "text",
-              title: "Controller Server IP",
-              description: "Format 192.168.1.201",
-              required: true,
-              displayDuringSetup: true
-        )
-        input("serverPort", "decimal",
-              title: "Controller Server Port",
-              description: "Format 3000",
-              range: "0..20000",
-              required: true,
-              displayDuringSetup: true
-        )
-        input("serverUser", "text",
-              title: "Mobile user",
-              description: "Enter mobile user",
-              required: true,
-              displayDuringSetup: true
-        )
-        input("serverPassword", "password",
-              title: "Mobile user password",
-              description: "Enter password",
-              required: true,
-              displayDuringSetup: true
-        )
+    preferences {
+      input("serverIP", "text",
+            title: "Controller Server IP",
+            description: "Format 192.168.1.201",
+            required: true,
+            displayDuringSetup: true
+      )
+      input("serverPort", "decimal",
+            title: "Controller Server Port",
+            description: "Format 3000",
+            range: "0..20000",
+            required: true,
+            displayDuringSetup: true
+      )
+      input("serverUser", "text",
+            title: "Mobile user",
+            description: "Enter mobile user",
+            required: true,
+            displayDuringSetup: true
+      )
+      input("serverPassword", "password",
+            title: "Mobile user password",
+            description: "Enter password",
+            required: true,
+            displayDuringSetup: true
+      )
     }
 }
 //----------------------------------------------------------------------
@@ -103,20 +97,22 @@ def updated() {
     autenticar()
 
     // Schedules
+    // Update (refresh only) switches, dimmers and shutters
     runEvery5Minutes( refresh )
-///////////////////////////////    runEvery1Minute( autenticar )
+
+    // Update (add/remove/refresh) devices to keep in sync with WiConnect
     int ss = 1 + 58 * Math.random()
-    int mm = 1
+    int mm = 1 +  5 * Math.random()
     def cronString = "${ss} ${mm} 0 1/1 * ? *"
     log.debug "cron schedule: ${cronString}"
-    schedule( cronString, reautenticar )
+    schedule( cronString, refreshAll )
 }
 
-def refresh()
-{   log.debug "refresh()"
-    connectionState( state.connectionOk )
-    if( state.continueRefreshComplete )
-      reautenticar()
+def refresh() {
+    log.debug "refresh()"
+    connectionState()
+    if( state.continueRefreshAll )
+      refreshAll()
     else
       getDispositivos()
 }
@@ -140,59 +136,83 @@ def off() {
     sendEvent( name:"switch", value: "off" )
 }
 //----------------------------------------------------------------------
-// WiConnect autenticar
+// WiConnect autenticar and refreshAll
 //----------------------------------------------------------------------
 def autenticar() {
-  resetState()
-  if( ! isSettingsOk() ) {
-    log.debug "Please check your settings"
-    return
-  }
-
-  def user = [ nome:  "${settings.serverUser}",
-               senha: "${md5( settings.serverPassword )}"
-  ]
-  def theHeader = [ HOST: "${settings.serverIP}:${settings.serverPort}",
-                    "Content-Type": "application/json",
-                    "Connection": "Keep-Alive"
-  ]
-  def cmd = [ method: "POST",
-              path: "/autenticar",
-              headers: theHeader,
-              body: user
-  ]
-//  log.debug "cmd: ${cmd}"
-  sendCmd( cmd,  autenticarHandler )
+    log.debug "autenticar()"
+    resetState()
+    if( ! isSettingsOk() ) {
+      log.debug "Please check your settings"
+      return
+    }
+    def cmd = mapOfAutenticarCmd()
+    //  log.debug "cmd: ${cmd}"
+    state.isConnected = false
+    sendCmd( cmd,  refreshAllHandler )
 }
 
-def autenticarHandler( physicalgraph.device.HubResponse hubResponse ) {
-//    log.debug "hubResponse: ${body}"
-//    log.debug "autenticarHandler()"
-    state.connectionOk = true
+def refreshAll() {
+    log.debug "refreshAll()"
+    if( ! state.isAuthenticated ) {
+      log.debug "Not authenticated, please check your settings"
+      return
+    }
+    if( ! state.isConnected ) {
+      log.debug "No connection, please check your network"
+    }
+
+    def cmd = mapOfAutenticarCmd()
+    //  log.debug "cmd: ${cmd}"
+    state.isConnected = false
+    sendCmd( cmd,  refreshAllHandler )
+}
+
+def refreshAllHandler( physicalgraph.device.HubResponse hubResponse ) {
+    state.isConnected = true
+
     def status = hubResponse.status
+    connectionState( statusOk( status ) )
     if( ! statusOk( status ) ) {
-      log.debug "autenticarHandler status not okay"
+      log.debug "refreshAllHandler status not okay"
       return
     }
 
     def body = hubResponse.body
     def jsonSlurper = new JsonSlurper()
     def response = jsonSlurper.parseText( body )
-//    log.debug "autenticarHandler encontrou ${response.size()} respostas"
-    def token = response.token
-    def basic = "Basic " + base64("token:" + response.token)
 
-    authenticateState( token, basic )
+    if ( ! state.isAuthenticated ) {
+       def token = response.token
+       def basic = "Basic " + base64("token:" + response.token)
+       authenticateState( token, basic )
+       //    log.debug "Token: ${state.token}, Basic: ${state.basic}"
+    }
+
     // notar que resposta /autenticar eh diferente da resposta /dispositivos
     // mas ambas incluem os dipositivos ao devolver o resultado
     // pelo sendHubCommand
-    log.debug "Token: ${state.token}, Basic: ${state.basic}"
 
     // atualizar completamente os dispositivos
-    def totalAllowed
-    totalAllowed = refreshComplete( response.dispositivos, response.cenas, response.macros )
+    refreshComplete( response.dispositivos, response.cenas, response.macros )
 }
 
+def mapOfAutenticarCmd() {
+
+    def user = [ nome:  "${settings.serverUser}",
+                 senha: "${md5( settings.serverPassword )}"
+    ]
+    def theHeader = [ HOST: "${settings.serverIP}:${settings.serverPort}",
+                      "Content-Type": "application/json",
+                      "Connection": "Keep-Alive"
+    ]
+    def cmd = [ method: "POST",
+                path: "/autenticar",
+                headers: theHeader,
+                body: user
+    ]
+    return cmd
+}
+//----------------------------------------------------------------------
 def refreshComplete( dispositivos, scenes, macros ) {
 
     dispositivos = coerceToString( dispositivos, "endereco")
@@ -209,11 +229,12 @@ def refreshComplete( dispositivos, scenes, macros ) {
       [id: 0, nome: device.label + " Off", endereco: "broadcast/0"],
       [id: 1, nome: device.label + " On",  endereco: "broadcast/1"]
     ]
+
     scenes    = coerceToString( scenes, "endereco")
     macros    = coerceToString( macros, "endereco")
     broadcast = coerceToString( broadcast, "endereco")
 
-    log.debug( "WiConnect has ${switches.size()} switches, ${dimmers.size()} dimmers, ${shutters.size()} shutters"
+    log.debug( device.label + " has ${switches.size()} switches, ${dimmers.size()} dimmers, ${shutters.size()} shutters"
             + ", ${scenes.size()} scenes, ${macros.size()} macros, ${broadcast.size()} broadcasts"
     )
     onDevicesState( countOnDevices( dispositivos ) )
@@ -221,18 +242,19 @@ def refreshComplete( dispositivos, scenes, macros ) {
     def maxAllowed = 10
     def totalAllowed = maxAllowed
     def types = mapOfDeviceTypes()
-    totalAllowed = addRemoveRefreshDevices( switches,  types["switch"],    totalAllowed )
+//    totalAllowed = addRemoveRefreshDevices( switches,  types["switch"],    totalAllowed )
     totalAllowed = addRemoveRefreshDevices( dimmers,   types["dimmer"],    totalAllowed )
     totalAllowed = addRemoveRefreshDevices( shutters,  types["shutter"],   totalAllowed )
-    totalAllowed = addRemoveRefreshDevices( scenes,    types["scene"],     totalAllowed )
+//    totalAllowed = addRemoveRefreshDevices( scenes,    types["scene"],     totalAllowed )
     totalAllowed = addRemoveRefreshDevices( macros,    types["macro"],     totalAllowed )
     totalAllowed = addRemoveRefreshDevices( broadcast, types["broadcast"], totalAllowed )
-    state.continueRefreshComplete = ( totalAllowed == 0 )
+    state.continueRefreshAll = ( totalAllowed == 0 )
     if( totalAllowed == 0 ) {
       log.debug "Added/deleted ${maxAllowed} devices. Please, be patient... scheduled another run to add/remove more child devices"
     }
-    log.debug "totalAllowed = ${totalAllowed}"
-    return totalAllowed
+    else {
+      log.debug "Finished adding/deleting the last ${maxAllowed - totalAllowed} devices"
+    }
 }
 
 def myRunIn( seconds, function ) {
@@ -268,87 +290,51 @@ def countOnDevices( dispositivos ) {
   return switchesOn + dimmersOn
 }
 //----------------------------------------------------------------------
-// WiConnect reautenticar
-//----------------------------------------------------------------------
-def reautenticar() {
-  if( ! state.isAuthenticated ) {
-    return
-  }
-  def user = [ nome:  "${settings.serverUser}",
-               senha: "${md5( settings.serverPassword )}"
-  ]
-  def theHeader = [ HOST: "${settings.serverIP}:${settings.serverPort}",
-                    "Content-Type": "application/json",
-                    "Connection": "Keep-Alive"
-  ]
-  def cmd = [ method: "POST",
-              path: "/autenticar",
-              headers: theHeader,
-              body: user
-  ]
-//  log.debug "cmd: ${cmd}"
-  sendCmd( cmd,  reautenticarHandler )
-}
-
-def reautenticarHandler( physicalgraph.device.HubResponse hubResponse ) {
-//    log.debug "hubResponse: ${body}"
-//    log.debug "autenticarHandler()"
-    state.connectionOk = true
-    def status = hubResponse.status
-    if( ! statusOk( status ) ) {
-      log.debug "reautenticarHandler status not okay"
-      return
-    }
-
-    def body = hubResponse.body
-    def jsonSlurper = new JsonSlurper()
-    def response = jsonSlurper.parseText( body )
-
-    // atualizar completamente os dispositivos
-    refreshComplete( response.dispositivos, response.cenas, response.macros )
-}
+// Refresh Simple
 //----------------------------------------------------------------------
 def getDispositivos() {
-  if( ! state.isAuthenticated ) {
-    log.debug "Not authenticated, please check your settings"
-    return
-  }
-  if( ! state.connectionOk ) {
-    log.debug "No connection, please check your network"
-  }
-  def theHeader = [ HOST: "${settings.serverIP}:${settings.serverPort}",
-                    "Content-Type": "application/json",
-                    "Authorization": "${state.basic}"
-  ]
-  def cmd = [ method: "GET",
-              path: "/dispositivos",
-              headers: theHeader
-  ]
-//  log.debug "cmd: ${cmd}"
-  sendCmd( cmd, getDispositivosHandler )
+    if( ! state.isAuthenticated ) {
+      log.debug "Not authenticated, please check your settings"
+      return
+    }
+    if( ! state.isConnected ) {
+      log.debug "No connection, please check your network"
+    }
+    def theHeader = [ HOST: "${settings.serverIP}:${settings.serverPort}",
+                      "Content-Type": "application/json",
+                      "Authorization": "${state.basic}"
+    ]
+    def cmd = [ method: "GET",
+                path: "/dispositivos",
+                headers: theHeader
+    ]
+  //  log.debug "cmd: ${cmd}"
+    state.isConnected = false
+    sendCmd( cmd, getDispositivosHandler )
 }
 
 def getDispositivosHandler(physicalgraph.device.HubResponse hubResponse) {
-  state.connectionOk = true
-//  log.debug "getDispositivosHandler"
-  def status = hubResponse.status
-  def dispositivos = []
-  connectionState( statusOk( status ) )
-  if( ! statusOk( status ) ) {
-    log.debug "hubResponse not okay"
-    return
-  }
-  def body = hubResponse.body
-  def jsonSlurper = new JsonSlurper()
-  def response = jsonSlurper.parseText( body )
-  dispositivos = response.dispositivos
-  dispositivos = coerceToString( dispositivos, "endereco")
+    //  log.debug "getDispositivosHandler"
+    state.isConnected = true
 
-//  def switches = dispositivos.findAll { it.tipo == 0 }
-//  def dimmers  = dispositivos.findAll { it.tipo == 1 }
-//  def shutters = dispositivos.findAll { it.tipo == 2 }
-//  log.debug "Got ${switches.size()} switches, ${dimmers.size()} dimmers, ${shutters.size()} shutters"
-  refreshSimple( dispositivos )
+    def status = hubResponse.status
+    def dispositivos = []
+    connectionState( statusOk( status ) )
+    if( ! statusOk( status ) ) {
+      log.debug "hubResponse not okay"
+      return
+    }
+    def body = hubResponse.body
+    def jsonSlurper = new JsonSlurper()
+    def response = jsonSlurper.parseText( body )
+    dispositivos = response.dispositivos
+    dispositivos = coerceToString( dispositivos, "endereco")
+
+    //  def switches = dispositivos.findAll { it.tipo == 0 }
+    //  def dimmers  = dispositivos.findAll { it.tipo == 1 }
+    //  def shutters = dispositivos.findAll { it.tipo == 2 }
+    //  log.debug "Got ${switches.size()} switches, ${dimmers.size()} dimmers, ${shutters.size()} shutters"
+    refreshSimple( dispositivos )
 }
 
 def refreshSimple( dispositivos ) {
@@ -371,8 +357,8 @@ def refreshSimple( dispositivos ) {
 // Set Utilities
 //----------------------------------------------------------------------
 Map makeActionMap( dispositivos, String deviceType, String field ) {
-//  def dSet = dispositivos[ field ] as Set
-  def dSet = makeDevicesSet( dispositivos, field )
+  def dSet = dispositivos[ field ] as Set
+//  def dSet = makeDevicesSet( dispositivos, field )
   def cSet = makeChildDevicesSet( deviceType, field )
 //  log.debug "dSet: ${dSet}, cSet: ${cSet}"
   def m = [ add:     dSet.minus( cSet ),
@@ -519,35 +505,41 @@ def getStateValue( key ) {
 def boolContact( boolean b )       { return ( b ? "open" : "closed") }
 //def boolMotion( boolean b )        { return ( b ? "active" : "inactive") }
 
+//----------------------------------------------------------------------
+// State methods
+//----------------------------------------------------------------------
 def resetState() {
-  state.isAuthenticated = false
-  state.connectionOk = false
-  state.continueRefreshComplete = false
-  state.token = "*"
-  state.basic = "**"
-  connectionState( state.isAuthenticated )
-  onDevicesState( 0 )
+    state.isAuthenticated = false
+    state.isConnected = false
+    state.continueRefreshAll = false
+    state.token = "*"
+    state.basic = "**"
+    connectionState( state.isAuthenticated )
+    onDevicesState( 0 )
 }
 
 def authenticateState( token, basic ) {
-  state.isAuthenticated = true
-  state.connectionOk = true
-  state.continueRefreshComplete = false
-  state.token = token
-  state.basic = basic
-  connectionState( state.isAuthenticated )
+    state.isAuthenticated = true
+    state.continueRefreshAll = false
+    state.token = token
+    state.basic = basic
+    connectionState( state.isAuthenticated )
 }
 
-def connectionState( b ) {
-  sendEvent( name: "contact", value: boolContact( b ) )
-  sendEvent( name: "switch", value: "off" )
+def connectionState( b = null ) {
+//    log.debug "connectionState(${b}), state.isConnected=${state.isConnected}, state.isAuthenticated=${state.isAuthenticated}"
+    b = b ?: state.isConnected
+    b = state.isAuthenticated && b
+    state.isConnected = b
+    sendEvent( name: "contact", value: boolContact( b ) )
+    sendEvent( name: "switch", value: "off" )
 }
 
 def onDevicesState( devicesOn ) {
   def value = state.isAuthenticated ? devicesOn : 0
   sendEvent( name: "airQuality", value:  value )
 }
-
+//----------------------------------------------------------------------
 private String md5(String str) {
 	def digest = java.security.MessageDigest.getInstance("MD5").digest(str.bytes).encodeHex()
 	return digest as String
@@ -597,7 +589,7 @@ private Boolean isSettingsOk()
 
 def sendCmd( cmd, handler ) {
 //  log.debug "sendCmd(${cmd})"
-  state.connectionOk = false
+
   def hubAction = new physicalgraph.device.HubAction(
         cmd,
         null,
