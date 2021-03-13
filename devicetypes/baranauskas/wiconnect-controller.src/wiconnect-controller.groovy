@@ -589,7 +589,6 @@ private Boolean isSettingsOk()
 
 def sendCmd( cmd, handler ) {
 //  log.debug "sendCmd(${cmd})"
-
   def hubAction = new physicalgraph.device.HubAction(
         cmd,
         null,
