@@ -170,6 +170,8 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			map.value = "heat"
 			break
 		case 11:
+			map.value = "energysaveheat"
+			break
 		case 15:
 			map.value = "emergency heat"
 			break
@@ -222,11 +224,10 @@ def setThermostatMode(String mode) {
 				modeValue = 1
 				break
 			case "emergency heat":
-				if (isAeotecRadiatorThermostat()) {
-					modeValue = 15
-				} else {
-					modeValue = 11
-				}
+				modeValue = 15
+				break
+			case "energysaveheat":
+				modeValue = 11
 				break
 			case "off":
 				modeValue = 0
@@ -328,7 +329,9 @@ private getMinHeatingSetpointTemperature() {
 }
 
 private getThermostatSupportedModes() {
-	if (isEverspringRadiatorThermostat() || isAeotecRadiatorThermostat()) {
+	if (isEverspringRadiatorThermostat()) {
+		["off", "heat", "energysaveheat"]
+	} else if (isAeotecRadiatorThermostat()) {
 		["off", "heat", "emergency heat"]
 	} else if (isPoppRadiatorThermostat()) { //that's just for looking fine in Classic
 		["heat"]
