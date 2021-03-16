@@ -11,6 +11,10 @@
  *  for the specific language governing permissions and limitations under the License.
  *
 
+ Version v3.5
+ * update zigbee ONOFF cluster
+ * update Health Check
+
  Version v3.4
  * update presentation with 'patch' to rename 'valve' to 'Zone x'
  * remove commands on, off
@@ -20,6 +24,7 @@
 
  Version v3.3
  * change to remotecontrol with components
+ * health check -> ping
 
  Version v3.2
  * add zigbee constants
@@ -50,10 +55,10 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 //dth version
-def getVERSION() {'v3.4 3-2021'}
+def getVERSION() {'v3.5 3-2021'}
 def getDEBUG() {false}
+def getHC_INTERVAL_MINS() {60}
 //zigbee cluster, attribute, identifiers
-def getON_OFF_CLUSTER() {0x0006}
 def getALARMS_CLUSTER() {0x0009}
 def getBINARY_INPUT_CLUSTER() {0x000F}
 def getON_TIME_ATTRIBUTE() {0x4001}
@@ -63,17 +68,16 @@ def getPRESENT_VALUE_IDENTIFIER() {0x0055}
 
 metadata {
 	definition (name: "Spruce Controller", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity",
-    	ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true, vid: "2914a12b-504f-344f-b910-54008ba9408f") {
+		ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true, vid: "2914a12b-504f-344f-b910-54008ba9408f") {
 
-        capability "Actuator"
+		capability "Actuator"
 		capability "Switch"
-        capability "Valve"
 		capability "Sensor"
 		capability "Health Check"
 		capability "heartreturn55003.status"
 		capability "heartreturn55003.controllerState"
 		capability "heartreturn55003.rainSensor"
-        capability "heartreturn55003.valveDuration"
+		capability "heartreturn55003.valveDuration"
 
 		capability "Configuration"
 		capability "Refresh"
@@ -81,19 +85,19 @@ metadata {
 		attribute "status", "string"
 		attribute "controllerState", "string"
 		attribute "rainSensor", "string"
-        attribute "valveDuration", "NUMBER"
+		attribute "valveDuration", "NUMBER"
 
 		command "setStatus"
 		command "setRainSensor"
 		command "setControllerState"
-        command "setValveDuration"
+		command "setValveDuration"
 
 		//new release
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Irrigation Controller"
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", zigbeeNodeType: "ROUTER", deviceJoinName: "Spruce Irrigation Controller"
 	}
 
 	preferences {
-    	//general device settings
+		//general device settings
 		input title: "Device settings", displayDuringSetup: true, type: "paragraph", element: "paragraph",
 			description: "Settings for automatic operations and device touch buttons."
 		input "rainSensorEnable", "bool", title: "Rain Sensor Attached?", required: false, displayDuringSetup: true
@@ -101,16 +105,16 @@ metadata {
 		input name: "pumpMasterZone", type: "enum", title: "Pump or Master zone", description: "This zone will turn on and off anytime another zone is turned on or off", required: false,
 			options: ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6", "Zone 7", "Zone 8", "Zone 9", "Zone 10", "Zone 11", "Zone 12", "Zone 13", "Zone 14", "Zone 15", "Zone 16"]
 
-        //break for ease of reading settings
-        input title: "", description: "", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+		//break for ease of reading settings
+		input title: "", description: "", displayDuringSetup: true, type: "paragraph", element: "paragraph"
 
-        //schedule specific settings
-        input title: "Schedule setup", displayDuringSetup: true, type: "paragraph", element: "paragraph",
+		//schedule specific settings
+		input title: "Schedule setup", displayDuringSetup: true, type: "paragraph", element: "paragraph",
 			description: "These settings only effect when the controller is switched to the on state."
-        input "splitCycle", "bool", title: "Cycle scheduled watering time to reduce runoff?", required: false, displayDuringSetup: true
+		input "splitCycle", "bool", title: "Cycle scheduled watering time to reduce runoff?", required: false, displayDuringSetup: true
 		input "valveDelay", "integer", title: "Delay between valves when a schedule runs? (seconds)", required: false, displayDuringSetup: true
 
-        input title: "Schedule times", displayDuringSetup: true, type: "paragraph", element: "paragraph",
+		input title: "Schedule times", displayDuringSetup: true, type: "paragraph", element: "paragraph",
 			description: "Set the minutes for each zone to water anytime the controller is switched on."
 		input name: "z1Duration", type: "integer", title: "Zone 1 schedule minutes"
 		input name: "z2Duration", type: "integer", title: "Zone 2 schedule minutes"
@@ -142,7 +146,7 @@ def parse(String description) {
 	def map = zigbee.parseDescriptionAsMap(description)
 	if (DEBUG && !map.raw) log.debug "map ${map}"
 
-	if (description.contains("on/off")){
+	if (description.contains("on/off")) {
 		command = 1
 		value = description[-1]
 	}
@@ -153,7 +157,7 @@ def parse(String description) {
 	}
 
 	if (DEBUG && command != null) log.debug "${command} >> endpoint ${endpoint} value ${value} cluster ${map.clusterInt}"
-	switch(command) {
+	switch (command) {
 	  case "alarm":
 		result.push(createEvent(name: "status", value: "alarm"))
 		break
@@ -203,8 +207,7 @@ def commandType(endpoint, cluster) {
 //--------------------end zigbee parse-------------------------------//
 
 def installed() {
-    initialize()	//remove after test
-    createChildDevices()
+	createChildDevices()
 }
 
 def uninstalled() {
@@ -221,7 +224,7 @@ def initialize() {
 	sendEvent(name: "switch", value: "off", displayed: false)
 	sendEvent(name: "controllerState", value: "off", displayed: false)
 	sendEvent(name: "status", value: "Initialize")
-    if (device.latestValue("valveDuration") == null) sendEvent(name: "valveDuration", value: 10)
+	if (device.latestValue("valveDuration") == null) sendEvent(name: "valveDuration", value: 10)
 
 	//update zigbee device settings
 	response(setDeviceSettings() + setTouchButtonDuration() + setRainSensor() + refresh())
@@ -232,13 +235,13 @@ def createChildDevices() {
 	def pumpMasterZone = (pumpMasterZone ? pumpMasterZone.replaceFirst("Zone ","").toInteger() : null)
 
 	//create, rename, or remove child
-	for (i in 1..16){
+	for (i in 1..16) {
 		//endpoint is offset, zone number +1
 		def endpoint = i + 1
 
 		def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
 		//create child
-		if (!child){
+		if (!child) {
 			def childLabel = "Zone$i"
 			child = addChildDevice("Spruce Valve", "${device.deviceNetworkId}:${endpoint}", device.hubId,
 					[completedSetup: true, label: "${childLabel}", isComponent: true, componentName: "Zone$i", componentLabel: "Zone$i"])
@@ -256,7 +259,7 @@ def removeChildDevices() {
 
 	//get and delete children avoids duplicate children
 	def children = getChildDevices()
-	if(children != null){
+	if (children != null) {
 		children.each{
 			deleteChildDevice(it.deviceNetworkId)
 		}
@@ -266,7 +269,7 @@ def removeChildDevices() {
 
 //----------------------------------commands--------------------------------------//
 
-def setStatus(status){
+def setStatus(status) {
 	if (DEBUG) log.debug "status ${status}"
 	sendEvent(name: "status", value: status, descriptionText: "Initialized")
 }
@@ -292,7 +295,7 @@ def setDeviceSettings() {
 	if (DEBUG) log.debug "Pump/Master: ${pumpMasterEndpoint} splitCycle: ${splitCycle} valveDelay: ${valveDelay}"
 
 	def endpointMap = [:]
-    for (zone in 0..17) {
+	for (zone in 0..17) {
 		//setup zone, 1=single cycle, 2=split cycle, 4=pump/master
 		def zoneSetup = splitCycle
 		if (zone == pumpMasterZone) zoneSetup = 4
@@ -307,12 +310,12 @@ def setDeviceSettings() {
 }
 
 //change the default time a zone will turn on when the buttons on the face of the controller are used
-def setTouchButtonDuration(){
+def setTouchButtonDuration() {
 	def touchButtonDuration = (touchButtonDuration ? touchButtonDuration.toInteger() : 10)
 	if (DEBUG) log.debug "touchButtonDuration ${touchButtonDuration} mins"
 
 	def sendCmds = []
-	sendCmds.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, touchButtonDuration, [destEndpoint: 1]))
+	sendCmds.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, touchButtonDuration, [destEndpoint: 1]))
 	return sendCmds
 }
 
@@ -387,10 +390,10 @@ def noSchedule() {
 
 //schedule on/off
 def scheduleOn() {
-	zigbee.command(ON_OFF_CLUSTER, 1, "", [destEndpoint: 1])
+	zigbee.command(zigbee.ONOFF_CLUSTER, 1, "", [destEndpoint: 1])
 }
 def scheduleOff() {
-	zigbee.command(ON_OFF_CLUSTER, 0, "", [destEndpoint: 1])
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0, "", [destEndpoint: 1])
 }
 
 // Commands to zones/valves
@@ -400,7 +403,7 @@ def valveOn(valueMap) {
 	def duration = (device.latestValue("valveDuration").toInteger())
 
 	sendEvent(name: "status", value: "${valueMap.label} on for ${duration}min(s)", descriptionText: "Zone ${valueMap.label} on for ${duration}min(s)")
-	if (DEBUG) log.debug "state ${state.hasConfiguredHealthCheck} ${ON_OFF_CLUSTER}"
+	if (DEBUG) log.debug "state ${state.hasConfiguredHealthCheck} ${zigbee.ONOFF_CLUSTER}"
 	zoneOn(endpoint, duration)
 }
 
@@ -414,17 +417,17 @@ def valveOff(valueMap) {
 
 def zoneOn(endpoint, duration) {
 	//send duration from slider
-	return zoneDuration(duration) + zigbee.command(ON_OFF_CLUSTER, 1, "", [destEndpoint: endpoint])
+	return zoneDuration(duration) + zigbee.command(zigbee.ONOFF_CLUSTER, 1, "", [destEndpoint: endpoint])
 }
 
 def zoneOff(endpoint) {
 	//reset touchButtonDuration to setting value
-	return zigbee.command(ON_OFF_CLUSTER, 0, "", [destEndpoint: endpoint]) + setTouchButtonDuration()
+	return zigbee.command(zigbee.ONOFF_CLUSTER, 0, "", [destEndpoint: endpoint]) + setTouchButtonDuration()
 }
 
 def zoneDuration(int duration) {
 	def sendCmds = []
-	sendCmds.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, duration, [destEndpoint: 1]))
+	sendCmds.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, duration, [destEndpoint: 1]))
 	return sendCmds
 }
 
@@ -436,24 +439,24 @@ def startSchedule() {
 	def runTime, totalTime=0
 	def scheduleTimes = []
 
-	for (i in 1..16){
+	for (i in 1..16) {
 		def endpoint = i + 1
-		//if (settings."z${i}" && settings."z${i}Duration" != null){
-        if (settings."z${i}Duration" != null){
+		//if (settings."z${i}" && settings."z${i}Duration" != null) {
+		if (settings."z${i}Duration" != null) {
 			runTime = Integer.parseInt(settings."z${i}Duration")
 			totalTime += runTime
 			startRun = true
 
-			scheduleTimes.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
+			scheduleTimes.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
 		}
 		else {
-			scheduleTimes.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, 0, [destEndpoint: endpoint]))
+			scheduleTimes.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, 0, [destEndpoint: endpoint]))
 		}
 	}
 	if (!startRun || totalTime == 0) return noSchedule()
 
 	//start after scheduleTimes are sent
-	scheduleTimes.push(zigbee.command(ON_OFF_CLUSTER, 1, "", [destEndpoint: 1]))
+	scheduleTimes.push(zigbee.command(zigbee.ONOFF_CLUSTER, 1, "", [destEndpoint: 1]))
 	sendEvent(name: "status", value: "Scheduled for ${totalTime}min(s)", descriptionText: "Start schedule ending in ${totalTime} mins")
 	return scheduleTimes
 }
@@ -464,11 +467,11 @@ def settingsMap(WriteTimes, attrType) {
 	def runTime
 	def sendCmds = []
 	for (endpoint in 1..17) {
-		if (WriteTimes."${endpoint}"){
+		if (WriteTimes."${endpoint}") {
 			runTime = Integer.parseInt(WriteTimes."${endpoint}")
 
-			if (attrType == ON_TIME_ATTRIBUTE) sendCmds.push(zigbee.writeAttribute(ON_OFF_CLUSTER, ON_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
-			else sendCmds.push(zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
+			if (attrType == ON_TIME_ATTRIBUTE) sendCmds.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, ON_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
+			else sendCmds.push(zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint]))
 		}
 	}
 	return sendCmds
@@ -476,40 +479,36 @@ def settingsMap(WriteTimes, attrType) {
 
 //send switch time
 def writeType(endpoint, cycle) {
-	zigbee.writeAttribute(ON_OFF_CLUSTER, ON_TIME_ATTRIBUTE, DataType.UINT16, cycle, [destEndpoint: endpoint])
+	zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, ON_TIME_ATTRIBUTE, DataType.UINT16, cycle, [destEndpoint: endpoint])
 }
 
 //send switch off time
 def writeTime(endpoint, runTime) {
-	zigbee.writeAttribute(ON_OFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint])
+	zigbee.writeAttribute(zigbee.ONOFF_CLUSTER, OFF_WAIT_TIME_ATTRIBUTE, DataType.UINT16, runTime, [destEndpoint: endpoint])
 }
 
 //set reporting and binding
 def configure() {
-	// Device-Watch allows 2 check-in misses from device, checks every 2 hours
-	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-	sendEvent(name: "healthStatus", value: "online")
-	sendEvent(name: "DeviceWatch-Enroll", value: 2* 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-
-	configureHealthCheck()
+	// Device-Watch checks every 1 hour
+	sendEvent(name: "checkInterval", value: HC_INTERVAL_MINS * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	if (DEBUG) log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.hub.zigbeeId}"
 
 	//setup binding for 18 endpoints
 	def bindCmds = []
-	bindCmds += zigbee.addBinding(ON_OFF_CLUSTER, [destEndpoint: 1])
+	bindCmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, [destEndpoint: 1])
 	bindCmds += zigbee.addBinding(ALARMS_CLUSTER, [destEndpoint: 1])
 
-	for (endpoint in 1..18){
+	for (endpoint in 1..18) {
 		bindCmds += zigbee.addBinding(BINARY_INPUT_CLUSTER, [destEndpoint: endpoint])
 	}
 
 	//setup reporting for 18 endpoints
 	def reportingCmds = []
-	reportingCmds += zigbee.configureReporting(ON_OFF_CLUSTER, 0, DataType.BOOLEAN, 1, 0, 0x01, [destEndpoint: 1])
+	reportingCmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0, DataType.BOOLEAN, 1, 0, 0x01, [destEndpoint: 1])
 	reportingCmds += zigbee.configureReporting(ALARMS_CLUSTER, 0, DataType.UINT16, 1, 0, 0x00, [destEndpoint: 1])
 
-	for (endpoint in 1..18){
+	for (endpoint in 1..18) {
 		reportingCmds += zigbee.configureReporting(BINARY_INPUT_CLUSTER, PRESENT_VALUE_IDENTIFIER, DataType.BOOLEAN, 1, 0, 0x01, [destEndpoint: endpoint])
 	}
 
@@ -519,41 +518,19 @@ def configure() {
 //PING is used by Device-Watch in attempt to reach the Device
 def ping() {
 	if (DEBUG) log.debug "device health ping"
-	return zigbee.onOffRefresh()
+	return refresh()
 }
 
 def refresh() {
 	if (DEBUG) log.debug "refresh"
 
 	def refreshCmds = []
-	for (endpoint in 1..17){
+	for (endpoint in 1..17) {
 		refreshCmds += zigbee.readAttribute(BINARY_INPUT_CLUSTER, PRESENT_VALUE_IDENTIFIER, [destEndpoint: endpoint])
 	}
 	refreshCmds += zigbee.readAttribute(BINARY_INPUT_CLUSTER, OUT_OF_SERVICE_IDENTIFIER, [destEndpoint: 18])
 
 	return refreshCmds
-}
-
-def healthPoll() {
-	if (DEBUG) log.debug "healthPoll()"
-	def cmds = refresh()
-	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
-}
-
-def configureHealthCheck() {
-	Integer hcIntervalMinutes = 12
-	if (!state.hasConfiguredHealthCheck) {
-		log.debug "Configuring Health Check, Reporting"
-		unschedule("healthPoll")
-		runEvery5Minutes("healthPoll")
-		def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
-		// Device-Watch allows 2 check-in misses from device
-		sendEvent(healthEvent)
-		childDevices.each {
-			it.sendEvent(healthEvent)
-		}
-		state.hasConfiguredHealthCheck = true
-	}
 }
 
 //parse hex string and make integer
