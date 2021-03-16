@@ -27,8 +27,13 @@ metadata {
 
 		command "pause"
 
+		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA KADRILJ Blinds
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
+
+		// Yookee yooksmart
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
 	}
 
 	preferences {
@@ -87,6 +92,7 @@ private List<Map> collectAttributes(Map descMap) {
 	if (descMap.additionalAttrs) {
 		descMaps.addAll(descMap.additionalAttrs)
 	}
+
 	return descMaps
 }
 
@@ -184,7 +190,7 @@ def setLevel(data, rate = null) {
 	} else {
 		cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
 	}
-	cmd
+	return cmd
 }
 
 def pause() {
@@ -236,6 +242,7 @@ def configure() {
 	}
 
 	if (reportsBatteryPercentage()) {
+
 		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
 	}
 
@@ -271,7 +278,7 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee()
 }
 
 def shouldInvertLiftPercentage() {
@@ -288,4 +295,8 @@ def isIkeaKadrilj() {
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isYooksmartOrYookee() {
+	device.getDataValue("model") == "D10110"
 }
