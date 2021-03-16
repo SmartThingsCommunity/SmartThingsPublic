@@ -151,8 +151,8 @@ def parse(String description) {
 		value = description[-1]
 	}
 	else {
-		endpoint = ( map.sourceEndpoint == null ? hextoint(map.endpoint) : hextoint(map.sourceEndpoint) )
-		value = ( map.sourceEndpoint == null ? hextoint(map.value) : null )
+		endpoint = ( map.sourceEndpoint == null ? zigbee.convertHexToInt(map.endpoint) : zigbee.convertHexToInt(map.sourceEndpoint) )
+		value = ( map.sourceEndpoint == null ? zigbee.convertHexToInt(map.value) : null )
 		command = (value != null ? commandType(endpoint, map.clusterInt) : null)
 	}
 
@@ -531,9 +531,4 @@ def refresh() {
 	refreshCmds += zigbee.readAttribute(BINARY_INPUT_CLUSTER, OUT_OF_SERVICE_IDENTIFIER, [destEndpoint: 18])
 
 	return refreshCmds
-}
-
-//parse hex string and make integer
-private hextoint(String hex) {
-	Long.parseLong(hex, 16).toInteger()
 }
