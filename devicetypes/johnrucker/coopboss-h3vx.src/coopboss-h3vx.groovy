@@ -26,7 +26,7 @@ metadata {
         capability "Actuator"
         capability "Configuration"
 		capability "Temperature Measurement"   
-        capability "Door Control"
+        capability "Garage Door Control"
   		capability "Switch"
         
         command "closeDoor"
