@@ -17,7 +17,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings",
             runLocally: true, minHubCoreVersion: '000.025.00032', executeCommandsLocally: true) {
-		capability "Tone"
+        capability "Tone"
         capability "Actuator"
         capability "Presence Sensor"
         capability "Sensor"
@@ -64,31 +64,31 @@ metadata {
 }
 
 def updated() {
-	log.debug "updated()"
-    if (device.getDataValue("manufacturer") == "SmartThings"){
-		stopTimer()
+    log.debug "updated()"
+    if (!isVision()){
+        stopTimer()
         startTimer()
     }
     state.gsensor = 0
     def thedetectTime = (detectTime ? detectTime as int : 2) * 1
     def updatecmds = zigbee.writeAttribute(0x0000, 0x0000, 0x20, thedetectTime, [mfgCode: 0x120D]) 
     log.debug "Updatecmds:  ${updatecmds}"
-	return response(updatecmds)
+    return response(updatecmds)
 }
 
 def installed() {
-	log.debug "installed()"
-	// Arrival sensors only goes OFFLINE when Hub is off
+    log.debug "installed()"
+    // Arrival sensors only goes OFFLINE when Hub is off
     sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 }
 
 def configure() {
-	def cmds = []
-    if (device.getDataValue("manufacturer") == "Vision") {
-    	cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour
+    def cmds = []
+    if (isVision()) {
+        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour  
                zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig() 
-	}else{
-    	cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
+    }else{
+        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
     }
     log.debug "configure -- cmds: ${cmds}"
     return cmds
@@ -100,38 +100,42 @@ def beep() {
 }
 
 def parse(String description) {
-	log.debug "description: $description"
-	state.lastCheckin = now()
-    if (device.getDataValue("manufacturer") == "SmartThings"){
-    	handlePresenceEvent(true)
+    log.debug "description: $description"
+    state.lastCheckin = now()
+    if (!isVision()){
+        handlePresenceEvent(true)
     }
     
     if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
-    	log.debug zigbee.parseDescriptionAsMap(description)
-    	def descMap = zigbee.parseDescriptionAsMap(description)
-        if (device.getDataValue("manufacturer") == "Vision" && descMap && descMap.clusterInt == 0x0006) {
+        log.debug zigbee.parseDescriptionAsMap(description)
+        def descMap = zigbee.parseDescriptionAsMap(description)
+        if (isVision() && descMap && descMap.clusterInt == 0x0006) {
             log.debug "Command: ${descMap.commandInt}"
-        	if(descMap.commandInt == 0x01)
+            if(descMap.commandInt == 0x01)
             {
-            	log.debug "True"
-				handlePresenceEventVision(true)	
+                log.debug "True"
+                handlePresenceEvent(true)
                 state.gsensor = 1
-            }    
+            }
             else
             {
-            	log.debug "False"
+                log.debug "False"
                 stopTimer()
-    		}
-	    } else if (descMap && descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
-        	if (device.getDataValue("manufacturer") == "Vision")
-            	handleBatteryEventVision(Integer.parseInt(descMap.value, 16))
-            else
-            	handleBatteryEvent(Integer.parseInt(descMap.value, 16))
+            }
         }
+        
+        handleReportAttributeMessage(description)
     }
     
     return []
 }
+
+private handleReportAttributeMessage(String description) { 
+    def descMap = zigbee.parseDescriptionAsMap(description) 
+    if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) { 
+        handleBatteryEvent(Integer.parseInt(descMap.value, 16)) 
+    } 
+} 
 
 /**
  * Create battery event from reported battery voltage.
@@ -139,47 +143,21 @@ def parse(String description) {
  * @param volts Battery voltage in .1V increments
  */
 private handleBatteryEvent(volts) {
-	def descriptionText
+    def descriptionText
     if (volts == 0 || volts == 255) {
         log.debug "Ignoring invalid value for voltage (${volts/10}V)"
     }
     else {
-    	def batteryMap = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
-                          22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+        def batteryMap = getBatteryMap()
         def minVolts = 15
-        def maxVolts = 28
+        def maxVolts
         
-        if (volts < minVolts)
-            volts = minVolts
-        else if (volts > maxVolts)
-            volts = maxVolts
-        def value = batteryMap[volts]
-        if (value != null) {
-            def linkText = getLinkText(device)
-            descriptionText = '{{ linkText }} battery was {{ value }}'
-            def eventMap = [
-                name: 'battery',
-                value: value,
-                descriptionText: descriptionText,
-                translatable: true
-            ]
-            log.debug "Creating battery event for voltage=${volts/10}V: ${linkText} ${eventMap.name} is ${eventMap.value}%"
-            sendEvent(eventMap)
+        if(isVision()){
+            maxVolts = 29
+        }else{
+            maxVolts = 28
         }
-    }
-}
-
-private handleBatteryEventVision(volts) {
-	def descriptionText
-    if (volts == 0 || volts == 255) {
-        log.debug "Ignoring invalid value for voltage (${volts/10}V)"
-    }
-    else {
-    	def batteryMap = [29:100, 28:90, 27:90, 26:70, 25:70, 24:50, 23:50,
-                          22:30, 21:30, 20:15, 19:8, 18:1, 17:0, 16:0, 15:0]
-        def minVolts = 15
-        def maxVolts = 29
-        
+               
         if (volts < minVolts)
             volts = minVolts
         else if (volts > maxVolts)
@@ -201,20 +179,30 @@ private handleBatteryEventVision(volts) {
 }
 
 private handlePresenceEvent(present) {
-    def wasPresent = device.currentState("presence")?.value == "present"
-    if (!wasPresent && present) {
-        log.debug "Sensor is present"
-        startTimer()
-    } else if (!present) {
-        log.debug "Sensor is not present"
-        stopTimer()
+    if (isVision()){
+        if (!state.gsensor && present) {
+            log.debug "Vision Sensor is present"
+            startTimer()
+        } else if (!present) {
+            log.debug "Vision Sensor is not present"
+            stopTimer()
+        }
+    }else{
+        def wasPresent = device.currentState("presence")?.value == "present"
+        if (!wasPresent && present) {
+            log.debug "Sensor is present"
+            startTimer()
+        } else if (!present) {
+            log.debug "Sensor is not present"
+            stopTimer()
+        }    
     }
     def linkText = getLinkText(device)
     def descriptionText
     if ( present )
-    	descriptionText = "{{ linkText }} has arrived"
+        descriptionText = "{{ linkText }} has arrived"
     else
-    	descriptionText = "{{ linkText }} has left"
+        descriptionText = "{{ linkText }} has left"
     def eventMap = [
         name: "presence",
         value: present ? "present" : "not present",
@@ -225,31 +213,6 @@ private handlePresenceEvent(present) {
     log.debug "Creating presence event: ${device.displayName} ${eventMap.name} is ${eventMap.value}"
     sendEvent(eventMap)
 }
-
-private handlePresenceEventVision(present) {
-    if (!state.gsensor && present) {
-        log.debug "Sensor is present"
-        startTimer()
-    } else if (!present) {
-        log.debug "Sensor is not present"
-        stopTimer()
-    }
-    def linkText = getLinkText(device)
-    def descriptionText
-    if ( present )
-    	descriptionText = "{{ linkText }} has arrived"
-    else
-    	descriptionText = "{{ linkText }} has left"
-    def eventMap = [
-        name: "presence",
-        value: present ? "present" : "not present",
-        linkText: linkText,
-        descriptionText: descriptionText,
-        translatable: true
-    ]
-    log.debug "Creating presence event: ${device.displayName} ${eventMap.name} is ${eventMap.value}"
-    sendEvent(eventMap)
-}   
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
@@ -266,14 +229,27 @@ private stopTimer() {
 }
 
 def checkPresenceCallback() {
-	def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
+    def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
     def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
     log.debug "Sensor checked in ${timeSinceLastCheckin} seconds ago"
     if (timeSinceLastCheckin >= theCheckInterval) {
-    	if (device.getDataValue("manufacturer") == "Vision") {
-        	handlePresenceEventVision(false)
-        }else{
-        	handlePresenceEvent(false)
-        }
+        handlePresenceEvent(false)
     }
+}
+
+private Map getBatteryMap(){
+    def result = [:]
+    if(isVision()){
+        result = [29:100, 28:90, 27:90, 26:70, 25:70, 24:50, 23:50,
+                  22:30, 21:30, 20:15, 19:8, 18:1, 17:0, 16:0, 15:0]
+    }else{
+        result = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
+                  22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
+    }
+    log.debug "getBatteryMap: ${result}"
+    return result
+}
+
+private Boolean isVision(){
+    device.getDataValue("manufacturer") == "Vision"
 }
