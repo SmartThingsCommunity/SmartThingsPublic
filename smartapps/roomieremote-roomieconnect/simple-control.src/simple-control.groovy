@@ -252,7 +252,7 @@ def getCapabilityName(type) {
         case "thermostats":
         	return "Thermostat"
         case "doorControls":
-        	return "Garage Door Control"
+        	return "Door Control"
         case "colorControls":
         	return "Color Control"
         case "musicPlayers":
