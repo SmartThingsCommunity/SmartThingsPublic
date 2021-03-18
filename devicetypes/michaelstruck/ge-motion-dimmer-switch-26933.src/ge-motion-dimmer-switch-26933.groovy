@@ -1,14 +1,15 @@
 /**
  *  GE Motion Dimmer Switch (Model 26933) DTH
  *
- *  Copyright © 2020 Michael Struck
+ *  Copyright © 2021 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.9 8/24/20 
+ *  Version 1.1.0  1/24/21 
  *
- *  Version 1.0.9 (8/24/20) - Reverted back to Boolean selection in settings. Probably last update of this DTH before ST API is put into place
+ *  Verison 1.1.0 (1/24/21) - Fixed a few items related to using in the new version of the ST mobile app. Removed much of the interface from the old app. Moved logging to live logging as device logging no longer is present.
+ *	Version 1.0.9 (8/24/20) - Reverted back to Boolean selection in settings. Probably last update of this DTH before ST API is put into place
  *	Version 1.0.8 (6/3/20) - Updated Setting to allow for Boolean for items like enabling motion sensor; added button capability back in
  *  Version 1.0.7 (5/27/20) - Version alignment with switch code. 
  *  Version 1.0.6a (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
@@ -17,7 +18,7 @@
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
  *  Version 1.0.2 (8/2/18) - Updated some of the text, added/updated options on the Settings page
  *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
- *  Version 1.0.0 (3/17/17) Original release by Matt Lebaugh. Great Work!
+ *  Version 1.0.0 (3/17/17) - Original release by Matt Lebaugh. Great Work!
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -30,7 +31,7 @@
  *
  */
 metadata {
-	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", ocfDeviceType: "oic.r.light.dimming") {
+	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", ocfDeviceType: "oic.d.switch", vid: "generic-motion-light") {
 		capability "Motion Sensor"
 		capability "Actuator"
  		capability "Switch"
@@ -68,7 +69,7 @@ metadata {
         
         fingerprint mfr:"0063", prod:"494D", model: "3034", deviceJoinName: "GE Z-Wave Plus Motion Wall Dimmer"
 	}
-		preferences {
+    preferences {
         	input title: "", description: "Select your preferences here, they will be sent to the device once updated.\n\nTo verify the current settings of the device, they will be shown in the 'Recently' page once any setting is updated", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			//param 3
             input ("operationmode","enum",title: "Operating Mode",
@@ -116,11 +117,6 @@ metadata {
             )
             //param 6
             input "motion", "bool", title: "Enable Motion Sensor", defaultValue:true
-            /*input (name: "motion", title: "Motion Sensor",
-            	type: "enum",
-                options: [
-                   "Enabled": "Enabled (Default)", "Disabled": "Disabled"
-                ])*/
             //param 13
 			input ("motionsensitivity","enum", title: "Motion Sensitivity (When Motion Sensor Enabled)",
             	description: "Motion Sensitivity",
@@ -132,18 +128,8 @@ metadata {
             )
             //param 14
             input "lightsense", "bool", title: "Enable Light Sensing (Occupancy)", defaultValue:true
-            /*input (name: "lightsense", title: "Light Sensing (Occupancy)",
-            	type: "enum",
-                options: [
-                   "Enabled":"Enabled (Default)", "Disabled":"Disabled"
-                ])*/
             //param 5
-            input "invertSwitch", "bool", title: "Invert Remote Switch Orientation", defaultValue: true
-            /*input (name: "invertSwitch", title: "Remote Switch Orientation",
-            	type: "enum",
-                options: [
-                   "Normal":"Normal (Default)", "Inverted":"Inverted"
-                ])*/
+            input "invertSwitch", "bool", title: "Invert Remote Switch Orientation", defaultValue: false
             //param 15
             input ("resetcycle","enum",title: "Motion Reset Cycle", description: "Time to stop reporting motion once motion has stopped",
                 options: [
@@ -168,11 +154,6 @@ metadata {
             input title: "", description: "**Single Tap Ramp Rate Settings**", displayDuringSetup: false, type: "paragraph", element: "paragraph"
             //param 18
             input "dimrate", "bool", title: "Enable Slow Dim Rate (Disabled=Quick)", defaultValue: false
-            /*input (name: "dimrate", title: "Slow Dim Rate (Disabled=Quick)",
-            	type: "enum",
-                options: [
-                   "Enabled":"Enabled", "Disabled":"Disabled (default)"
-                ])*/
             //param 17
             input "switchlevel","number", title: "Default Dim Level", description:"Default 0: Return to last state, Max 99", range: "0..99", defaultValue: 0
             //descrip
@@ -183,11 +164,6 @@ metadata {
             input "manualStepDuration", "number", title: "Manual Step Intervals Each 10 ms", range: "1..255", defaultValue: 3
             //param 16                             
             input "switchmode", "bool", title: "Enable Switch Mode", defaultValue: false
-            /*input (name: "switchmode", title: "Switch Mode",
-            	type: "enum",
-                options: [
-                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
-                ])*/
             //association groups
         	input ( type: "paragraph", element: "paragraph",
             title: "", description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off (physically or locally through the motion detector). Use this to control other devices as if they were connected to this switch.\n\n" +
@@ -198,40 +174,19 @@ metadata {
             //description
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
             input "setlevelmode", "bool", title: "setLevel Activates Light", defaultValue: false
-            /*input (name: "setlevelmode", title: "setLevel Activates Light",
-            	type: "enum",
-                options: [
-                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
-                ])*/
     }
-	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-		tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-			attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState:"turningOff"
-			attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"turningOn"
-            attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-			attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+    tiles(scale: 2) {
+		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState "active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC"
+				attributeState "inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#cccccc"
+			}
 		}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") { attributeState "level", action:"switch level.setLevel" }
-            tileAttribute ("device.about", key: "SECONDARY_CONTROL") { attributeState "aboutTxt", label:'${currentValue}' }
-		}
-        standardTile("motion","device.motion", inactiveLabel: false, width: 2, height: 2) {
-                state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
-                state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
-		}
-		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}            
-		valueTile("operatingMode", "device.operatingMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'Mode: ${currentValue}', unit:"", action:"toggleMode"
-		}
-        valueTile("dashboard", "device.dashboard", inactiveLabel: false, decoration: "flat", width: 6, height: 3) {
-			state "default", label:'${currentValue}', unit:""
-        }
-		main(["switch"])
-		details(["switch", "motion", "operatingMode", "refresh","dashboard"])
+        main(["motion"])
+		details(["motion"])
 	}
 }
+
 def parse(String description) {
     def result = null
 	if (description != "updated") {
@@ -468,7 +423,7 @@ def ping() { refresh() }
 def refresh() {
 	log.debug "refresh() is called"
     secure(zwave.switchMultilevelV1.switchMultilevelGet())
-    showVersion()
+    showDashboard("", "", "" , "", "")
 }
 def toggleMode() {
 	log.debug("Toggling Mode") 
@@ -701,7 +656,6 @@ def updated() {
     //end of dimmer specific params   
     sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 500)
     showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode)
-    showVersion()
 }
 def configure() {
 	def cmds = []
@@ -777,11 +731,11 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     def timeSync = (timeoutduration && state.currentTimeDelay == timeoutduration.toInteger()) || (!timeoutduration && state.currentTimeDelay == 5)  ? "✔" : "‼"
     def switchSync = (switchmode && state.currentSwitchMode == 1) || (!switchmode && state.currentSwitchMode == 0) ? "✔" : "‼"
     String result =""
-   	result +="${dimSync} Default Dim Level: " + dimLevelTxt
+   	result +="**Operating Mode: " + (operationmode=="1" ? "Manual" : operationmode=="2" ? "Vacancy" : "Occupancy") + "**\n"
+    result +="${dimSync} Default Dim Level: " + dimLevelTxt
     result +="\n${motionSync} Motion Sensitivity: " + motionSensorTxt
    	result +="\n${lightSync} Light Sensing: " + lightSensorTxt
 	result +="\n${timeSync} Timeout Duration: " + timeDelayTxt
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
-	sendEvent (name:"dashboard", value: result ) 
+	log.info "\n=====DTH Version 1.1.0 (1/24/21)=====\n" + result + "\n====================================="  
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.9 (08/24/20)") }
