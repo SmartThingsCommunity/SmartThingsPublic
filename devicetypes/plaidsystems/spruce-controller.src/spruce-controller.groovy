@@ -14,6 +14,7 @@
  Version v3.5
  * update zigbee ONOFF cluster
  * update Health Check
+ * remove binding since reporting handles this
 
  Version v3.4
  * update presentation with 'patch' to rename 'valve' to 'Zone x'
@@ -492,16 +493,7 @@ def configure() {
 	// Device-Watch checks every 1 hour
 	sendEvent(name: "checkInterval", value: HC_INTERVAL_MINS * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	if (DEBUG) log.debug "Configuring Reporting and Bindings ${device.name} ${device.deviceNetworkId} ${device.hub.zigbeeId}"
-
-	//setup binding for 18 endpoints
-	def bindCmds = []
-	bindCmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, [destEndpoint: 1])
-	bindCmds += zigbee.addBinding(ALARMS_CLUSTER, [destEndpoint: 1])
-
-	for (endpoint in 1..18) {
-		bindCmds += zigbee.addBinding(BINARY_INPUT_CLUSTER, [destEndpoint: endpoint])
-	}
+	if (DEBUG) log.debug "Configuring Reporting ${device.name} ${device.deviceNetworkId} ${device.hub.zigbeeId}"
 
 	//setup reporting for 18 endpoints
 	def reportingCmds = []
@@ -512,7 +504,7 @@ def configure() {
 		reportingCmds += zigbee.configureReporting(BINARY_INPUT_CLUSTER, PRESENT_VALUE_IDENTIFIER, DataType.BOOLEAN, 1, 0, 0x01, [destEndpoint: endpoint])
 	}
 
-	return bindCmds + reportingCmds + setRainSensor()
+	return reportingCmds + setRainSensor()
 }
 
 //PING is used by Device-Watch in attempt to reach the Device
