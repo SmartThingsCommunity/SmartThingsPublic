@@ -242,10 +242,10 @@ def refreshComplete( dispositivos, scenes, macros ) {
     def maxAllowed = 10
     def totalAllowed = maxAllowed
     def types = mapOfDeviceTypes()
-//    totalAllowed = addRemoveRefreshDevices( switches,  types["switch"],    totalAllowed )
+    totalAllowed = addRemoveRefreshDevices( switches,  types["switch"],    totalAllowed )
     totalAllowed = addRemoveRefreshDevices( dimmers,   types["dimmer"],    totalAllowed )
     totalAllowed = addRemoveRefreshDevices( shutters,  types["shutter"],   totalAllowed )
-//    totalAllowed = addRemoveRefreshDevices( scenes,    types["scene"],     totalAllowed )
+    totalAllowed = addRemoveRefreshDevices( scenes,    types["scene"],     totalAllowed )
     totalAllowed = addRemoveRefreshDevices( macros,    types["macro"],     totalAllowed )
     totalAllowed = addRemoveRefreshDevices( broadcast, types["broadcast"], totalAllowed )
     state.continueRefreshAll = ( totalAllowed == 0 )
