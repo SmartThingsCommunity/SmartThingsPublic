@@ -32,6 +32,9 @@ metadata {
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A", deviceJoinName: "Aeon Multipurpose Sensor"
 		fingerprint mfr: "0086", prod: "0102", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 6
 		fingerprint mfr: "0086", prod: "0202", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //AU //Aeotec MultiSensor 6
+		fingerprint mfr: "0371", prod: "0002", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (EU)
+		fingerprint mfr: "0371", prod: "0102", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (US)
+		fingerprint mfr: "0371", prod: "0202", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (AU)
 	}
 
 	simulator {
@@ -188,6 +191,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 		result << response(configure())
 	} else {
 		log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
+		if (isAeotecMultisensor7()) cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
 		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 		result << response(cmds)
 	}
@@ -317,13 +321,24 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				result << createEvent(name: "tamper", value: "clear")
 				break
 			case 3:
+			case 9:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 				// Clear the tamper alert after 10s. This is a temporary fix for the tamper attribute until local execution handles it
 				unschedule(clearTamper, [forceForLocallyExecuting: true])
 				runIn(10, clearTamper, [forceForLocallyExecuting: true])
 				break
 			case 7:
+			case 8:
 				result << motionEvent(1)
+				break
+		}
+	} else if (cmd.notificationType == 8) {
+		switch (cmd.event) {
+			case 2:
+				result << createEvent(name: "powerSource", value: "battery", displayed: false)
+				break
+			case 3:
+				result << createEvent(name: "powerSource", value: "dc", displayed: false)
 				break
 		}
 	} else {
@@ -337,7 +352,10 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	log.debug "ConfigurationReport: $cmd"
 	def result = []
 	def value
-	if (cmd.parameterNumber == 9) {
+	if (isAeotecMultisensor7() && cmd.parameterNumber == 10) {
+		value = cmd.scaledConfigurationValue ? "dc" : "battery"
+		result << createEvent(name: "powerSource", value: value, displayed: false)
+	} else if (cmd.parameterNumber == 9) {
 		if (cmd.configurationValue[0] == 0) {
 			value = "dc"
 			if (!isConfigured()) {
@@ -430,6 +448,7 @@ def configure() {
 
 	//8. query configuration
 	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 10)
 	request << zwave.configurationV1.configurationGet(parameterNumber: 101)
 	request << zwave.configurationV1.configurationGet(parameterNumber: 102)
 	request << zwave.configurationV1.configurationGet(parameterNumber: 111)
@@ -541,4 +560,8 @@ def getReportTypesFromValue(value) {
 		reportList = "none"
 	}
 	reportList
+}
+
+private isAeotecMultisensor7() {
+	zwaveInfo.model.equals("0018") 
 }
