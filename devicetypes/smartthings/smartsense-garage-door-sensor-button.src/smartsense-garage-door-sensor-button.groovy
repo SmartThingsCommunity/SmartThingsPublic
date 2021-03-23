@@ -18,7 +18,7 @@
 metadata {
 	definition (name: "SmartSense Garage Door Sensor Button", namespace: "smartthings", author: "SmartThings") {
 		capability "Three Axis"
-		capability "Garage Door Control"
+		capability "Door Control"
 		capability "Contact Sensor"
 		capability "Actuator"
 		capability "Acceleration Sensor"

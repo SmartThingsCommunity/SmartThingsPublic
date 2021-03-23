@@ -16,8 +16,7 @@
 metadata {
 	definition (name: "Simulated Garage Door Opener", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Actuator"
-		capability "Door Control"
-        capability "Garage Door Control"
+        capability "Door Control"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"

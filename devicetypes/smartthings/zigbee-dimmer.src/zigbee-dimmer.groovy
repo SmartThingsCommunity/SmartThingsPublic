@@ -82,8 +82,6 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL3HL", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Lumina RF Plug-In Dimmer
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL1KD", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Lumina RF Dimmer Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "ZSD07", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Lumina RF 0-10V Dimming Wall Switch
-		fingerprint manufacturer: "Leviton", model: "DG3HL", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //Leviton Zigbee Plug-in DImmer DG3HL, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0301 0B05 01 0019
-		fingerprint manufacturer: "Leviton", model: "DG6HD", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Zigbee Dimmer DG6HD, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0301 0B05
 
 		// LINKIND
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "lk", model: "ZBT-DIMLight-GLS0010", deviceJoinName: "Linkind Light" //Linkind Dimmable A19 Bulb
@@ -174,7 +172,7 @@ def parse(String description) {
 			} else {
 				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
-		} else if (device.getDataValue("manufacturer") == "sengled" && descMap && descMap.clusterInt == 0x0008 && descMap.attrInt == 0x0000) {
+		} else if (isSengled() && descMap && descMap.clusterInt == 0x0008 && descMap.attrInt == 0x0000) {
 			// This is being done because the sengled element touch/classic incorrectly uses the value 0xFF for the max level.
 			// Per the ZCL spec for the UINT8 data type 0xFF is an invalid value, and 0xFE should be the max.  Here we
 			// manually handle the invalid attribute value since it will be ignored by getEvent as an invalid value.
@@ -204,8 +202,10 @@ def setLevel(value, rate = null) {
 	def additionalCmds = []
 	if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
 		additionalCmds = zigbee.on()
-	} else if (device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
+	} else if (isMRVL()) { // Handle marvel stack not reporting
 		additionalCmds = refresh()
+	} else if (isLeviton()) {
+		additionalCmds = zigbee.levelRefresh()
 	}
 	zigbee.setLevel(value) + additionalCmds
 }
@@ -221,11 +221,31 @@ def refresh() {
 }
 
 def installed() {
-	if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+	if ((isMRVL() && (device.getDataValue("model") == "MZ100")) || isOsram() || isOsramSylvania()) {
 		if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
 			sendEvent(name: "level", value: 100)
 		}
 	}
+}
+
+def isLeviton() {
+	device.getDataValue("manufacturer") == "Leviton"
+}
+
+def isMRVL() {
+	device.getDataValue("manufacturer") == "MRVL"
+}
+
+def isOsram() {
+	device.getDataValue("manufacturer") == "OSRAM"
+}
+
+def isOsramSylvania() {
+	device.getDataValue("manufacturer") == "OSRAM SYLVANIA"
+}
+
+def isSengled() {
+	device.getDataValue("manufacturer") == "sengled"
 }
 
 def configure() {

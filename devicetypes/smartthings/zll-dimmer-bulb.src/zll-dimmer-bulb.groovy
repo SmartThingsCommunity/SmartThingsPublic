@@ -52,6 +52,10 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 175 W", deviceJoinName: "Innr Light" //Innr Smart Bulb Warm Dimming
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 145", deviceJoinName: "Innr Light" //Innr Smart Candle White
 
+		// Leviton
+		fingerprint manufacturer: "Leviton", model: "DG3HL", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.smartplug" //Leviton Zigbee Plug-in DImmer DG3HL, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0301 0B05 01 0019
+		fingerprint manufacturer: "Leviton", model: "DG6HD", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch" //Leviton Zigbee Dimmer DG6HD, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0301 0B05
+
 		// OSRAM
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 W clear", deviceJoinName: "OSRAM Light" //OSRAM SMART+ LED Smart Connected Light
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 W clear - LIGHTIFY", deviceJoinName: "OSRAM Light" //OSRAM SMART+ LED Smart Connected Light
