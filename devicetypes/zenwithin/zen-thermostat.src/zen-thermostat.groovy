@@ -93,8 +93,9 @@ metadata {
     preferences {
         section {
             input("systemModes", "enum",
-                title: "Thermostat configured modes\nSelect the modes the thermostat has been configured for, as displayed on the thermostat",
-                description: "off, heat, cool", defaultValue: "3", required: true, multiple: false,
+                title: "Thermostat configured modes",
+                description: "Select the modes the thermostat has been configured for, as displayed on the thermostat",
+                defaultValue: "3", required: true, multiple: false,
                 options:["1":"off, heat",
                         "2":"off, cool",
                         "3":"off, heat, cool",
