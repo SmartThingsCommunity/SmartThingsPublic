@@ -65,15 +65,16 @@ metadata {
 
 def updated() {
     log.debug "updated()"
-    if (!isVision()){
+    if (isVision()) {
+        state.gsensor = 0
+        def thedetectTime = (detectTime ? detectTime as int : 2) * 1
+        def updatecmds = zigbee.writeAttribute(0x0000, 0x0000, 0x20, thedetectTime, [mfgCode: 0x120D])
+        log.debug "Updatecmds:  ${updatecmds}"
+        return response(updatecmds)
+    } else {
         stopTimer()
         startTimer()
     }
-    state.gsensor = 0
-    def thedetectTime = (detectTime ? detectTime as int : 2) * 1
-    def updatecmds = zigbee.writeAttribute(0x0000, 0x0000, 0x20, thedetectTime, [mfgCode: 0x120D]) 
-    log.debug "Updatecmds:  ${updatecmds}"
-    return response(updatecmds)
 }
 
 def installed() {
@@ -85,9 +86,9 @@ def installed() {
 def configure() {
     def cmds = []
     if (isVision()) {
-        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour  
-               zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig() 
-    }else{
+        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour
+               zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig()
+    } else {
         cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
     }
     log.debug "configure -- cmds: ${cmds}"
@@ -102,40 +103,39 @@ def beep() {
 def parse(String description) {
     log.debug "description: $description"
     state.lastCheckin = now()
-    if (!isVision()){
-        handlePresenceEvent(true)
-    }
-    
-    if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
-        log.debug zigbee.parseDescriptionAsMap(description)
-        def descMap = zigbee.parseDescriptionAsMap(description)
-        if (isVision() && descMap && descMap.clusterInt == 0x0006) {
-            log.debug "Command: ${descMap.commandInt}"
-            if(descMap.commandInt == 0x01)
-            {
-                log.debug "True"
-                handlePresenceEvent(true)
-                state.gsensor = 1
-            }
-            else
-            {
-                log.debug "False"
-                stopTimer()
+    if (isVision()) {
+        if (description?.startsWith("catchall:")) {
+            log.debug zigbee.parseDescriptionAsMap(description)
+            def descMap = zigbee.parseDescriptionAsMap(description)
+            if (descMap && descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+                log.debug "Command: ${descMap.commandInt}"
+                if (descMap.commandInt == 0x01) {
+                    log.debug "True"
+                    handlePresenceEvent(true)
+                    state.gsensor = 1
+                } else {
+                    log.debug "False"
+                    stopTimer()
+                }
             }
         }
-        
+    } else {
+        handlePresenceEvent(true)
+    }
+
+    if (description?.startsWith('read attr -')) {
         handleReportAttributeMessage(description)
     }
-    
+
     return []
 }
 
-private handleReportAttributeMessage(String description) { 
-    def descMap = zigbee.parseDescriptionAsMap(description) 
-    if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) { 
-        handleBatteryEvent(Integer.parseInt(descMap.value, 16)) 
-    } 
-} 
+private handleReportAttributeMessage(String description) {
+    def descMap = zigbee.parseDescriptionAsMap(description)
+    if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
+        handleBatteryEvent(Integer.parseInt(descMap.value, 16))
+    }
+}
 
 /**
  * Create battery event from reported battery voltage.
@@ -152,9 +152,9 @@ private handleBatteryEvent(volts) {
         def minVolts = 15
         def maxVolts
         
-        if(isVision()){
+        if (isVision()) {
             maxVolts = 29
-        }else{
+        } else {
             maxVolts = 28
         }
                
@@ -179,7 +179,7 @@ private handleBatteryEvent(volts) {
 }
 
 private handlePresenceEvent(present) {
-    if (isVision()){
+    if (isVision()) {
         if (!state.gsensor && present) {
             log.debug "Vision Sensor is present"
             startTimer()
@@ -187,7 +187,7 @@ private handlePresenceEvent(present) {
             log.debug "Vision Sensor is not present"
             stopTimer()
         }
-    }else{
+    } else {
         def wasPresent = device.currentState("presence")?.value == "present"
         if (!wasPresent && present) {
             log.debug "Sensor is present"
@@ -195,7 +195,7 @@ private handlePresenceEvent(present) {
         } else if (!present) {
             log.debug "Sensor is not present"
             stopTimer()
-        }    
+        }
     }
     def linkText = getLinkText(device)
     def descriptionText
@@ -225,7 +225,9 @@ private stopTimer() {
     log.debug "Stopping periodic timer"
     // Always unschedule to handle the case where the DTH was running in the cloud and is now running locally
     unschedule("checkPresenceCallback", [forceForLocallyExecuting: true])
-    state.gsensor = 0
+    if (isVision()) {
+        state.gsensor = 0
+    }
 }
 
 def checkPresenceCallback() {
@@ -239,10 +241,10 @@ def checkPresenceCallback() {
 
 private Map getBatteryMap(){
     def result = [:]
-    if(isVision()){
+    if (isVision()) {
         result = [29:100, 28:90, 27:90, 26:70, 25:70, 24:50, 23:50,
                   22:30, 21:30, 20:15, 19:8, 18:1, 17:0, 16:0, 15:0]
-    }else{
+    } else {
         result = [28:100, 27:100, 26:100, 25:90, 24:90, 23:70,
                   22:70, 21:50, 20:50, 19:30, 18:30, 17:15, 16:1, 15:0]
     }
