@@ -86,7 +86,7 @@ def handleSwitch( sw ) {
     else // "off"
        disableAutomation()
 
-   fanSpeedArray()
+   fanSpeedMap()
 }
 
 def enableAutomation() {
@@ -128,7 +128,7 @@ def handleTemperature( temp ) {
     def fanSpeed = fanSpeedFromTemperature( temp )
     log.debug "handleTemperature temp = ${temp}, fanSpeed = ${fanSpeed}, state.lastFanSpeed = ${state.lastFanSpeed}"
     if ( fanSpeed != state.lastFanSpeed ) {
-       def msg = "Changing fans speed from ${state.lastFanSpeed} to ${fanSpeed}"
+       def msg = "Now ${temp}°, changing fans speed from ${state.lastFanSpeed} to ${fanSpeed}"
        sendMsg( msg )
        state.lastFanSpeed = fanSpeed
        fans.setFanSpeed( fanSpeed )
@@ -148,20 +148,15 @@ def fanSpeedFromTemperature( temp ) {
     return 0
 }
 
-def fanSpeedArray() {
+def fanSpeedMap() {
     int    maxSpeed  = settings.fansMaxSpeed  ?: 3
     double deltaTemp = settings.tempDelta ?: 1.0
 
-    def temps = []
-    for(int speed = 0; speed <= maxSpeed - 1; speed++) {
-       temps <<  ( tempThreshold + speed * deltaTemp )
+    def temps = [:]
+    for(int speed = 1; speed <= maxSpeed; speed++) {
+       temps <<  [ "${speed}" : ( tempThreshold + (speed - 1) * deltaTemp ) ]
     }
-
-    def s = ""
-    for(int i = 0; i < temps.size(); i++ )
-       s = s + (i+1) + "=" + temps[i] + ", "
-    log.debug "fanSpeedArray: ${s}"
-
+    log.debug "fanSpeedMap: ${temps}"
     return temps
 }
 
