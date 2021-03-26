@@ -18,7 +18,7 @@ definition (
     author: "Jose Augusto Baranauskas",
     version: "1.0 (2021-03-25)",
     description: "Create fans automation based on temperature sensors",
-    category: "Safety & Security",
+    category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
@@ -77,7 +77,8 @@ def initialize() {
 
 def switchHandler( evt ) {
     log.debug "switchHandler called evt.value = ${evt.value}"
-    handleSwitch( evt.value )
+    if ( evt.isStateChange() )
+       handleSwitch( evt.value )
 }
 
 def handleSwitch( sw ) {
