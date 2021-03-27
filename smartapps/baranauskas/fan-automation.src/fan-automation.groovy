@@ -33,7 +33,7 @@ preferences {
 def parentPage() {
 	return dynamicPage(name: "parentPage", title: "", nextPage: "", install: true, uninstall: true) {
         section("Create a new fan automation.") {
-            app(name: "FanAutomationChild", appName: "Fan Automation" , namespace: "baranauskas", title: "Press here for new Fan Automation", multiple: true)
+            app(name: "FanAutomationChild", appName: "Fan Automation Child App" , namespace: "baranauskas", title: "Press here for new Fan Automation", multiple: true)
         }
         section("About") {
           	paragraph textHelp()
@@ -56,4 +56,24 @@ private def textHelp() {
     " changing each speed automatically in differential degree increments.\n\n"+
     "A (virtual) switch is used to enable/disable fan automation. Notifications"+
     " can be enable for automation events."
+}
+
+def installed() {
+    log.debug "Installed with settings: ${settings}"
+    initialize()
+}
+
+def updated() {
+    log.debug "Updated with settings: ${settings}"
+//    unsubscribe()
+    initialize()
+}
+
+def initialize() {
+    // nothing needed here, since the child apps will handle preferences/subscriptions
+    // this just logs some messages for demo/information purposes
+    log.debug "${app.label} (${app.name}) has ${childApps.size()} child smartapps"
+    childApps.each {child ->
+        log.debug "child label: ${child.label}, name: ${child.name}"
+    }
 }

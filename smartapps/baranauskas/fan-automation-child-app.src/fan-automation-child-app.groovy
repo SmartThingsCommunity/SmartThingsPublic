@@ -168,6 +168,7 @@ def fanSpeedMap() {
 }
 
 def sendMsg( msg ) {
+    msg = app.label + ": " + msg
     log.debug msg
     if ( settings.sendPush )
        sendPush( msg )
