@@ -63,6 +63,14 @@ def updated() {
 
 def initialize() {
     log.debug "initialize"
+    // if the user did not override the label, set the label to the default
+    if ( ! overrideLabel ) {
+       int nextChild = parent.childApps.size()
+       def myLabel = parent.app.name + " " + nextChild
+       log.debug "Automatic child app label: ${myLabel}"
+       app.updateLabel( myLabel )
+    }
+
     if ( ! ( tempSensors && tempThreshold && isActiveSwitch && fans ) ) {
        log.debug "Please check your settings"
        return
