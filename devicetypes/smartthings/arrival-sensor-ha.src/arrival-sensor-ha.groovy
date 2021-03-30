@@ -37,7 +37,7 @@ metadata {
                 ])
         }
         section {
-            input "checkInterval", "enum", title: "Presence timeout (minutes)", description: "Tap to set",
+            input "sensorcheckInterval", "enum", title: "Presence timeout (minutes)", description: "Tap to set",
                     defaultValue:"2", options: ["2", "3", "5"], displayDuringSetup: false
         }
         section {
@@ -84,12 +84,12 @@ def installed() {
 }
 
 def configure() {
-    def cmds = []
+    def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
     if (isVision()) {
-        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour
-               zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig()
+        cmds += zigbee.batteryConfig(3600, 3600, 0x01) +   //3600 -> 1hour
+                zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000) + zigbee.onOffConfig()
     } else {
-        cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
+        cmds += zigbee.batteryConfig(20, 20, 0x01)
     }
     log.debug "configure -- cmds: ${cmds}"
     return cmds
@@ -105,8 +105,8 @@ def parse(String description) {
     state.lastCheckin = now()
     if (isVision()) {
         if (description?.startsWith("catchall:")) {
-            log.debug zigbee.parseDescriptionAsMap(description)
             def descMap = zigbee.parseDescriptionAsMap(description)
+            log.debug descMap
             if (descMap && descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
                 log.debug "Command: ${descMap.commandInt}"
                 if (descMap.commandInt == 0x01) {
@@ -150,18 +150,13 @@ private handleBatteryEvent(volts) {
     else {
         def batteryMap = getBatteryMap()
         def minVolts = 15
-        def maxVolts
-        
-        if (isVision()) {
-            maxVolts = 29
-        } else {
-            maxVolts = 28
-        }
-               
-        if (volts < minVolts)
+        def maxVolts = getMaxVolts()
+
+        if (volts < minVolts) {
             volts = minVolts
-        else if (volts > maxVolts)
+        } else if (volts > maxVolts) {
             volts = maxVolts
+        }
         def value = batteryMap[volts]
         if (value != null) {
             def linkText = getLinkText(device)
@@ -199,10 +194,11 @@ private handlePresenceEvent(present) {
     }
     def linkText = getLinkText(device)
     def descriptionText
-    if ( present )
+    if ( present ) {
         descriptionText = "{{ linkText }} has arrived"
-    else
+    } else {
         descriptionText = "{{ linkText }} has left"
+    }
     def eventMap = [
         name: "presence",
         value: present ? "present" : "not present",
@@ -232,7 +228,7 @@ private stopTimer() {
 
 def checkPresenceCallback() {
     def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
-    def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
+    def theCheckInterval = (sensorcheckInterval ? sensorcheckInterval as int : 2) * 60
     log.debug "Sensor checked in ${timeSinceLastCheckin} seconds ago"
     if (timeSinceLastCheckin >= theCheckInterval) {
         handlePresenceEvent(false)
@@ -250,6 +246,16 @@ private Map getBatteryMap(){
     }
     log.debug "getBatteryMap: ${result}"
     return result
+}
+
+def getMaxVolts(){
+    def MaxVolts
+    if (isVision()) {
+        MaxVolts = 29
+    } else {
+        MaxVolts = 28
+    }
+    return MaxVolts
 }
 
 private Boolean isVision(){
