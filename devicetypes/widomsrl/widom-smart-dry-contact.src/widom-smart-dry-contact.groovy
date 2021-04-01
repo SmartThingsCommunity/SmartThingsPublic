@@ -18,7 +18,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint mfr: "0149", prod: "1214", model: "0900", deviceJoinName: "WiDom Switch" // Raw Description WiDom Dry Contact allow to turn On/Off a load with indipendent power supply.
+		fingerprint mfr: "0149", prod: "1214", model: "0900", deviceJoinName: "WiDom Switch" // Raw Description zw:Ls2 type:1001 mfr:0149 prod:1214 model:0900 ver:1.00 zwv:6.04 lib:03 cc:5E,55,98,9F,6C sec:86,25,85,8E,59,72,5A,73,70,7A
 	}
     
 	preferences {
