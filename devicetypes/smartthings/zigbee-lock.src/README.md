@@ -13,7 +13,7 @@ Works with:
 * Yale Push Button Deadbolt Lock
 * Yale Touch Screen Deadbolt Lock
 * Yale Push Button Lever Lock
-* ID Lock 150 Zigbee Module
+* ID Lock 150 Zigbee Module by Datek
 
 ## Table of contents
 
