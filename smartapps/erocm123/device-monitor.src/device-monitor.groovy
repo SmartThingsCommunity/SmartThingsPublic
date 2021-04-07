@@ -46,6 +46,8 @@
  *  - Only when mode is . . .
  *
  *
+ *  2021-04-06 - Fix for delayed notifications sometimes not working. 
+ *
  *  2018-05-09 - Added the ability to disable "Device Delayed" notifications (use only ONLINE / OFFLINE status). Thanks ninjamonkey198206!
  *
  *  2017-06-08 - Added support for Ask Alexa Queue Support. Also added Ask Alexa options to automatically expire messages after x hours
@@ -612,7 +614,7 @@ def doCheck() {
                 def check = ""
                 def notifications = []
 
-                if (deviceDelayed != true && delaylistCheckMapDiff) {
+                if (delaylistCheckMapDiff) {
                     def notificationDelaylist = ""
                     def newMap = []
                     delaylistCheckMapDiff.each {
@@ -939,7 +941,7 @@ def resend() {
         def check = ""
         def notifications = []
 
-        if (deviceDelayed != true && delaylistMapDiff) {
+        if (delaylistMapDiff) {
             def notificationDelaylist = ""
             delaylistMapDiff.each {
                 notificationDelaylist += "${it.time} - ${it.name}\n"
