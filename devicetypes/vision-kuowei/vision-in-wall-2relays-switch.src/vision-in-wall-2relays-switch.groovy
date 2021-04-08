@@ -70,7 +70,7 @@ def firstCommand(){
 	def commands = []
 	commands << encap(0, zwave.configurationV1.configurationGet(parameterNumber: 0x01))
 	commands << "delay 300"			
-	commands << encap(0, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [zwaveHubNodeId]))
+	commands << encap(0, zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 0x01, nodeId: [0x01,0x01]))
 	sendHubCommand(commands, 100)
 }
 
