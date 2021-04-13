@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Metering Plug Power Consumption Report", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings",  vid: "generic-switch-power-energy") {
+	definition (name: "Zigbee Metering Plug Power Consumption Report", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "Dawon",  vid: "STES-1-Dawon-Zigbee_Smart_Plug") {
 		capability "Energy Meter"
 		capability "Power Meter"
 		capability "Actuator"
