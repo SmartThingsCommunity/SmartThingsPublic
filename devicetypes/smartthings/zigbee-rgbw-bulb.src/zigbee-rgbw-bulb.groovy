@@ -35,6 +35,9 @@ metadata {
 		// Generic fingerprint
 		fingerprint profileId: "0104", deviceId: "0102", inClusters: "0006, 0008, 0300", deviceJoinName: "Light" //Generic RGBW Light
 		fingerprint profileId: "0104", deviceId: "010D", inClusters: "0006, 0008, 0300", deviceJoinName: "Light" //Generic RGBW Light
+		
+		// Samsung LED
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-002", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-002" //ITM RGBW
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010D", manufacturer: "AduroSmart Eria", model: "AD-RGBW3001", deviceJoinName: "Eria Light" //Eria ZigBee RGBW Bulb

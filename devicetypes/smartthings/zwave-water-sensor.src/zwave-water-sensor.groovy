@@ -31,6 +31,8 @@ metadata {
 		fingerprint mfr: "0086", prod: "0002", model: "007A", deviceJoinName: "Aeotec Water Leak Sensor" //EU //Aeotec Water Sensor 6
 		fingerprint mfr: "0086", prod: "0202", model: "007A", deviceJoinName: "Aeotec Water Leak Sensor" //AU //Aeotec Water Sensor 6
 		fingerprint mfr: "000C", prod: "0201", model: "000A", deviceJoinName: "HomeSeer Water Leak Sensor" //HomeSeer LS100+ Water Sensor
+		//zw:Ss2 type:0701 mfr:0173 prod:4C47 model:4C44 ver:1.10 zwv:4.61 lib:03 cc:5E,55,98,9F sec:86,71,85,59,72,5A,6C,7A,84,80
+		fingerprint mfr: "0173", prod: "4C47", model: "4C44", deviceJoinName: "Leak Gopher Water Leak Sensor" //Leak Intelligence Leak Gopher Z-Wave Leak Detector
 	}
 
 	simulator {
@@ -58,8 +60,8 @@ metadata {
 }
 
 def initialize() {
-	if (isAeotec() || isNeoCoolcam() || isDome()) {
-		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome
+	if (isAeotec() || isNeoCoolcam() || isDome() || isLeakGopher()) {
+		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome, Leak Gopher
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	} else {
 		// 12 hours (+ 2 minutes) for other devices
@@ -90,8 +92,8 @@ def configure() {
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
-	} else if (isNeoCoolcam() || isDome()) {
-		// wakeUpInterval set to 4 h for NEO Coolcam, Dome
+	} else if (isNeoCoolcam() || isDome() || isLeakGopher()) {
+		// wakeUpInterval set to 4 h for NEO Coolcam, Dome, Leak Gopher
 		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
@@ -326,4 +328,8 @@ private isNeoCoolcam() {
 
 private isAeotec() {
 	zwaveInfo.mfr == "0086" && zwaveInfo.model == "007A"
+}
+
+private isLeakGopher() {
+	zwaveInfo.mfr == "0173" && zwaveInfo.model == "4C44"
 }
