@@ -1,6 +1,6 @@
 /**
 Copyright Sinopé Technologies
-1.3.1
+1.3.2
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -8,8 +8,6 @@ SVN-571
 
 metadata {
 	preferences {
-			input("AirFloorModeParam", "enum", title: "Control mode (Default: Floor)", 
-				description:"Control mode using the floor or ambient temperature.", options: ["Ambient", "Floor"], multiple: false, required: false)
 			input("BacklightAutoDimParam", "enum", title:"Backlight setting (Default: Always ON)", 
 				description: "On Demand or Always ON", options: ["On Demand", "Always ON"], multiple: false, required: false)
 			input("KbdLockParam", "enum", title: "Keypad lock (Default: Unlocked)", 
@@ -18,15 +16,15 @@ metadata {
 				description: "Time format displayed by the device.", options:["12h AM/PM", "24h"], multiple: false, required: false)
 			input("DisableOutdorTemperatureParam", "enum", title: "Secondary display (Default: Outside temp.)", multiple: false, required: false, options: ["Setpoint", "Outside temp."], 
 				description: "Information displayed in the secondary zone of the device")
-			input("FloorSensorTypeParam", "enum", title:"Probe type (Default: 10k)", 
-				description: "Choose floor sensors probe. The floor sensor provided with the thermostats are 10K.", options: ["10k", "12k"], multiple: false, required: false)
+			// input("FloorSensorTypeParam", "enum", title:"Probe type (Default: 10k)", 
+			// 	description: "Choose floor sensors probe. The floor sensor provided with the thermostats are 10K.", options: ["10k", "12k"], multiple: false, required: false)
 
 			input("FloorMaxAirTemperatureParam", "number", title:"Ambient limit in Celsius (5C to 36C)", range: "5..36",
 				description: "The maximum ambient temperature limit in Celsius when in floor control mode.", required: false)
 			input("FloorLimitMinParam", "number", title:"Floor low limit in Celsius (5C to 34C)", range: "5..34", 
 				description: "The minimum temperature limit in Celsius of the floor when in ambient control mode.", required: false)
-			input("FloorLimitMaxParam", "number", title:"Floor high limit in Celsius (7C to 36C)", range: "7..36", 
-				description: "The maximum temperature limit of the floor in Celsius when in ambient control mode.", required: false)
+			// input("FloorLimitMaxParam", "number", title:"Floor high limit in Celsius (7C to 36C)", range: "7..36", 
+			// 	description: "The maximum temperature limit of the floor in Celsius when in ambient control mode.", required: false)
 			// input("AuxLoadParam", "number", title:"Auxiliary load value (Default: 0)", range:("0..65535"),
 			// 	description: "Enter the power in watts of the heating element connected to the auxiliary output.", required: false)
 			input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
@@ -163,14 +161,6 @@ def updated() {
             traceEvent(settings.logFilter,"device unlock",settings.trace)
 			cmds += zigbee.writeAttribute(0x0204, 0x0001, 0x30, 0x00)
         }
-        if(AirFloorModeParam == "Floor" || AirFloorModeParam == '1'){//Floor mode
-            traceEvent(settings.logFilter,"Set to Floor mode",settings.trace)
-            cmds += zigbee.writeAttribute(0xFF01, 0x0105, 0x30, 0x0002)
-        }
-        else{//Air mode
-            traceEvent(settings.logFilter,"Set to Floor mode",settings.trace)
-            cmds += zigbee.writeAttribute(0xFF01, 0x0105, 0x30, 0x0001)
-        }
         
         if(TimeFormatParam == "12h AM/PM" || TimeFormatParam == '0'){//12h AM/PM
             traceEvent(settings.logFilter,"Set to 12h AM/PM",settings.trace)
@@ -190,14 +180,6 @@ def updated() {
             cmds += zigbee.writeAttribute(0x0201, 0x0402, 0x30, 0x0001)
         }
         
-        if(FloorSensorTypeParam == "12k" || FloorSensorTypeParam == '1'){//sensor type = 12k
-            traceEvent(settings.logFilter,"Sensor type is 12k",settings.trace)
-            cmds += zigbee.writeAttribute(0xFF01, 0x010B, 0x30, 0x0001)
-        }
-        else{//sensor type = 10k
-            traceEvent(settings.logFilter,"Sensor type is 10k",settings.trace)
-            cmds += zigbee.writeAttribute(0xFF01, 0x010B, 0x30, 0x0000)
-        }
         
 		state?.scale = getTemperatureScale()
 
@@ -241,6 +223,7 @@ def updated() {
             cmds += zigbee.writeAttribute(0xFF01, 0x0109, 0x29, 0x8000)
         }
         
+		/*
         if(FloorLimitMaxParam){
         	def FloorLimitMaxValue
 			traceEvent(settings.logFilter,"FloorLimitMax param. scale: ${state?.scale}, Param value: ${FloorLimitMaxParam}",settings.trace)
@@ -268,7 +251,8 @@ def updated() {
         else{
             cmds += zigbee.writeAttribute(0xFF01, 0x0118, 0x21, 0x0000)
         }
-        
+        */
+								
 		sendZigbeeCommands(cmds)
        	refresh_misc()
     }
@@ -307,6 +291,7 @@ void initialize() {
 	cmds += zigbee.configureReporting(0x0201, 0x0000, 0x29, 19, 300, 25) 	// local temperature
 	cmds += zigbee.configureReporting(0x0201, 0x0008, 0x0020, 11, 301, 10) 	// heating demand
 	cmds += zigbee.configureReporting(0x0201, 0x0012, 0x0029, 8, 302, 40) 	// occupied heating setpoint
+	cmds += zigbee.configureReporting(0x0201, 0x001C, 0x0030, 15, 303, 1)	// thermostat System Mode
 	cmds += zigbee.configureReporting(0xFF01, 0x0115, 0x30, 10, 3600, 1) 	// report gfci status each hours
 	cmds += zigbee.configureReporting(0xFF01, 0x010C, 0x30, 10, 3600, 1) 	// floor limit status each hours
 
@@ -671,11 +656,6 @@ void refresh_misc() {
 
 	}
 
-	if (state?.scale == 'C') {
-		cmds += zigbee.writeAttribute(0x0204, 0x0000, 0x30, 0)	// Wr °C on thermostat display
-	} else {
-		cmds += zigbee.writeAttribute(0x0204, 0x0000, 0x30, 1)	// Wr °F on thermostat display 
-	}
 
 	traceEvent(settings.logFilter,"refresh_misc> about to  refresh other misc variables, scale=${state.scale}", settings.trace)	
 	sendZigbeeCommands(cmds)
