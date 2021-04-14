@@ -1,6 +1,6 @@
 /**
 Copyright Sinopé Technologies
-1.3.0
+1.3.2
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,9 +69,9 @@ def refresh() {
     def cmds = []
     cmds += zigbee.readAttribute(0x0006, 0x0000)//refresh on/off
     cmds += zigbee.readAttribute(0x0000, 0x0007)//refresh power source
-    cmds += zigbee.readAttribute(0x0001, 0x0021)//refresh battery percentage remaining
+    cmds += zigbee.readAttribute(0x0001, 0x0020)//refresh battery percentage remaining
     cmds += zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null)//configure reporting on/off min: 0sec, max 600sec
-    cmds += zigbee.configureReporting(0x0001, 0x0021, 0x20, 60, 60*60, 1)//configure reporting battery percentage remaining min: 6sec, max 1hour
+    cmds += zigbee.configureReporting(0x0001, 0x0020, 0x20, 60, 60*60, 1)//configure reporting battery percentage remaining min: 6sec, max 1hour
     return sendZigbeeCommands(cmds)
 }
 
@@ -164,7 +164,7 @@ private Map parseCatchAllMessage(String description) {
 				break
             case 0x0006://on/off
             	//0x07 - configure reporting
-				if (cluster.command != 0x07) {
+				if (cluster.command != 0x07 && cluster.data.length) {
 					resultMap = getOnOffResult(cluster.data.last())
 				}
                 break
@@ -189,7 +189,7 @@ private Map parseReportAttributeMessage(String description) {
 	if (descMap.cluster == "0000" && descMap.attrId == "0007") {
 		resultMap = getPowerSourceResult(descMap.value)
 	}
-    else if (descMap.cluster == "0001" && descMap.attrId == "0021") {
+    else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
         resultMap = getBatteryResult(zigbee.convertHexToInt(descMap.value))
 	}
     else if (descMap.cluster == "0006" && descMap.attrId == "0000") {
@@ -205,9 +205,7 @@ private Map getBatteryResult(rawValue) {
     result.name = 'battery'
     result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 
-    int batteryPercent = rawValue / 2
-    result.value = Math.min(100, batteryPercent)
-
+    result.value = convertVoltToPercent(rawValue)
 	return result
 }
 
@@ -285,6 +283,58 @@ private int get_LOG_DEBUG() {
 private int get_LOG_TRACE() {
 	return 5
 }
+
+/**
+   * Is valve should be false if the device is a sensor
+   */
+private def convertVoltToPercent(value) {
+    def NBDEPOINTS_DEG = 6;
+    def LevelValue;
+    // def LevelsTable = [0, 20000, 40000, 60000, 80000, 100000];
+    // def AnglesTable = [1, 2.28, 2.46, 2.64, 2.82, 3];
+    // let constantLevels = [
+    //   {volt: 1, percent: 0},
+    //   {volt: 2.28, percent: 20},
+    //   {volt: 2.46, percent: 40},
+    //   {volt: 2.64, percent: 60},
+    //   {volt: 2.82, percent: 80},
+    //   {volt: 3, percent: 100}
+    // ];
+
+    // if (isValve) {
+    def LevelsTable = [0, 20000, 40000, 60000, 80000, 100000];
+    def AnglesTable = [30, 55, 56, 57, 58.5, 60];
+    //   constantLevels = [
+    //     {volt: 3, percent: 0},
+    //     {volt: 5.5, percent: 20},
+    //     {volt: 5.6, percent: 40},
+    //     {volt: 5.7, percent: 60},
+    //     {volt: 5.85, percent: 80},
+    //     {volt: 6.00, percent: 100},
+    //   ];
+    // }
+
+    if (value > AnglesTable[NBDEPOINTS_DEG - 1]) { // if the value of the angle is greater than the maximum
+      value = AnglesTable[NBDEPOINTS_DEG - 1]; // use the maximum value instead
+    }
+
+    def index = 1;
+    for (index; value > AnglesTable[index]; index++) {
+    }
+
+    def RatioBetweenPointXandY = (LevelsTable[index] - LevelsTable[index - 1]) / (AnglesTable[index] - AnglesTable[index - 1]);
+    def AngleToAdd = LevelsTable[index] - (AnglesTable[index] * RatioBetweenPointXandY);
+    def LevelWithFactor = (RatioBetweenPointXandY * value) + AngleToAdd;
+    LevelValue = LevelWithFactor / 1000;
+    def roundedLevelValue = Math.round(LevelValue);
+    if(roundedLevelValue > 100){
+        return 100
+    }else if(roundedLevelValue < 0){
+        return 0
+    }else{
+        return roundedLevelValue;
+    }
+  }
 
 def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMessage = true) {
 	int LOG_ERROR = get_LOG_ERROR()
