@@ -404,17 +404,17 @@ def configure() {
 	
 	//0. added as MSR wasn't getting detected upon pair. 
 	request << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-        //1. set association groups for hub - 2 groups are used to set battery refresh interval different than sensor report interval
-        request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
+	//1. set association groups for hub - 2 groups are used to set battery refresh interval different than sensor report interval
+	request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
 
-        //2. automatic report flags
-        // param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
-        // set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
-        //association group 1
-        request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 1, scaledConfigurationValue: 240)
+	//2. automatic report flags
+	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
+	// set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
+	//association group 1
+	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 1, scaledConfigurationValue: 240)
 
-        //association group 2
-        request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 1)
+	//association group 2
+	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 1)
 	
 	switch (state.MSR) {
 		case "0086-0002-0064":  // MultiSensor 6 EU
@@ -460,12 +460,12 @@ def configure() {
 	}
 	
 	//6. report automatically ONLY on threshold change
-        //From manual:
-        //Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set in 41-44.
-        //This is used to reduce network traffic.  (0 = disable, 1 = enable)
-        //Note: If USB power, the Sensor will check the threshold every 10 seconds. If battery power, the Sensor will check the threshold
-        //when it is waken up.
-        request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
+	//From manual:
+	//Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set in 41-44.
+	//This is used to reduce network traffic.  (0 = disable, 1 = enable)
+	//Note: If USB power, the Sensor will check the threshold every 10 seconds. If battery power, the Sensor will check the threshold
+	//when it is waken up.
+	request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
 	
 	//7. query sensor data
 	request << zwave.batteryV1.batteryGet()
