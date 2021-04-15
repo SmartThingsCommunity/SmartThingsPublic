@@ -18,8 +18,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "SiHAS Zigbee Remote Control", namespace: "shinasys", author: "SHINA SYSTEM") {
-        capability "Actuator"
+    definition (name: "SiHAS Zigbee Remote Control", namespace: "shinasys", author: "SHINA SYSTEM",  runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mcdSync: true) {
         capability "Battery"
 	    capability "Button"
         capability "Holdable Button"
@@ -27,7 +26,8 @@ metadata {
         capability "Sensor"        
         capability "Health Check"
         
-        fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThings", vid: "generic-4-button", ocfDeviceType: "x.com.st.d.remotecontroller"
+        fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", ocfDeviceType: "x.com.st.d.remotecontroller", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS Button", ocfDeviceType: "x.com.st.d.remotecontroller", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Button"
     }
 }
 
@@ -49,9 +49,11 @@ def parse(String description) {
     Map map = zigbee.getEvent(description)
     if (map) {
        sendEvent(map)
-       log.debug "sendEvent $event"
+       //log.debug "sendEvent $event"
     } else {
-        if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
+        if (description?.startsWith('zone status')) {
+            map = parseIasMessage(description)
+        } else if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
             Map descMap = zigbee.parseDescriptionAsMap(description)
             if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
                 List<Map> descMaps = collectAttributes(descMap)
@@ -66,7 +68,7 @@ def parse(String description) {
         
         def result = []
         if (map) {
-            log.debug "Creating event: ${map}"
+            //log.debug "Creating event: ${map}"
             result = createEvent(map)
         } else if (isBindingTableMessage(description)) {
             Integer groupAddr = getGroupAddrFromBindingTable(description)
@@ -117,6 +119,40 @@ private Map getBatteryResult(rawValue) {
         state.lastVolts = volts
     }
     return result
+}
+
+private Map parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	translateZoneStatus(zs)
+}
+
+private Map translateZoneStatus(ZoneStatus zs) {
+    if (zs.isAlarm1Set() && zs.isAlarm2Set()) {
+       	return getZoneButtonResult('held')
+    } else if (zs.isAlarm1Set()) {
+        return getZoneButtonResult('pushed')
+    } else if (zs.isAlarm2Set()) {
+        return getZoneButtonResult('double')
+    } else { 
+    }    
+}
+
+private Map getZoneButtonResult(value) {
+    def descriptionText
+    if (value == "pushed")
+        descriptionText = "${ device.displayName } was pushed"
+    else if (value == "held")
+        descriptionText = "${ device.displayName } was held"
+    else
+        descriptionText = "${ device.displayName } was pushed twice"
+    return [
+            name           : 'button',
+            value          : value,
+            descriptionText: descriptionText,
+            translatable   : true,
+            isStateChange  : true,
+            data           : [buttonNumber: 1]
+    ]
 }
 
 private channelNumber(String dni) 
@@ -185,14 +221,13 @@ private void createChildButtonDevices(numberOfButtons) {
 
 def installed() {
     def numberOfButtons
-    /*
+    
     if (isBSM300()) {
         numberOfButtons = 1
     } else if (isMSM300()) {
         numberOfButtons = 4
     } else return
-    */
-    numberOfButtons = 4
+    
     if (numberOfButtons > 1) {
 		createChildButtonDevices(numberOfButtons)
 	} 
@@ -233,6 +268,9 @@ def refresh() {
     def refreshCmds = []
     updated()
     refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
+    if( isBSM300() ) {
+    	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
+    }
     return refreshCmds
 }
 
@@ -246,7 +284,7 @@ def configure() {
     // battery minReport 30 seconds, maxReportTime 6 hrs by default
     configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
     //configCmds += zigbee.enrollResponse() 
-    /*
+    
     if (isMSM300()) {    	
     	configCmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
     	configCmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
@@ -256,8 +294,8 @@ def configure() {
     else if (isBSM300()) {
     	configCmds += zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER, ["destEndpoint":0x01])
     }
-    */
-    //configCmds += readDeviceBindingTable() // Need to read the binding table to see what group it's using
+    
+    configCmds += readDeviceBindingTable() // Need to read the binding table to see what group it's using
     
     return refresh() + configCmds
 }
