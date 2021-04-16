@@ -1,5 +1,5 @@
 /**
- *	Copyright 2015 SmartThings
+ *	Copyright 2021 TechniSat
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -15,8 +15,8 @@ import groovy.json.JsonOutput
 metadata 
 {
 	definition (name: "TechniSat On/Off switch", namespace: "TechniSat", author: "TechniSat", vid:"generic-switch-power-energy",
-				runLocally: true, minHubCoreVersion: '000.017.0012',
-				executeCommandsLocally: false, genericHandler: "Z-Wave")
+				mnmn: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
+				executeCommandsLocally: false)
 	{
 		capability "Energy Meter"
 		capability "Switch"
@@ -28,38 +28,6 @@ metadata
 		command "reset"
 
 		fingerprint mfr: "0299", prod: "0002", model: "1A90", deviceJoinName: "TechniSat Switch"
-	}
-
-	tiles(scale: 2) 
-	{
-		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true)
-		{
-			tileAttribute("device.switch", key: "PRIMARY_CONTROL") 
-			{
-				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState:"turningOff")
-				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"turningOn")
-				attributeState("turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff")
-				attributeState("turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn")
-			}
-		}
-		valueTile("power", "device.power", width: 2, height: 2) 
-		{
-			state "default", label:'${currentValue} W'
-		}
-		valueTile("energy", "device.energy", width: 2, height: 2) 
-		{
-			state "default", label:'${currentValue} kWh'
-		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) 
-		{
-			state "default", label:'reset kWh', action:"reset"
-		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) 
-		{
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		main(["switch","power","energy"])
-		details(["switch","power","energy","refresh","reset"])
 	}
 
 	preferences 
