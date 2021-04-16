@@ -44,7 +44,7 @@ private List<Map> collectAttributes(Map descMap) {
 }
 
 def parse(String description) {
-	log.debug "Parsing message from device: '$description'"
+	log.debug "Parsing message from device: $description"
     
     Map map = zigbee.getEvent(description)
     if (map) {
