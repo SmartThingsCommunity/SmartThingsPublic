@@ -36,7 +36,7 @@ metadata {
 
 		// ABL
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "WAFER", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001" //Wafer
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "WAFER", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "Juno Connect", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
 
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-001", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001" //ITM CCT
