@@ -12,12 +12,11 @@
  *
  */
 import groovy.json.JsonOutput
-metadata 
-{
+
+metadata {
 	definition (name: "TechniSat On/Off switch", namespace: "TechniSat", author: "TechniSat", vid:"generic-switch-power-energy",
 				mnmn: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
-				executeCommandsLocally: false)
-	{
+				executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Switch"
 		capability "Power Meter"
@@ -25,68 +24,55 @@ metadata
 		capability "Configuration"
 		capability "Health Check"
 
-		command "reset"
-
 		fingerprint mfr: "0299", prod: "0002", model: "1A90", deviceJoinName: "TechniSat Switch"
 	}
 
-	preferences 
-	{
-		parameterMap.each 
-		{
+	preferences {
+		parameterMap.each {
 			input(title: "Parameter ${it.paramZwaveNum}: ${it.title}",
-			description: it.descr,
-			type: "paragraph",
-			element: "paragraph")
-			if(it.enableSwitch)
-			{
+				description: it.descr,
+				type: "paragraph",
+				element: "paragraph")
+			if (it.enableSwitch) {
 				input(name: it.enableKey,
-				title: "Enable",
-				type: "bool",
-				required: false)
+					title: "Enable",
+					type: "bool",
+					required: false)
 			}
 			input(name: it.key,
-			title: it.paramName,
-			type: it.type,
-			options: it.values,
-			range: it.range,
-			required: false)
+				title: it.paramName,
+				type: it.type,
+				options: it.values,
+				range: it.range,
+				required: false)
 		}
 	}
 }
-def installed() 
-{
+def installed() {
 	log.debug "installed()"
 	initStateConfig()
 	initialize()
 }
 
-def updated() 
-{
+def updated() {
 	log.debug "updated()"
 	
 	initialize()
-	try 
-	{
-		if (!state.MSR) 
-		{
+	try {
+		if (!state.MSR) {
 			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
 		}
-	} 
-	catch (e) 
-	{
+	} catch (e) {
 		log.debug e
 	}
 	syncConfig()
 }
 
-def initialize() 
-{
+def initialize() {
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
-def getCommandClassVersions() 
-{
+def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
 		0x32: 3,  // Meter
@@ -96,75 +82,56 @@ def getCommandClassVersions()
 	]
 }
 
-def parse(String description) 
-{
+def parse(String description) {
 	log.debug "parse() - description: "+description
 	def result = null
-	if(description != "updated")
-	{
+	if (description != "updated") {
 		def cmd = zwave.parse(description, commandClassVersions)
-		if(cmd) 
-		{
+		if (cmd) {
 			result = zwaveEvent(cmd)
 			log.debug("'$description' parsed to $result")
-		} 
-		else 
-		{
+		} else {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
 	}
 	result
 }
 
-def handleMeterReport(cmd)
-{
-	if (cmd.meterType == 1)
-	{
-		if (cmd.scale == 0)
-		{
+def handleMeterReport(cmd) {
+	if (cmd.meterType == 1) {
+		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-		} 
-		else if (cmd.scale == 1)
-		{
+		} else if (cmd.scale == 1) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
-		} 
-		else if (cmd.scale == 2) 
-		{
+		} else if (cmd.scale == 2) {
 			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		}
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	log.debug "v3 Meter report: "+cmd
 	handleMeterReport(cmd)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	log.debug "Basic report: "+cmd
 	def value = (cmd.value ? "on" : "off")
 	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
-	if (evt.isStateChange)
-	{
+	if (evt.isStateChange) {
 		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
-	} 
-	else 
-	{
+	} else {
 		evt
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	log.debug "Switch binary report: "+cmd
 	def value = (cmd.value ? "on" : "off")
 	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	def result = []
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	log.debug "msr: $msr"
@@ -173,41 +140,32 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def param = parameterMap.find( {it.paramZwaveNum == cmd.parameterNumber } )
 		
-	if(state.currentConfig."$param.key".status != "sync")
-	{
-		if(state.currentConfig."$param.key"?.newValue == cmd.scaledConfigurationValue ||
-			 state.currentConfig."$param.key".status == "init")
-		{
+	if (state.currentConfig."$param.key".status != "sync") {
+		if (state.currentConfig."$param.key"?.newValue == cmd.scaledConfigurationValue ||
+			 state.currentConfig."$param.key".status == "init") {
 			log.debug "Parameter ${param.key} set to value:${cmd.scaledConfigurationValue}"
 			state.currentConfig."$param.key".status = "sync"
 			state.currentConfig."$param.key".value = cmd.scaledConfigurationValue
-		}
-		else
-		{
+		} else {
 			log.debug "Parameter ${param.key} set to value failed: is:${cmd.scaledConfigurationValue} <> ${state.currentConfig."$param.key".newValue}"
 			state.currentConfig."$param.key".status = "failed"
 			syncConfig()
 		}
-	}
-	else
-	{
+	} else {
 		log.debug "Parameter ${param.key} update received. value:${cmd.scaledConfigurationValue}"
 		state.currentConfig."$param.key".value  = cmd.scaledConfigurationValue
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "${device.displayName}: Unhandled: $cmd"
 	[:]
 }
 
-def on() 
-{
+def on() {
 	encapSequence([
 		zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF),
 		zwave.switchBinaryV1.switchBinaryGet(),
@@ -215,8 +173,7 @@ def on()
 	], 3000)
 }
 
-def off() 
-{
+def off() {
 	encapSequence([
 		zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00),
 		zwave.switchBinaryV1.switchBinaryGet(),
@@ -224,19 +181,16 @@ def off()
 	], 3000)
 }
 
-def ping() 
-{
+def ping() {
 	log.debug "ping()"
 	refresh()
 }
 
-def poll() 
-{
+def poll() {
 	sendHubCommand(refresh())
 }
 
-def refresh() 
-{
+def refresh() {
 	log.debug "refresh()"
 	encapSequence([
 		zwave.switchBinaryV1.switchBinaryGet(),
@@ -245,8 +199,7 @@ def refresh()
 	])
 }
 
-def configure() 
-{
+def configure() {
 	log.debug "configure()"
 	def result = []
 
@@ -260,107 +213,70 @@ def configure()
 	result
 }
 
-def reset() 
-{
-	encapSequence([
-		meterReset(),
-		meterGet(scale: 0)
-	])
-}
-
-def meterGet(map)
-{
+def meterGet(map) {
 	return zwave.meterV2.meterGet(map)
 }
 
-def meterReset()
-{
-	return zwave.meterV2.meterReset()
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
-	if (encapsulatedCommand) 
-	{
+	if (encapsulatedCommand) {
 		log.debug "Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}"
 		zwaveEvent(encapsulatedCommand)
-	}
-	else 
-	{
+	} else {
 		log.warn "Unable to extract Secure command from $cmd"
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) 
-{
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	def version = commandClassVersions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) 
-	{
+	if (encapsulatedCommand) {
 		log.debug "Parsed Crc16Encap into: ${encapsulatedCommand}"
 		zwaveEvent(encapsulatedCommand)
-	}
-	else
-	{
+	} else {
 		log.warn "Unable to extract CRC16 command from $cmd"
 	}
 }
 
-private secEncap(physicalgraph.zwave.Command cmd) 
-{
+private secEncap(physicalgraph.zwave.Command cmd) {
 	log.debug "encapsulating command using Secure Encapsulation, command: $cmd"
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private crcEncap(physicalgraph.zwave.Command cmd)
-{
+private crcEncap(physicalgraph.zwave.Command cmd) {
 	log.debug "encapsulating command using CRC16 Encapsulation, command: $cmd"
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
 
-private encap(physicalgraph.zwave.Command cmd) 
-{
-	if (zwaveInfo?.zw?.contains("s")) 
-	{
+private encap(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo?.zw?.contains("s")) {
 		secEncap(cmd)
-	} 
-	else if (zwaveInfo?.cc?.contains("56"))
-	{
+	} else if (zwaveInfo?.cc?.contains("56")) {
 		crcEncap(cmd)
-	} 
-	else 
-	{
+	} else {
 		log.debug "no encapsulation supported for command: $cmd"
 		cmd.format()
 	}
 }
 
-private encapSequence(cmds, Integer delay=250) 
-{
+private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
 }
 
-private isConfigChanged(parameter)
-{
+private isConfigChanged(parameter) {
 	def settingsValue = settings."$parameter.key"
 	log.debug "isConfigChanged parameter:${parameter.key}: ${settingsValue}"
-	if(parameter.enableSwitch)
-	{
-		if(settings."$parameter.enableKey" != null)
-		{
-			if(settings."$parameter.enableKey" == false)
-			{
+	if (parameter.enableSwitch) {
+		if (settings."$parameter.enableKey" != null) {
+			if (settings."$parameter.enableKey" == false) {
 				settingsValue = 0;
 			}
 		}
 	}
-	if (settingsValue != null) 
-	{
+	if (settingsValue != null) {
 		Integer value = 0
-		switch (parameter.type) 
-		{
+		switch (parameter.type) {
 			case "bool":
 				value = settingsValue? 1 : 0
 				break
@@ -371,56 +287,43 @@ private isConfigChanged(parameter)
 				value = Integer.parseInt(settingsValue)
 				break
 		}
-		if(state.currentConfig."$parameter.key".value != value)
-		{
+		if (state.currentConfig."$parameter.key".value != value) {
 			state.currentConfig."$parameter.key".newValue = value
 			log.debug "${parameter.key} set:${value} value:${state.currentConfig."$parameter.key".value} newValue:${state.currentConfig."$parameter.key".newValue}"
 			return true
-		}
-		else if(state.currentConfig."$parameter.key".status != "sync")
-		{
+		} else if (state.currentConfig."$parameter.key".status != "sync") {
 			log.debug "${parameter.key} retry to set; is:${state.currentConfig."$parameter.key".value} should:${state.currentConfig."$parameter.key".newValue}"
 			return true
 		}
 		return false
-	} 
-	else
-	{
+	} else {
 		log.debug "pref value not set yet"
 		return false
 	}
 }
 
-private syncConfig()
-{
+private syncConfig() {
 	def commands = []
-	parameterMap.each
-	{
-		if (isConfigChanged(it)) 
-		{
+	parameterMap.each {
+		if (isConfigChanged(it)) {
 			log.debug "Parameter ${it.key} has been updated from value: ${state.currentConfig."$it.key".value} to ${state.currentConfig."$it.key".newValue}"
 			state.currentConfig."$it.key".status = "syncPending"
 			commands << response(encap(zwave.configurationV2.configurationSet(configurationValue: intToParam(state.currentConfig."$it.key".newValue, it.paramZwaveSize),
 																				parameterNumber: it.paramZwaveNum, size: it.paramZwaveSize)))                                                                
 			commands << response(encap(zwave.configurationV2.configurationGet(parameterNumber: it.paramZwaveNum)))
-		} 
-		else if (state.currentConfig."$it.key".value == null) 
-		{
+		} else if (state.currentConfig."$it.key".value == null) {
 			log.warn "Parameter ${it.key} no. ${it.paramZwaveNum} has no value. Please check preference declaration for errors."
 		}
 	}
-	if(commands) 
-	{
+	if(commands) {
 		sendHubCommand(commands,1000)
 	}
 }
 
-private initStateConfig()
-{
+private initStateConfig() {
 	log.debug "initStateConfig()"
 	state.currentConfig = [:]
-	parameterMap.each
-	{
+	parameterMap.each {
 		log.debug "set $it.key"
 		state.currentConfig."$it.key" = [:]
 		state.currentConfig."$it.key".value = new Integer('0')
@@ -429,41 +332,33 @@ private initStateConfig()
 	}
 }
 
-private initStateConfigFromDevice()
-{
+private initStateConfigFromDevice() {
 	log.debug "initStateConfigFromDevice()"
 	def commands = []
-	parameterMap.each
-	{
+	parameterMap.each {
 		commands << response(encap(zwave.configurationV2.configurationGet(parameterNumber: it.paramZwaveNum)))
 	}
-	if(commands) 
-	{
+	if(commands) {
 		sendHubCommand(commands,1000)
 	}
 }
 
-private logStateConfig()
-{
-	parameterMap.each 
-	{
+private logStateConfig() {
+	parameterMap.each {
 		log.debug "key:$it.key value: ${state.currentConfig."$it.key".value} newValue: ${state.currentConfig."$it.key".newValue} status: ${state.currentConfig."$it.key".status}"
 	}
 }
 
-private List intToParam(Long value, Integer size = 1) 
-{
+private List intToParam(Long value, Integer size = 1) {
 	def result = []
-	size.times 
-	{
+	size.times {
 		result = result.plus(0, (value & 0xFF) as Short)
 		value = (value >> 8)
 	}
 	return result
 }
 
-private getParameterMap() 
-{
+private getParameterMap() {
 	[
 		[
 			title: "Wattage meter report interval",
@@ -499,8 +394,7 @@ private getParameterMap()
 			key: "buttonModeSetting",
 			paramName: "Select",
 			type: "enum",
-			values:
-			[
+			values: [
 				0: "0 - T1 turns L1 on, T2 turn L1 off",
 				1: "1 - T1 & T2 toggle output L1"
 			],
@@ -514,8 +408,7 @@ private getParameterMap()
 			key: "externalSwitchSetting",
 			paramName: "Select",
 			type: "enum",
-			values:
-			[
+			values: [
 				0: "0 - toggle switch",
 				1: "1 - push button switch"
 			],
