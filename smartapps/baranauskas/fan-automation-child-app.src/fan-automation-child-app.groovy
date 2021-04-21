@@ -17,7 +17,7 @@ definition (
     namespace: "baranauskas",
     parent: "baranauskas:Fan Automation",
     author: "Jose Augusto Baranauskas",
-    version: "1.0 (2021-03-25)",
+    version: "1.1 (2021-04-21)",
     description: "Create fans automation based on temperature sensors",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
@@ -106,7 +106,7 @@ def handleSwitch( sw ) {
 
 def enableAutomation() {
     state.isActive = true
-    state.lastFanSpeed = 0
+    state.lastFanSpeed = -1
     def msg = "Fan automation enabled"
     sendMsg( msg )
     def temp = avgTemperature()
