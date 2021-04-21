@@ -56,15 +56,7 @@ def installed() {
 
 def updated() {
 	log.debug "updated()"
-	
 	initialize()
-	try {
-		if (!state.MSR) {
-			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-		}
-	} catch (e) {
-		log.debug e
-	}
 	syncConfig()
 }
 
@@ -75,10 +67,11 @@ def initialize() {
 def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
+		0x25: 1,  // Switch Binary
 		0x32: 3,  // Meter
 		0x56: 1,  // Crc16Encap
 		0x70: 2,  // Configuration
-		0x72: 2,  // ManufacturerSpecific
+		0x98: 1,  // Security
 	]
 }
 
@@ -129,15 +122,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	log.debug "Switch binary report: "+cmd
 	def value = (cmd.value ? "on" : "off")
 	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	def result = []
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	log.debug "msr: $msr"
-	updateDataValue("MSR", msr)
-
-	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -276,16 +260,10 @@ private isConfigChanged(parameter) {
 	}
 	if (settingsValue != null) {
 		Integer value = 0
-		switch (parameter.type) {
-			case "bool":
-				value = settingsValue? 1 : 0
-				break
-			case "number":
-				value = settingsValue
-				break
-			default:
-				value = Integer.parseInt(settingsValue)
-				break
+		if (parameter.type == "number") {
+			value = settingsValue
+		} else {
+			value = Integer.parseInt(settingsValue)
 		}
 		if (state.currentConfig."$parameter.key".value != value) {
 			state.currentConfig."$parameter.key".newValue = value
@@ -366,10 +344,8 @@ private getParameterMap() {
 			key: "wattageMeterReportInterval",
 			paramName: "Set Value (3..8640)",
 			type: "number",
-			defaultValue: 3,
 			range: "3..8640",
 			enableSwitch: true,
-			enableSwitchDefaultValue: true,
 			enableKey: "wattageMeterReportDisable",
 			paramZwaveNum: 2, 
 			paramZwaveSize: 1
@@ -379,11 +355,9 @@ private getParameterMap() {
 			descr: "Interval of active energy meter reports in minutes. 10 ... 30240 (10 minutes - 3 weeks)",
 			key: "energyMeterReportInterval",
 			enableSwitch: true,
-			enableSwitchDefaultValue: true,
 			enableKey: "energyMeterReportDisable",
 			paramName: "Set Value (10..30240)",
 			type: "number",
-			defaultValue: 60,
 			range: "10..30240",
 			paramZwaveNum: 3,
 			paramZwaveSize: 2
@@ -398,7 +372,6 @@ private getParameterMap() {
 				0: "0 - T1 turns L1 on, T2 turn L1 off",
 				1: "1 - T1 & T2 toggle output L1"
 			],
-			defaultValue: 0, 
 			paramZwaveNum: 4, 
 			paramZwaveSize: 1
 		],
@@ -412,7 +385,6 @@ private getParameterMap() {
 				0: "0 - toggle switch",
 				1: "1 - push button switch"
 			],
-			defaultValue: 0,
 			paramZwaveNum: 5,
 			paramZwaveSize: 1
 		],
