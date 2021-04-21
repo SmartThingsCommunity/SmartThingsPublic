@@ -94,7 +94,7 @@ private Map getBatteryResult(rawValue) {
         result.name = 'battery'
         result.translatable = true
         def minVolts =  2.3
-        def maxVolts =  3.2
+        def maxVolts =  3.1
         // Get the current battery percentage as a multiplier 0 - 1
         def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
         // Find the corresponding voltage from our range
