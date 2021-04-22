@@ -277,7 +277,7 @@ def setCoolingSetpoint(setpoint) {
 }
 
 def updateSetpoint(setpoint, setpointType) {
-	setpoint = Math.max(Math.min(setpoint.doubleValue(), maxSetpointTemperature.doubleValue()), minSetpointTemperature.doubleValue())
+	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
 	[
 			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: setpointType, size: 2])),
 			"delay 2000",
