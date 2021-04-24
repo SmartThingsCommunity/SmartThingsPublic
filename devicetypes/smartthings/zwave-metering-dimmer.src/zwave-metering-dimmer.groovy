@@ -178,7 +178,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def switchEvent = createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")
 	result << switchEvent
-	if (cmd.value) {
+	if (cmd.value != null) {
 		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	if (switchEvent.isStateChange) {
@@ -352,6 +352,25 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
 		log.warn "Unable to extract CRC16 command from $cmd"
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	if (cmd.sourceEndPoint == 1) {
+		log.debug "Received encapsulated $encapsulatedCommand"
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.debug "Did not handle MultiChannelCmdEncap for cmd.sourceEndPoint ${cmd.sourceEndPoint}"
+		[:]
 	}
 }
 
