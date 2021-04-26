@@ -252,11 +252,6 @@ private logging(text, type = "debug") {
 	}
 }
 
-private secEncap(physicalgraph.zwave.Command cmd) {
-	logging("encapsulating command using Secure Encapsulation, command: $cmd","info")
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-}
-
 private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
 	logging("encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd","info")
 	zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:ep).encapsulate(cmd)
@@ -268,7 +263,8 @@ private encap(physicalgraph.zwave.Command cmd, Integer ep) {
 
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
-		secEncap(cmd)
+		logging("encapsulating command using Secure Encapsulation, command: $cmd","info")
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		logging("no encapsulation supported for command: $cmd","info")
 		cmd.format()
@@ -294,7 +290,7 @@ private Map cmdVersions() {
 }
 
 private parameterMap() {[
-		[key: "numClickLoad", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to control the loads",
+		[key: "NumClicks", num: 1, size: 1, type: "number", min: 0, max: 7, def: 7, title: "Numbers of clicks to control the loads",
 			descr: "Define which sequences of clicks control the load (see device manual)."],
 		[key: "OffTimer", num: 10, size: 2, type: "number", def: 0, min: 0, max: 32000, title: " Timer to switch OFF the Relay",
 			descr: "Defines the time after which the relay is switched OFF. Time unit is set by parameter 15(see device manual)"],
@@ -316,7 +312,7 @@ private parameterMap() {[
 			3: "PREVIOUS STATUS"
 		], def: "3", title: "Start-up status",
 			descr: "Defines the status of the device following a restart"],
-		[key: "externaSwitchType", num: 62, size: 1, type: "enum", options: [
+		[key: "externalSwitchType", num: 62, size: 1, type: "enum", options: [
 			0: "IGNORE",
 			1: "BUTTON",
 			2: "SWITCH"
