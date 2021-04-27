@@ -75,12 +75,12 @@ metadata {
 
 	preferences {
 		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
-			options: ["30 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"]
+			options: ["20 seconds", "30 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"]
 
 		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["maximum", "normal", "minimum", "disabled"]
 
 		input "reportInterval", "enum", title: "Report Interval", description: "How often the device should report in minutes",
-			options: ["1 minute", "2 minutes", "3 minutes", "4 minutes", "8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours"]
+			options: ["1 minute", "2 minutes", "3 minutes", "4 minutes", "8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"]
 	}
 
 	tiles(scale: 2) {
@@ -399,7 +399,7 @@ def ping() {
 def configure() {
 	// This sensor joins as a secure device if you double-click the button to include it
 	log.debug "${device.displayName} is configuring its settings"
-    
+
 	def request = []
 	
 	//0. added as MSR wasn't getting detected upon pair. 
@@ -415,47 +415,52 @@ def configure() {
 
 	//association group 2
 	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 1)
-	
+
+	// Expedite this if we know this info so that we can execute the code below
+	if (!state.MSR && zwaveInfo?.mfr && zwaveInfo.prod && zwaveInfo.model) {
+		state.MSR = "${zwaveInfo.mfr}-${zwaveInfo.prod}-${zwaveInfo.model}"
+	}
+
 	switch (state.MSR) {
 		case "0086-0002-0064":  // MultiSensor 6 EU
 		case "0086-0102-0064":  // MultiSensor 6 US
 		case "0086-0202-0064":  // MultiSensor 6 AU
-            		//3. no-motion report x seconds after motion stops (default 20 secs)
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
+					//3. no-motion report x seconds after motion stops (default 20 secs)
+					request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
 
-            		//4. motionSensitivity 3 levels: 3-normal, 5-maximum (default), 1-minimum, 0 - disabled
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
-                		configurationValue:
-                    			motionSensitivity == "normal" ? [3] :
-                        			motionSensitivity == "minimum" ? [1] :
-                            				motionSensitivity == "disabled" ? [0] : [5])
+					//4. motionSensitivity 3 levels: 3-normal, 5-maximum (default), 1-minimum, 0 - disabled
+					request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
+						configurationValue:
+								motionSensitivity == "normal" ? [3] :
+									motionSensitivity == "minimum" ? [1] :
+											motionSensitivity == "disabled" ? [0] : [5])
 
-            		//5. Parameters 111-113: report interval for association group 1-3
-            		//association group 1 - set in preferences, default 8 mins
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
+					//5. Parameters 111-113: report interval for association group 1-3
+					//association group 1 - set in preferences, default 8 mins
+					request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
 
-            		//association group 2 - report battery every 6 hours
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6 * 60 * 60)
+					//association group 2 - report battery every 6 hours
+					request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6 * 60 * 60)
 			break
 		case "0371-0002-0018":  // MultiSensor 7 EU
 		case "0371-0102-0018":  // MultiSensor 7 US
 		case "0371-0202-0018":  // MultiSensor 7 AU
-            		//3. no-motion report x seconds after motion stops (default 30 secs)
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 30)
+					//3. no-motion report x seconds after motion stops (default 30 secs)
+					request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 30)
 
-            		//4. motionSensitivity 3 levels: 6-normal, 11-maximum (default), 1-minimum, 0 - disabled
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
-                		configurationValue:
-                    			motionSensitivity == "normal" ? [6] :
-                        			motionSensitivity == "minimum" ? [1] :
-                            				motionSensitivity == "disabled" ? [0] : [11])
+					//4. motionSensitivity 3 levels: 6-normal, 11-maximum (default), 1-minimum, 0 - disabled
+					request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
+						configurationValue:
+								motionSensitivity == "normal" ? [6] :
+									motionSensitivity == "minimum" ? [1] :
+											motionSensitivity == "disabled" ? [0] : [11])
 
-            		//5. Parameters 111-113: report interval for association group 1-3
-            		//association group 1 - set in preferences, default 8 mins
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 2, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
+					//5. Parameters 111-113: report interval for association group 1-3
+					//association group 1 - set in preferences, default 8 mins
+					request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 2, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
 
-            		//association group 2 - report battery every 6 hours
-            		request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 2, scaledConfigurationValue: 6 * 60 * 60)
+					//association group 2 - report battery every 6 hours
+					request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 2, scaledConfigurationValue: 6 * 60 * 60)
 			break
 	}
 	
@@ -497,7 +502,8 @@ def configure() {
 
 private def getTimeOptionValueMap() {
 	[
-        	"30 seconds": 30,
+		"20 seconds": 20,
+		"30 seconds": 30,
 		"40 seconds": 40,
 		"1 minute"  : 60,
 		"2 minutes" : 2 * 60,
@@ -511,7 +517,7 @@ private def getTimeOptionValueMap() {
 		"6 hours"   : 6 * 60 * 60,
 		"12 hours"  : 12 * 60 * 60,
 		"18 hours"  : 18 * 60 * 60,
-		"24 hours"  : 24 * 60 * 60,
+		"24 hours"  : 24 * 60 * 60
 	]
 }
 
