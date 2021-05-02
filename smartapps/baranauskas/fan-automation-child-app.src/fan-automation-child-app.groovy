@@ -17,8 +17,8 @@ definition (
     namespace: "baranauskas",
     parent: "baranauskas:Fan Automation",
     author: "Jose Augusto Baranauskas",
-    version: "1.1 (2021-04-21)",
-    description: "Create fans automation based on temperature sensors",
+    version: "1.2 (2021-05-01)",
+    description: "Create fan automation based on temperature sensors",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -26,19 +26,23 @@ definition (
 )
 
 preferences {
-    section("Which Sensor, Threshold, and Differential Temperature?") {
+    section("Which Indoor Sensor, Threshold, and Differential Temperature?") {
         input "tempSensors",   "capability.temperatureMeasurement",
-              required: true,  title: "Which Temperature Sensor?", multiple: true
+              required: true,  title: "Which Indoor Temperature Sensor?", multiple: true
         input "tempThreshold", "decimal", range: "-10.0..50.0",
               required: true,  title: "Minimum Temperature Threshold to start automnation"
         input "tempDelta", "decimal", range: "0.5..10.0",
               required: true,  title: "Fan Differential Temperature"
     }
+    section("Which Outdoor Sensor Temperature?") {
+        input "weatherSensor",   "capability.temperatureMeasurement",
+              required: false,  title: "Which Outdoor Temperature Sensor?", multiple: false
+    }
     section("Which switch controls automation?") {
         input "isActiveSwitch", "capability.switch",
               required: true,  title: "Which switch?", multiple: false
     }
-    section("Which fans?") {
+    section("Which fan(s)?") {
         input "fans", "capability.fanSpeed",
               required: true,  title: "Which fans?", multiple: true
         input "fansMaxSpeed", "number", range: "1..5",
@@ -77,6 +81,8 @@ def initialize() {
     }
     subscribe(tempSensors,    "temperature", temperatureHandler)
     subscribe(isActiveSwitch, "switch",      switchHandler)
+    if ( weatherSensor )
+      subscribe(weatherSensor,    "temperature", temperatureHandler)
     log.debug "isActiveSwitch ${isActiveSwitch.displayName} is ${isActiveSwitch.currentSwitch}"
     tempSensors.each{ tempSensor ->
       log.debug "tempSensor ${tempSensor.displayName} is ${tempSensor.currentTemperature}"
@@ -109,8 +115,7 @@ def enableAutomation() {
     state.lastFanSpeed = -1
     def msg = "Fan automation enabled"
     sendMsg( msg )
-    def temp = avgTemperature()
-    handleTemperature( temp )
+    temperatureHandler( null )
 }
 
 def disableAutomation() {
@@ -124,8 +129,9 @@ def temperatureHandler( evt ) {
 //	log.debug "temperatureHandler evt.doubleValue : $evt.doubleValue"
   if ( state.isActive  ) {
 //    def temp = tempSensor.currentTemperature
-    def temp = avgTemperature()
-    handleTemperature( temp )
+    def tempIndoor = avgTemperature()
+    def tempOutdoor = weatherSensor ? weatherSensor.currentTemperature : 100
+    handleTemperature( tempIndoor, tempOutdoor )
   }
 }
 
@@ -139,11 +145,11 @@ def avgTemperature() {
     return (n == 0) ? 0 : ( temp / n )
 }
 
-def handleTemperature( temp ) {
-    def fanSpeed = fanSpeedFromTemperature( temp )
-    log.debug "handleTemperature temp = ${temp}, fanSpeed = ${fanSpeed}, state.lastFanSpeed = ${state.lastFanSpeed}"
-    if ( fanSpeed != state.lastFanSpeed ) {
-       def msg = "Now ${temp}°, changing fans speed from ${state.lastFanSpeed} to ${fanSpeed}"
+def handleTemperature( tempIndoor, tempOutdoor ) {
+    def fanSpeed = fanSpeedFromTemperature( tempIndoor )
+    log.debug "handleTemperature tempIndoor = ${tempIndoor}, tempOutdoor = ${tempOutdoor}, fanSpeed = ${fanSpeed}, state.lastFanSpeed = ${state.lastFanSpeed}"
+    if ( fanSpeed != state.lastFanSpeed && tempOutdoor >= tempIndoor ) {
+       def msg = "Now ${tempIndoor}°, changing fan speed from ${state.lastFanSpeed} to ${fanSpeed}"
        sendMsg( msg )
        state.lastFanSpeed = fanSpeed
        fans.setFanSpeed( fanSpeed )
