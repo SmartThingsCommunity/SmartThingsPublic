@@ -1,6 +1,6 @@
 /**
 Copyright Sinopé Technologies
-1.3.0
+1.3.2
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,9 +69,9 @@ def refresh() {
     def cmds = []
     cmds += zigbee.readAttribute(0x0006, 0x0000)//refresh on/off
     cmds += zigbee.readAttribute(0x0000, 0x0007)//refresh power source
-    cmds += zigbee.readAttribute(0x0001, 0x0021)//refresh battery percentage remaining
+    cmds += zigbee.readAttribute(0x0001, 0x0020)//refresh battery voltage remaining
     cmds += zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null)//configure reporting on/off min: 0sec, max 600sec
-    cmds += zigbee.configureReporting(0x0001, 0x0021, 0x20, 60, 60*60, 1)//configure reporting battery percentage remaining min: 6sec, max 1hour
+    cmds += zigbee.configureReporting(0x0001, 0x0020, 0x20, 60, 60*60, 1)//configure reporting battery voltage remaining min: 6sec, max 1hour
     return sendZigbeeCommands(cmds)
 }
 
@@ -164,7 +164,7 @@ private Map parseCatchAllMessage(String description) {
 				break
             case 0x0006://on/off
             	//0x07 - configure reporting
-				if (cluster.command != 0x07) {
+				if (cluster.command != 0x07 && cluster.data.length) {
 					resultMap = getOnOffResult(cluster.data.last())
 				}
                 break
@@ -189,7 +189,7 @@ private Map parseReportAttributeMessage(String description) {
 	if (descMap.cluster == "0000" && descMap.attrId == "0007") {
 		resultMap = getPowerSourceResult(descMap.value)
 	}
-    else if (descMap.cluster == "0001" && descMap.attrId == "0021") {
+    else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
         resultMap = getBatteryResult(zigbee.convertHexToInt(descMap.value))
 	}
     else if (descMap.cluster == "0006" && descMap.attrId == "0000") {
@@ -205,9 +205,7 @@ private Map getBatteryResult(rawValue) {
     result.name = 'battery'
     result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 
-    int batteryPercent = rawValue / 2
-    result.value = Math.min(100, batteryPercent)
-
+    result.value = convertVoltToPercent(rawValue)
 	return result
 }
 
@@ -284,6 +282,34 @@ private int get_LOG_DEBUG() {
 }
 private int get_LOG_TRACE() {
 	return 5
+}
+
+private def convertVoltToPercent(value) {
+    def NBDEPOINTS_DEG = 6;
+    def levelValue;
+    def levelsTable = [0, 20000, 40000, 60000, 80000, 100000];
+    def anglesTable = [30, 55, 56, 57, 58.5, 60];
+
+    if (value > anglesTable[NBDEPOINTS_DEG - 1]) { // if the value of the angle is greater than the maximum
+      value = anglesTable[NBDEPOINTS_DEG - 1]; // use the maximum value instead
+    }
+
+    def index = 1;
+    for (index; value > anglesTable[index]; index++) {
+    }
+
+    def ratioBetweenPointXandY = (levelsTable[index] - levelsTable[index - 1]) / (anglesTable[index] - anglesTable[index - 1]);
+    def angleToAdd = levelsTable[index] - (anglesTable[index] * ratioBetweenPointXandY);
+    def levelWithFactor = (ratioBetweenPointXandY * value) + angleToAdd;
+    levelValue = levelWithFactor / 1000;
+    def roundedLevelValue = Math.round(levelValue);
+    if(roundedLevelValue > 100){
+        return 100
+    }else if(roundedLevelValue < 0){
+        return 0
+    }else{
+        return roundedLevelValue;
+    }
 }
 
 def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMessage = true) {
