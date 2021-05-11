@@ -76,6 +76,13 @@ metadata {
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-005", deviceJoinName: "LELLKI Switch 1" //LELLKI 5 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
+		// SiHAS 
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z2", deviceJoinName: "SiHAS Switch 2"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z3", deviceJoinName: "SiHAS Switch 3"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z4", deviceJoinName: "SiHAS Switch 4"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z5", deviceJoinName: "SiHAS Switch 5"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z6", deviceJoinName: "SiHAS Switch 6"
 	}
 	// simulator metadata
 	simulator {
@@ -267,6 +274,18 @@ private getChildCount() {
 		return 6 
 	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
 		return 3
+	} else if (device.getDataValue("model") == "SBM300Z1") {
+		return 1
+	} else if (device.getDataValue("model") == "SBM300Z2") {
+		return 2
+	} else if (device.getDataValue("model") == "SBM300Z3") {
+		return 3
+	} else if (device.getDataValue("model") == "SBM300Z4") {
+		return 4
+	} else if (device.getDataValue("model") == "SBM300Z5") {
+		return 5
+	} else if (device.getDataValue("model") == "SBM300Z6") {
+		return 6
 	} else {
 		return 2
 	}
