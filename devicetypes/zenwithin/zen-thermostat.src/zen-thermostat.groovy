@@ -591,6 +591,8 @@ def setHeatingSetpoint(degrees) {
         state.heatingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "heatingSetpoint", value: device.currentValue("heatingSetpoint"), unit: getTemperatureScale())
     }
 }
 
@@ -600,6 +602,8 @@ def setCoolingSetpoint(degrees) {
         state.coolingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "coolingSetpoint", value: device.currentValue("coolingSetpoint"), unit: getTemperatureScale())
     }
 }
 
