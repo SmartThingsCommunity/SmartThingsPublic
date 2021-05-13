@@ -217,6 +217,9 @@ def parse(String description) {
 }
 
 def multilevelChildInstalled(childDni) {
+	// Device unreliably responds to the command below during initial poll, causing an error while using child's setLevel,
+	// due to the null value of currentLevel
+	sendEventsToVenetianBlind([[name: "level", value: 50]])
 	state.timeOfVenetianMovement = 150
 	sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet(), 2))
 }
@@ -238,7 +241,7 @@ def pause() {
 	}
 }
 
-def setLevelChild(level, childDni) {
+def setLevelChild(level, childDni, currentLevel) { // These two arguments are defined in child DTH, so they also have to be used here
 	setSlats(level)
 }
 
