@@ -189,19 +189,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
+	cmds = []
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response(delayBetween([
-				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
-				zwave.batteryV1.batteryGet().format(),
-				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-		], 2000))
-	} else {
-		results << response(delayBetween([
-				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
-				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-		], 2000))
+		cmds << zwave.batteryV1.batteryGet().format()
 	}
+	if (zwaveInfo.mfr == "0154") {
+		cmds << zwave.notificationV3.notificationGet(notificationType: 0x01).format()
+	}
+	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	results << response(delayBetween(cmds, 2000))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results) {
