@@ -69,7 +69,7 @@ def meterHandler(evt) {
 
     def aboveThresholdValue = aboveThreshold as int
     if (meterValue > aboveThresholdValue) {
-    	if (lastValue < aboveThresholdValue) { // only send notifications when crossing the threshold
+    	if (lastValue <= aboveThresholdValue) { // only send notifications when crossing the threshold
 		    def msg = "${meter} reported ${evt.value} ${dUnit} which is above your threshold of ${aboveThreshold}."
     	    sendMessage(msg)
         } else {
@@ -80,7 +80,7 @@ def meterHandler(evt) {
 
     def belowThresholdValue = belowThreshold as int
     if (meterValue < belowThresholdValue) {
-    	if (lastValue > belowThresholdValue) { // only send notifications when crossing the threshold
+    	if (lastValue >= belowThresholdValue) { // only send notifications when crossing the threshold
 		    def msg = "${meter} reported ${evt.value} ${dUnit} which is below your threshold of ${belowThreshold}."
     	    sendMessage(msg)
         } else {
