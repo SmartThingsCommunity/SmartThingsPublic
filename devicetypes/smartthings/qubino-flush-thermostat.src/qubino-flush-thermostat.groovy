@@ -286,8 +286,8 @@ def updateSetpoint(setpoint, setpointType) {
 
 def configure() {
 	[
-		secure(zwave.configurationV1.configurationSet(parameterNumber: 78, scaledConfigurationValue: temperatureScale == 'C' ? 0 : 1, size: 1))
-		secure(zwave.configurationV1.configurationGet(parameterNumber: 59)),
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 78, scaledConfigurationValue: temperatureScale == 'C' ? 0 : 1, size: 1)),
+		secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
 	]
 }
 
