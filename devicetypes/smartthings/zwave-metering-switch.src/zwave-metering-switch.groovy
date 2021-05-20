@@ -179,7 +179,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	def value = (cmd.value ? "on" : "off")
 	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
 	if (evt.isStateChange) {
-		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
+		[evt, response(["delay 3000", encap(meterGet(scale: 2))])]
 	} else {
 		evt
 	}
@@ -191,7 +191,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	def value = (cmd.value ? "on" : "off")
 	[
 		createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value"),
-		response(["delay 3000", meterGet(scale: 2).format()])
+		response(["delay 3000", encap(meterGet(scale: 2))])
 	]
 }
 
