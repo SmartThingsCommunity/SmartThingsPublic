@@ -189,7 +189,10 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 {
 	log.debug "Switch binary report: "+cmd
 	def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
+	[
+		createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value"),
+		response(["delay 3000", meterGet(scale: 2).format()])
+	]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -210,16 +213,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+		zwave.switchBinaryV1.switchBinaryGet()
 	], 3000)
 }
 
 def off() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+		zwave.switchBinaryV1.switchBinaryGet()
 	], 3000)
 }
 
