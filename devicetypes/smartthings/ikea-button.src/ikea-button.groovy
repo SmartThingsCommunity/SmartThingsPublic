@@ -16,6 +16,7 @@
 
 import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus 
 
 metadata {
 	definition (name: "Ikea Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
@@ -33,6 +34,8 @@ metadata {
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_Situo4_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS MSM-300ZB", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad" // mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS BSM-300ZB", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Button" // mnmn: "0Ar2", vid: "ST_af7cc6c2-92fc-4a27-b2f4-5c9afb5c7b75" 
 	}
 
 	tiles {
@@ -53,6 +56,7 @@ metadata {
 private getCLUSTER_GROUPS() { 0x0004 }
 private getCLUSTER_SCENES() { 0x0005 }
 private getCLUSTER_WINDOW_COVERING() { 0x0102 }
+private getPOWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE() { 0x0020 }
 
 private getREMOTE_BUTTONS() {
 	[TOP:1,
@@ -166,7 +170,7 @@ private void createChildButtonDevices(numberOfButtons) {
 
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
-		def supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"]
+		def supportedButtons = (isBSM300() || isMSM300()) ? ["pushed","held","double"] : (((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"])
 		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
 				[completedSetup: true, label: getButtonName(i),
 				 isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
@@ -188,13 +192,17 @@ def installed() {
 		numberOfButtons = 3
 	}  else if (isSomfySituo4()) {
 		numberOfButtons = 12
+	} else if (isBSM300()) {
+		numberOfButtons = 1
+	} else if (isMSM300()) {
+		numberOfButtons = 4
 	}
 
 	if (numberOfButtons > 1) {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	def supportedButtons = isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"]
+	def supportedButtons = (isBSM300() || isMSM300()) ? ["pushed","held","double"] : (isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"])
 	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
@@ -231,6 +239,21 @@ def configure() {
 					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x03]) +
 					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x04])
 		}
+	} else if(isBSM300() || isMSM300()) {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
+		if( isBSM300() ) {
+			cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
+		}
+		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
+		if (isMSM300()) {    	
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x03])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x04])
+		}
+		else if (isBSM300()) {
+			cmds += zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER, ["destEndpoint":0x01])
+		}
 	} else {
 		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
 				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
@@ -248,7 +271,9 @@ def parse(String description) {
 		log.debug "Creating event: ${event}"
 		sendEvent(event)
 	} else {
-		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
+		if (description?.startsWith('zone status')) {
+			event = parseIasMessage(description)
+		} else if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
 				def batteryValue = zigbee.convertHexToInt(descMap.value)
@@ -256,6 +281,8 @@ def parse(String description) {
 					batteryValue = batteryValue / 2
 				}
 				event = getBatteryEvent(batteryValue)
+			} else if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE) {
+				event = getBatteryResult(Integer.parseInt(descMap.value, 16))
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
 					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
 					descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER ||
@@ -290,6 +317,41 @@ private Map getBatteryEvent(value) {
 	result.value = value
 	result.name = 'battery'
 	result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	return result
+}
+
+private Map getBatteryResult(rawValue) {
+	def linkText = getLinkText(device)
+	def result = [:]
+	def volts = rawValue / 10
+	if (!(rawValue == 0 || rawValue == 255)) {
+		result.name = 'battery'
+		result.translatable = true
+		def minVolts =  2.3
+		def maxVolts =  3.0
+		// Get the current battery percentage as a multiplier 0 - 1
+		def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+		// Find the corresponding voltage from our range
+		curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
+		// Round to the nearest 10th of a volt
+		curValVolts = Math.round(10 * curValVolts) / 10.0
+		// Only update the battery reading if we don't have a last reading,
+		// OR we have received the same reading twice in a row
+		// OR we don't currently have a battery reading
+		// OR the value we just received is at least 2 steps off from the last reported value
+		if (state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+		    def pct = (volts - minVolts) / (maxVolts - minVolts)
+		    def roundedPct = Math.round(pct * 100)
+		    if (roundedPct <= 0)
+		        roundedPct = 1
+		    result.value = Math.min(100, roundedPct)
+		} else {
+		    // Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
+		    result.value = device.currentState("battery").value
+		}
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+		state.lastVolts = volts
+	}
 	return result
 }
 
@@ -374,8 +436,18 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
+	} else if(isMSM300()) {
+		buttonNumber = descMap.sourceEndpoint.toInteger()
+		if (buttonNumber != 0) {
+			if (descMap.commandInt == 0) {
+				buttonState = "pushed"
+			} else if (descMap.commandInt == 1) {
+				buttonState = "double"
+			} else if (descMap.commandInt == 2) {
+				buttonState = "held"
+			}
+		}
 	}
-
 	if (buttonNumber != 0) {
 		// Create old style
 		def descriptionText = "${getButtonName(buttonNumber)} was $buttonState"
@@ -385,6 +457,39 @@ private Map getButtonEvent(Map descMap) {
 		sendButtonEvent(buttonNumber, buttonState)
 	}
 	result
+}
+
+private Map parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	if (zs.isAlarm1Set() && zs.isAlarm2Set()) {
+		return getZoneButtonResult('held')
+	} else if (zs.isAlarm1Set()) {
+		return getZoneButtonResult('pushed')
+	} else if (zs.isAlarm2Set()) {
+		return getZoneButtonResult('double')
+	} else { 
+	}
+}
+
+private Map getZoneButtonResult(value) {
+	def descriptionText
+	if (value == "pushed")
+		descriptionText = "${ device.displayName } was pushed"
+	else if (value == "held")
+		descriptionText = "${ device.displayName } was held"
+	else
+		descriptionText = "${ device.displayName } was pushed twice"
+	
+	sendEvent([name: "button", value: buttonState, data: [buttonNumber: 1], descriptionText: descriptionText, isStateChange: true])
+		
+	return [
+			name           : 'button',
+			value          : value,
+			descriptionText: descriptionText,
+			translatable   : true,
+			isStateChange  : true,
+			data           : [buttonNumber: 1]
+	]
 }
 
 private boolean isIkeaRemoteControl() {
@@ -413,6 +518,14 @@ private boolean isSomfySituo1() {
 
 private boolean isSomfySituo4() {
 	isSomfy() && device.getDataValue("model") == "Situo 4 Zigbee"
+}
+
+private Boolean isBSM300() {
+	device.getDataValue("model") == "BSM-300Z"
+}
+
+private Boolean isMSM300() {
+	device.getDataValue("model") == "MSM-300Z"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {
