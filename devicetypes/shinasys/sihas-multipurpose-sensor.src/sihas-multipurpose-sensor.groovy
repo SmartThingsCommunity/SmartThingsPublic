@@ -123,7 +123,7 @@ private Map parseIasMessage(String description) {
 
 private Map translateZoneStatus(ZoneStatus zs) {
     // Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
-    if(isDSM300()) {
+    if (isDSM300()) {
     	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getContactResult('open') : getContactResult('closed')
     } else {    
     	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
@@ -214,13 +214,13 @@ def refresh() {
 
     if (isUSM300() || isOSM300()) {
         refreshCmds += zigbee.readAttribute(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE)
-        refreshCmds +=  zigbee.enrollResponse()
+        refreshCmds += zigbee.enrollResponse()
     }
 
-    if(isDSM300()) {
+    if (isDSM300()) {
     	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
     	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
-    	refreshCmds +=  zigbee.enrollResponse()
+    	refreshCmds += zigbee.enrollResponse()
     }
 
     return refreshCmds
@@ -256,7 +256,7 @@ def configure() {
         configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, DataType.BITMAP8, 1, 600, 1)
     }
 
-    if(isDSM300()) {
+    if (isDSM300()) {
     	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
     	configCmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 0xffff, null)
     }
