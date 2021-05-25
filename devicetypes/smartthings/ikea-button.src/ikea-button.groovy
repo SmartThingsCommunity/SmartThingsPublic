@@ -239,9 +239,9 @@ def configure() {
 					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x03]) +
 					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x04])
 		}
-	} else if(isBSM300() || isMSM300()) {
+	} else if (isBSM300() || isMSM300()) {
 		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
-		if( isBSM300() ) {
+		if(isBSM300()) {
 			cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
 		}
 		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
@@ -436,7 +436,7 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
-	} else if(isMSM300()) {
+	} else if (isMSM300()) {
 		buttonNumber = descMap.sourceEndpoint.toInteger()
 		if (buttonNumber != 0) {
 			if (descMap.commandInt == 0) {
