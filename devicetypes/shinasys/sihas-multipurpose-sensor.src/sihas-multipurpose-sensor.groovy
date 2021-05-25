@@ -141,7 +141,7 @@ private Map getBatteryResult(rawValue) {
         def minVolts = 2.3
         def maxVolts = 3.2
 
-        if(isDSM300()) maxVolts = 3.1
+        if (isDSM300()) maxVolts = 3.1
 
         // Get the current battery percentage as a multiplier 0 - 1
         def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
