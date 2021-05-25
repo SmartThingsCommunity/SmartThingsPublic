@@ -19,6 +19,7 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Health Check"
+		capability "Battery"
 
 		// Generic
 		fingerprint profileId: "C05E", deviceId: "0000", inClusters: "0006", deviceJoinName: "Light", ocfDeviceType: "oic.d.light" //Generic On/Off Light
@@ -125,6 +126,12 @@ metadata {
 		// reply messages
 		reply "zcl on-off on": "on/off: 1"
 		reply "zcl on-off off": "on/off: 0"
+		
+		for (int i = 0; i <= 90; i += 10) {
+			status "battery 0021 0x${i}": "read attr - raw: 8C900100010A21000020C8, dni: 8C90, endpoint: 01, cluster: 0001, size: 0A, attrId: 0021, result: success, encoding: 20, value: ${i}"
+		}
+	
+		
 	}
 
 	tiles(scale: 2) {
@@ -136,11 +143,16 @@ metadata {
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 		}
+		
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		main "switch"
-		details(["switch", "refresh"])
+		details(["switch", "battery","refresh"])
 	}
 }
 
@@ -155,6 +167,32 @@ def parse(String description) {
 		log.warn "DID NOT PARSE MESSAGE for description : $description"
 		log.debug zigbee.parseDescriptionAsMap(description)
 	}
+	
+	def result
+	Map map = zigbee.getEvent(description)
+
+	if (!map) {
+		if (description?.startsWith('zone status')) {
+			map = getMoistureResult(description)
+		} else if(description?.startsWith('enroll request')){
+			List cmds = zigbee.enrollResponse()
+			log.debug "enroll response: ${cmds}"
+			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+		}else {
+			Map descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				map = getMoistureResult(description)
+			} else if (descMap?.clusterInt == 0x0001 && descMap?.attrInt == 0x0021 && descMap?.commandInt != 0x07 && descMap?.value) {
+				map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+			}
+		}
+	}
+	if(map&&!result){
+		result = createEvent(map)
+	}
+	log.debug "Parse returned $result"
+
+	result	
 }
 
 def off() {
@@ -181,4 +219,24 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	log.debug "Configuring Reporting and Bindings."
 	zigbee.onOffRefresh() + zigbee.onOffConfig()
+}
+
+def getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage"
+	def result = [:]
+	def manufacturer = getDataValue("manufacturer")
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		if (manufacturer == "Third Reality, Inc") {
+			result.value = Math.round(rawValue)
+		} else {
+			result.value = Math.round(rawValue / 2)
+		}
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	}
+
+	log.debug "${device.displayName} battery was ${result.value}%"
+	result
 }
