@@ -34,8 +34,8 @@ metadata {
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_Situo4_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS MSM-300ZB", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad" // mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS BSM-300ZB", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Button" // mnmn: "0Ar2", vid: "ST_af7cc6c2-92fc-4a27-b2f4-5c9afb5c7b75" 
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad" // mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Button" // mnmn: "0Ar2", vid: "ST_af7cc6c2-92fc-4a27-b2f4-5c9afb5c7b75" 
 	}
 
 	tiles {
@@ -241,9 +241,6 @@ def configure() {
 		}
 	} else if (isBSM300() || isMSM300()) {
 		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
-		if (isBSM300()) {
-			cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
-		}
 		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
 		if (isMSM300()) {    	
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
@@ -252,6 +249,7 @@ def configure() {
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x04])
 		}
 		else if (isBSM300()) {
+			cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 			cmds += zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER, ["destEndpoint":0x01])
 		}
 	} else {
