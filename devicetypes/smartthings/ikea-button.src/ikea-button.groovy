@@ -170,7 +170,13 @@ private void createChildButtonDevices(numberOfButtons) {
 
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
-		def supportedButtons = (isBSM300() || isMSM300()) ? ["pushed","held","double"] : (((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"])
+		def supportedButtons = []
+		if (isBSM300() || isMSM300() ) {
+			supportedButtons = ["pushed","held","double"] 
+		} else {
+			supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"]
+		}
+		
 		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
 				[completedSetup: true, label: getButtonName(i),
 				 isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
@@ -202,7 +208,12 @@ def installed() {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	def supportedButtons = (isBSM300() || isMSM300()) ? ["pushed","held","double"] : (isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"])
+	def supportedButtons = []
+	if (isBSM300() || isMSM300() ) {
+		supportedButtons = ["pushed","held","double"] 
+	} else {
+		supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"]
+	}
 	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
