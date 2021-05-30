@@ -1,7 +1,7 @@
 /**
  *  Tesla Powerwall Manager 
  * 
- *  Copyright 2019, 2020 DarwinsDen.com
+ *  Copyright 2019, 2020, 2021 DarwinsDen.com
  *  
  *  ****** WARNING ****** USE AT YOUR OWN RISK!
  *  This software was developed in the hopes that it will be useful to others, however, 
@@ -12,20 +12,18 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *       required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
- *  Access Token initialization code is derived from Trent Foley's excellent Tesla Connect SmartThings Smart App:
- *     https://github.com/trentfoley/SmartThingsPublic/blob/master/smartapps/trentfoley/tesla-connect.src/tesla-connect.groovy 
- *
+ * 
  */
 def version() {
-    return "v0.2.8e.20200702"
+    return "v0.3.0e.20210325"
 }
 
 /* 
- *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iframe for Hubitat. 
+ *	25-May-2021 >>> v0.3.0e.20210325 - Tesla auth API change workarounds: use tokens directly, disable gateway direct code. 
+ *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iFrame for Hubitat. 
  *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
  *	02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
  *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
@@ -45,7 +43,7 @@ def version() {
  */
 
 definition(
-    name: "Tesla Powerwall Manager", namespace: "darwinsden", author: "Darwin", description: "Monitor and control your Tesla Powerwall",
+    name: "Tesla Powerwall Manager", namespace: "darwinsden", author: "eedwards", description: "Monitor and control your Tesla Powerwall",
     importUrl:
     "https://raw.githubusercontent.com/DarwinsDen/SmartThingsPublic/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy",
     category: "My Apps",
@@ -55,10 +53,10 @@ definition(
 
 preferences {
     page(name: "pageMain")
-    page(name: "pageConnections")
     page(name: "pageConnectionMethod")
     page(name: "teslaAccountInfo")
     page(name: "gatewayAccountInfo")
+    page(name: "pageDashboardTile")
     page(name: "pageNotifications")
     page(name: "pageSchedules")
     page(name: "pageTriggers")
@@ -77,10 +75,14 @@ preferences {
     page(name: "pageDevicesToControl")
     page(name: "triggerRestrictions")
     page(name: "pageCustomizeGwTile")
+    page(name: "pageTokenFromUrl")
 }
 
 private pageMain() {
+
+             
     return dynamicPage(name: "pageMain", title: "", install: true) {
+                      
         section() {
             if (hubIsSt()) {
                 paragraph app.version(),
@@ -93,27 +95,27 @@ private pageMain() {
             }               
         }
         
-         section("Powerwall Connections") {
-            if (hubIsSt()) {
-                href "pageConnections", title: "Account Information..", description: "", required: false, image:
+         section("Tesla Server Connection") {
+             href "teslaAccountInfo", title: "Tesla Token Information..", description: "${getTeslaServerStatus()}", required: false, image:
                  "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
-            } else {  
-                href "pageConnections", title: "Tesla Account and/or Powerwall Gateway Information..", description: "", required: false, image:
-                 "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
-            }
         }
 
         section("Preferences") {
             href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification50.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification40.png"
             href "pageSchedules", title: "Schedule Powerwall setting changes..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar50.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar40.png"
             href "pageTriggers", title: "Perform actions based on Powerwall battery charge level %..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/battery50.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/battery40.png"
             href "pageDevicesToControl", title: "Turn off devices when a grid outage occurs..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/outage50.png"
-            href "pagePwPreferences", title: "Powerwall Manager Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog50.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/outage40.png"
+            if (!hubIsSt()) {
+                href "pageDashboardTile", title: "Display a dashboard tile iFrame from the gateway..", description: "", required: false,
+                   image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/dashboard40.png"
+            }
+            href "pagePwPreferences", title: "Powerwall Manager General Preferences..", description: "", required: false,
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog40.png"
+            
         }
         section("For more information") {
             if (hubIsSt()) {
@@ -137,7 +139,7 @@ private pageMain() {
 }
 
 def pageRemove() {
-    dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {
+    dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {      
         section() {
             paragraph parent ? "CAUTION: You are about to remove the '${app.label}'." : "If an error occurs during removal, " +
                 "you may need to first manually remove references to the Powerwall Manager child device from other smart apps if you have manually added them.",
@@ -148,14 +150,63 @@ def pageRemove() {
 
 private teslaAccountInfo() {
     return dynamicPage(name: "teslaAccountInfo", title: "", install: false) {
-        resetAccountAccess()
-        section("Tesla Account Information: ") {
-            input "userEmail", "text", title: "Email", autoCorrect: false, required: false
-            input "userPw", "password", title: "Password", autoCorrect: false, required: false
+         
+         if (hubIsSt() && accessTokenIp) {
+            validateLocalUrl()
+         } 
+        String pString
+        if (hubIsSt()) {
+           pString = "This app currently requires a Tesla token generated using another app, such as the Tesla Auth App for " +
+                "IOS or Android, a web-based Tesla token generator, or from a script running on a local server. "
+           } else {
+           pString = "This app currently requires a Tesla token generated using another app, such as the Tesla Auth App for " +
+                "<a href='https://apps.apple.com/us/app/auth-app-for-tesla/id1552058613'>IOS</a> or " +
+                "Android, " +
+                "a web-based Tesla token generator, or from a <a href='https://github.com/enode-engineering/tesla-oauth2'>script</a> running on a local server. "
+        }
+        pString = pString + "This token must be generated and pasted in here at least every 45 days, unless your are " +
+                "periodically autogenerating the token on a local server and providing it using the URL option below."
+        if (!hubIsSt()) {
+            pString = pString + "<br>Example token: qts-a5876db1cd65cd271c27c536d35c60afb0eb1f849d4739bef60f1dc6567e5662" 
+        }
+        section ("Tesla Token Information") {
+            paragraph pString
+            // input "userEmail", "text", title: "Email", autoCorrect: false, required: false
+            // input "userPw", "password", title: "Password", autoCorrect: false, required: false
+            input "inputAccessToken", "text", title: "Access Token", autoCorrect: false, required: false
+        }
+
+        section("OPTIONAL: You may also configure a local server to generate and serve the token. " + 
+                "If local server information is provided, this app will query the local server as needed " +
+                "for updated access token information. The token must be" +
+                " provided by your server in a JSON 'access_token' attribute, eg {'access_token' : 'xxxxxx'}." ) {
+           if (hubIsSt()) {
+               String tokenFromUrlStatus 
+               if (state.accessTokenFromUrlStatus && accessTokenIp) {
+                  tokenFromUrlStatus = "Current Status: " + state.accessTokenFromUrlStatus 
+               } else {
+                  tokenFromUrlStatus = "Select to enter local server address"
+               }
+               href "pageTokenFromUrl", title: "Enter local URL information..", description: tokenFromUrlStatus, required: false
+           } else {
+               input "accessTokenUrl", "text", title: "URL on your local server to obtain access token (eg: http://192.168.1.100/tesla.html)", autoCorrect: false, required: false
+           }
+        }
+    }                        
+}
+
+def pageTokenFromUrl() {
+    dynamicPage(name: "pageTokenFromUrl", title:"Get a token from a local URL.", install: false, uninstall: false) {
+        section("") {
+              state.useTokenFromUrl = false
+              state.accessTokenFromUrlValid = false
+              input "accessTokenIp", "text", title: "IP address of local server - eg: 192,168.1.30", autoCorrect: false, required: false
+              input "accessTokenPath", "text", title: "Optional path on the local server - eg: /tesla/html", autoCorrect: false, required: false
         }
     }
 }
 
+/*
 private gatewayAccountInfo() {
     return dynamicPage(name: "gatewayAccountInfo", title: "", install: false) {
            section("Local Gateway Information. If provided, the Powerwall Manager will also (or only if no Tesla Account information is provided) " +
@@ -167,6 +218,8 @@ private gatewayAccountInfo() {
            }
       }
 }
+*/
+
 
 def getConnectionMethodStatus() {
     def statusStr
@@ -190,82 +243,87 @@ def pageConnectionMethod() {
          }
     }
 }
-        
-def pageConnections() {
-    dynamicPage(name: "pageConnections", title:"Choose how to connect to the Powerwall.", install: false, uninstall: false) {
-        String statusString
-        if (!hubIsSt()) {
-           section("Connection Method:") {
-               statusString = getConnectionMethodStatus()
-               href "pageConnectionMethod", title: "${statusString}", description: ""
-            }
-        }
-        if (!connectionMethod || connectionMethod != "Use Local Gateway Only") {
-            statusString = getTeslaServerStatus()
-            section("Enter Tesla Server Account Information:") {
-               href "teslaAccountInfo", title: "${statusString}", description: ""
-            }
-        }
-        if (connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") {
-            statusString = getLocalGwStatus()
-            section("Enter Gateway Address:") {
-               href "gatewayAccountInfo", title: "${statusString}", description: ""
-            }
-            if (statusString.take(22)=="Local Gateway Verified") {
-               section("Customize Gateway Dashboard Tile:") {
+
+def pageDashboardTile() {
+    dynamicPage(name: "pageDashboardTile", title:"Create a Powerall dashboard iframe tile.", install: false, uninstall: false) {
+          
+        if (gatewayAddress) {
                    statusString = "Height: ${tileHeight?.toLong() ?: 517} (default 517 pixels)\n" +                
                                       "Width:  ${tileWidth?.toLong() ?: 460} (default 460 pixels)\n" + 
                                       "Scale:  ${tileScale?.toFloat() ?: 0.81} (default 0.81)\n\n"  + 
-                                       getTileStr(0.5) +   
+                                       getTileStr(0.5)  +
                    "\n&#8226To view this attribute tile on your dashboard, you may need to first visit the gateway URL in your dashboard browser " +
                    "and accept the self-signed certificate exception." +
-                   "\n&#8226Add to .css to remove extra tile padding: #tile-XX .tile-contents, #tile-XX .tile-primary {padding: 0;}"
-                    section("Customize Gateway Dashboard Tile:") {
-                        href "pageCustomizeGwTile", title: "${statusString}", description: ""
-
-                    }
-               }
-            }
+                   "\n&#8226Add to .css to remove extra tile padding: #tile-XX .tile-contents, #tile-XX .tile-primary {padding: 0}"
+        } else {
+            statusString = "Enter your local gateway address.."
         }
+        section("Customize Gateway Dashboard Tile. The tile can be displayed on a dashboard using the " +
+                            "custom attribute 'pWTile':") {
+               href "pageCustomizeGwTile", title: "${statusString}", description: ""
+
+        }      
     }
 }
 
 def pageCustomizeGwTile() {
     dynamicPage(name: "pageCustomizeGwTile", title:"Customize Gateway Dashboard Tile:", install: false, uninstall: false) {
-         section("") {
+           section("Enter address of gateway to create tile for dashboard:") {
+                    input("gatewayAddress", "string", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
+            }
+         section("Tailor the tile:") {
                   input("tileHeight", "number", title: "Tile Height (default 517 pixels)", defaultValue: 517, required: false )
                   input("tileWidth", "number", title: "Tile Width (default 460 pixels)", defaultValue: 460, required: false )
                   input("tileScale", "decimal", title: "Tile Scale (default 0.81)", defaultValue: 0.81, required: false )   
               }
     }
 }
-        
+
 def getTeslaServerStatus() {
     try {
-        def messageStr
-        if (!userEmail || !userPw) {
-            messageStr = "Enter your Tesla Account credentials"
+        String messageStr = ""
+        String tokenStatusStr = ""
+        
+        if (!hubIsSt()) {
+            //Hubitat - local call is synchronous so can be done on this main page. For SmartThings
+            //it is asynchronouse, so needs to be done on the subpage and result will be available when on the main page
+            validateLocalUrl()
+         }
+        state.useTokenFromUrl = state.accessTokenFromUrlValid
+        state.useInputToken = validateInputToken()
+        
+        if (!inputAccessToken && 
+            ((!hubIsSt() && !accessTokenUrl) || (hubIsSt() && !accessTokenIp))) {
+            messageStr = "Enter Your Tesla Account Token"
         } else {
-           getPowerwalls() 
-           if (!state.accessTokenValid) {
-               messageStr = "Error Verifying Tesla/Powerwall Account\n" +
-                   "Please verify your Tesla Account username and password."
-           } else if (state.foundPowerwalls) {
-            messageStr = "Tesla Account Verified:\n" +
-                        "Connection to Tesla server established.\n" +
-                        "Site Name: ${state.siteName}\n" +
-                        "Id: ${state.pwId}\n" +
-                        "Site Id: ${state.energySiteId}"
-           } else {
-              messageStr = "Error: No Powerwalls found\n" +
-                   "Please verify your Tesla Account username and password."
-           }
+            if (inputAccessToken) {
+                tokenStatusStr = "\nInput Access Token: ${state.inputAccessTokenStatus}. "
+            }
+            if ((!hubIsSt() && accessTokenUrl) || (hubIsSt() && accessTokenIp)) {
+                tokenStatusStr = tokenStatusStr + "\nToken from URL: ${state.accessTokenFromUrlStatus}."
+            }
+            if (state.useInputToken || state.useTokenFromUrl) {
+                messageStr = messageStr + "You are connected to the Tesla server."
+                getPowerwalls() 
+                if (state.foundPowerwalls) {
+                    messageStr = messageStr + "\nSite Name: ${state.siteName}\n" +
+                        "Id: ${state.pwId},  " +
+                        "Site Id: ${state.energySiteId}."
+                } else {
+                   messageStr = "Error: No Powerwalls found\n" +
+                     "Please enter/verify your Tesla Account access token."
+                }
+            //messageStr = messageStr + "${tokenStatusStr}"
+            } else {
+               messageStr = messageStr + "Error Verifying Tesla/Powerwall Account\n" +
+                   "Please enter/verify your Tesla account access token."
+            }
         }
-        return messageStr
+        return messageStr + tokenStatusStr
     } catch (Exception e) {
         log.error e
         return "Error accessing Powerwall account\n" + 
-            "Please verify your Tesla account username and password." 
+            "Please verify your Tesla account access token." 
     }
 }
 
@@ -515,8 +573,7 @@ def pagePwPreferences() {
         }
         section("") {
             input "logLevel", "enum", required: false, title: "IDE Log Level (sets log level in web IDE live logging tab)", options: ["none",
-                "trace", "debug", "info", "warn"
-            ]
+                "trace", "debug", "info", "warn","error"]
         }
         section("") {
             input "pauseAutomations", "bool", required: false, defaultValue: false, title: "Pause all schedules and automated actions"
@@ -624,7 +681,7 @@ def aboveTriggerOptions() {
     dynamicPage(name: "aboveTriggerOptions", title: "Above Battery Charge % Level Trigger Options", install: false, uninstall: false) {
         section("") {
             input "aboveTriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
-            input "aboveTriggerValue", "number", required: false, title: "Actions will trigger when charge level % rises above this value"
+            input "aboveTriggerValue", "number", required: false, title: "Actions trigger when charge % rises above this value"
             input "aboveTriggerMode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
                 "Time-Based Control"
             ]
@@ -650,7 +707,7 @@ def belowTriggerOptions() {
     dynamicPage(name: "belowTriggerOptions", title: "Below Battery Charge % Level Trigger Options", install: false, uninstall: false) {
         section("") {
             input "belowTriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
-            input "belowTriggerValue", "number", required: false, title: "Actions will trigger when charge level % drops below this value"
+            input "belowTriggerValue", "number", required: false, title: "Actions trigger when charge % drops below this value"
             input "belowTriggerMode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
                 "Time-Based Control"
             ]
@@ -814,7 +871,7 @@ def instantiatSchedule(mode, reserve, stormwatch, strategy, peakSwitch, time, da
     def devices = "N/A"
     if (actionsValid(mode, reserve, stormwatch, strategy, devices, enableTriggers, peakSwitch)) {
         if (scheduleValid(time, days)) {
-            log.debug "scheduling ${callback.toString()}"
+            logger ("scheduling ${callback.toString()}","debug")
             schedule(time.toString(), callback)
         } else {
             def message = "${callback.toString()} actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
@@ -969,149 +1026,63 @@ private getAgent() {
 }
 
 def getToken() {
-    if (!state.access_token) {
-        refreshToken()
+    String returnToken = null
+    if (state.useInputToken) {
+        returnToken = inputAccessToken
+    } else if (state.useTokenFromUrl) {
+        returnToken = state.accessTokenFromUrl
     }
-    state.access_token
+    return returnToken
 }
-
-def refreshToken() {
-    def tokenExpirationSeconds
-    try {
-        if (state.refresh_token) {
-            try {
-                httpPostJson([
-                    uri: url,
-                    path: "/oauth/token",
-                    headers: ['User-Agent': agent],
-                    body: [
-                        grant_type: "refresh_token",
-                        client_id: id,
-                        client_secret: secret,
-                        refresh_token: state.refresh_token
-                    ]
-                ]) {
-                    resp ->
-                        log.debug "Refresh token data: created at ${resp.data.created_at} and expires in ${resp.data.expires_in}"
-                    state.access_token = resp.data.access_token
-                    state.refresh_token = resp.data.refresh_token
-                    def Long tokenExpiresOn = resp.data.created_at + resp.data.expires_in
-                    state.token_expires_on = tokenExpiresOn
-                    state.schedule_refresh_token = true
-                }
-            } catch (groovyx.net.http.HttpResponseException e) {
-                log.warn e
-                state.access_token = null
-                if (e.response?.data?.status?.code == 14) {
-                    state.refresh_token = null
-                }
-            }
-        }
-
-        if (!state.access_token) {
-            httpPostJson([
-                uri: url,
-                path: "/oauth/token",
-                headers: ['User-Agent': agent],
-                body: [
-                    grant_type: "password",
-                    client_id: id,
-                    client_secret: secret,
-                    email: userEmail,
-                    password: userPw
-                ]
-            ]) {
-                resp ->
-                    log.debug "Access token data: created at ${resp.data.created_at} and expires in ${resp.data.expires_in}"
-                state.accessTokenValid = true
-                state.access_token = resp.data.access_token
-                state.refresh_token = resp.data.refresh_token
-                def Long tokenExpiresOn = resp.data.created_at + resp.data.expires_in
-                state.token_expires_on = tokenExpiresOn
-                state.schedule_refresh_token = true
-            }
-        }
-    } catch (Exception e) {
-        state.accessTokenValid = false
-        log.error "Unhandled exception getting token: $e"
-    }
-}
-
-private resetAccountAccess() {
-    log.debug "resetting account tokens"
-    state.refresh_token = null
-    state.access_token = null
-    state.accessTokenValid = false
-}
-
+    
 private httpAuthAsyncGet(handlerMethod, String path, Integer attempt = 1) {
-    try {
-        if (logLevel == "debug" | logLevel == "trace") {
-           log.debug "Async requesting: ${path}"
-        }
-        def requestParameters = [
-            uri: url,
-            path: path,
-            headers: ['User-Agent': agent, Authorization: "Bearer ${token}"]
-        ]
-        if (hubIsSt()) {
-            include 'asynchttp_v1'
-            asynchttp_v1.get(handlerMethod, requestParameters, [attempt: attempt])
-        } else {
-            asynchttpGet(handlerMethod, requestParameters, [attempt: attempt])
-        }
-    } catch (e) {
-        log.error "Http Async Get failed: ${e}"
+    def theToken = getToken()
+    if (theToken) {
+      try {
+          logger ("Async requesting: ${path}","trace")
+          def requestParameters = [
+              uri: url,
+              path: path,
+              headers: ['User-Agent': agent, Authorization: "Bearer ${theToken}"]
+            ]
+          if (hubIsSt()) {
+              include 'asynchttp_v1'
+              asynchttp_v1.get(handlerMethod, requestParameters, [attempt: attempt])
+          } else {
+              asynchttpGet(handlerMethod, requestParameters, [attempt: attempt])
+          }
+      } catch (e) {
+          log.error "Http Async Get failed: ${e}"
+      }
+    } else {
+        logger("Async request to ${path} not sent. Token is invalid","warn")
     }
 }
 
-private httpAuthGet(String path, Closure closure) {
-    log.debug "requesting: ${path}"
-    try {
+private httpAuthGet(String path, Closure closure, authToken = null) {
+    if (authToken == null) {
+        authToken = token
+    }
+    //try {
         def requestParameters = [
             uri: url,
             path: path,
             headers: [
                 'User-Agent': agent,
-                Authorization: "Bearer ${token}"
+                Authorization: "Bearer ${authToken}"
             ]
         ]
         httpGet(requestParameters) {
             resp -> closure(resp)
         }
-    } catch (e) {
-        log.error "Http Get failed: ${e}"
-    }
+   // } catch (e) {
+    //    log.error "Http Get failed: ${e}"
+   // }
 }
-
-/*
-private httpAuthGetL(String path, Closure closure) {
-    log.debug "requesting: ${path}"
-    try {
-        def requestParameters = [
-            uri: "https://${gatewayAddress}",
-            path: path,
-            headers: [
-                'User-Agent': agent,
-                Authorization: "Bearer ${token}"
-            ]
-        ]
-        httpGet(requestParameters) {
-            resp -> closure(resp)
-        }
-    } catch (e) {
-        log.error "Http Get failed: ${e}"
-    }
-}
-*/
-
 
 private httpAsyncGet(address, handlerMethod, String path, Integer attempt = 1) {
     try {
-        if (logLevel == "debug" | logLevel == "trace") {
-           log.debug "Async requesting: ${path}"
-        }
-        //log.debug "https://${gatewayAddress}"
+        logger ("Async requesting: ${path}","debug")
         def requestParameters = [
             uri: "https://${address}",
             path: path,
@@ -1138,7 +1109,7 @@ private httpAuthPost(Map params = [: ], String cmdName, String path, Closure clo
     if (tryCount > 1) {
         attemptStr = ", Attempt: ${tryCount}"
     }
-    log.debug "Command: ${cmdName} ${params?.body}" + attemptStr
+    logger ("Command: ${cmdName} ${params?.body}" + attemptStr,"debug")
     try {
         def requestParameters = [
             uri: url,
@@ -1162,32 +1133,32 @@ private httpAuthPost(Map params = [: ], String cmdName, String path, Closure clo
         state.cmdFailedSent = false
 
     } catch (groovyx.net.http.HttpResponseException e) {
-        log.warn "Request failed attempt ${tryCount} for path: ${path}. HTTP status code: ${e?.response?.getStatus()}"
         if (tryCount < 3) {
-            log.debug "retrying Post"
+            logger ("Request attempt ${tryCount} failed for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","info")
             //debug notification message below. comment out for production
             //sendNotificationMessage("Failed HTTP command: ${params} after ${tryCount} tries. Retrying..")
-            if (e.response.getStatus() == 401) {
-                log.debug "Refreshing token"
-                refreshToken()
+            if (e?.response?.getStatus() == 401) {
+                handleAuthIssue()
+                pause(2000)
             }
             pause(1000)
             httpAuthPost(params, cmdName, path, closure, tryCount + 1)
         } else {
+            logger ("Request failed after ${tryCount} attempts for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","warn")
             if (!state.cmdFailedSent) {
                 sendNotificationMessage("Powerwall Manager: Failed HTTP command: ${cmdName} after ${tryCount} tries.")
                 state.cmdFailedSent = true
             }
         }
     } catch (Exception e) {
-        log.warn "Request failed attempt ${tryCount} for path: ${path}. General Exception: ${e}"
         if (tryCount < 3) {
-            log.debug "retrying Post"
+            logger ("Request attempt ${tryCount} failed for path: ${path}. General Exception: ${e}","info")
             //debug notification message below. comment out for production
             //sendNotificationMessage("Failed command: ${params} after ${tryCount} tries. Retrying..")
             pause(1000)
             httpAuthPost(params, cmdName, path, closure, tryCount + 1)
         } else {
+            logger ("Request failed after ${tryCount} attempts for path: ${path}. General Exception: ${e}","warn")
             if (!state.cmdFailedSent) {
                 sendNotificationMessage("Powerwall Manager: Failed command: ${cmdName} after ${tryCount} tries.")
                 state.cmdFailedSent = true
@@ -1197,7 +1168,7 @@ private httpAuthPost(Map params = [: ], String cmdName, String path, Closure clo
 }
 
 private sendNotificationMessage(message, msgType = null) {
-    log.debug "notification message: ${message}"
+    logger ("notification message: ${message}","debug")
     if (msgType == null || msgType != "anomaly" || notifyWhenAnomalies?.toBoolean()) {
         if (hubIsSt()) {
            def sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
@@ -1224,16 +1195,17 @@ private sendNotificationMessage(message, msgType = null) {
 private getPowerwalls() {
     state.foundPowerwalls = false
     def foundPowerwall = false
-    httpAuthGet("/api/1/products", {
+    try {
+       httpAuthGet("/api/1/products", {
         resp ->
-        //log.debug "response data for products was ${resp.data} "
+        logger ("response data for products is ${resp.data}","trace")
         resp.data.response.each {
             product ->
                 if (product.resource_type == "battery") {
                     //do not consider battery site if its site_name is null and a battery has previously been found (possibly a bad second site in the database)
                     if (product.site_name != null || !foundPowerwall) {
                         foundPowerwall = true
-                        log.debug "battery found: ${product.id} site_name: ${product.site_name} energy_site_id: ${product.energy_site_id}"
+                        logger ("battery found: ${product.id} site_name: ${product.site_name} energy_site_id: ${product.energy_site_id}","debug")
                         state.energySiteId = product.energy_site_id
                         state.pwId = product.id
                         state.siteName = product.site_name
@@ -1241,6 +1213,9 @@ private getPowerwalls() {
                 }
         }
     })
+    } catch (Exception e) {
+       log.error  "Exception checking for Powerwalls: ${e}"
+    }
     state.foundPowerwalls = foundPowerwall
 }
 
@@ -1250,7 +1225,7 @@ def installed() {
 }
 
 def updated() {
-    log.debug "Updated"
+    logger ("Updated","debug")
     initialize()
 }
 
@@ -1271,12 +1246,14 @@ def initialize() {
     unsubscribe()
     unschedule()
     setSchedules()
+    state.foundGateway = false
+    state.pwConnectionMethod = "Use Remote Tesla Account Server Only"
+    //state.pwConnectionMethod = connectionMethod
 
-    if (state.foundGateway) {
+    //if (state.foundGateway) {
+    if (gatewayAddress) {
         //log.debug "calling tile update..."
         runIn (10, createDashboardTile)
-    } else {
-        log.debug "Gateway not connected"
     }
     
     if (pollingPeriod == "5 minutes") {
@@ -1288,16 +1265,16 @@ def initialize() {
     } else if (pollingPeriod != "Do not poll") {
         runEvery10Minutes(processMain) //default
     } else {
-        log.debug "not polling Powerwall"
+        logger ("not polling Powerwall","debug")
     }
 
     runEvery1Hour(processWatchdog)
     runEvery3Hours(processWatchdog)
-    runIn(5, processMain)
+    runIn(10, processMain)
 
-    if (state.refresh_token != null && state.token_expires_on != null) {
-        state.schedule_refresh_token = true
-    }
+    //if (state.refresh_token != null && state.token_expires_on != null) {
+    //    state.schedule_refresh_token = true
+    //}
 }
 
 private createDeviceForPowerwall() {
@@ -1309,14 +1286,14 @@ private createDeviceForPowerwall() {
         ])
         log.debug "created powerwall device"
     } else {
-        log.debug "device for Powerwall exists"
+        logger ("device for Powerwall exists","trace")
         pwDevice.initialize()
     }
 }
 
 def createDashboardTile() {
    def pwDevice = getPwDevice()
-   log.debug "creating/updating tile..."
+   logger ("creating/updating tile...","debug")
    if (pwDevice) {
       String tileStr = getTileStr(tileScale?.toFloat()) 
       pwDevice.sendEvent(name: "pwTile", value: tileStr)
@@ -1450,14 +1427,10 @@ def checkBatteryNotifications(data) {
 
 def processSiteResponse(response, callData) {
     // log.debug "${callData}"
-    if (logLevel == "debug" | logLevel == "trace") {
-        log.debug "processing site data response"
-    }
+    logger ("processing site data response","debug")
     if (!response.hasError()) {
         def data = response.json.response
-        if (logLevel == "trace") {
-          log.debug "${data}"   
-        }
+        logger ("${data}","debug")
         def strategy = data.tou_settings.optimization_strategy
         def strategyUi
         if (strategy == "economics") {
@@ -1478,29 +1451,43 @@ def processSiteResponse(response, callData) {
         }
         state.lastSchedule = data.tou_settings.schedule
         //log.debug "sched: ${data.tou_settings.schedule}"
+        if (data.version != null) {
+            def versionString = 'V' + data.version.toString()
+            changed = updateIfChanged(pwDevice, "pwVersion", versionString)
+            if (changed && notifyWhenVersionChanges?.toBoolean()) {
+                sendNotificationMessage("Powerwall software version changed to ${versionString}")
+            }
+        }
+        
     } else {
         if (response.getStatus() == 401) {
-            log.warn "Site resp error: ${response.getErrorMessage()}. Refreshing token"
-            runIn (1, refreshToken)
+            //log.warn "Site resp error: ${response.getErrorMessage()}."
+            runIn (1, handleAuthIssue)
         }
         if (callData?.attempt && callData.attempt < 2) {
-            log.warn "Site resp error: ${response.getErrorMessage()}. Retrying."
+            logger ("Site response error on attempt ${callData?.attempt}: ${response.getErrorMessage()}. Retrying...","info")
             runIn(20, requestSiteData, [data: [attempt: callData.attempt + 1]])
         } else {
-            log.error "Site resp error: ${response.getErrorMessage()} on attempt ${callData?.attempt}."
+            log.error "Site response error after ${callData?.attempt} attempts: ${response.getErrorMessage()}."
         }
     }
 }
 
 def getTileStr(def zoomLevel) {
-    long width = tileWidth?.toLong() ?: 460
-    long height = tileHeight?.toLong() ?: 517  
-    float frameScale = zoomLevel?.toFloat() ?: 0.81
-    String innerDivStyle = "overflow: hidden; transform: scale(${frameScale}); transform-origin: 0 0; border: none; padding: 0; margin: 0;" 
-    String outerDivStyle = "height: ${(height*frameScale).toLong()}px; width: ${width-16}px; overflow: hidden; border: none; padding: 0; margin: 0;"     
-    String iframeStyle   = "height: ${height}px; width: ${width}px; border: none; scrollbar-width: none; overflow: hidden; border: none; padding: 0; margin: 0;"  
-    //log.debug "inner: ${innerDivStyle} + outer: ${outerDivStyle} iframe: ${iframeStyle}"
-    return "<div style = '$outerDivStyle'><div style = '$innerDivStyle'><iframe style='${iframeStyle}' scrolling='no' src='http://${gatewayAddress}'></iframe></div></div>"  
+    String tileStr = ""
+    if (gatewayAddress) {
+      long width = tileWidth?.toLong() ?: 460
+      long height = tileHeight?.toLong() ?: 517  
+      float frameScale = zoomLevel?.toFloat() ?: 0.81
+      String innerDivStyle = "overflow: hidden; transform: scale(${frameScale}); transform-origin: 0 0; border: none; padding: 0; margin: 0;" 
+      String outerDivStyle = "height: ${(height*frameScale).toLong()}px; width: ${width-16}px; overflow: hidden; border: none; padding: 0; margin: 0;"     
+      String iframeStyle   = "height: ${height}px; width: ${width}px; border: none; scrollbar-width: none; overflow: hidden; border: none; padding: 0; margin: 0;"  
+      //log.debug "inner: ${innerDivStyle} + outer: ${outerDivStyle} iframe: ${iframeStyle}"
+      tileStr = "<div style = '$outerDivStyle'><div style = '$innerDivStyle'><iframe style='${iframeStyle}' scrolling='no' src='http://${gatewayAddress}'></iframe></div></div>"  
+    } else {
+        tileStr = "Gateway address not entered"
+    }
+    return tileStr
 }
 
 def processGwAggregatesResponse(response, callData) {
@@ -1579,14 +1566,10 @@ def processGwSiteNameResponse(response, callData) {
 
 def processPowerwallResponse(response, callData) {
     //     log.debug "${callData}"
-    if (logLevel == "debug" | logLevel == "trace") {
-        log.debug "processing powerwall response"
-    }
+    logger ("processing powerwall response","debug")
     if (!response.hasError()) {
         def data = response.json.response
-        if (logLevel == "trace") {
-          log.debug "${data}"   
-        }
+        logger ("${data}","trace")  
         def child = getPwDevice()
         def reservePercent
         if (data.operation == "backup") {
@@ -1615,10 +1598,6 @@ def processPowerwallResponse(response, callData) {
         updateIfChanged(child, "power", data.power_reading.grid_power[0].toInteger(), 100)
         updateIfChanged(child, "solarPower", data.power_reading.solar_power[0].toInteger(), 100)
         updateIfChanged(child, "powerwallPower", data.power_reading.battery_power[0].toInteger(), 100)
-        def versionString = ''
-        if (data.version != null) {
-            versionString = 'V' + data.version.toString()
-        }
         //Grid Status
         def gridStatusString
         def gridStatusEnum
@@ -1638,20 +1617,11 @@ def processPowerwallResponse(response, callData) {
             }
         }
 
-        updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + versionString + '\n' + gridStatusString)
+        updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + '\n' + gridStatusString)
         updateIfChanged(child, "siteName", data.site_name.toString())
-
-        changed = updateIfChanged(child, "pwVersion", versionString)
-        if (changed && notifyWhenVersionChanges?.toBoolean()) {
-            sendNotificationMessage("Powerwall software version changed to ${versionString}")
+        if (data?.user_settings?.storm_mode_enabled != null) {
+             updateIfChanged(child, "stormwatch", data.user_settings.storm_mode_enabled.toBoolean())
         }
-
-        if (data.user_settings.storm_mode_enabled.toBoolean()) {
-            updateIfChanged(child, "stormwatch", "Stormwatch: Enabled")
-        } else {
-            updateIfChanged(child, "stormwatch", "Stormwatch: Disabled")
-        }
-
         def opMode = "Unknown"
         if (data.operation == "autonomous") {
             opMode = "Time-Based Control"
@@ -1667,20 +1637,20 @@ def processPowerwallResponse(response, callData) {
         //log.debug "grid status is: ${data.grid_status}"         
         state.lastCompletedTime = now()
     } else {
-        if (response.getStatus() == 401) {
-            log.warn "Powerwall resp error: ${response.getErrorMessage()}. Refreshing token"
-        }
+        //if (response.getStatus() == 401) {
+        //    log.warn "Powerwall resp error: ${response.getErrorMessage()}. Refreshing token"
+        //}
         if (callData?.attempt && callData.attempt < 2) {
-            log.warn "Powerwall resp error: ${response.getErrorMessage()}. Retrying."
+            logger ("Powerwall response error on attempt ${callData.attempt}: ${response.getErrorMessage()}. Retrying...", "info")
             runIn(30, requestPwData, [data: [attempt: callData.attempt + 1]])
         } else {
-            log.error "Powerwall resp error: ${response.getErrorMessage()} on attempt ${callData?.attempt}."
+            logger ("Powerwall response error after ${callData?.attempt} attempts: ${response.getErrorMessage()}.","warn")
         }
     }
 }
 
 def processOffGridActions() {
-    log.debug "processing off grid actions"
+    logger ("processing off grid actions","debug")
     def child = getPwDevice()
     updateIfChanged(child, "switch", "off")
     if (notifyWhenGridStatusChanges?.toBoolean()) {
@@ -1692,8 +1662,8 @@ def processOffGridActions() {
 }
 
 def processOnGridActions() {
-    log.debug "processing on grid actions"
-    def child = getPwDevice()
+    logger ("processing on grid actions","debug")
+    child = getPwDevice()
     updateIfChanged(child, "switch", "on")
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: On Grid")
@@ -1707,7 +1677,7 @@ def requestSiteData(data) {
     if (!state?.lastSiteRequestTime || now() - state.lastSiteRequestTime > 1000) {
         def tryCount = data?.attempt ?: 1
         //log.debug "requesting site info"
-        if ((connectionMethod == null || connectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+        if ((state.pwConnectionMethod == null || state.pwConnectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
             httpAuthAsyncGet('processSiteResponse', "/api/1/energy_sites/${state.energySiteId}/site_info", tryCount)
         }
         state.lastSiteRequestTime = now()
@@ -1729,11 +1699,11 @@ def requestPwData(data) {
     if (!state?.lastPwRequestTime || now() - state.lastPwRequestTime > 1000) {
         def tryCount = data?.attempt ?: 1
         //log.debug "requesting powerwall data"
-        if ((connectionMethod == null || connectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+        if ((state.pwConnectionMethod == null || state.pwConnectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
             httpAuthAsyncGet('processPowerwallResponse', "/api/1/powerwalls/${state.pwId}", tryCount)
         }
-        if ((connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") && state.foundGateway && gatewayAddress) {
-            if (connectionMethod == "Use Local Gateway Only" ) {
+        if ((state.pwConnectionMethod && state.pwConnectionMethod != "Use Remote Tesla Account Server Only") && state.foundGateway && gatewayAddress) {
+            if (state.pwConnectionMethod == "Use Local Gateway Only" ) {
                requestLocalGwData()
             } else {
                runIn (60, requestLocalGwData) //stagger data
@@ -1775,7 +1745,7 @@ def setBackupOnlyMode(child) {
 }
 
 def commandTouStrategy(data) {
-    log.debug "commanding TOU strategy to ${data.strategy}"
+    logger ("commanding TOU strategy to ${data.strategy}","debug")
     //request Site Data to get a current tbc schedule. Schedule needs to be sent on tou strategy command or else schedule will be re-set to default
     def latestSchedule
     try {
@@ -1859,18 +1829,18 @@ def commandStormwatchDisable() {
 }
 
 def enableStormwatch(child) {
-    log.debug "commanding stormwatch on"
+    logger ("commanding stormwatch on","debug")
     runIn(2, commandStormwatchEnable)
 }
 
 def disableStormwatch(child) {
-    log.debug "commanding stormwatch off"
+    logger ("commanding stormwatch off","debug")
     runIn(2, commandStormwatchDisable)
 }
 
 def refresh(child) {
     if (logLevel == "debug" | logLevel == "trace") {
-        log.debug "refresh requested"
+        logger ("refresh requested","debug")
     }
     runIn(1, processMain)
     runIn(30, processWatchdog)
@@ -1902,29 +1872,28 @@ def processWatchdog() {
 
     if (secondsSinceLastProcessed > maxDownTime) {
         if (!state?.processedWarningSent) {
-            sendNotificationMessage("Warning: Powerwall Manager has not executed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing",
-                "anomaly")
+            String msg = "Powerwall Manager has not executed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing"
+            sendNotificationMessage("Warning: " + msg, "anomaly")
             state.processedWarningSent = true
-            refreshToken()
-        }
-        runIn(30, initialize)
-    } else {
-        if (secondsSinceLastProcessCompleted > maxDownTime) {
-            if (!state?.completedWarningSent) {
-                sendNotificationMessage(
-                    "Warning: Powerwall Manager has not successfully received and processed data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing",
-                    "anomaly")
-                state.completedWarningSent = true
-                refreshToken()
-            }
+            logger (msg,"warn")
             runIn(30, initialize)
-        } else {
-            if (state?.completedWarningSent || state?.processedWarningSent) {
-                sendNotificationMessage("Info: Powerwall Manager has successfully resumed operation", "anomaly")
-                state.completedWarningSent = false
-                state.processedWarningSent = false
-            }
         }
+    } else if (secondsSinceLastProcessCompleted > maxDownTime) {
+        if (!state?.completedWarningSent) {
+                String msg = "Powerwall Manager has not successfully received and processed data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing"
+                sendNotificationMessage("Warning: " + msg,"anomaly")
+                state.completedWarningSent = true
+                logger (msg,"warn")
+                runIn(30, initialize)
+        }
+    } else {
+        if (state?.completedWarningSent || state?.processedWarningSent) {
+            String msg = "Info: Powerwall Manager has successfully resumed operation"
+            sendNotificationMessage(msg, "anomaly")
+            state.completedWarningSent = false
+            state.processedWarningSent = false
+            logger(msg,"info")
+        }    
     }
 }
 
@@ -1942,13 +1911,210 @@ def processMain() {
         state.lastStateRunTime = now()
         runIn(1, requestPwData)
         runIn(10, requestSiteData)
+        /*
         if (state?.schedule_refresh_token && state.refresh_token != null && state.token_expires_on != null) {
             Long refreshDateEpoch = state.token_expires_on.toLong() * 1000
             //log.debug "Token refresh date is ${refreshDateEpoch}"
             def refreshDate = new Date(refreshDateEpoch) - 2 // Two days before due
-            log.debug "Scheduling Token refresh on ${refreshDate}."
+            logger ("Scheduling token refresh on ${refreshDate}.","debug")
             runOnce(refreshDate, refreshToken)
             state.schedule_refresh_token = false
         }
+        */
+    }
+}
+
+String validationStrFromCode(Integer theCode) {
+    String theString
+    switch (theCode) { 
+        case 200: 
+            theString = "Validated with Tesla"
+            break; 
+        case 401: 
+            theString = "Not Validated with Tesla - Unauthorized"
+            break
+        default:
+            theString = "Not Validated with Tesla - ${codeFromToken} Error" 
+            break
+    }
+    return theString
+}
+ 
+void validateTokenFromUrl(String theToken) {
+    Integer codeFromToken = statusCodeFromToken(theToken)
+    Boolean tokenValid = (codeFromToken == 200) 
+    state.accessTokenFromUrlValid = tokenValid
+    state.accessTokenFromUrlStatus = validationStrFromCode (codeFromToken)
+    if (tokenValid) {
+        state.authWarningSent = false
+    }  
+    logger ("Token from URL Valid: ${tokenValid}","debug")
+}
+
+Boolean validateInputToken() {
+    Integer codeFromToken = statusCodeFromToken(inputAccessToken)
+    Boolean tokenValid = (codeFromToken == 200) 
+    state.inputAccessTokenValid = tokenValid
+    state.inputAccessTokenStatus = validationStrFromCode (codeFromToken)
+    if (tokenValid) {
+        state.authWarningSent = false
+    }  
+    logger ("Input Access Token Valid: ${tokenValid}","debug")
+    return tokenValid
+}
+
+def tokenFromUrlCallback (resp){
+    state.accessTokenFromUrlStatus = "Received status from URL"
+    if (resp.status == 200) {
+         state.accessTokenFromUrlStatus = "Received OK status from local URL"
+         logger ("Token from URL body = ${resp.body}", "trace")
+         def results = new groovy.json.JsonSlurper().parseText(resp.body)  
+         logger("Access token from URL received in callback: ${results.access_token}","debug")
+         if (results.access_token) {
+            state.accessTokenFromUrlStatus = "Received Token from URL"
+            String theToken = results.access_token
+            state.accessTokenFromUrl = theToken
+            validateTokenFromUrl(theToken)
+         }
+     } else {
+         logger ("Token from URL failed with status ${resp.status}","warn")
+         state.accessTokenFromUrlStatus = "Token Not received from local URL. Status: ${resp.status}"
+     }
+}
+
+void validateLocalUrl() {
+    // get the token from the local URL, validate with Tesla, and set state status
+    state.accessTokenFromUrlValid = false
+    def accessTokenFromUrl
+    String thePath = accessTokenPath ?: "/"
+    if (hubIsSt()) {
+      state.accessTokenFromUrlStatus = "Requested from local URL"
+      def httpGetAction = physicalgraph.device.HubAction.newInstance(
+          method: "GET",
+          path: "${thePath}",
+          headers: [HOST : "${accessTokenIp}:0080"],
+          null,
+          [callback: tokenFromUrlCallback])
+      sendHubCommand(httpGetAction);
+    } else {
+        state.accessTokenFromUrlCode = 0
+        if (accessTokenUrl) {
+           def params = [
+                uri: accessTokenUrl,
+                contentType : 'application/json'
+             ]
+           try {
+             httpGet(params) { resp ->  
+                 Integer code = resp.status
+                 if (code == 200) {
+                     logger ("Received Access Token from local URL","debug")
+                     accessTokenFromUrl = "${resp.data.access_token}"
+                     state.accessTokenFromUrl  = accessTokenFromUrl
+                     validateTokenFromUrl(accessTokenFromUrl)  
+                 } else {
+                     logger ("Get Access Token from local URL failed with status ${code}","warn")
+                     state.accessTokenFromUrlStatus = "Token Not Received from local URL. Status: ${code}"
+                 }    
+                 state.accessTokenFromUrlCode = code
+            }
+          } catch (groovyx.net.http.HttpResponseException e) {
+               def statusCode = e?.response?.getStatus()
+               logger ("Access token from URL failed with HTTP exception: ${e} code: ${statusCode}","info")
+               state.accessTokenFromUrlStatus = "Token Not Received from local URL - ${statusCode} ${e?.response?.getStatusLine()}"
+          } catch (Exception e) {
+               logger ("Access token from URL failed with general exception: ${e}","info")
+               state.accessTokenFromUrlStatus = "Token Not Received from local URL. General exception on call"
+          }
+
+        } else {
+            logger ("Cannot query local server for URL. accessTokenUrl is null","debug")
+        }
+    }   
+}
+
+Integer statusCodeFromToken (tryToken) {
+    Integer statusCode = 0
+    if (tryToken) {
+       try {
+          httpAuthGet("/api/1/products", {
+             resp ->
+                statusCode = resp.status
+         }, tryToken)
+       } catch (groovyx.net.http.HttpResponseException e) {
+          logger ("HTTP exception getting status : ${e}","info")
+          statusCode = e?.response?.getStatus()
+       } catch (Exception e) {
+          logger ("General exception getting token status: ${e}","info")
+       }
+   }
+   return statusCode
+}
+
+Boolean tokenFailover() {
+    Boolean success = false
+    if (state.inputAccessTokenValid) {
+        state.useInputToken = true
+        success = true
+        logger ("Input token is now valid","debug")
+    } else if (state.accessTokenFromUrlValid) {
+        state.useTokenFromUrl = true
+        //The input token was is no longer good, but the token from URL is good. Stop using the input token so we only consider the token from URL
+        state.useInputToken = false
+        success = true
+        logger ("Token from URL is now valid","debug")
+    } else {
+       // both tokens failed, send a notification)
+       if (!state?.authWarningSent) {
+          String msg = "Authorization issue connecting to Tesla Server. Please check your tokens in the Powerwall Manager app"
+          sendNotificationMessage("Powerwall Manager: " + msg, "anomaly")
+          state.authWarningSent = true
+          logger (msg,"error")
+        }
+    }
+    return success
+}
+
+void handleAuthIssue() {
+    if (!validateInputToken() && state.accessTokenFromUrlValid) {
+        state.useInputToken = false //force use of token from URL
+    }
+    validateLocalUrl() //check for a new token from URL
+    runIn (3, initialFailover)
+}
+
+void initialFailover() {
+    if (!tokenFailover()) {
+        //Still no valid tokens
+        runIn(3600, prepDailyFailover) // in one hour
+    }
+}
+
+void prepDailyFailover() {
+   validateLocalUrl()
+   runIn (5, dailyFailover)
+}
+
+void dailyFailover() {
+    if (!tokenFailover()) {
+        //Still no valid tokens
+        state.useInputToken = false
+        state.useTokenFromUrl = false
+        runIn(8600, prepDailyFailover()) //continue running a daily failover check
+    }
+}
+        
+private getLogLevelVal() {
+   ["none":0, "trace":1,"debug":2,"info":3, "warn":4,"error":5]
+}
+ 
+void logger (String message, String msgLevel="debug") {
+    def dbgLevelInt = settings?.logLevel ? logLevelVal[settings.logLevel] : 4
+    def msgLevelInt = logLevelVal[msgLevel]
+    if (msgLevelInt && dbgLevelInt) {
+         if ((msgLevelInt >= dbgLevelInt) && (settings.logLevel != "none")) {
+             log."${msgLevel}" "${message}"
+         }
+    } else {
+        log.info "${message} logged with invalid level: ${msgLevel}, ${settings.logLevel}"
     }
 }
