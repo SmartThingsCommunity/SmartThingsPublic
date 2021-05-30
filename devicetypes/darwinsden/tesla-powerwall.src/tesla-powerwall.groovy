@@ -1,7 +1,7 @@
 /**
  *  Tesla Powerwall 
  *
- *  Copyright 2019, 2020 DarwinsDen.com
+ *  Copyright 2019, 2020, 2021 DarwinsDen.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	25-May-2020 >>> v0.2.0e.20210525 - Updated reserve +/- adjust for Hubitat
  *	02-Jul-2020 >>> v0.1.5e.20200702 - Added attribute Tile 
  *	22-Jan-2020 >>> v0.1.4e.20200122 - Added stormwatch enable/disable commands
  *	12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
@@ -21,7 +22,7 @@
  */
 
 metadata {
-    definition(name: "Tesla Powerwall", namespace: "darwinsden", author: "darwin@darwinsden.com") {
+    definition(name: "Tesla Powerwall", namespace: "darwinsden", author: "eedwards") {
         capability "Battery"
         capability "Energy Meter"
         capability "Power Meter"
@@ -35,6 +36,7 @@ metadata {
         capability "Switch"
 
         attribute "reservePercent", "number"
+        attribute "reserve_pending", "number"
 		attribute "solarPower", "number"
 		attribute "loadPower", "number"
 		attribute "gridPower", "number"
@@ -200,7 +202,12 @@ def setBackupReservePercentHandler(data) {
 
 def lowerBackupReserve(value) {
     if (device.currentValue("currentOpState").toString() != "Backup-Only") {
-       def brp = device.currentValue("reserve_pending").toInteger()
+       Integer brp 
+       if (device.currentValue("reserve_pending")) {
+            brp = device.currentValue("reserve_pending").toInteger()
+       } else {
+            brp = device.currentValue("reservePercent").toInteger()
+       }
        if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
            brp = device.currentValue("reservePercent").toInteger()
        }
@@ -215,7 +222,12 @@ def lowerBackupReserve(value) {
 
 def raiseBackupReserve(value) {
     if (device.currentValue("currentOpState").toString() != "Backup-Only") {
-       def brp = device.currentValue("reserve_pending").toInteger()
+       Integer brp 
+       if (device.currentValue("reserve_pending")) {
+            brp = device.currentValue("reserve_pending").toInteger()
+       } else {
+            brp = device.currentValue("reservePercent").toInteger()
+       }
        if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
            brp = device.currentValue("reservePercent").toInteger()
        }
@@ -250,7 +262,7 @@ def poll() {
 
 
 def initialize() {
-    log.debug "initializing PW device"
+    //log.debug "initializing PW device"
 }
 
 def ping() {
