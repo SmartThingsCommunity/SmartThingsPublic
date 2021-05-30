@@ -164,7 +164,7 @@ private teslaAccountInfo() {
                 "Android, " +
                 "a web-based Tesla token generator, or from a <a href='https://github.com/enode-engineering/tesla-oauth2'>script</a> running on a local server. "
         }
-        pString = pString + "This token must be generated and pasted in here at least every 45 days, unless your are " +
+        pString = pString + "This token must be generated and pasted in here at least every 45 days, unless you are " +
                 "periodically autogenerating the token on a local server and providing it using the URL option below."
         if (!hubIsSt()) {
             pString = pString + "<br>Example token: qts-a5876db1cd65cd271c27c536d35c60afb0eb1f849d4739bef60f1dc6567e5662" 
