@@ -262,6 +262,8 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	} else if (zwaveInfo.mfr == "0154" && zwaveInfo.prod == "0003" && zwaveInfo.model == "000A") {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 25, size: 1, scaledConfigurationValue: 1))) //report every 1W change
+	} else if (zwaveInfo.mfr == "0371" && zwaveInfo.prod == "0103" && zwaveInfo.model == "0017") { //Aeotec Smart Switch 7 US / ZWA023-A
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 21, size: 2, scaledConfigurationValue: 2))) //report every 2W change
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
