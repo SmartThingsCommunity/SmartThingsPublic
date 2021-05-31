@@ -15,18 +15,18 @@ import groovy.json.JsonOutput
 
 metadata {
 	definition (name: "TechniSat Roller shutter switch", namespace: "TechniSat", author: "TechniSat", vid:"generic-shade",
-				mnmn: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
-				executeCommandsLocally: false) {
+				mnmn: "SmartThings") {
 		capability "Window Shade"
 		capability "Window Shade Preset"
+		capability "Window Shade Level"
+        capability "Switch Level"
 		capability "Power Meter"
 		capability "Energy Meter"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Configuration"     
-        capability "Switch Level"   // until we get a Window Shade Level capability
 
-		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Shutter"
+		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Window Treatment"
 	}
 
 	preferences {
@@ -151,7 +151,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
 	[ 
 		createEvent(name: "windowShade", value: "partially open", displayed: false, descriptionText: "$device.displayName shade stopped"),
-		response(zwave.switchMultilevelV1.switchMultilevelGet().format())
+		response(zwave.switchMultilevelV3.switchMultilevelGet().format())
 	]
 }
 
@@ -182,33 +182,37 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def open() {
 	encapSequence([
-		zwave.switchMultilevelV1.switchMultilevelSet(value: 99),
-		zwave.switchMultilevelV1.switchMultilevelGet(),
+		zwave.switchMultilevelV3.switchMultilevelSet(value: 99),
+		zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 5000)
 }
 
 def close() {
 	encapSequence([
-		zwave.switchMultilevelV1.switchMultilevelSet(value: 0),
-		zwave.switchMultilevelV1.switchMultilevelGet(),
+		zwave.switchMultilevelV3.switchMultilevelSet(value: 0),
+		zwave.switchMultilevelV3.switchMultilevelGet(),
 	], 5000)
 }
 
-def setLevel(level, rate = null) {
+def setLevel(level) {
+	setShadeLevel(level)
+}
+
+def setShadeLevel(level, rate = null) {
 	if (level < 0) {
 		level = 0
 	} else if (level > 99) {
 		level = 99
 	}
 	encapSequence([
-		zwave.switchMultilevelV1.switchMultilevelSet(value: level),
-		zwave.switchMultilevelV1.switchMultilevelGet()
+		zwave.switchMultilevelV3.switchMultilevelSet(value: level),
+		zwave.switchMultilevelV3.switchMultilevelGet()
 	], 5000)
 }
 
 def presetPosition() {
 	log.debug "presetPosition called"
-	setLevel(preset ?: state.preset ?: 50)
+	setShadeLevel(preset ?: state.preset ?: 50)
 }
 
 def pause() {
@@ -228,7 +232,7 @@ def poll() {
 def refresh() {
 	log.debug "refresh()"
 	encapSequence([
-		zwave.switchMultilevelV1.switchMultilevelGet(),
+		zwave.switchMultilevelV3.switchMultilevelGet(),
 		meterGet(scale: 0),
 		meterGet(scale: 2),
 	], 1000)
@@ -244,7 +248,7 @@ def configure() {
 	logStateConfig()
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
-	result << response(encap(zwave.switchMultilevelV1.switchMultilevelGet()))
+	result << response(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
 	result
 }
 
@@ -263,33 +267,14 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def version = commandClassVersions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) {
-		log.debug "Parsed Crc16Encap into: ${encapsulatedCommand}"
-		zwaveEvent(encapsulatedCommand)
-	} else {
-		log.warn "Unable to extract CRC16 command from $cmd"
-	}
-}
-
 private secEncap(physicalgraph.zwave.Command cmd) {
 	log.debug "encapsulating command using Secure Encapsulation, command: $cmd"
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private crcEncap(physicalgraph.zwave.Command cmd) {
-	log.debug "encapsulating command using CRC16 Encapsulation, command: $cmd"
-	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
-}
-
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo?.zw?.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo?.cc?.contains("56")){
-		crcEncap(cmd)
 	} else {
 		log.debug "no encapsulation supported for command: $cmd"
 		cmd.format()
@@ -299,6 +284,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
 }
+
 private convertParamToInt(parameter, settingsValue) {
 	Integer value = 0
 	if (parameter.type == "number") {
@@ -310,20 +296,20 @@ private convertParamToInt(parameter, settingsValue) {
 private isConfigChanged(parameter) {
 	def settingsValue = settings."$parameter.key"
 	log.debug "isConfigChanged parameter:${parameter.key}: ${settingsValue}"
-	if(parameter.enableSwitch) {
-		if(settings."$parameter.enableKey" != null) {
-			if(settings."$parameter.enableKey" == false) {
+	if (parameter.enableSwitch) {
+		if (settings."$parameter.enableKey" != null) {
+			if (settings."$parameter.enableKey" == false) {
 				settingsValue = 0;
 			}
 		}
 	}
 	if (settingsValue != null) {
 		Integer value = convertParamToInt(parameter, settingsValue)
-		if(state.currentConfig."$parameter.key".value != value) {
+		if (state.currentConfig."$parameter.key".value != value) {
 			state.currentConfig."$parameter.key".newValue = value
 			log.debug "${parameter.key} set:${value} value:${state.currentConfig."$parameter.key".value} newValue:${state.currentConfig."$parameter.key".newValue}"
 			return true
-		} else if(state.currentConfig."$parameter.key".status != "sync") {
+		} else if (state.currentConfig."$parameter.key".status != "sync") {
 			log.debug "${parameter.key} retry to set; is:${state.currentConfig."$parameter.key".value} should:${state.currentConfig."$parameter.key".newValue}"
 			return true
 		}
@@ -347,7 +333,7 @@ private syncConfig() {
 				log.warn "Parameter ${it.key} no. ${it.paramZwaveNum} has no value. Please check preference declaration for errors."
 			}
 	}
-	if(commands) {
+	if (commands) {
 		sendHubCommand(commands,1000)
 	}
 }
@@ -370,7 +356,7 @@ private initStateConfigFromDevice() {
 	parameterMap.each {
 		commands << response(encap(zwave.configurationV2.configurationGet(parameterNumber: it.paramZwaveNum)))
 	}
-	if(commands) {
+	if (commands) {
 		sendHubCommand(commands,1000)
 	}
 }
