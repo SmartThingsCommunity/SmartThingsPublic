@@ -168,31 +168,7 @@ def parse(String description) {
 		log.debug zigbee.parseDescriptionAsMap(description)
 	}
 	
-	def result
-	Map map = zigbee.getEvent(description)
 
-	if (!map) {
-		if (description?.startsWith('zone status')) {
-			map = getMoistureResult(description)
-		} else if(description?.startsWith('enroll request')){
-			List cmds = zigbee.enrollResponse()
-			log.debug "enroll response: ${cmds}"
-			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-		}else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
-				map = getMoistureResult(description)
-			} else if (descMap?.clusterInt == 0x0001 && descMap?.attrInt == 0x0021 && descMap?.commandInt != 0x07 && descMap?.value) {
-				map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-			}
-		}
-	}
-	if(map&&!result){
-		result = createEvent(map)
-	}
-	log.debug "Parse returned $result"
-
-	result	
 }
 
 def off() {
@@ -215,28 +191,18 @@ def refresh() {
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
-	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-	log.debug "Configuring Reporting and Bindings."
-	zigbee.onOffRefresh() + zigbee.onOffConfig()
-}
-
-def getBatteryPercentageResult(rawValue) {
-	log.debug "Battery Percentage"
-	def result = [:]
 	def manufacturer = getDataValue("manufacturer")
 
-	if (0 <= rawValue && rawValue <= 200) {
-		result.name = 'battery'
-		result.translatable = true
-		if (manufacturer == "Third Reality, Inc") {
-			result.value = Math.round(rawValue)
-		} else {
-			result.value = Math.round(rawValue / 2)
-		}
-		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	if (manufacturer == "Third Reality, Inc") {
+		def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+		return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
+	} else {
+		// Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
+		sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+		log.debug "Configuring Reporting and Bindings."
+		zigbee.onOffRefresh() + zigbee.onOffConfig()
 	}
-
-	log.debug "${device.displayName} battery was ${result.value}%"
-	result
+		
 }
+
+
