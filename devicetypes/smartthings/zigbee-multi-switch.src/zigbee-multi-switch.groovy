@@ -76,8 +76,7 @@ metadata {
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-005", deviceJoinName: "LELLKI Switch 1" //LELLKI 5 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
-		// SiHAS Switch (1~6 Gang)
-		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch 1"
+		// SiHAS Switch (2~6 Gang)
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z2", deviceJoinName: "SiHAS Switch 1"
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z3", deviceJoinName: "SiHAS Switch 1"
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z4", deviceJoinName: "SiHAS Switch 1"
@@ -152,9 +151,7 @@ def parse(String description) {
 	}
 }
 
-private void createChildDevices() {
-	if (isSBM300Z1()) return
-    
+private void createChildDevices() {    
 	if (!childDevices) {
 		def x = getChildCount()
 		for (i in 2..x) {
@@ -200,8 +197,6 @@ def ping() {
 def refresh() {
 	if (isOrvibo()) {
 		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
-	} else if (isSBM300Z1()) {
-		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 1])
 	} else {
 		def cmds = zigbee.onOffRefresh()
 		def x = getChildCount()
@@ -247,10 +242,6 @@ def configure() {
 		def cmds = zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
 		cmds += refresh()
 		return cmds
-	} else if (isSBM300Z1()) {
-		def cmds = zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 1])
-		cmds += refresh()
-		return cmds            
 	} else {
 		//other devices supported by this DTH in the future
 		def cmds = zigbee.onOffConfig(0, 120)
@@ -265,10 +256,6 @@ def configure() {
 
 private Boolean isOrvibo() {
 	device.getDataValue("manufacturer") == "ORVIBO"
-}
-
-private Boolean isSBM300Z1() {
-	device.getDataValue("model") == "SBM300Z1"
 }
 
 private getChildCount() {
@@ -286,8 +273,6 @@ private getChildCount() {
 		return 6 
 	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
 		return 3
-	} else if (device.getDataValue("model") == "SBM300Z1") {
-		return 1
 	} else if (device.getDataValue("model") == "SBM300Z2") {
 		return 2
 	} else if (device.getDataValue("model") == "SBM300Z3") {
