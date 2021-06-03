@@ -260,8 +260,7 @@ def configure() {
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x04])
 		}
 		else if (isBSM300()) {
-			cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-			cmds += zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER, ["destEndpoint":0x01])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
 		}
 	} else {
 		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
@@ -280,9 +279,7 @@ def parse(String description) {
 		log.debug "Creating event: ${event}"
 		sendEvent(event)
 	} else {
-		if (description?.startsWith('zone status')) {
-			event = parseIasMessage(description)
-		} else if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
+		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
 				def batteryValue = zigbee.convertHexToInt(descMap.value)
@@ -445,7 +442,7 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
-	} else if (isMSM300()) {
+	} else if (isBSM300() || isMSM300() ) {
 		buttonNumber = descMap.sourceEndpoint.toInteger()
 		if (buttonNumber != 0) {
 			if (descMap.commandInt == 0) {
@@ -466,39 +463,6 @@ private Map getButtonEvent(Map descMap) {
 		sendButtonEvent(buttonNumber, buttonState)
 	}
 	result
-}
-
-private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	if (zs.isAlarm1Set() && zs.isAlarm2Set()) {
-		return getZoneButtonResult('held')
-	} else if (zs.isAlarm1Set()) {
-		return getZoneButtonResult('pushed')
-	} else if (zs.isAlarm2Set()) {
-		return getZoneButtonResult('double')
-	} else { 
-	}
-}
-
-private Map getZoneButtonResult(value) {
-	def descriptionText
-	if (value == "pushed")
-		descriptionText = "${ device.displayName } was pushed"
-	else if (value == "held")
-		descriptionText = "${ device.displayName } was held"
-	else
-		descriptionText = "${ device.displayName } was pushed twice"
-	
-	sendEvent([name: "button", value: buttonState, data: [buttonNumber: 1], descriptionText: descriptionText, isStateChange: true])
-		
-	return [
-			name           : 'button',
-			value          : value,
-			descriptionText: descriptionText,
-			translatable   : true,
-			isStateChange  : true,
-			data           : [buttonNumber: 1]
-	]
 }
 
 private boolean isIkeaRemoteControl() {
