@@ -96,7 +96,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
 
 		// Third Reality
-		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch-Gen3 Zigbee Mode
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch-Gen3 Zigbee Mode
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch Plus
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch
 
@@ -135,6 +135,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
+		def manufacturer = getDataValue("manufacturer")
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
@@ -144,15 +145,18 @@ metadata {
 			}
 		}
 		
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
-		}
-
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		main "switch"
-		details(["switch", "battery","refresh"])
+		if (manufacturer == "Third Reality, Inc") {
+			valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+				state "battery", label:'${currentValue}% battery', unit:""
+			}
+			details(["switch", "refresh","battery"])
+		}else{
+			details(["switch","refresh"])
+		}
 	}
 }
 
