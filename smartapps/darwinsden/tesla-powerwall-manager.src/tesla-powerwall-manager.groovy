@@ -12,16 +12,17 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *       required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
  */
-def version() {
-    return "v0.3.0e.20210325"
+String version() {
+    return "v0.3.1e.20210602"
 }
 
 /* 
+ *	02-Jun-2021 >>> v0.3.1e.20210602 - Re-add local gateway connection for Hubitat, Scheduling infrastructure mods. 
  *	25-May-2021 >>> v0.3.0e.20210325 - Tesla auth API change workarounds: use tokens directly, disable gateway direct code. 
  *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iFrame for Hubitat. 
  *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
@@ -42,10 +43,9 @@ def version() {
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  */
 
-definition(
+definition (
     name: "Tesla Powerwall Manager", namespace: "darwinsden", author: "eedwards", description: "Monitor and control your Tesla Powerwall",
-    importUrl:
-    "https://raw.githubusercontent.com/DarwinsDen/SmartThingsPublic/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy",
+    importUrl: "https://raw.githubusercontent.com/DarwinsDen/SmartThingsPublic/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy",
     category: "My Apps",
     iconUrl: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png",
     iconX2Url: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png"
@@ -59,18 +59,12 @@ preferences {
     page(name: "pageDashboardTile")
     page(name: "pageNotifications")
     page(name: "pageSchedules")
+    page(name: "pageScheduleOptions")
+    page(name: "pageScheduleWhen")
+    page(name: "pageDeleteSchedule", nextPage: "pageMain")
     page(name: "pageTriggers")
-    page(name: "aboveTriggerOptions")
-    page(name: "belowTriggerOptions")
-    page(name: "pageReserveSchedule")
-    page(name: "pageRemove")
-    page(name: "schedule1Options")
-    page(name: "schedule2Options")
-    page(name: "schedule3Options")
-    page(name: "schedule4Options")
-    page(name: "schedule5Options")
-    page(name: "schedule6Options")
-    page(name: "schedule7Options")
+    page(name: "pageTriggerOptions")
+    page(name: "pagePwActions")
     page(name: "pagePwPreferences")
     page(name: "pageDevicesToControl")
     page(name: "triggerRestrictions")
@@ -80,80 +74,296 @@ preferences {
 
 private pageMain() {
 
-             
-    return dynamicPage(name: "pageMain", title: "", install: true) {
-                      
+   return dynamicPage(name: "pageMain", title: "", install: true, uninstall: true) { 
         section() {
+            String pwLogo = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogo80.png"
             if (hubIsSt()) {
-                paragraph app.version(),
-                    title: "PowerWall Manager", required: false, image:
-                    "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png"
-             } else {
-                def imgLink = "<img src='https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png' height=100 width=75>"
-				paragraph "<div style='height: 75px; float: left; margin-top:-22px; padding:0; text-align:left; overflow: hidden'>${imgLink}</div>" +
-                    "<div style='float: left; margin-top: 6px; margin-left: 16px'>Powerwall Manager\n ${app.version()}</div>"
-            }               
+                  paragraph app.version(), title: "PowerWall Manager", required: false, image: pwLogo
+            }  else {
+                paragraph "<img src ='${pwLogo}' align='left' style = 'margin-top: -18px; padding-right: 15px'>Powerwall Manager\n ${app.version()}"
+           }               
         }
-        
-         section("Tesla Server Connection") {
-             href "teslaAccountInfo", title: "Tesla Token Information..", description: "${getTeslaServerStatus()}", required: false, image:
-                 "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
+        String connectStr
+        if (hubIsSt()) {
+             connectStr = "A Tesla server connection is required for access and control of the Powerwall through SmartThings." 
+        } else {
+            connectStr = "You can connect to the Powerwall through the Tesla server, your local gateway, or both. " + 
+                 "A Tesla server connection is required for commanding Powerwall state changes. " +
+                 "A local gateway connection allows more frequent Powerwall status updates than when connecting through the Tesla server alone."
+        }
+        section(connectStr) {
+            String teslaIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon40.png"
+            if (hubIsSt()) {
+                href "teslaAccountInfo", title: "Tesla Server Token Information..", description: "${getTeslaServerStatus()}", required: false, image: teslaIcon
+            } else {
+                href "teslaAccountInfo", description: getTeslaServerStatus(), required: false, title: "<img src=${teslaIcon} style='padding: 0 15px 0 0'>Tesla Server Connection.."        
+            } 
+            if (!hubIsSt()) {
+                href "gatewayAccountInfo", description: getLocalGwStatus(), required: false,
+                  title: "<img src='https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/gateway.png' style='padding: 0 15px 0 0'>Local Powerwall Gateway Connection.."        
+            }
         }
 
         section("Preferences") {
-            href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification40.png"
-            href "pageSchedules", title: "Schedule Powerwall setting changes..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar40.png"
-            href "pageTriggers", title: "Perform actions based on Powerwall battery charge level %..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/battery40.png"
-            href "pageDevicesToControl", title: "Turn off devices when a grid outage occurs..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/outage40.png"
-            if (!hubIsSt()) {
-                href "pageDashboardTile", title: "Display a dashboard tile iFrame from the gateway..", description: "", required: false,
-                   image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/dashboard40.png"
-            }
-            href "pagePwPreferences", title: "Powerwall Manager General Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog40.png"
-            
-        }
-        section("For more information") {
+            String notifyIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification40.png"
+            String schedIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar40.png"
+            String batteryIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/battery40.png"
+            String outageIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/outage40.png"
+            String cogIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog40.png"
             if (hubIsSt()) {
-               href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
-               description: "Tap to open the Powerwall Manager web page on DarwinsDen.com",
-               required: false,
-               image: "https://darwinsden.com/download/ddlogo-for-pwmanager-0-png",
-               url: "https://darwinsden.com/powerwall/")
+                href "pageNotifications", title: "Notification Preferences..", description: "", required: false, image: notifyIcon
+                href "pageSchedules", title: "Schedule Powerwall setting changes..", description: "", required: false, image: schedIcon
+                href "pageTriggers", title: "Perform actions based on Powerwall battery charge level %..", description: "", required: false, image: batteryIcon
+                href "pageDevicesToControl", title: "Turn off devices when a grid outage occurs..", description: "", required: false, image: outageIcon
+                href "pagePwPreferences", title: "Powerwall Manager General Preferences..", description: "", required: false, image: cogIcon
+  
             } else {
-               def tag="https://darwinsden.com/powerwall/"
-               def imgLink="<img src=https://darwinsden.com/download/ddlogo-for-pwmanager-0-png height=50 width=70>"
-               def msg="For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall/\n" +
-                    "Tap to open the Powerwall Manager web page on DarwinsDen.com"
-               paragraph "<div style='float: left; margin-right: 8px; max-width: 200px><a href='${tag}'>${imgLink}</a></div><a href='${tag}'>${msg}</a>"
-            }
+                href "pageNotifications", description: "", required: false, title: "<img src='${notifyIcon}' style='padding: 0 15px 0 0'>Notification Preferences.."       
+                href "pageSchedules", description: "", required: false, title: "<img src='${schedIcon}' style='padding: 0 15px 0 0'>Schedule Powerwall setting changes.."        
+                href "pageTriggers", description: "", required: false,
+                    title: "<img src=${batteryIcon} style='padding: 0 15px 0 0'>Perform actions based on Powerwall battery charge level %.."        
+                href "pageDevicesToControl", description: "", required: false,
+                    title: "<img src='${outageIcon}' style='padding: 0 15px 0 0'>Turn off devices when a grid outage occurs.."        
+                href "pageDashboardTile", description: "", required: false,
+                    title: "<img src='https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/dashboard40.png' style='padding: 0 15px 0 0'>Display a dashboard tile iFrame from the gateway.."        
+                href "pagePwPreferences", description: "", required: false, title: "<img src='${cogIcon}' style='padding: 0 15px 0 0'>Powerwall Manager General Preferences.."        
+           }
         }
-        section("Remove this app") {
-            href "pageRemove", title: "Remove Powerwall Manager", description: "", required: false
+        section() {
+            String ddLogo = "https://darwinsden.com/download/ddlogo-for-hubitat-pwmanager-0-png"
+            String ppBtn = "https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif"
+            String freeMsg = "This is free software. Donations are very much appreciated, but are not required or expected. "
+            String ddUrl = "https://darwinsden.com/powerwall/"
+            if (hubIsSt()) {
+                href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
+                  description: "Tap to open the Powerwall Manager web page on DarwinsDen.com",
+                  required: false,
+                  image: "https://darwinsden.com/download/ddlogo-for-smartthings-pwmanager-0-png",
+                  url: ddUrl)
+                href(name: "", title: "",
+                  description: freeMsg,
+                  required: false,
+                  image: ppBtn,
+                  url: "https://www.paypal.com/paypalme/darwinsden")
+            } else {             
+                String ddMsg = "For more information, questions, or to provide feedback, please visit: <a href='${ddUrl}'>${ddUrl}</a>"
+                String ddDiv = "<div style='display:inline-block;margin-right: 20px'>" + "<a href='${ddUrl}'><img src='${ddLogo}' height='40'></a></div>"
+                String ppDiv = "<div style='display:inline-block'>" + "<a href='https://www.paypal.com/paypalme/darwinsden'><img src='${ppBtn}'></a></div>" 
+                paragraph "<div style='text-align:center'>" + freeMsg + " " + ddMsg + "</div>"
+                paragraph "<div style='text-align:center'>" + ddDiv + ppDiv + "</div>" 
+            }
         }
     }
 }
 
-def pageRemove() {
-    dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {      
-        section() {
-            paragraph parent ? "CAUTION: You are about to remove the '${app.label}'." : "If an error occurs during removal, " +
-                "you may need to first manually remove references to the Powerwall Manager child device from other smart apps if you have manually added them.",
-                required: true, state: null
+def pageSchedules() {
+    setSchedules()
+    state.scheduleDeleted = false
+    state.editingScheduleIndex = -1
+    dynamicPage(name: "pageSchedules", title: "Powerwall Schedules", install: false, uninstall: false) {
+        section("") {
+            if (state.scheduleList && state.scheduleList.size() > 0) {
+               state.scheduleList.eachWithIndex {item, index ->
+                   String actionsStr = getActionsString(schedVal(item,"Mode"), schedVal(item,"Reserve"),schedVal(item,"Stormwatch"), schedVal(item,"Strategy"), null)
+                   String whenStr = getWhenString(schedVal(item,"Time"), schedVal(item,"Days"),schedVal(item,"Months"))
+                   Boolean actionsOk = actionsValid(schedVal(item,"Mode"), schedVal(item,"Reserve"),schedVal(item,"Stormwatch"),schedVal(item,"Strategy"), null)
+                   Boolean whenOk = scheduleValid(schedVal(item,"Time"), schedVal(item,"Days"))
+                   Boolean disabled = schedVal(item,"Disable") == "true"
+                   String msgStr 
+                   if (!actionsOk) {
+                       msgStr = "Actions are required. Select to add.."
+                   } else if (!whenOk) {
+                       msgStr = "Requires time and days to be set. Select to add.."
+                   } else {
+                       msgStr = whenStr + "\n" + actionsStr
+                   }   
+                   href "pageScheduleOptions", title: schedNameFromIndex(index), state: whenOk && actionsOk & !disabled ? "complete" : null, 
+                       description: msgStr, params: [schedIndex: index]
+                }
+            } else {
+                  paragraph "There are no active schedules."
+           }
+            if (!hubIsSt()) {
+                //Apparent bug in Hubitat - Can't set params in a second 'section' or it will send that instead of what's in first section - keep all in the same section
+                paragraph "\n"
+                href "pageScheduleOptions", title: "Create a new Powerwall schedule..", description: "", params: [newSchedule: true]
+            }
+        }
+        if (hubIsSt()) {
+            section("") {
+                href "pageScheduleOptions", title: "Create a new Powerwall schedule..", description: "", params: [newSchedule: true]
+            }
         }
     }
+}
+
+String schedNameFromIndex (Integer schedIndex) {
+    String schedName = "Schedule ${schedIndex + 1}"
+    Integer schedNum = state.scheduleList[schedIndex]
+    if (settings["schedule${schedNum}Name"]) {
+        schedName = schedName + ": ${settings["schedule${schedNum}Name"]}"
+    }
+    if (settings["schedule${schedNum}Disable"]) {
+        schedName = schedName + " (Disabled)"
+    }
+    return schedName
+}
+
+void appButtonHandler(btn) {
+   switch (btn) {
+       case "deleteSchedule":
+          deleteScheduleIndex(state.editingScheduleIndex)
+          break
+       default:
+          logger ("Unknown button type: ${btn}","warn")
+          break
+   }    
+}
+
+def pageScheduleOptions(params) {
+    Integer schedIndex
+    if (state.editingScheduleIndex == -1) {
+        if (params.newSchedule) {
+            addNewSchedule()
+            schedIndex = state.scheduleList.size() - 1
+        } else if (params.schedIndex != null) {
+            schedIndex = params.schedIndex
+        } else {
+            logger ("Unexpected condition in pageScheduleOptions. params are: ${params}","warn")
+            schedIndex = state.editingScheduleIndex
+        }
+    } else {
+        schedIndex = state.editingScheduleIndex
+    } 
+    Integer schedNum = state.scheduleList[schedIndex]
+    if (state.scheduleDeleted) {
+        dynamicPage(name: "pageScheduleOptions", title: "", install: false, uninstall: false) { 
+            section("") {
+                paragraph "Schedule ${schedIndex + 1} has been deleted"
+            }
+        }
+    } else {
+        dynamicPage(name: "pageScheduleOptions", title: schedNameFromIndex(schedIndex), install: false, uninstall: false) { 
+            state.editingScheduleIndex = schedIndex
+            section("Select Powerwall actions to apply:") {
+               String actionsString = getActionsString(schedVal(schedNum,"Mode"), schedVal(schedNum,"Reserve"),schedVal(schedNum,"Stormwatch"), schedVal(schedNum,"Strategy"), null)
+               Boolean complete = actionsValid(schedVal(schedNum,"Mode"), schedVal(schedNum,"Reserve"),schedVal(schedNum,"Stormwatch"),schedVal(schedNum,"Strategy"), null)
+               href "pagePwActions", title: actionsString, state: complete ? "complete" : null, description : "",
+                   params: [prefix: "schedule${schedNum}", title : "Select at least one Powerwall action to apply:"]
+               //href "pageScheduleActions", title: actionsString, state: complete ? "complete" : null, description: "", params: [schedIndex: schedIndex]
+            }
+            section("Select when to perform these actions:") {
+                String whenString = getWhenString(schedVal(schedNum,"Time"), schedVal(schedNum,"Days"),schedVal(schedNum,"Months"))
+                Boolean complete = scheduleValid(schedVal(schedNum,"Time"), schedVal(schedNum,"Days"))
+                href "pageScheduleWhen", title: whenString, state: complete ? "complete" : null, description: "", params: [schedIndex: schedIndex]
+            }
+            section("") {
+                input "schedule${schedNum}Name", "text", required: false, title: "Name this schedule (optional)"
+                input "schedule${schedNum}Disable", "bool", required: false, defaultValue: false, title: "Disable this schedule", submitOnChange: true
+            }        
+            section("") {
+                if (hubIsSt()) {
+                    href "pageDeleteSchedule", title: "Delete this schedule", description: ""
+                } else {
+                    input name: "deleteSchedule", type: "button", title: "Delete this schedule",submitOnChange: true
+                }
+            }
+        }
+    }
+}
+
+def pageScheduleWhen(params) {
+    Integer schedIndex
+    if (params.schedIndex != null) {
+          schedIndex = params.schedIndex
+    } else {
+        schedIndex = state.editingScheduleIndex
+        logger ("Unexpected params in pageScheduleWhen: ${params}","warn")
+    }
+    Integer schedNum = state.scheduleList[schedIndex]
+    dynamicPage(name: "pageScheduleWhen", title: schedNameFromIndex(schedIndex), install: false, uninstall: false) { 
+        section("Select when to perform these actions:") {
+              input "schedule${schedNum}Time", "time", required: false, title: "At what time? (required)"
+              input "schedule${schedNum}Days", "enum", required: false, title: "On which days? (required)", multiple: true,
+                  options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+              input "schedule${schedNum}Months", "enum", title: "In which months? (optional - if no months are selected, the schedule will execute for all months)", required: false, multiple: true,
+                options: ["January": "January", "February": "February", "March": "March", "April": "April", "May": "May", "June": "June", "July": "July",
+                    "August": "August", "September": "September", "October": "October", "November": "November", "December": "December"]
+        }
+    }
+}
+
+String schedVal (Integer schedNum, String param) {
+    return settings["schedule${schedNum}${param}"]
+}
+
+def clearScheduleData (data) {
+    logger ("Clearing schedNum data: ${data.schedNum}","debug")
+    Integer schedNum = data.schedNum
+    app.updateSetting("schedule${schedNum}Name",[type:"text",value:""])
+    app.updateSetting("schedule${schedNum}Mode",[type:"enum",value:""])
+    app.updateSetting("schedule${schedNum}Strategy",[type:"enum",value:""])
+    app.updateSetting("schedule${schedNum}Months",[type:"enum",value:""])
+    app.updateSetting("schedule${schedNum}Disable",[type:"bool",value:null])
+    app.updateSetting("schedule${schedNum}Days",[type:"enum",value:""])
+    app.updateSetting("schedule${schedNum}Stormwatch",[type:"enum",value:""])
+    app.updateSetting("schedule${schedNum}Time",[type:"text",value:""])
+    app.updateSetting("schedule${schedNum}Reserve",[type:"enum",value:""])
+}
+    
+void deleteScheduleIndex (Integer schedIndex) {
+    Integer schedNum = state.scheduleList[schedIndex]
+    logger ("Deleting schedule: ${schedIndex + 1}, number: ${schedNum}", "debug")
+    state.scheduleNumUsed[schedNum-1] = false
+    state.scheduleDeleted = true
+    state.scheduleList.removeElement(schedNum)
+    runIn(1, clearScheduleData, [data: [schedNum: schedNum]])
+}
+        
+Integer addNewSchedule() {
+    Integer schedNumAdded
+    if (state.scheduleList == null) {
+        state.scheduleNumUsed = []
+        state.scheduleList = []
+    }
+    //Look for an unused schedule Number
+    if (state.scheduleNumUsed.size() > 0) {
+      for (int i in 0 .. state.scheduleNumUsed.size() - 1) {
+        if (!state.scheduleNumUsed[i]) {
+            logger ("Re-using schedule number ${i + 1}","debug")
+            schedNumAdded = i + 1
+            break
+        }
+      }
+    }
+    if (!schedNumAdded) {
+            schedNumAdded = state.scheduleNumUsed.size() + 1
+    }
+    state.scheduleNumUsed[schedNumAdded - 1] = true
+    logger ("Adding new schedule as with number: ${schedNumAdded}", "debug")
+    state.scheduleList[state.scheduleList.size()] = schedNumAdded
+}
+
+                    
+def pageDeleteSchedule() {
+    //Integer schedNum = params?.schedule
+
+	dynamicPage(name: "pageDeleteSchedule", title: "", nextPage: "pageMain", uninstall: false, install: false) {
+			section() {
+                    Integer schedIndex = state.editingScheduleIndex
+       			    deleteScheduleIndex (schedIndex)
+                	paragraph "Schedule ${schedIndex + 1} has been deleted."
+			}
+     }
 }
 
 private teslaAccountInfo() {
     return dynamicPage(name: "teslaAccountInfo", title: "", install: false) {
          
-         if (hubIsSt() && accessTokenIp) {
+        if (hubIsSt() && accessTokenIp) {
             validateLocalUrl()
-         } 
+        } 
+        state.serverVerified = false
         String pString
         if (hubIsSt()) {
            pString = "This app currently requires a Tesla token generated using another app, such as the Tesla Auth App for " +
@@ -206,23 +416,19 @@ def pageTokenFromUrl() {
     }
 }
 
-/*
 private gatewayAccountInfo() {
     return dynamicPage(name: "gatewayAccountInfo", title: "", install: false) {
-           section("Local Gateway Information. If provided, the Powerwall Manager will also (or only if no Tesla Account information is provided) " +
-                  "obtain real-time meter and battery level data from the gateway itself. The Powerwall Manager does not currently support mode and state status " +
-                   "or command capability directly from the local gateway.") {
+           section("Local Gateway Information") {
                input("gatewayAddress", "string", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
             //input "installerEmail", "text", title: "Gateway  Unstaller Email", autoCorrect: false, required: false
             //input "installerPw", "password", title: "Gateway Installer Password", autoCorrect: false, required: false
+               input "gatewayPw", "password", title: "Gateway Customer Password", autoCorrect: false, required: false
            }
       }
 }
-*/
-
 
 def getConnectionMethodStatus() {
-    def statusStr
+    String statusStr
     if (!connectionMethod) {
         statusStr = "Use Remote Tesla Account Server Only"
     } else {
@@ -245,15 +451,15 @@ def pageConnectionMethod() {
 }
 
 def pageDashboardTile() {
-    dynamicPage(name: "pageDashboardTile", title:"Create a Powerall dashboard iframe tile.", install: false, uninstall: false) {
+    dynamicPage(name: "pageDashboardTile", title:"Create a Powerall dashboard iFrame tile.", install: false, uninstall: false) {
           
-        if (gatewayAddress) {
+        if (gatewayTileAddress) {
                    statusString = "Height: ${tileHeight?.toLong() ?: 517} (default 517 pixels)\n" +                
                                       "Width:  ${tileWidth?.toLong() ?: 460} (default 460 pixels)\n" + 
                                       "Scale:  ${tileScale?.toFloat() ?: 0.81} (default 0.81)\n\n"  + 
                                        getTileStr(0.5)  +
-                   "\n&#8226To view this attribute tile on your dashboard, you may need to first visit the gateway URL in your dashboard browser " +
-                   "and accept the self-signed certificate exception." +
+                   "\n&#8226To view this attribute tile on your dashboard, you may need to first visit the gateway URL in your dashboard browser, " +
+                   "log in as 'customer', and accept the self-signed certificate exception." +
                    "\n&#8226Add to .css to remove extra tile padding: #tile-XX .tile-contents, #tile-XX .tile-primary {padding: 0}"
         } else {
             statusString = "Enter your local gateway address.."
@@ -269,7 +475,7 @@ def pageDashboardTile() {
 def pageCustomizeGwTile() {
     dynamicPage(name: "pageCustomizeGwTile", title:"Customize Gateway Dashboard Tile:", install: false, uninstall: false) {
            section("Enter address of gateway to create tile for dashboard:") {
-                    input("gatewayAddress", "string", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
+                    input("gatewayTileAddress", "string", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
             }
          section("Tailor the tile:") {
                   input("tileHeight", "number", title: "Tile Height (default 517 pixels)", defaultValue: 517, required: false )
@@ -279,90 +485,121 @@ def pageCustomizeGwTile() {
     }
 }
 
-def getTeslaServerStatus() {
-    try {
+Boolean connectedToGateway() {
+    return state.gatewayVerified && gatewayAddress
+}
+
+Boolean connectedToTeslaServer() {
+    Boolean connectedViaInputToken = accessTokenUrl && state.accessTokenFromUrlValid
+    Boolean connectedViaTokenFromUrl = state.accessTokenFromUrlValid && ((hubIsSt() && accessTokenIp) || (!hubIsSt() && accessTokenUrl))
+    return state.serverVerified && (connectedViaInputToken || connectedViaTokenFromUrl)      
+}
+
+String getTeslaServerStatus() {
+    try {connectedToTeslaServer()
         String messageStr = ""
         String tokenStatusStr = ""
         
         if (!hubIsSt()) {
             //Hubitat - local call is synchronous so can be done on this main page. For SmartThings
-            //it is asynchronouse, so needs to be done on the subpage and result will be available when on the main page
+            //it is asynchronous, so needs to be done on the subpage and result will be available when on the main page
             validateLocalUrl()
          }
         state.useTokenFromUrl = state.accessTokenFromUrlValid
         state.useInputToken = validateInputToken()
-        
-        if (!inputAccessToken && 
-            ((!hubIsSt() && !accessTokenUrl) || (hubIsSt() && !accessTokenIp))) {
-            messageStr = "Enter Your Tesla Account Token"
+        state.serverValidAtStartup = false
+       
+        Boolean tokenFromUrlEntered = (!hubIsSt() && accessTokenUrl) || (hubIsSt() && accessTokenIp)
+        Boolean inputTokenEntered = inputAccessToken
+ 
+        if (!inputTokenEntered && !tokenFromUrlEntered) {
+            messageStr = "You are not connected to the Tesla server.\nEnter your Tesla account token.."
         } else {
-            if (inputAccessToken) {
-                tokenStatusStr = "\nInput Access Token: ${state.inputAccessTokenStatus}. "
-            }
-            if ((!hubIsSt() && accessTokenUrl) || (hubIsSt() && accessTokenIp)) {
-                tokenStatusStr = tokenStatusStr + "\nToken from URL: ${state.accessTokenFromUrlStatus}."
-            }
             if (state.useInputToken || state.useTokenFromUrl) {
-                messageStr = messageStr + "You are connected to the Tesla server."
                 getPowerwalls() 
-                if (state.foundPowerwalls) {
-                    messageStr = messageStr + "\nSite Name: ${state.siteName}\n" +
-                        "Id: ${state.pwId},  " +
-                        "Site Id: ${state.energySiteId}."
+                if (state.serverVerified) {
+                    state.serverValidAtStartup = true
+                    messageStr = messageStr + "You are connected to the Tesla server." +
+                         "\nSite Name: ${state.siteName}  Id: ${state.pwId},  Site Id: ${state.energySiteId}."
                 } else {
-                   messageStr = "Error: No Powerwalls found\n" +
-                     "Please enter/verify your Tesla Account access token."
+                     messageStr = "Error: No Powerwalls found on Tesla server\n" +
+                        "Please verify your Tesla Account access token."
                 }
-            //messageStr = messageStr + "${tokenStatusStr}"
             } else {
                messageStr = messageStr + "Error Verifying Tesla/Powerwall Account\n" +
-                   "Please enter/verify your Tesla account access token."
+                   "Please verify your Tesla account access token."
             }
         }
-        return messageStr + tokenStatusStr
+        //Display token status if they are both entered, or if a token failed validation
+        if (inputTokenEntered && (!state.useInputToken || tokenFromUrlEntered)) {
+            messageStr = messageStr + "\nInput Access Token: ${state.inputAccessTokenStatus}. "
+        }
+        if (tokenFromUrlEntered && (!state.useTokenFromUrl || inputTokenEntered)) {
+            messageStr = messageStr + "\nToken from URL: ${state.accessTokenFromUrlStatus}."
+        }
+        return messageStr 
     } catch (Exception e) {
         log.error e
         return "Error accessing Powerwall account\n" + 
             "Please verify your Tesla account access token." 
     }
+}                          
+
+def gwHeader() {
+    return ["Cookie" : "AuthCookie=${state.gwAuthCookie}; UserRecord=state.gwUserRecord"]
 }
 
-def getLocalGwStatus() {
+String getLocalGwStatus() {
     try {
-        def messageStr
+        String messageStr
         if (gatewayAddress == null) {
-                messageStr = "Enter your local gateway IP address" 
+            messageStr = "You are not connected to the local gateway.\nEnter your local gateway IP address.." 
         } else {
-                log.debug "Attempting to connect to local gateway"
-                messageStr = "Local Gateway Status:\nCould not connect to local gateway at ${gatewayAddress}" 
-                def requestParameters = [
-                   uri: "https://${gatewayAddress}",
-                   path: "/api/site_info/site_name",
-                   contentType: 'application/json',
-                   ignoreSSLIssues: true 
-                ]
-                httpGet(requestParameters) {
-                  resp -> 
-                   log.debug "response data was ${resp.data} "       
-                   messageStr = "Local Gateway Verified:\n" +
-                       "Connected at ${gatewayAddress}\n"+
-                       "Site Name: ${resp.data.site_name.toString()}\n" +
-                       "Gateway time zone: ${resp.data.timezone.toString()}\n"
-                   state.foundGateway = true
-                }
-                //log.debug "${messageStr}"
+            logger ("Connecting to local gateway...","debug")
+            messageStr = "Local Gateway Status:\nCould not connect to local gateway at ${gatewayAddress}" 
+            httpPost([uri: "https://${gatewayAddress}/api/login/Basic",
+                      contentType: 'application/json',
+                      ignoreSSLIssues: true,
+                      query: [username: "customer", password : "${gatewayPw}"]
+                     ]) { resp ->
+                Integer statusCode = resp.getStatus()
+                if (statusCode == 200) {
+                    messageStr = "gettinggateay Auth..."
+                    resp.headers.each {
+                        if (it.name == "Set-Cookie") {
+                            if (it.value.substring(0,10) == "UserRecord") {
+                                String str = it.value
+                                state.gwUserRecord = str.substring(str.indexOf("=") + 1, str.indexOf(";"))
+                            } else if (it.value.substring(0,10) == "AuthCookie") {
+                                String str = it.value
+                                state.gwAuthCookie = str.substring(str.indexOf("=") + 1, str.indexOf(";"))
+                            }
+                        }
+                    }
+                    httpGet([uri: "https://${gatewayAddress}", path: "/api/site_info/site_name", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true]) {
+                        response -> 
+                        logger("Local gateway connection verified","debug")
+                        state.gatewayVerified = true
+                        messageStr = "You are connected to the Powerwall Gateway.\n" +
+                            //"Connected at ${gatewayAddress}\n"+
+                            "Site Name: ${response.data.site_name.toString()}." 
+                            //"Gateway time zone: ${response.data.timezone.toString()}\n"
+                    }
+                } else {
+                    messageStr = "Unable to login to gateway. Status: ${statusCode}"
+                }                  
+            }
         }
-       return messageStr
-
+        return messageStr
     } catch (Exception e) {
-        log.error e
+        logger ("Error getting local gateway status: ${e}","warn")
         return "Error accessing local gateway:\n${e}"
     }
 }
 
 def pageNotifications() {
     dynamicPage(name: "pageNotifications", title: "Notification Preferences", install: false, uninstall: false) {
-        section("Powerwall Notification Triggers:") {
+        section() {
             input "notifyWhenVersionChanges", "bool", required: false, defaultValue: false, title: "Notify when Powerwall software version changes"
             input "notifyWhenModesChange", "bool", required: false, defaultValue: false, title:
                 "Notify when Powerwall configuration (modes/schedules) change"
@@ -374,9 +611,9 @@ def pageNotifications() {
             input "notifyWhenAnomalies", "bool", required: false, defaultValue: true, title:
                 "Notify when anomalies are encountered in the Powerwall Manager SmartApp"
         }
-        section("Notification method (push notifications are via mobile app)") {
+        section() {
             if (hubIsSt()) {
-                input "notificationMethod", "enum", required: false, defaultValue: "push", title: "Notification Method", options: ["none", "text", "push", "text and push"]
+                input "notificationMethod", "enum", required: false, defaultValue: "push", title: "Notification Method (push notifications are via mobile app)", options: ["none", "text", "push", "text and push"]
                 input "phoneNumber", "phone", title: "Phone number for text messages", description: "Phone Number for text/SMS messages", required: false
             } else {
                 //Hubitat
@@ -386,214 +623,35 @@ def pageNotifications() {
     }
 }
 
-def schedule1Options() {
-    dynamicPage(name: "schedule1Options", title: "Schedule 1", install: false, uninstall: false) {
-        section("") {
-            input "schedule1Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule1Reserve", "enum", required: false, title: "Reserve % to set (Self-Powered & TBC modes)",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule1Strategy", "enum", required: false, title: "Time-Based Control Strategy to set", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule1Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule1Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            input "schedule1Time", "time", required: false, title: "At what time?"
-        }
-    }
-}
-
-def schedule2Options() {
-    dynamicPage(name: "schedule2Options", title: "Schedule 2", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule2Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule2Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule2Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule2Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule2Time", "time", required: false, title: "At what time?"
-            input "schedule2Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
-def schedule3Options() {
-    dynamicPage(name: "schedule3Options", title: "Schedule 3", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule3Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule3Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule3Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule3Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule3Time", "time", required: false, title: "At what time?"
-            input "schedule3Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
-def schedule4Options() {
-    dynamicPage(name: "schedule4Options", title: "Schedule 4", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule4Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule4Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule4Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule4Time", "time", required: false, title: "At what time?"
-            input "schedule4Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule4Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
-def schedule5Options() {
-    dynamicPage(name: "schedule5Options", title: "Schedule 5", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule5Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule5Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule5Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule5Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule5Time", "time", required: false, title: "At what time?"
-            input "schedule5Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
-def schedule6Options() {
-    dynamicPage(name: "schedule6Options", title: "Schedule 6", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule6Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule6Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule6Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule6Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule6Time", "time", required: false, title: "At what time?"
-            input "schedule6Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
-def schedule7Options() {
-    dynamicPage(name: "schedule7Options", title: "Schedule 7", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
-            input "schedule7Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "schedule7Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "schedule7Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "schedule7Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "schedule7Time", "time", required: false, title: "At what time?"
-            input "schedule7Days", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-    }
-}
-
 def pagePwPreferences() {
     dynamicPage(name: "pagePwPreferences", title: "Powerwall Manager Preferences", install: false, uninstall: false) {
         section("") {
-            input "pollingPeriod", "enum", required: false, title: "Powerwall polling interval", defaultValue: "10 minutes",
+            input "pollingPeriod", "enum", required: false, title: "Tesla server polling interval", defaultValue: "10 minutes",
                 options: ["Do not poll", "5 minutes", "10 minutes", "30 minutes", "1 hour"]
-              //if ((connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only")) {
-              //   input "gatewayPollingPeriod", "enum", required: false, title: "Local Gateway Powerwall polling interval", defaultValue: "10 minutes",
-              //      options: ["Do not poll", "1 minute", "5 minutes", "10 minutes", "1 hour"]
-              //} 
+            if (!hubIsSt()) {
+                input "gatewayPollingPeriod", "enum", required: false, title: "Local Gateway Powerwall polling interval", defaultValue: "10 minutes",
+                   options: ["Do not poll", "1 minute", "5 minutes", "10 minutes", "30 minutes", "1 hour"]
+            } 
         }
         section("") {
             input "logLevel", "enum", required: false, title: "IDE Log Level (sets log level in web IDE live logging tab)", options: ["none",
                 "trace", "debug", "info", "warn","error"]
         }
-        section("") {
-            input "pauseAutomations", "bool", required: false, defaultValue: false, title: "Pause all schedules and automated actions"
-        }
     }
 }
 
 def pageDevicesToControl() {
-    dynamicPage(name: "pageDevicesToControl", title: "Turn off devices when a grid outage is detected", install: false, uninstall: false) {
+    dynamicPage(name: "pageDevicesToControl", title: "Turn Off devices when a grid outage is detected", install: false, uninstall: false) {
         section("") {
-            input "devicesToOffDuringOutage", "capability.switch", title: "Devices that should be turned off during a grid outage", required: false,
-                multiple: true
+            input "devicesToOffDuringOutage", "capability.switch", title: "Devices to turn off during a grid outage", required: false, multiple: true
             input "turnDevicesBackOnAfterOutage", "bool", required: false, defaultValue: false,
-                title: "Turn the above selected devices back on after grid outage is over?"
+                title: "Turn the above selected devices back On after grid outage is over? (Note: If set, the devices will be turned On regardless of their state prior to the outage)"
         }
     }
 }
 
 def appendOnNewLine(message, textToAdd) {
-    def newMessage = ''
+    String newMessage = ''
     if (message != '') {
         newMessage = message + "\n"
     }
@@ -602,58 +660,53 @@ def appendOnNewLine(message, textToAdd) {
 
 def pageTriggers() {
     dynamicPage(name: "pageTriggers", title: "Powerwall battery charge % level above/below actions.", install: false, uninstall: false) {
-        def timeSetting = "N/A"
-        def enableTriggers = "N/A"
-        def triggerDaysNA = "N/A"
         //state.timeOfLastBelowTrigger = null
         //state.timeOfLastAboveTrigger = null
 
-        def message = ""
-        if (aboveTriggerValue && aboveTriggerEnabled?.toBoolean()) {
-            def optionsString = getOptionsString(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,
-                aboveTriggerDevicesToOn, timeSetting, triggerDaysNA)
-            message = "Execute these actions when Powerwall charge level rises above ${aboveTriggerValue?.toString()}%:\n" + optionsString
-            if (!actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn,
-                    enableTriggers)) {
-                message = message + "\nNotification will be sent if enabled in preferences."
+        section ("") {
+            String message = ""
+            Boolean actionsOk 
+            //Above Actions
+            actionsOk = actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn) &&
+                aboveTriggerValue && aboveTriggerEnabled?.toBoolean()
+
+            if (actionsOk) {
+                def actionsString = getActionsString(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn)
+                message = "When Powerwall is above ${aboveTriggerValue?.toString()}%:\n" + actionsString + "\n(notification will also be sent if enabled in preferences)"
+            } else {
+                message = "Select to enable Upper % charge level actions.."
             }
-        } else {
-            message = "No charge level % upper trigger enabled.."
-        }
-        section("Choose actions to execute when the Powerwall battery charge % rises above a pre-defined level:") {
-            href "aboveTriggerOptions", title: "${message}", description: ""
-        }
-        if (belowTriggerValue && belowTriggerEnabled?.toBoolean()) {
-            def optionsString = getOptionsString(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy,
-                belowTriggerDevicesToOff, timeSetting, triggerDaysNA)
-            message = "Execute these actions when Powerwall charge level drops below ${belowTriggerValue?.toString()}%:\n" + optionsString
-            if (!actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff,
-                    enableTriggers)) {
-                message = message + "\nNotification will be sent if enabled in preferences."
+            href "pageTriggerOptions", title: "Choose actions to execute when the Powerwall battery charge % rises Above a pre-defined level:", state : actionsOk ? "complete" : null, 
+                description: message, params : [aboveOrBelow : "above"]
+ 
+            //Below Actions
+            actionsOk = actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff) &&  
+                belowTriggerValue && belowTriggerEnabled?.toBoolean()
+            if (actionsOk) {
+                def actionsString = getActionsString(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff)
+                message = "When Powerwall is below ${belowTriggerValue?.toString()}%:\n" + actionsString + "\n(notification will also be sent if enabled in preferences)"
+            } else {
+                message = "Select to enable Lower % charge level actions.."
             }
-        } else {
-            message = "No charge level % lower trigger enabled.."
-        }
-        section("Choose actions to execute when the Powerwall battery charge % drops below a pre-defined level:") {
-            href "belowTriggerOptions", title: "${message}", description: ""
-        }
-        def restrictMessage = ''
-        if (triggerRestrictPeriod1?.toBoolean() && triggerStartTime1 && triggerStopTime1) {
-            restrictMessage = appendOnNewLine(restrictMessage, "Trigger Period 1: " + formatTimeString(triggerStartTime1) + " to " + formatTimeString(
-                triggerStopTime1))
-        }
-        if (triggerRestrictPeriod2?.toBoolean() && triggerStartTime2 && triggerStopTime2) {
-            restrictMessage = appendOnNewLine(restrictMessage, "Trigger Period 2: " + formatTimeString(triggerStartTime2) + " to " + formatTimeString(
-                triggerStopTime2))
-        }
-        if (triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0) {
-            restrictMessage = appendOnNewLine(restrictMessage, triggerDays.toString())
-        }
-        if (restrictMessage == '') {
-            restrictMessage = "No optional schedule restrictions defined.."
-        }
-        section("Restrict these triggers to specific times/days (optional):") {
-            href "triggerRestrictions", title: "${restrictMessage}", description: ""
+            href "pageTriggerOptions", title: "Choose actions to execute when the Powerwall battery charge % drops Below a pre-defined level:", state : actionsOk ? "complete" : null, 
+                description: message, params : [aboveOrBelow : "below"]
+            //Restrict Options
+            String restrictMessage = ''
+            Boolean restrictionSet = true
+            if (triggerRestrictPeriod1?.toBoolean() && triggerStartTime1 && triggerStopTime1) {
+                restrictMessage = appendOnNewLine(restrictMessage, "Trigger Period 1: " + formatTimeString(triggerStartTime1) + " to " + formatTimeString(triggerStopTime1))
+            }
+            if (triggerRestrictPeriod2?.toBoolean() && triggerStartTime2 && triggerStopTime2) {
+                restrictMessage = appendOnNewLine(restrictMessage, "Trigger Period 2: " + formatTimeString(triggerStartTime2) + " to " + formatTimeString(triggerStopTime2))
+            }
+            if (triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0) {
+                restrictMessage = appendOnNewLine(restrictMessage, triggerDays.toString())
+            }
+            if (restrictMessage == '') {
+                restrictMessage = "No optional schedule restrictions defined.."
+                restrictionSet = false
+            }
+            href "triggerRestrictions", title: "Restrict these triggers to specific times/days (optional):", state : restrictionSet ? "complete" : null, description: restrictMessage
         }
     }
 }
@@ -677,55 +730,48 @@ def triggerRestrictions() {
     }
 }
 
-def aboveTriggerOptions() {
-    dynamicPage(name: "aboveTriggerOptions", title: "Above Battery Charge % Level Trigger Options", install: false, uninstall: false) {
-        section("") {
-            input "aboveTriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
-            input "aboveTriggerValue", "number", required: false, title: "Actions trigger when charge % rises above this value"
-            input "aboveTriggerMode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "aboveTriggerReserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "aboveTriggerStormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "aboveTriggerStrategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "aboveTriggerDevicesToOn", "capability.switch", title:
-                "Devices that should be turned on when charge level % rises above defined trigger", required: false, multiple: true
+def pagePwActions(params) {
+    String prefix = params.prefix
+    String title = params.title
+    if (params.prefix == null) {
+        logger ("Unexpected param for PW action: ${params}","warn")
+        prefix = state.lastPwActionPrefix
+    }
+    state.lastPwActionPrefix = prefix
+    dynamicPage(name: "pagePwActions", title: title, install: false, uninstall: false) { 
+        section() {
+            input "${prefix}Mode", "enum", required: false, title: "Set Mode", options: ["No Action", "Backup-Only", "Self-Powered", "Time-Based Control"]
+            input "${prefix}Reserve", "enum", required: false, title: "Set Reserve %",
+               options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
+                      "35%", "40": "40%", "45": "45%", "50": "50%",
+                      "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100": "100%"]
+            input "${prefix}Stormwatch", "enum", required: false, title: "Set Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch", "Disable Stormwatch"]
+            input "${prefix}Strategy", "enum", required: false, title: "Set Strategy for Time-Based Control", options: ["No Action", "Cost Saving","Balanced"]
         }
     }
 }
 
-def belowTriggerOptions() {
-    dynamicPage(name: "belowTriggerOptions", title: "Below Battery Charge % Level Trigger Options", install: false, uninstall: false) {
+def pageTriggerOptions(params) {
+    String aboveBelow = params ? params.aboveOrBelow : state.aboveOrBelow
+    state.aboveOrBelow = aboveBelow
+    dynamicPage(name: "pageTriggerOptions", title: "Select '${aboveBelow}' Powerwall Charge % Level Trigger Options", install: false, uninstall: false) {
         section("") {
-            input "belowTriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
-            input "belowTriggerValue", "number", required: false, title: "Actions trigger when charge % drops below this value"
-            input "belowTriggerMode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only", "Self-Powered",
-                "Time-Based Control"
-            ]
-            input "belowTriggerReserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action": "No Action", "0": "0%", "5": "5%", "10": "10%", "15": "15%", "20": "20%", "25": "25%", "30": "30%", "35":
-                    "35%", "40": "40%", "45": "45%", "50": "50%",
-                    "55": "55%", "60": "60%", "65": "65%", "70": "70%", "75": "75%", "80": "80%", "85": "85%", "90": "90%", "95": "95%", "100":
-                    "100%"
-                ]
-            input "belowTriggerStormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch",
-                "Disable Stormwatch"
-            ]
-            input "belowTriggerStrategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving",
-                "Balanced"
-            ]
-            input "belowTriggerDevicesToOff", "capability.switch", title:
-                "Devices that should be turned off when charge level % drops below defined trigger", required: false, multiple: true
-        }
+            input "${aboveBelow}TriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
+            input "${aboveBelow}TriggerValue", "number", required: false, title: "Actions trigger when charge % is ${aboveBelow} this value:"
+            String onOrOff = aboveBelow == "above" ? "On" : "Off"
+            input "${aboveBelow}TriggerDevicesTo${onOrOff}", "capability.switch", title:
+                "Select devices to turn ${onOrOff} when charge level % is ${aboveBelow} defined trigger", required: false, multiple: true
+            Boolean complete = actionsValid(settings["${aboveBelow}TriggerMode"], settings["${aboveBelow}TriggerReserve"],settings["${aboveBelow}TriggerStormwatch"],settings["${aboveBelow}TriggerStrategy"], null)
+            String actionsString 
+            if (complete) {
+               actionsString = getActionsString(settings["${aboveBelow}TriggerMode"], settings["${aboveBelow}TriggerReserve"],settings["${aboveBelow}TriggerStormwatch"], 
+                           settings["${aboveBelow}TriggerStrategy"], null)
+            } else {
+               actionsString = "No Powerwall actions defined.."
+            }
+            href "pagePwActions", title: "Select Powerwall actions to apply when charge level % is ${aboveBelow} defined trigger", state: complete ? "complete" : null, description: actionsString, 
+               params: [prefix: "${aboveBelow}Trigger", title : "Select ${aboveOrBelow} trigger Powerwall actions to apply:"]
+       }
     }
 }
 
@@ -748,7 +794,7 @@ def getPwDevice() {
 }
 
 private getHubType() {
-    def hubType = "SmartThings"
+    String hubType = "SmartThings"
     if (state.hubType == null) {
         try {
             include 'asynchttp_v1'
@@ -760,17 +806,15 @@ private getHubType() {
     return state.hubType
 }
 
-def actionsValid(modeSetting, reserveSetting, stormwatchSetting, strategySetting, devicesToControl, enableTriggers, peakSwitch = null) {
+Boolean actionsValid(modeSetting, reserveSetting, stormwatchSetting, strategySetting, devicesToControl) {
     return ((modeSetting && modeSetting.toString() != "No Action") ||
         (reserveSetting && reserveSetting.toString() != "No Action") ||
         (stormwatchSetting && stormwatchSetting.toString() != "No Action") ||
         (strategySetting && strategySetting.toString() != "No Action") ||
-        (devicesToControl && devicesToControl.toString() != "N/A" && devicesToControl.size() > 0) ||
-        (enableTriggers && enableTriggers.toString() != "No Action") ||
-        (peakSwitch && peakSwitch.toString() != "No Action"))
+        (devicesToControl && devicesToControl.toString() != "N/A" && devicesToControl.size() > 0))
 }
 
-def scheduleValid(timeSetting, daysSetting) {
+Boolean scheduleValid(timeSetting, daysSetting) {
     return timeSetting != null && daysSetting != null && (daysSetting.size() > 0 || daysSetting.toString() == "N/A")
 }
 
@@ -781,113 +825,80 @@ def formatTimeString(timeSetting) {
     return timeFormat.format(isoTime).toString()
 }
 
-def getOptionsString(modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices, timeSetting, daysSetting) {
-    def optionsString = ''
-    if (actionsValid(modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices, enableTriggers)) {
-        if (scheduleValid(timeSetting, daysSetting)) {
-            if (modeSetting && modeSetting.toString() != "No Action") {
-                optionsString = "Mode: " + modeSetting.toString()
-            }
-            if (reserveSetting && reserveSetting.toString() != "No Action") {
-                optionsString = appendOnNewLine(optionsString, "Reserve: " + reserveSetting.toString() + '%')
-            }
-            if (stormwatchSetting && stormwatchSetting.toString() != "No Action") {
-                if (stormwatchSetting.toString() == "Enable Stormwatch") {
-                    optionsString = appendOnNewLine(optionsString, "Stormwatch: Enable")
-                } else if (stormwatchSetting.toString() == "Disable Stormwatch") {
-                    optionsString = appendOnNewLine(optionsString, "Stormwatch: Disable")
-                }
-            }
-            if (strategySetting && strategySetting.toString() != "No Action") {
-                optionsString = appendOnNewLine(optionsString, "Time-Based Control Strategy: " + strategySetting.toString())
-            }
-            if (controlDevices && controlDevices.size() > 0) {
-                optionsString = appendOnNewLine(optionsString, "Control Devices: ${controlDevices}")               
-            }
-            if (enableTriggers && enableTriggers.toString() != "No Action") {
-                if (optionsString != '') {
-                    optionsString = optionsString + ',\n'
-                }
-                optionsString = optionsString + "Battery Charge % actions: " + enableTriggers.toString()
-            }
-            def timeString = ''
-            if (timeSetting != "N/A") {
-                timeString = formatTimeString(timeSetting) + ' '
-            }
-            def dayString = ''
-            if (daysSetting != "N/A") {
-                dayString = daysSetting.toString()
-            }
-            if (timeString != '' || dayString != '') {
-                optionsString = optionsString + '\n' + timeString + dayString
-            }
-        } else {
-            optionsString = "No time or days scheduled"
+String getWhenString(timeSetting, daysSetting, monthSetting) {
+    String str
+    if (scheduleValid(timeSetting, daysSetting)) {
+        String timeString = ''
+        if (timeSetting != "N/A") {
+            timeString = formatTimeString(timeSetting) + ' '
+        }
+        String dayString = ''
+        if (daysSetting != "N/A") {
+            dayString = daysSetting.toString()
+        }
+        if (timeString != '' || dayString != '') {
+             str = timeString + dayString
+        }
+        if (monthSetting && monthSetting != '' & monthSetting != "N/A" ) {
+            str = str + "\nMonths: " + monthSetting.toString()
         }
     } else {
-        optionsString = "No actions scheduled"
+        str = "Requires time and days to be set. Select to add.."
     }
-    return optionsString
+    return str
 }
 
-def pageSchedules() {
-    dynamicPage(name: "pageSchedules", title:
-        "Powerwall setting changes are subject to Powerwall processing rules and may not immediately take effect at the time they are commanded.",
-        install: false, uninstall: false) {
-        def optionsString
-        def devicesToControl = null
-        optionsString = getOptionsString(schedule1Mode, schedule1Reserve, schedule1Stormwatch, schedule1Strategy, devicesToControl, schedule1Time, schedule1Days)
-        section("Schedule 1") {
-            href "schedule1Options", title: "${optionsString}", description: ""
+String getActionsString(modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices) {
+    String str = ''
+    if (actionsValid(modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices)) {
+        if (modeSetting && modeSetting.toString() != "No Action") {
+            str = "Mode: " + modeSetting.toString()
         }
-        optionsString = getOptionsString(schedule2Mode, schedule2Reserve, schedule2Stormwatch, schedule2Strategy, devicesToControl, schedule2Time, schedule2Days)
-        section("Schedule 2") {
-            href "schedule2Options", title: "${optionsString}", description: ""
+        if (reserveSetting && reserveSetting.toString() != "No Action") {
+            str = appendOnNewLine(str, "Reserve: " + reserveSetting.toString() + '%')
         }
-        optionsString = getOptionsString(schedule3Mode, schedule3Reserve, schedule3Stormwatch, schedule3Strategy, devicesToControl, schedule3Time, schedule3Days)
-        section("Schedule 3") {
-            href "schedule3Options", title: "${optionsString}", description: ""
+        if (stormwatchSetting && stormwatchSetting.toString() != "No Action") {
+            if (stormwatchSetting.toString() == "Enable Stormwatch") {
+                str = appendOnNewLine(str, "Stormwatch: Enable")
+            } else if (stormwatchSetting.toString() == "Disable Stormwatch") {
+                str = appendOnNewLine(str, "Stormwatch: Disable")
+            }
         }
-        optionsString = getOptionsString(schedule4Mode, schedule4Reserve, schedule4Stormwatch, schedule4Strategy, devicesToControl, schedule4Time, schedule4Days)
-        section("Schedule 4") {
-            href "schedule4Options", title: "${optionsString}", description: ""
+        if (strategySetting && strategySetting.toString() != "No Action") {
+            str = appendOnNewLine(str, "Time-Based Control Strategy: " + strategySetting.toString())
         }
-        optionsString = getOptionsString(schedule5Mode, schedule5Reserve, schedule5Stormwatch, schedule5Strategy, devicesToControl, schedule5Time, schedule5Days)
-        section("Schedule 5") {
-            href "schedule5Options", title: "${optionsString}", description: ""
+        if (controlDevices && controlDevices.size() > 0) {
+            str = appendOnNewLine(str, "Control Devices: ${controlDevices}")               
         }
-        optionsString = getOptionsString(schedule6Mode, schedule6Reserve, schedule6Stormwatch, schedule6Strategy, devicesToControl, schedule6Time, schedule6Days)
-        section("Schedule 6") {
-            href "schedule6Options", title: "${optionsString}", description: ""
-        }
-        optionsString = getOptionsString(schedule7Mode, schedule7Reserve, schedule7Stormwatch, schedule7Strategy, devicesToControl, schedule7Time, schedule7Days)
-        section("Schedule 7") {
-            href "schedule7Options", title: "${optionsString}", description: ""
-        }
+    } else {
+        str = "At least one action is required. Select to add.."
     }
+    return str
 }
-
-def instantiatSchedule(mode, reserve, stormwatch, strategy, peakSwitch, time, days, callback) {
-    def devices = "N/A"
-    if (actionsValid(mode, reserve, stormwatch, strategy, devices, enableTriggers, peakSwitch)) {
-        if (scheduleValid(time, days)) {
-            logger ("scheduling ${callback.toString()}","debug")
-            schedule(time.toString(), callback)
-        } else {
-            def message = "${callback.toString()} actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
-            sendNotificationMessage(message, "anomaly")
-        }
-    }
-}
-
+                                                              
 def setSchedules() {
-    instantiatSchedule(schedule1Mode, schedule1Reserve, schedule1Stormwatch, schedule1Strategy, schedule1PeakSwitch, schedule1Time, schedule1Days, processSchedule1)
-    instantiatSchedule(schedule2Mode, schedule2Reserve, schedule2Stormwatch, schedule2Strategy, schedule2PeakSwitch, schedule2Time, schedule2Days, processSchedule2)
-    instantiatSchedule(schedule3Mode, schedule3Reserve, schedule3Stormwatch, schedule3Strategy, schedule3PeakSwitch, schedule3Time, schedule3Days, processSchedule3)
-    instantiatSchedule(schedule4Mode, schedule4Reserve, schedule4Stormwatch, schedule4Strategy, schedule4PeakSwitch, schedule4Time, schedule4Days, processSchedule4)
-    instantiatSchedule(schedule5Mode, schedule5Reserve, schedule5Stormwatch, schedule5Strategy, schedule5PeakSwitch, schedule5Time, schedule5Days, processSchedule5)
-    instantiatSchedule(schedule6Mode, schedule6Reserve, schedule6Stormwatch, schedule6Strategy, schedule6PeakSwitch, schedule6Time, schedule6Days, processSchedule6)
-    instantiatSchedule(schedule7Mode, schedule7Reserve, schedule7Stormwatch, schedule7Strategy, schedule7PeakSwitch, schedule7Time, schedule7Days, processSchedule7)
+    checkAndMigrateFromPreviousVersion()
+    unschedule (processSchedule)
+    if (state.scheduleList) {
+       for(int i in 0 .. state.scheduleList.size() - 1) {
+           Integer schedNum = state.scheduleList[i]
+           //log.debug "disable is: ${schedVal(schedNum,"Disable")}"
+           if (!(schedVal(schedNum,"Disable") == "true")) {
+             if (actionsValid(schedVal(schedNum,"Mode"), schedVal(schedNum,"Reserve"), schedVal(schedNum,"Stormwatch"), schedVal(schedNum,"Strategy"), null)) {
+                if (scheduleValid(schedVal(schedNum,"Time"), schedVal(schedNum,"Days"))) {
+                    logger ("Scheduling index: ${i + 1} num: ${schedNum} for time ${schedVal(schedNum,"Time")}","debug")
+                    schedule(schedVal(schedNum,"Time"), processSchedule, [data: [schedNum: schedNum], overwrite: false])  //[data: [message: msg], overwrite: false]
+                } else {
+                    String msg = "Powerwall Manager Schedule index {i + 1} num: ${schedNum} actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
+                    logger (msg,"warn")
+                    //sendNotificationMessage(msg, "anomaly")
+                }
+              }
+          } else {
+               logger ("Schedule index: ${i + 1} num ${schedNum} is disabled","debug")
+         }
+       }
+    }
 }
 
 def getTheDay() {
@@ -903,14 +914,12 @@ def getTheDay() {
     return day
 }
 
-def commandPwFromSchedule(mode, reserve, stormwatch, strategy, scheduledDays) {
-    def day = getTheDay()
-    if (!pauseAutomations && scheduledDays?.contains(day)) {
-        def message = commandPwActions(mode, reserve, stormwatch, strategy, chargeTriggers)
-        if (notifyOfSchedules?.toBoolean()) {
-            sendNotificationMessage("Performing scheduled Powerwall actions. " + message)
-        }
-    }
+def getTheMonth() {
+    def mf = new java.text.SimpleDateFormat("MMMM")
+    mf.setTimeZone(location.timeZone)
+    def month = mf.format(new Date())
+    //log.debug "Month is: ${month}"
+    return month
 }
 
 //Hubitat compatibility
@@ -920,10 +929,10 @@ private timeOfDayIsBetween(fromDate, toDate, checkDate, timeZone) {
 
 def triggerPeriodActive() {
     def day = getTheDay()
-    def daysAreSet = triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0
-    def dayIsActive = daysAreSet && triggerDays?.contains(day)
-    def aPeriodIsSet = (triggerRestrictPeriod1?.toBoolean() || triggerRestrictPeriod2?.toBoolean())
-    def aPeriodIsActive = (triggerRestrictPeriod1?.toBoolean() && timeOfDayIsBetween(triggerStartTime1, triggerStopTime1, new Date(), location
+    Boolean daysAreSet = triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0
+    Boolean dayIsActive = daysAreSet && triggerDays?.contains(day)
+    Boolean aPeriodIsSet = (triggerRestrictPeriod1?.toBoolean() || triggerRestrictPeriod2?.toBoolean())
+    Boolean aPeriodIsActive = (triggerRestrictPeriod1?.toBoolean() && timeOfDayIsBetween(triggerStartTime1, triggerStopTime1, new Date(), location
         .timeZone)) ||
         (triggerRestrictPeriod2?.toBoolean() && timeOfDayIsBetween(triggerStartTime2, triggerStopTime2, new Date(), location.timeZone))
     //Valid conditions:
@@ -933,7 +942,7 @@ def triggerPeriodActive() {
 
 def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) {
     def pwDevice = getPwDevice()
-    def message = ""
+    String message = ""
     if (mode && mode.toString() != "No Action") {
         message = message + " Mode: ${mode.toString()}."
         if (mode.toString() == "Backup-Only") {
@@ -943,7 +952,7 @@ def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) 
         } else if (mode.toString() == "Time-Based Control") {
             setTimeBasedControlMode(pwDevice)
         } else {
-            def errMessage = "Unexpected condition processing scheduled mode change: ${mode.toString()}"
+            String errMessage = "Unexpected condition processing scheduled mode change: ${mode.toString()}"
             sendNotificationMessage(errMessage, "anomaly")
         }
     }
@@ -952,7 +961,7 @@ def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) 
         if (reserve.toInteger() >= 0 && reserve.toInteger() <= 100) {
             runIn(10, commandBackupReservePercent, [data: [reservePercent: reserve.toInteger()]])
         } else {
-            def errMessage = "Unexpected condition processing scheduled reserve % change: ${reserve}}"
+            String errMessage = "Unexpected condition processing scheduled reserve % change: ${reserve}}"
             sendNotificationMessage(errMessage, "anomaly")
         }
     }
@@ -972,7 +981,7 @@ def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) 
         } else if (strategy.toString() == "Balanced") {
             runIn(20, commandTouStrategy, [data: [strategy: "balanced"]])
         } else {
-            def errMessage = "Unexpected condition processing scheduled strategy change: ${strategy.toString()}"
+            String errMessage = "Unexpected condition processing scheduled strategy change: ${strategy.toString()}"
             sendNotificationMessage(errMessage, "anomaly")
         }
     }
@@ -986,30 +995,19 @@ def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) 
     return message
 }
 
-def processSchedule1() {
-    commandPwFromSchedule(schedule1Mode, schedule1Reserve, schedule1Stormwatch, schedule1Strategy, schedule1Days)
-}
-
-def processSchedule2() {
-    commandPwFromSchedule(schedule2Mode, schedule2Reserve, schedule2Stormwatch, schedule2Strategy, schedule2Days)
-}
-def processSchedule3() {
-    commandPwFromSchedule(schedule3Mode, schedule3Reserve, schedule3Stormwatch, schedule3Strategy, schedule3Days)
-}
-def processSchedule4() {
-    commandPwFromSchedule(schedule4Mode, schedule4Reserve, schedule4Stormwatch, schedule4Strategy, schedule4Days)
-}
-
-def processSchedule5() {
-    commandPwFromSchedule(schedule5Mode, schedule5Reserve, schedule5Stormwatch, schedule5Strategy, schedule5Days)
-}
-
-def processSchedule6() {
-    commandPwFromSchedule(schedule6Mode, schedule6Reserve, schedule6Stormwatch, schedule6Strategy, schedule6Days)
-}
-
-def processSchedule7() {
-    commandPwFromSchedule(schedule7Mode, schedule7Reserve, schedule7Stormwatch, schedule7Strategy, schedule7Days)
+void processSchedule(data) {
+    Integer schedNum = data.schedNum
+    def day = getTheDay()
+    def month = getTheMonth()
+    Boolean monthValid = !schedVal(schedNum,"Months") || schedVal(schedNum,"Months").contains(month)
+    Boolean dayValid = schedVal(schedNum,"Days").contains(day)
+    if (dayValid && monthValid) {
+        logger ("Executing schedule number ${schedNum}","debug")
+        String message = commandPwActions(schedVal(schedNum,"Mode"), schedVal(schedNum,"Reserve"), schedVal(schedNum,"Stormwatch"), schedVal(schedNum,"Strategy"), null)
+        if (notifyOfSchedules?.toBoolean()) {
+            sendNotificationMessage("Performing scheduled Powerwall actions. " + message)
+        }
+    }
 }
 
 private getUrl() {
@@ -1060,110 +1058,64 @@ private httpAuthAsyncGet(handlerMethod, String path, Integer attempt = 1) {
 }
 
 private httpAuthGet(String path, Closure closure, authToken = null) {
+    //There is no exception handling here, so that the exception can be uniquely handled by the calling method. 
     if (authToken == null) {
         authToken = token
     }
-    //try {
-        def requestParameters = [
-            uri: url,
-            path: path,
-            headers: [
-                'User-Agent': agent,
-                Authorization: "Bearer ${authToken}"
-            ]
-        ]
-        httpGet(requestParameters) {
-            resp -> closure(resp)
-        }
-   // } catch (e) {
-    //    log.error "Http Get failed: ${e}"
-   // }
+    def requestParameters = [uri: url, path: path, headers: ['User-Agent': agent, Authorization: "Bearer ${authToken}"]]
+    httpGet(requestParameters) {resp -> closure(resp)}
 }
 
-private httpAsyncGet(address, handlerMethod, String path, Integer attempt = 1) {
-    try {
-        logger ("Async requesting: ${path}","debug")
-        def requestParameters = [
-            uri: "https://${address}",
-            path: path,
-            contentType: 'application/json',
-            ignoreSSLIssues: true 
-            //,
-            //headers: ['User-Agent': agent, Authorization: "Bearer ${token}"]
-        ]
-        if (hubIsSt()) {
-            include 'asynchttp_v1'
-            asynchttp_v1.get(handlerMethod, requestParameters, [attempt: attempt])
-        } else {
-            asynchttpGet(handlerMethod, requestParameters, [attempt: attempt])
-        }
-    } catch (e) {
-        log.error "Http Async Get failed: ${e}"
-    }
-}
-
-private httpAuthPost(Map params = [: ], String cmdName, String path, Closure closure, Integer attempt = null) {
+private httpAuthPost(Map params = [:], String cmdName, String path, Closure closure, Integer attempt = null) {
     //cmdName is descriptive name for logging/notification
-    def tryCount = attempt ?: 1
-    def attemptStr = ""
+    Integer tryCount = attempt ?: 1
+    String attemptStr = ""
     if (tryCount > 1) {
         attemptStr = ", Attempt: ${tryCount}"
     }
-    logger ("Command: ${cmdName} ${params?.body}" + attemptStr,"debug")
-    try {
-        def requestParameters = [
-            uri: url,
-            path: path,
-            headers: [
-                'User-Agent': agent,
-                Authorization: "Bearer ${token}"
-            ]
-        ]
-
-        if (params.body) {
-            requestParameters["body"] = params.body
-            httpPostJson(requestParameters) {
-                resp -> closure(resp)
-            }
-        } else {
-            httpPost(requestParameters) {
-                resp -> closure(resp)
-            }
-        }
-        state.cmdFailedSent = false
-
-    } catch (groovyx.net.http.HttpResponseException e) {
-        if (tryCount < 3) {
-            logger ("Request attempt ${tryCount} failed for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","info")
-            //debug notification message below. comment out for production
-            //sendNotificationMessage("Failed HTTP command: ${params} after ${tryCount} tries. Retrying..")
-            if (e?.response?.getStatus() == 401) {
-                handleAuthIssue()
-                pause(2000)
-            }
-            pause(1000)
-            httpAuthPost(params, cmdName, path, closure, tryCount + 1)
-        } else {
-            logger ("Request failed after ${tryCount} attempts for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","warn")
-            if (!state.cmdFailedSent) {
-                sendNotificationMessage("Powerwall Manager: Failed HTTP command: ${cmdName} after ${tryCount} tries.")
-                state.cmdFailedSent = true
-            }
-        }
-    } catch (Exception e) {
-        if (tryCount < 3) {
-            logger ("Request attempt ${tryCount} failed for path: ${path}. General Exception: ${e}","info")
-            //debug notification message below. comment out for production
-            //sendNotificationMessage("Failed command: ${params} after ${tryCount} tries. Retrying..")
-            pause(1000)
-            httpAuthPost(params, cmdName, path, closure, tryCount + 1)
-        } else {
-            logger ("Request failed after ${tryCount} attempts for path: ${path}. General Exception: ${e}","warn")
-            if (!state.cmdFailedSent) {
-                sendNotificationMessage("Powerwall Manager: Failed command: ${cmdName} after ${tryCount} tries.")
-                state.cmdFailedSent = true
-            }
-        }
+    String authToken = getToken()
+    if (authToken) {
+       logger ("Command: ${cmdName} ${params?.body}" + attemptStr,"debug")
+       try {
+           def requestParameters = [uri: url, path: path, headers: ['User-Agent': agent, Authorization: "Bearer ${authToken}"]]
+           if (params.body) {
+               requestParameters["body"] = params.body
+               httpPostJson(requestParameters) {resp -> closure(resp)}
+           } else {
+               httpPost(requestParameters) {resp -> closure(resp)}
+           }
+           state.cmdFailedSent = false
+       } catch (groovyx.net.http.HttpResponseException e) {
+           if (tryCount < 3) {
+               logger ("Request attempt ${tryCount} failed for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","info")
+               if (e?.response?.getStatus() == 401) {
+                   handleServerAuthIssue()
+                   pause(2000)
+               }
+               pause(1000)
+               httpAuthPost(params, cmdName, path, closure, tryCount + 1)
+           } else {
+               logger ("Request failed after ${tryCount} attempts for path: ${path}. HTTP status code: ${e?.response?.getStatus()}","warn")
+               if (!state.cmdFailedSent) {
+                   sendNotificationMessage("Powerwall Manager: Failed HTTP command: ${cmdName} after ${tryCount} tries.")
+                   state.cmdFailedSent = true
+               }
+           }
+       } catch (Exception e) {
+           if (tryCount < 3) {
+               logger ("Request attempt ${tryCount} failed for path: ${path}. General Exception: ${e}","info")
+               pause(1000)
+               httpAuthPost(params, cmdName, path, closure, tryCount + 1)
+           } else {
+               logger ("Request failed after ${tryCount} attempts for path: ${path}. General Exception: ${e}","warn")
+               if (!state.cmdFailedSent) {
+                   sendNotificationMessage("Powerwall Manager: Failed command: ${cmdName} after ${tryCount} tries.")
+                   state.cmdFailedSent = true
+               }
+           }
+       }
+    } else {
+        logger ("Cannot send command: ${cmdName}. Token is not valid","warn")
     }
 }
 
@@ -1171,8 +1123,8 @@ private sendNotificationMessage(message, msgType = null) {
     logger ("notification message: ${message}","debug")
     if (msgType == null || msgType != "anomaly" || notifyWhenAnomalies?.toBoolean()) {
         if (hubIsSt()) {
-           def sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
-           def sendTextMessage = (notificationMethod?.toString() == "text" || notificationMethod?.toString() == "text and push")
+           Boolean sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
+           Boolean sendTextMessage = (notificationMethod?.toString() == "text" || notificationMethod?.toString() == "text and push")
            if (sendTextMessage == true) {
                if (phoneNumber) {
                   sendSmsMessage(phoneNumber.toString(), message)
@@ -1193,8 +1145,8 @@ private sendNotificationMessage(message, msgType = null) {
 }
 
 private getPowerwalls() {
-    state.foundPowerwalls = false
-    def foundPowerwall = false
+    state.serverVerified = false
+    Boolean foundPowerwall = false
     try {
        httpAuthGet("/api/1/products", {
         resp ->
@@ -1216,7 +1168,7 @@ private getPowerwalls() {
     } catch (Exception e) {
        log.error  "Exception checking for Powerwalls: ${e}"
     }
-    state.foundPowerwalls = foundPowerwall
+    state.serverVerified = foundPowerwall
 }
 
 def installed() {
@@ -1239,38 +1191,61 @@ private removeChildDevices(delete) {
     }
 }
 
-def initialize() {
+void pollProcedure(String period, def procedure) {
+    switch(period) {
+        case "1 minute":
+            runEvery1Minute(procedure)
+            break
+        case "5 minutes": 
+            runEvery5Minutes(procedure)
+            break
+        case "10 minutes": 
+            runEvery10Minutes(procedure)
+            break
+        case "30 minutes": 
+            runEvery30Minutes(procedure)
+            break
+        case "1 hour": 
+            runEvery1Hour(procedure)
+            break
+        case "Do not poll": 
+            break
+        default:
+            runEvery10Minutes(procedure)
+            break
+       }
+}
 
+def startPollingServer() {
+    pollProcedure(pollingPeriod, processServerMain)
+}
+    
+def startPollingGateway() {
+    pollProcedure(gatewayPollingPeriod, processGatewayMain)
+}
+
+def initialize() {
     createDeviceForPowerwall()
 
     unsubscribe()
     unschedule()
     setSchedules()
-    state.foundGateway = false
-    state.pwConnectionMethod = "Use Remote Tesla Account Server Only"
-    //state.pwConnectionMethod = connectionMethod
 
-    //if (state.foundGateway) {
-    if (gatewayAddress) {
+    if (gatewayTileAddress) {
         //log.debug "calling tile update..."
         runIn (10, createDashboardTile)
     }
-    
-    if (pollingPeriod == "5 minutes") {
-        runEvery5Minutes(processMain)
-    } else if (pollingPeriod == "30 minutes") {
-        runEvery30Minutes(processMain)
-    } else if (pollingPeriod == "1 hour") {
-        runEvery1Hour(processMain)
-    } else if (pollingPeriod != "Do not poll") {
-        runEvery10Minutes(processMain) //default
-    } else {
-        logger ("not polling Powerwall","debug")
-    }
 
-    runEvery1Hour(processWatchdog)
+    //stagger server and gateway polling
+    runIn (30, startPollingServer)
+    if (connectedToGateway()) {
+       startPollingGateway()
+    }
+    
+    //runEvery1Hour(processWatchdog)
     runEvery3Hours(processWatchdog)
-    runIn(10, processMain)
+    runIn(10, processServerMain)
+    runIn(15, processGatewayMain)
 
     //if (state.refresh_token != null && state.token_expires_on != null) {
     //    state.schedule_refresh_token = true
@@ -1281,9 +1256,7 @@ private createDeviceForPowerwall() {
     def pwDevice = getPwDevice()
     if (!pwDevice) {
         def device = addChildDevice("darwinsden", "Tesla Powerwall", "Powerwall" + now().toString(), null, 
-                            [name: "Tesla Powerwall", label: "Tesla Powerwall",
-            completedSetup: true
-        ])
+                            [name: "Tesla Powerwall", label: "Tesla Powerwall", completedSetup: true ])
         log.debug "created powerwall device"
     } else {
         logger ("device for Powerwall exists","trace")
@@ -1295,10 +1268,10 @@ def createDashboardTile() {
    def pwDevice = getPwDevice()
    logger ("creating/updating tile...","debug")
    if (pwDevice) {
-      String tileStr = getTileStr(tileScale?.toFloat()) 
-      pwDevice.sendEvent(name: "pwTile", value: tileStr)
+       String tileStr = getTileStr(tileScale?.toFloat()) 
+       pwDevice.sendEvent(name: "pwTile", value: tileStr)
    } else {
-       log.warn "Unable to update Dashboard tile. Powerwall device does not exist."
+       logger("Unable to update Dashboard tile. Powerwall device does not exist.","warn")
    }
 }
 
@@ -1310,30 +1283,28 @@ def updateIfChanged(device, attr, value, delta = null) {
     if (state.currentAttrValue[attr] != null) {
         currentValue = state.currentAttrValue[attr].toString()
     }
-    //log.debug "new value: ${value} old value: ${currentValue} attribute: ${attr} delta: ${delta} "
-    def deltaMet = (currentValue == null || value != null && delta != null && Math.abs((value.toInteger() - currentValue.toInteger()).toInteger()) > delta
-        .toInteger())
-    def changed = value != null && value != '' && currentValue != null && currentValue != '' && value != currentValue && (!delta || deltaMet)
+    Boolean deltaMet = (currentValue == null || value != null && delta != null && Math.abs((value.toInteger() - currentValue.toInteger()).toInteger()) > delta.toInteger())
+    Boolean changed = value != null && value != '' && currentValue != null && currentValue != '' && value.toString() != currentValue.toString() && (!delta || deltaMet)
+    logger ("${attr} is: ${value} was: ${currentValue} changed: ${changed}","trace")
     state.currentAttrValue[attr] = value.toString()
-    def heartBeatUpdateDue = false
+    Boolean heartBeatUpdateDue = false
 
     if (state.lastHeartbeatUpdateTime != null) {
         if (state.lastHeartbeatUpdateTime[attr] != null) {
-            if ((now() - state.lastHeartbeatUpdateTime[attr]) > 60000) {
+            if ((now() - state.lastHeartbeatUpdateTime[attr]) > 3600000) {
                 heartBeatUpdateDue = true
             }
         }
     } else {
-        state.lastHeartbeatUpdateTime = [: ]
+        state.lastHeartbeatUpdateTime = [:]
     }
     if (device) {
         if (changed || heartBeatUpdateDue || (currentValue == null && (value != null && value != ''))) {
             device.sendEvent(name: attr, value: value)
             state.lastHeartbeatUpdateTime[attr] = now()
-            //if (changed) {log.debug "changed ${attr} from ${currentValue} to ${value}"}
         }
     } else {
-        log.debug("No Powerwall device to update ${attr} to ${value}")
+        logger("No Powerwall device to update ${attr} to ${value}","warn")
     }
     return changed
 }
@@ -1351,9 +1322,9 @@ def processBelowTriggerDeviceActions() {
 }
 
 def checkBatteryNotifications(data) {
-    if (notifyWhenReserveApproached?.toBoolean() && data.reservePercent != null) {
+   if (notifyWhenReserveApproached?.toBoolean() && data.reservePercent != null) {
         if (data.batteryPercent - data.reservePercent < 5) {
-            def status
+            String status
             if (data.batteryPercent <= data.reservePercent) {
                 status = "is at or below"
             } else {
@@ -1373,13 +1344,11 @@ def checkBatteryNotifications(data) {
     if (aboveTriggerValue) {
         if (data.batteryPercent >= aboveTriggerValue.toFloat()) {
             if (state.timeOfLastAboveTrigger == null) {
-                if (!pauseAutomations && triggerPeriodActive() && aboveTriggerEnabled) {
+                if (triggerPeriodActive() && aboveTriggerEnabled) {
                     state.timeOfLastAboveTrigger = now()
-                    def enableTriggers = "N/A"
-                    def triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or above ${aboveTriggerValue}% trigger."
-                    if (actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn,
-                            enableTriggers)) {
-                        def message = commandPwActions(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, enableTriggers)
+                    String triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or above ${aboveTriggerValue}% trigger."
+                    if (actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn)) {
+                        String message = commandPwActions(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, null)
                         if (aboveTriggerDevicesToOn?.size() > 0) {
                             message = message + " Turning on devices."
                             runIn(1, processAboveTriggerDeviceActions)
@@ -1400,13 +1369,11 @@ def checkBatteryNotifications(data) {
     if (belowTriggerValue) {
         if (data.batteryPercent <= belowTriggerValue.toFloat()) {
             if (state.timeOfLastBelowTrigger == null) {
-                if (!pauseAutomations && triggerPeriodActive() && belowTriggerEnabled) {
+                if (triggerPeriodActive() && belowTriggerEnabled) {
                     state.timeOfLastBelowTrigger = now()
-                    def enableTriggers = "N/A"
-                    def triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or below ${belowTriggerValue}% trigger."
-                    if (actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff,
-                            enableTriggers)) {
-                        def message = commandPwActions(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, enableTriggers)
+                    String triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or below ${belowTriggerValue}% trigger."
+                    if (actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff)) {
+                        String message = commandPwActions(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, null)
                         if (belowTriggerDevicesToOff?.size() > 0) {
                             message = message + " Turning off devices."
                             runIn(1, processBelowTriggerDeviceActions)
@@ -1425,14 +1392,164 @@ def checkBatteryNotifications(data) {
     }
 }
 
-def processSiteResponse(response, callData) {
-    // log.debug "${callData}"
-    logger ("processing site data response","debug")
+def getTileStr(def zoomLevel) {
+    String tileStr = ""
+    if (gatewayTileAddress) {
+      long width = tileWidth?.toLong() ?: 460
+      long height = tileHeight?.toLong() ?: 517  
+      float frameScale = zoomLevel?.toFloat() ?: 0.81
+      String innerDivStyle = "overflow: hidden; transform: scale(${frameScale}); transform-origin: 0 0; border: none; padding: 0; margin: 0;" 
+      String outerDivStyle = "height: ${(height*frameScale).toLong()}px; width: ${width-16}px; overflow: hidden; border: none; padding: 0; margin: 0;"     
+      String iframeStyle   = "height: ${height}px; width: ${width}px; border: none; scrollbar-width: none; overflow: hidden; border: none; padding: 0; margin: 0;"  
+      tileStr = "<div style = '$outerDivStyle'><div style = '$innerDivStyle'><iframe style='${iframeStyle}' scrolling='no' src='http://${gatewayTileAddress}'></iframe></div></div>"  
+    } else {
+        tileStr = "Gateway address not entered"
+    }
+    return tileStr
+}
+
+def processGwMeterResponse(response, callData) {
+    logger ("processing gateway meter aggregate response","debug")
     if (!response.hasError()) {
-        def data = response.json.response
-        logger ("${data}","debug")
-        def strategy = data.tou_settings.optimization_strategy
-        def strategyUi
+        def data = response.json
+        logger ("Gw meter agg: ${data}","trace") 
+        def child = getPwDevice()
+        updateIfChanged(child, "loadPower", data.load.instant_power.toInteger(), 100)
+        updateIfChanged(child, "gridPower", data.site.instant_power.toInteger(), 100)
+        updateIfChanged(child, "power", data.site.instant_power.toInteger(), 100)
+        updateIfChanged(child, "solarPower", data.solar.instant_power.toInteger(), 100)
+        updateIfChanged(child, "powerwallPower", data.battery.instant_power.toInteger(), 100)
+    } else {
+        logger ("Error procesing gateway meter data. Response status: ${response.getStatus()}","warn")
+        if (response.getStatus() == 401 || response.getStatus() == 403) {
+            runIn (5, reVerifyGateway)
+        }
+    }       
+}
+
+Float scaleGatewayBatteryPercent (Float percent) {
+    Float scaled = (percent - 5.0)/0.95   //adjust TEG to match Tesla Server API. Remove 5% and rescale 0 - 100%
+    return Math.round(scaled * 10)/10     //rounded to one decimal place 
+}
+
+def processGwSoeResponse(response, callData) {
+    logger ("processing gateway SOE response", "debug")
+    if (!response.hasError()) {
+        def data = response.json
+        logger ("Gw SOE: ${data}","trace")
+        def child = getPwDevice()
+        Float batteryPercent = scaleGatewayBatteryPercent(data.percentage) //adjust TEG to match Tesla Server API
+        updateIfChanged(child, "battery", (batteryPercent + 0.5).toInteger())
+        updateIfChanged(child, "batteryPercent", batteryPercent)
+        runIn(1, checkBatteryNotifications, [data: [batteryPercent: batteryPercent, reservePercent: null]])
+    } else { 
+        logger ("Error procesing gateway SOE. Response status: ${response.getStatus()}","warn")
+    }  
+}
+
+def processGwOpResponse(response, callData) {
+    logger ("processing gateway operation response","debug")
+    if (!response.hasError()) {
+        def data = response.json
+        logger ("Gw OP: ${data}","trace")
+        Float reservePercent = scaleGatewayBatteryPercent(data.backup_reserve_percent) //adjust TEG to match Tesla Server API
+        updateOpModeAndReserve(data.real_mode, (reservePercent + 0.5).toInteger()) 
+    } else { 
+        logger ("Error procesing gateway operation. Response status: ${response.getStatus()}","warn")
+    }     
+}
+
+def processGwSiteNameResponse(response, callData) {
+    logger ("processing gateway sitename response","debug")
+    if (!response.hasError()) {
+        def data = response.json
+        logger ("Gw Site Name: ${data}","trace")
+        def child = getPwDevice()
+        updateIfChanged(child, "siteName", data.site_name.toString())
+    } else {
+        logger ("Error procesing gateway sitename. Response status: ${response.getStatus()}","warn")
+    }      
+}
+
+def processGwStatusResponse(response, callData) {
+    logger ("processing gateway status response","debug")
+    if (!response.hasError()) {
+        def data = response.json
+        logger ("Gw Status: ${data}","trace")
+        updateVersion (data.version) 
+    } else {
+        logger ("Error procesing gateway status. Response status: ${response.getStatus()}","warn")
+    }      
+}
+
+def processGwGridStatResponse(response, callData) {
+    logger ("processing gateway grid status response","debug")
+    if (!response.hasError()) {
+        def data = response.json
+        logger ("Gw Grid Status: ${data}","trace")
+        updateGridStatus(data.grid_status)
+        //grid_status: SystemGridConnected
+    } else {
+        logger ("Error procesing gateway grid status. Response status: ${response.getStatus()}","warn")
+    }      
+}
+
+void updateGridStatus(String gridStatus) {
+    if (gridStatus != null) {
+        String gridStatusEnum
+        if (gridStatus == "Active" || gridStatus == 'SystemGridConnected') {
+            gridStatusEnum = "onGrid"
+        } else {
+            gridStatusEnum = "offGrid"
+        }
+        Boolean changed = updateIfChanged(getPwDevice(), "gridStatus", gridStatusEnum)
+        if (changed) {
+            if (gridStatusEnum == "offGrid") {
+                runIn(1, processOffGridActions)
+            } else {
+                runIn(1, processOnGridActions)
+            }
+        }
+    }
+}
+
+void updateOpModeAndReserve(String opMode, Integer reservePercent) {
+    if (opMode == "backup") {
+         reservePercent = 100
+    } else {
+         reservePercent = reservePercent
+    }
+    def pwDevice = getPwDevice()
+    updateIfChanged(pwDevice, "reservePercent", reservePercent)
+    updateIfChanged(pwDevice, "reserve_pending", reservePercent)
+     
+    String opModePretty = "Unknown"
+    if (opMode == "autonomous") {
+        opModePretty = "Time-Based Control"
+    } else if (opMode == "self_consumption") {
+        opModePretty = "Self-Powered"
+    } else if (opMode == "backup") {
+        opModePretty = "Backup-Only"
+    } 
+    Boolean changed = updateIfChanged(pwDevice, "currentOpState", opModePretty)
+    if (changed && notifyWhenModesChange?.toBoolean()) {
+          sendNotificationMessage("Powerwall op mode changed to ${opModePretty}")
+    }
+}
+
+void updateVersion(String version) {
+    if (version != null) {
+       String versionString = 'V' + version
+       Boolean changed = updateIfChanged(getPwDevice(), "pwVersion", versionString)
+       if (changed && notifyWhenVersionChanges?.toBoolean()) {
+           sendNotificationMessage("Powerwall software version changed to ${versionString}")
+       }
+    }
+}
+
+void updateOptimizationStrategy(String strategy) {
+    if (strategy) {
+        String strategyUi
         if (strategy == "economics") {
             strategyUi = "Cost-Saving"
         } else if (strategy == "balanced") {
@@ -1441,28 +1558,29 @@ def processSiteResponse(response, callData) {
             strategyUi = strategy
         }
         state.strategy = strategyUi.toString()
-        def pwDevice = getPwDevice()
-        def changed = updateIfChanged(pwDevice, "currentStrategy", strategyUi)
+        Boolean changed = updateIfChanged(pwDevice, "currentStrategy", strategyUi)
         if (changed && notifyWhenModesChange?.toBoolean()) {
             sendNotificationMessage("Powerwall ATC optimization strategy changed to ${strategyUi}")
         }
-        if (notifyWhenModesChange?.toBoolean() && state?.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
+    }
+}
+    
+def processSiteResponse(response, callData) {
+    logger ("processing server site data response","debug")
+    if (!response.hasError()) {
+        def data = response.json.response
+        logger ("Site: ${data}","trace")
+        updateOptimizationStrategy (data?.tou_settings?.optimization_strategy)
+        if (data?.tou_settings?.schedule && notifyWhenModesChange?.toBoolean() && state.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
             sendNotificationMessage("Powerwall Advanced Time Controls schedule has changed")
         }
         state.lastSchedule = data.tou_settings.schedule
         //log.debug "sched: ${data.tou_settings.schedule}"
-        if (data.version != null) {
-            def versionString = 'V' + data.version.toString()
-            changed = updateIfChanged(pwDevice, "pwVersion", versionString)
-            if (changed && notifyWhenVersionChanges?.toBoolean()) {
-                sendNotificationMessage("Powerwall software version changed to ${versionString}")
-            }
-        }
-        
+        updateVersion (data.version)        
     } else {
         if (response.getStatus() == 401) {
             //log.warn "Site resp error: ${response.getErrorMessage()}."
-            runIn (1, handleAuthIssue)
+            runIn (1, handleServerAuthIssue)
         }
         if (callData?.attempt && callData.attempt < 2) {
             logger ("Site response error on attempt ${callData?.attempt}: ${response.getErrorMessage()}. Retrying...","info")
@@ -1473,123 +1591,21 @@ def processSiteResponse(response, callData) {
     }
 }
 
-def getTileStr(def zoomLevel) {
-    String tileStr = ""
-    if (gatewayAddress) {
-      long width = tileWidth?.toLong() ?: 460
-      long height = tileHeight?.toLong() ?: 517  
-      float frameScale = zoomLevel?.toFloat() ?: 0.81
-      String innerDivStyle = "overflow: hidden; transform: scale(${frameScale}); transform-origin: 0 0; border: none; padding: 0; margin: 0;" 
-      String outerDivStyle = "height: ${(height*frameScale).toLong()}px; width: ${width-16}px; overflow: hidden; border: none; padding: 0; margin: 0;"     
-      String iframeStyle   = "height: ${height}px; width: ${width}px; border: none; scrollbar-width: none; overflow: hidden; border: none; padding: 0; margin: 0;"  
-      //log.debug "inner: ${innerDivStyle} + outer: ${outerDivStyle} iframe: ${iframeStyle}"
-      tileStr = "<div style = '$outerDivStyle'><div style = '$innerDivStyle'><iframe style='${iframeStyle}' scrolling='no' src='http://${gatewayAddress}'></iframe></div></div>"  
-    } else {
-        tileStr = "Gateway address not entered"
-    }
-    return tileStr
-}
-
-def processGwAggregatesResponse(response, callData) {
-    //log.debug "${callData}"
-    if (logLevel == "debug" | logLevel == "trace") {
-       log.debug "processing gateway aggregates response"
-    }
-    if (!response.hasError()) {
-        def data = response.json
-        if (logLevel == "trace") {
-          log.debug "${data}" 
-        }
-        def child = getPwDevice()
-        updateIfChanged(child, "loadPower", data.load.instant_power.toInteger(), 100)
-        updateIfChanged(child, "gridPower", data.site.instant_power.toInteger(), 100)
-        updateIfChanged(child, "power", data.site.instant_power.toInteger(), 100)
-        updateIfChanged(child, "solarPower", data.solar.instant_power.toInteger(), 100)
-        updateIfChanged(child, "powerwallPower", data.battery.instant_power.toInteger(), 100)
-    } else {
-        log.debug "Error procesing gateway aggregate data. Data is ${data}"
-    }       
-}
-
-def processGwSoeResponse(response, callData) {
-    //log.debug "${callData}"
-    if (logLevel == "debug" | logLevel == "trace") {
-      log.debug "processing gateway SOE response"
-    }
-    if (!response.hasError()) {
-        def data = response.json
-        if (logLevel == "trace") {
-           log.debug "${data}" 
-        }
-        def child = getPwDevice()
-        //def batteryPercent = (data.percentage.toFloat() - 5.0)/0.95 //adjust TEG to match Tesla Server API
-        def batteryPercent = (data.percentage.toFloat() - 6)/0.94 //adjust TEG to match Tesla Server API. Remove 5% and rescale 0 - 100%
-        float bpRounded = Math.round(batteryPercent * 10)/10 //rounded to one decimal place 
-        //log.debug "percent: ${bpRounded}"
-        updateIfChanged(child, "battery", (bpRounded + 0.5).toInteger())
-        updateIfChanged(child, "batteryPercent", bpRounded)
-        //runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
-        runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: null]])
-    } else { 
-        log.debug "Error procesing gateway soe data. Data is: ${data}"
-    }  
-}
-
-def processGwOperationResponse(response, callData) {
-    //log.debug "${callData}"
-    log.debug "processing gateway operation response"
-    if (!response.hasError()) {
-        def data = response.json
-        log.debug "${data}" 
-        def child = getPwDevice()
-    } else { 
-        log.debug "Error procesing gateway operation data. Data is: ${data}"
-    }     
-}
-
-def processGwSiteNameResponse(response, callData) {
-    //log.debug "${callData}"
-    if (logLevel == "debug" | logLevel == "trace") {
-       log.debug "processing gateway sitename response"
-    }
-    if (!response.hasError()) {
-        def data = response.json
-        //log.debug "${data}" 
-        def child = getPwDevice()
-        //updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + versionString + '\n' + gridStatusString)
-        updateIfChanged(child, "siteName", data.site_name.toString())
-
-    } else {
-        log.debug "Error procesing gateway sitename data. Data is: ${data}"
-    }      
-}
-
 def processPowerwallResponse(response, callData) {
     //     log.debug "${callData}"
-    logger ("processing powerwall response","debug")
+    logger ("processing server powerwall response","debug")
     if (!response.hasError()) {
         def data = response.json.response
         logger ("${data}","trace")  
         def child = getPwDevice()
-        def reservePercent
-        if (data.operation == "backup") {
-            reservePercent = 100
-        } else {
-            reservePercent = data.backup.backup_reserve_percent.toInteger()
-        }
-        updateIfChanged(child, "reservePercent", reservePercent.toInteger())
-        updateIfChanged(child, "reserve_pending", reservePercent.toInteger())
+        updateOpModeAndReserve(data.operation, data.backup.backup_reserve_percent.toInteger()) 
+        
         if (data.total_pack_energy > 1) //sometimes data appears invalid
         {
-            def batteryPercent = data.energy_left.toFloat() / data.total_pack_energy.toFloat() * 100.0
-            
-            def bpRounded = Math.round(batteryPercent * 10)/10 //rounded to one decimal place 
-            //log.debug "percent: ${bpRounded}"
+            float batteryPercent = data.energy_left.toFloat() / data.total_pack_energy.toFloat() * 100.0
+            float bpRounded = Math.round(batteryPercent * 10)/10 //rounded to one decimal place 
             updateIfChanged(child, "battery", (bpRounded + 0.5).toInteger())
             updateIfChanged(child, "batteryPercent", bpRounded)
-            
-            //updateIfChanged(child, "battery", Math.round(batteryPercent * 10) / 10).toInteger()
-            //updateIfChanged(child, "batteryPercent", Math.round(batteryPercent * 10) / 10)
             runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
         }
 
@@ -1598,43 +1614,16 @@ def processPowerwallResponse(response, callData) {
         updateIfChanged(child, "power", data.power_reading.grid_power[0].toInteger(), 100)
         updateIfChanged(child, "solarPower", data.power_reading.solar_power[0].toInteger(), 100)
         updateIfChanged(child, "powerwallPower", data.power_reading.battery_power[0].toInteger(), 100)
-        //Grid Status
-        def gridStatusString
-        def gridStatusEnum
-        if (data.grid_status == "Inactive") {
-            gridStatusString = "Status: Off-Grid"
-            gridStatusEnum = "offGrid"
-        } else {
-            gridStatusString = "Status: On-Grid"
-            gridStatusEnum = "onGrid"
+        if (!connectedToGateway()) {
+            //Do not update if connected to gateway, to prevent status data thrashing
+            updateGridStatus (data.grid_status)
         }
-        def changed = updateIfChanged(child, "gridStatus", gridStatusEnum)
-        if (changed) {
-            if (gridStatusEnum == "offGrid") {
-                runIn(1, processOffGridActions)
-            } else {
-                runIn(1, processOnGridActions)
-            }
-        }
-
-        updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + '\n' + gridStatusString)
+        
+        //updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + '\n' + gridStatusString)
         updateIfChanged(child, "siteName", data.site_name.toString())
         if (data?.user_settings?.storm_mode_enabled != null) {
              updateIfChanged(child, "stormwatch", data.user_settings.storm_mode_enabled.toBoolean())
         }
-        def opMode = "Unknown"
-        if (data.operation == "autonomous") {
-            opMode = "Time-Based Control"
-        } else if (data.operation == "self_consumption") {
-            opMode = "Self-Powered"
-        } else if (data.operation == "backup") {
-            opMode = "Backup-Only"
-        }
-        changed = updateIfChanged(child, "currentOpState", opMode)
-        if (changed && notifyWhenModesChange?.toBoolean()) {
-            sendNotificationMessage("Powerwall op mode changed to ${opMode}")
-        }
-        //log.debug "grid status is: ${data.grid_status}"         
         state.lastCompletedTime = now()
     } else {
         //if (response.getStatus() == 401) {
@@ -1675,40 +1664,42 @@ def processOnGridActions() {
 
 def requestSiteData(data) {
     if (!state?.lastSiteRequestTime || now() - state.lastSiteRequestTime > 1000) {
-        def tryCount = data?.attempt ?: 1
+        Integer tryCount = data?.attempt ?: 1
         //log.debug "requesting site info"
-        if ((state.pwConnectionMethod == null || state.pwConnectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+        if (state.serverVerified) {
             httpAuthAsyncGet('processSiteResponse', "/api/1/energy_sites/${state.energySiteId}/site_info", tryCount)
         }
         state.lastSiteRequestTime = now()
     }
 }
+void reVerifyGateway() {
+    getLocalGwStatus()
+}   
 
-def requestLocalGwData() {
-    httpAsyncGet(gatewayAddress, 'processGwAggregatesResponse', "/api/meters/aggregates", tryCount)
-    httpAsyncGet(gatewayAddress, 'processGwSoeResponse', "/api/system_status/soe", tryCount)
-    httpAsyncGet(gatewayAddress, 'processGwSiteNameResponse', "/api/site_info/site_name", tryCount)
-            
-    // Authenticate...
-    //   httpAsyncGet(gatewayAddress, 'processGwOperationResponse', "/api/operation", tryCount)
-    //   /api/system/update/status - version...
-    //   /api/operation
-    //   /api/system_status/grid_status   
+def requestGatewayMeterData() {
+     String gwUri = "https://${gatewayAddress}"
+     asynchttpGet(processGwMeterResponse, [uri: gwUri, path: "/api/meters/aggregates", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
 }
+
+def requestGatewaySiteData() {
+     String gwUri = "https://${gatewayAddress}"
+     asynchttpGet(processGwSoeResponse, [uri: gwUri, path: "/api/system_status/soe", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+     asynchttpGet(processGwSiteNameResponse, [uri: gwUri, path: "/api/site_info/site_name", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+     asynchttpGet(processGwGridStatResponse, [uri: gwUri, path: "/api/system_status/grid_status", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+    if (!connectedToTeslaServer()) {   
+       //Only process if not connected to the Tesla server to prevent data thrashing
+       asynchttpGet(processGwOpResponse, [uri: gwUri, path: "/api/operation", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+       asynchttpGet(processGwStatusResponse, [uri: gwUri, path: "/api/system/update/status", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+     }   
+}
+
 def requestPwData(data) {
     if (!state?.lastPwRequestTime || now() - state.lastPwRequestTime > 1000) {
-        def tryCount = data?.attempt ?: 1
+        Integer tryCount = data?.attempt ?: 1
         //log.debug "requesting powerwall data"
-        if ((state.pwConnectionMethod == null || state.pwConnectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+        if (state.serverVerified) {
             httpAuthAsyncGet('processPowerwallResponse', "/api/1/powerwalls/${state.pwId}", tryCount)
         }
-        if ((state.pwConnectionMethod && state.pwConnectionMethod != "Use Remote Tesla Account Server Only") && state.foundGateway && gatewayAddress) {
-            if (state.pwConnectionMethod == "Use Local Gateway Only" ) {
-               requestLocalGwData()
-            } else {
-               runIn (60, requestLocalGwData) //stagger data
-            }
-        } 
         state.lastPwRequestTime = now()
     }
 }
@@ -1842,7 +1833,8 @@ def refresh(child) {
     if (logLevel == "debug" | logLevel == "trace") {
         logger ("refresh requested","debug")
     }
-    runIn(1, processMain)
+    runIn(1, processServerMain)
+    runIn(2, processGatewayMain)
     runIn(30, processWatchdog)
 }
 
@@ -1879,12 +1871,14 @@ def processWatchdog() {
             runIn(30, initialize)
         }
     } else if (secondsSinceLastProcessCompleted > maxDownTime) {
-        if (!state?.completedWarningSent) {
-                String msg = "Powerwall Manager has not successfully received and processed data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing"
+        if (state.serverValidAtStartup) {
+           if (!state?.completedWarningSent) {
+                String msg = "Powerwall Manager has not successfully received and processed server data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing"
                 sendNotificationMessage("Warning: " + msg,"anomaly")
                 state.completedWarningSent = true
                 logger (msg,"warn")
                 runIn(30, initialize)
+           }
         }
     } else {
         if (state?.completedWarningSent || state?.processedWarningSent) {
@@ -1897,16 +1891,53 @@ def processWatchdog() {
     }
 }
 
+void checkAndMigrateFromPreviousVersion() {
+    //backward compatibility check 3-June-2021. To be removed in future release 
+    if (state.foundPowerwalls && state.serverVerified == null) {
+        log.debug "Migrating server info from previous version"
+        state.serverVerified = true
+        state.foundPowerwalls = null
+    }
+    if (state.scheduleList == null && state.lastProcessedTime != null) {
+        log.debug "Migrating schedule info from previous version"
+        state.scheduleList = []
+        state.scheduleNumUsed = []
+        Boolean schedNumExists
+        Integer schedIndex = 0
+        for (i in 1..7) {
+            schedNumExists = (settings["schedule${i}Time"] != null)
+            state.scheduleNumUsed[i-1] = schedNumExists
+            if (schedNumExists) {
+                state.scheduleList [schedIndex] = i
+                schedIndex = schedIndex + 1
+            }
+        }
+    }
+}
+         
+//backward compatability for release update - rename of method 3-Jun-2021. Will be removed on future release
 def processMain() {
+    logger ("Re-initializing due to code version update.","warn")
+    checkAndMigrateFromPreviousVersion()
+    runIn(1, initialize) //processMain will never be called again with new code
+}
+    
+def processServerMain() {
+    //if (!state.forceSrvrFailure) {
+    //    log.debug "server fail test initiated"
+    //    state.forceSrvrFailure=true
+    //    app.updateSetting("inputAccessToken",[type:"text",value:"  "])
+    //}   
+    checkAndMigrateFromPreviousVersion()
     state.lastProcessedTime = now()
     def lastStateProcessTime
     if (state.lastStateRunTime == null) {
-            lastStateProcessTime = 0
+        lastStateProcessTime = 0
     } else {
-            lastStateProcessTime = state.lastStateRunTime
+        lastStateProcessTime = state.lastStateRunTime
     }
     def secondsSinceLastRun = (now() - lastStateProcessTime) / 1000
-    //log.debug "${location.timeZone}"
+
     if (secondsSinceLastRun > 60) {
         state.lastStateRunTime = now()
         runIn(1, requestPwData)
@@ -1921,6 +1952,37 @@ def processMain() {
             state.schedule_refresh_token = false
         }
         */
+    }
+}
+
+void processGatewayMain() {
+    //if (!state.forceGwFailure) {
+    //    log.debug "gateway fail test initiated"
+    //    state.forceGwFailure=true
+    //    state.gwAuthCookie = "  "
+    //}
+    if (gatewayAddress) {
+        if (state.gatewayVerified) {
+            if (state.gatewayConnectFailMode) {
+                //was in failure mode, ok now
+                unschedule (reVerifyGateway)
+                state.gatewayConnectFailMode = false
+            }
+            runIn (2, requestGatewayMeterData)
+            runIn (5, requestGatewaySiteData) 
+        } else if (!state.gatewayConnectFailMode) {
+            //gateway is not validated, but not yet in failure mode, re-check gateway login
+            getLocalGwStatus()
+            if (state.gatewayVerified) {
+                //it's good now
+               runIn (2, requestGatewayMeterData)
+               runIn (5, requestGatewaySiteData) 
+            } else {
+               //Gateway could not be verified. Put in gateway failure mode
+               state.gatewayConnectFailMode = true
+               runEvery1Hour (reVerifyGateway) 
+            }
+        }
     }
 }
 
@@ -1946,7 +2008,7 @@ void validateTokenFromUrl(String theToken) {
     state.accessTokenFromUrlValid = tokenValid
     state.accessTokenFromUrlStatus = validationStrFromCode (codeFromToken)
     if (tokenValid) {
-        state.authWarningSent = false
+        state.serverFailureMode = false
     }  
     logger ("Token from URL Valid: ${tokenValid}","debug")
 }
@@ -1957,7 +2019,7 @@ Boolean validateInputToken() {
     state.inputAccessTokenValid = tokenValid
     state.inputAccessTokenStatus = validationStrFromCode (codeFromToken)
     if (tokenValid) {
-        state.authWarningSent = false
+        state.serverFailureMode = false
     }  
     logger ("Input Access Token Valid: ${tokenValid}","debug")
     return tokenValid
@@ -2025,26 +2087,26 @@ void validateLocalUrl() {
                logger ("Access token from URL failed with general exception: ${e}","info")
                state.accessTokenFromUrlStatus = "Token Not Received from local URL. General exception on call"
           }
-
         } else {
-            logger ("Cannot query local server for URL. accessTokenUrl is null","debug")
+            logger ("Cannot query local server for URL. accessTokenUrl is null", "trace")
         }
     }   
 }
 
 Integer statusCodeFromToken (tryToken) {
     Integer statusCode = 0
+    String path = "/api/1/products"
     if (tryToken) {
        try {
-          httpAuthGet("/api/1/products", {
+          httpAuthGet(path, {
              resp ->
                 statusCode = resp.status
          }, tryToken)
        } catch (groovyx.net.http.HttpResponseException e) {
-          logger ("HTTP exception getting status : ${e}","info")
+           logger ("HTTP exception getting status from ${path} : ${e}","info")
           statusCode = e?.response?.getStatus()
        } catch (Exception e) {
-          logger ("General exception getting token status: ${e}","info")
+          logger ("General exception getting token status from ${path}: ${e}","info")
        }
    }
    return statusCode
@@ -2058,48 +2120,53 @@ Boolean tokenFailover() {
         logger ("Input token is now valid","debug")
     } else if (state.accessTokenFromUrlValid) {
         state.useTokenFromUrl = true
-        //The input token was is no longer good, but the token from URL is good. Stop using the input token so we only consider the token from URL
+        //The input token was is no longer valid, but the token from URL is good. Stop using the input token so only the token from URL is considered
         state.useInputToken = false
         success = true
         logger ("Token from URL is now valid","debug")
     } else {
        // both tokens failed, send a notification)
-       if (!state?.authWarningSent) {
-          String msg = "Authorization issue connecting to Tesla Server. Please check your tokens in the Powerwall Manager app"
-          sendNotificationMessage("Powerwall Manager: " + msg, "anomaly")
-          state.authWarningSent = true
-          logger (msg,"error")
+       if (!state.serverFailureMode) {
+           state.serverFailureMode = true
+           String msg = "Authorization issue connecting to Tesla Server. Please check your tokens in the Powerwall Manager app"
+           logger (msg,"error")
+           if (state.serverValidAtStartup) {
+              sendNotificationMessage("Powerwall Manager: " + msg, "anomaly")
+           }
         }
     }
     return success
 }
 
-void handleAuthIssue() {
-    if (!validateInputToken() && state.accessTokenFromUrlValid) {
-        state.useInputToken = false //force use of token from URL
+void handleServerAuthIssue() {
+    if (!state.serverFailureMode) {
+       if (!validateInputToken() && state.accessTokenFromUrlValid) {
+          state.useInputToken = false //force use of token from URL
+       }
+       validateLocalUrl() //check for a new token from URL
+       runIn (3, initialServerFailover)
     }
-    validateLocalUrl() //check for a new token from URL
-    runIn (3, initialFailover)
 }
 
-void initialFailover() {
+void initialServerFailover() {
     if (!tokenFailover()) {
         //Still no valid tokens
-        runIn(3600, prepDailyFailover) // in one hour
+        runIn(3600, prepDailyServerFailover) // in one hour
     }
 }
 
-void prepDailyFailover() {
+void prepDailyServerFailover() {
    validateLocalUrl()
-   runIn (5, dailyFailover)
+   runIn (5, dailyServerFailover)
 }
 
-void dailyFailover() {
+void dailyServerFailover() {
+    validateInputToken()
     if (!tokenFailover()) {
         //Still no valid tokens
         state.useInputToken = false
         state.useTokenFromUrl = false
-        runIn(8600, prepDailyFailover()) //continue running a daily failover check
+        runIn(8600, prepDailyServerFailover()) //continue running a daily failover check
     }
 }
         
