@@ -18,11 +18,11 @@
  * 
  */
 String version() {
-    return "v0.3.1e.20210602"
+    return "v0.3.1e.20210603"
 }
 
 /* 
- *	02-Jun-2021 >>> v0.3.1e.20210602 - Re-add local gateway connection for Hubitat, Scheduling infrastructure mods. 
+ *	02-Jun-2021 >>> v0.3.1e.20210603 - Re-add local gateway connection for Hubitat, Scheduling infrastructure mods. 
  *	25-May-2021 >>> v0.3.0e.20210325 - Tesla auth API change workarounds: use tokens directly, disable gateway direct code. 
  *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iFrame for Hubitat. 
  *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
@@ -567,11 +567,10 @@ String getLocalGwStatus() {
                     messageStr = "gettinggateay Auth..."
                     resp.headers.each {
                         if (it.name == "Set-Cookie") {
-                            if (it.value.substring(0,10) == "UserRecord") {
-                                String str = it.value
+                            String str = it.value
+                            if (str.substring(0,10) == "UserRecord") {
                                 state.gwUserRecord = str.substring(str.indexOf("=") + 1, str.indexOf(";"))
-                            } else if (it.value.substring(0,10) == "AuthCookie") {
-                                String str = it.value
+                            } else if (str.substring(0,10) == "AuthCookie") {
                                 state.gwAuthCookie = str.substring(str.indexOf("=") + 1, str.indexOf(";"))
                             }
                         }
