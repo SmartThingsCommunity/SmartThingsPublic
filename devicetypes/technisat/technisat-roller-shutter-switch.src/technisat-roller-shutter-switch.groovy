@@ -14,24 +14,23 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "TechniSat Roller shutter switch", namespace: "TechniSat", author: "TechniSat", vid:"generic-shade",
-				mnmn: "SmartThings") {
+	definition (name: "TechniSat Roller shutter switch", namespace: "TechniSat", author: "TechniSat", vid:"8b7b3238-1dfb-3c1e-a0a0-c8527d35abc4",
+				mnmn: "SmartThingsCommunity") {
 		capability "Window Shade"
 		capability "Window Shade Preset"
 		capability "Window Shade Level"
-        capability "Switch Level"
 		capability "Power Meter"
 		capability "Energy Meter"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Configuration"     
 
-		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Window Treatment"
+		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Roller Shutter Switch"
 	}
 
 	preferences {
-    	input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
-        parameterMap.each {
+		input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
+		parameterMap.each {
 			input(title: "Parameter ${it.paramZwaveNum}: ${it.title}",
 				description: it.descr,
 				type: "paragraph",
@@ -55,7 +54,7 @@ metadata {
 
 def installed() {
 	log.debug "installed()"
-    sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 	initStateConfig()
 	initialize()
 }
@@ -75,7 +74,6 @@ def getCommandClassVersions() {
 		0x20: 1,  // Basic
 		0x26: 3,  // SwitchMultilevel
 		0x32: 3,  // Meter
-		0x56: 1,  // Crc16Encap
 		0x70: 2,  // Configuration
 		0x98: 1,  // Security
 	]
@@ -123,7 +121,7 @@ def levelEvents(physicalgraph.zwave.Command cmd) {
 		shadeValue = "partially open"
 	}
 	
-    def levelEvent = createEvent(name: "level", value: level, unit: "%")
+	def levelEvent = createEvent(name: "shadeLevel", value: level, unit: "%")
 	result << createEvent(name: "windowShade", value: shadeValue, descriptionText: "${device.displayName} shade is ${level}% open", isStateChange: levelEvent.isStateChange)
 	result << levelEvent
 	result << response(encap(meterGet(scale: 0)))
@@ -194,10 +192,6 @@ def close() {
 	], 5000)
 }
 
-def setLevel(level) {
-	setShadeLevel(level)
-}
-
 def setShadeLevel(level, rate = null) {
 	if (level < 0) {
 		level = 0
@@ -223,10 +217,6 @@ def pause() {
 def ping() {
 	log.debug "ping()"
 	refresh()
-}
-
-def poll() {
-	sendHubCommand(refresh())
 }
 
 def refresh() {
@@ -255,7 +245,6 @@ def configure() {
 def meterGet(scale) {
 	zwave.meterV2.meterGet(scale)
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
@@ -293,6 +282,7 @@ private convertParamToInt(parameter, settingsValue) {
 		value = settingsValue? 1 : 0
 	}
 }
+
 private isConfigChanged(parameter) {
 	def settingsValue = settings."$parameter.key"
 	log.debug "isConfigChanged parameter:${parameter.key}: ${settingsValue}"
@@ -323,7 +313,7 @@ private isConfigChanged(parameter) {
 private syncConfig() {
 	def commands = []
 	parameterMap.each {
-            if (isConfigChanged(it)) {
+			if (isConfigChanged(it)) {
 				log.debug "Parameter ${it.key} has been updated from value: ${state.currentConfig."$it.key".value} to ${state.currentConfig."$it.key".newValue}"
 				state.currentConfig."$it.key".status = "syncPending"
 				commands << response(encap(zwave.configurationV2.configurationSet(configurationValue: intToParam(state.currentConfig."$it.key".newValue, it.paramZwaveSize),
@@ -364,7 +354,7 @@ private initStateConfigFromDevice() {
 private logStateConfig() {
 	parameterMap.each {
 		log.debug "key:$it.key value: ${state.currentConfig."$it.key".value} newValue: ${state.currentConfig."$it.key".newValue} status: ${state.currentConfig."$it.key".status}"
-    }
+	}
 }
 
 private List intToParam(Long value, Integer size = 1) {
