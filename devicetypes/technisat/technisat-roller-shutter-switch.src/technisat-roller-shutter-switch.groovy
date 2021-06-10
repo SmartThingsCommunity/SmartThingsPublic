@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"     
 
-		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Roller Shutter Switch"
+		fingerprint mfr: "0299", prod: "0005", model: "1A93", deviceJoinName: "TechniSat Window Treatment"
 	}
 
 	preferences {
