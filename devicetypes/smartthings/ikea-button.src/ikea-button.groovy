@@ -348,6 +348,8 @@ private sendButtonEvent(buttonNumber, buttonState) {
 		def descriptionText = "$child.displayName was $buttonState" // TODO: Verify if this is needed, and if capability template already has it handled
 
 		child?.sendEvent([name: "button", value: buttonState, data: [buttonNumber: 1], descriptionText: descriptionText, isStateChange: true])
+	} else if (isBSM300() || isSBM300ZB1() ) {
+		sendEvent([name: "button", value: buttonState, data: [buttonNumber: 1], descriptionText: descriptionText, isStateChange: true])
 	} else {
 		log.debug "Child device $buttonNumber not found!"
 	}
