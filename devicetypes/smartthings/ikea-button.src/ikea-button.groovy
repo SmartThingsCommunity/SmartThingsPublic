@@ -273,11 +273,11 @@ def configure() {
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
 		} else if (isSBM300ZB2()) {
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
-            cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
 		} else if (isSBM300ZB3()) {
 			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x01])
-            cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
-            cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x03])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x02])
+			cmds += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint":0x03])
 		}
 	} else {
 		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
