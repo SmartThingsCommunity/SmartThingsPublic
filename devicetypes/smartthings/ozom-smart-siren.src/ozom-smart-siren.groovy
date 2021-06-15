@@ -160,7 +160,7 @@ def siren() {
 
 def strobe() {
 	log.debug "strobe()"
-	startCmd(ALARM_SIREN)
+	startCmd(ALARM_STROBE)
 }
 
 def startCmd(cmd) {
