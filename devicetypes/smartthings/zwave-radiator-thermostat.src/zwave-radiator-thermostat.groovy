@@ -170,6 +170,8 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			map.value = "heat"
 			break
 		case 11:
+			map.value = "energysaveheat"
+			break
 		case 15:
 			map.value = "emergency heat"
 			break
@@ -203,6 +205,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	// Power Management - Power has been applied
+	if (cmd.notificationType == 0x08 && cmd.event == 0x01)
+		[response(zwave.batteryV1.batteryGet())]
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.warn "Unhandled command: ${cmd}"
 	[:]
@@ -216,11 +224,10 @@ def setThermostatMode(String mode) {
 				modeValue = 1
 				break
 			case "emergency heat":
-				if (isAeotecRadiatorThermostat()) {
-					modeValue = 15
-				} else {
-					modeValue = 11
-				}
+				modeValue = 15
+				break
+			case "energysaveheat":
+				modeValue = 11
 				break
 			case "off":
 				modeValue = 0
@@ -322,7 +329,9 @@ private getMinHeatingSetpointTemperature() {
 }
 
 private getThermostatSupportedModes() {
-	if (isEverspringRadiatorThermostat() || isAeotecRadiatorThermostat()) {
+	if (isEverspringRadiatorThermostat()) {
+		["off", "heat", "energysaveheat"]
+	} else if (isAeotecRadiatorThermostat()) {
 		["off", "heat", "emergency heat"]
 	} else if (isPoppRadiatorThermostat()) { //that's just for looking fine in Classic
 		["heat"]

@@ -35,6 +35,9 @@ metadata {
         fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-134",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
         fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SPLZB-137",  deviceJoinName: "frient Outlet" // frient smart plug mini, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
         fingerprint profileId: "0104", manufacturer: "frient A/S", model: "SMRZB-143",  deviceJoinName: "frient Outlet" // frient smart cable, raw description: 02 0104 0051 10 09 0000 0702 0003 0009 0B04 0006 0004 0005 0002 05 0000 0019 000A 0003 0406
+        fingerprint manufacturer: "Jasco Products", model: "43095", deviceJoinName: "Enbrighten Outlet" //Enbrighten Plug-in Smart Switch With Energy Monitoring 43095, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+        fingerprint manufacturer: "Jasco Products", model: "43132", deviceJoinName: "Jasco Outlet" //Enbrighten In-Wall Smart Outlet With Energy Monitoring 43132, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+        fingerprint manufacturer: "Jasco Products", model: "43078", deviceJoinName: "Enbrighten Switch", ocfDeviceType: "oic.d.switch" //Enbrighten In-Wall Smart Switch With Energy Monitoring 43078, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
 	}
 
     tiles(scale: 2){
@@ -160,13 +163,21 @@ def configure() {
 }
 
 private int getPowerDiv() {
-    isSengledOutlet() ? 10 : 1
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10 : 1
 }
 
 private int getEnergyDiv() {
-    isSengledOutlet() ? 10000 : 100
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : isFrientOutlet() ? 1000 : 100
 }
 
 private boolean isSengledOutlet() {
     device.getDataValue("model") == "E1C-NB7"
+}
+
+private boolean isJascoProductsOutlet() {
+    device.getDataValue("manufacturer") == "Jasco Products"
+}
+
+private boolean isFrientOutlet() {
+    device.getDataValue("manufacturer") == "frient A/S"
 }

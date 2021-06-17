@@ -48,6 +48,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "iZBModule01", deviceJoinName: "Yale Door Lock" //Yale Locks (YDF30/40, YMF30/40) with old firmware (v.9.0)
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "c700000202", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YDF40
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "0700000001", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YMF40
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0101", outClusters: "0000,0001,0003,0101", manufacturer: "Datek", model: "ID Lock 150", deviceJoinName: "ID Lock Door Lock" //ID Lock 150 Zigbee Module by Datek
 	}
 
 	tiles(scale: 2) {
@@ -99,6 +100,8 @@ private getDOORLOCK_ATTR_MIN_PIN_LENGTH() { 0x0018 }
 private getDOORLOCK_ATTR_SEND_PIN_OTA() { 0x0032 }
 private getALARM_ATTR_ALARM_COUNT() { 0x0000 }
 private getALARM_CMD_ALARM() { 0x00 }
+
+private getYALE_FINGERPRINT_MAX_CODES() { 0x1E }
 
 /**
  * Called on app installed
@@ -512,7 +515,7 @@ private def parseAttributeResponse(String description) {
 		def maxCodeLength = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodeLength", value: maxCodeLength, descriptionText: "Maximum PIN length is ${maxCodeLength}", displayed: false]
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
-		def maxCodes = Integer.parseInt(descMap.value, 16)
+		def maxCodes = isYaleFingerprintLock() ? YALE_FINGERPRINT_MAX_CODES : Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
@@ -1137,6 +1140,10 @@ def getLittleEndianHexString(numStr) {
  */
 def isYaleLock() {
 	return "Yale" == device.getDataValue("manufacturer")
+}
+
+def isYaleFingerprintLock() {
+	return "ASSA ABLOY iRevo" == device.getDataValue("manufacturer") && ("iZBModule01" || "c700000202" || "0700000001" == device.getDataValue("model"))
 }
 
 /**

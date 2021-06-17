@@ -35,9 +35,12 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300", deviceJoinName: "Light" //Generic Color Temperature Light
 
 		// ABL
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "WAFER", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001" //Wafer
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "WAFER", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "Juno Connect", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001" //Wafer
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "Juno Connect", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
 
+		// Samsung LED
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-001", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001" //ITM CCT
+		
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria Light" //Eria ZigBee Color Temperature Bulb
 

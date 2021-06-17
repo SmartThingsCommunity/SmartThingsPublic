@@ -141,6 +141,9 @@ def configure() {
 		// additionally, manual states that default value for below parameters is 0, which disables power reporting
 		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 300))
 		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 43, size: 2, scaledConfigurationValue: 300))
+	} else if (zwaveInfo?.model?.equals("0052")) {
+		//parameter 40 - power reporting threshold for Q1 load - 75%
+		cmds += encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 75))
 	}
 
 	delayBetween(cmds, 500)
@@ -270,7 +273,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def defaultEndpoint() {
-	if (zwaveInfo?.model?.equals("0052") || zwaveInfo?.model?.equals("0053")) {
+	if (zwaveInfo?.model?.equals("0052")) {
 		return null
 	} else {
 		return 1

@@ -34,9 +34,6 @@ metadata {
 
         // Sengled
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-CIA19NAE26", deviceJoinName: "Sengled Light" //Sengled Element touch
-
-        // Enbrighten/Jasco
-        fingerprint manufacturer: "Jasco Products", model: "43082", deviceJoinName: "Enbrighten Switch" //Enbrighten, in-Wall Smart Dimmer With Energy Monitoring 43082, Raw Description: 01 0104 0101 00 08 0000 0003 0004 0005 0006 0008 0702 0B05 02 000A 0019
     }
 
     tiles(scale: 2) {

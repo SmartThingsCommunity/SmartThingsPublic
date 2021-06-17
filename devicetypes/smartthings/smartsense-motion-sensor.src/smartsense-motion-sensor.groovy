@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion", genericHandler: "Zigbee") {
+	definition(name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion", genericHandler: "Zigbee") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		capability "Firmware Update"
 
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
