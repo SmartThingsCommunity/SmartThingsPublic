@@ -25,8 +25,8 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", vid: "generic-siren-8", deviceJoinName: "Ozom Siren" // Ozom Siren - SRAC-23ZBS //Ozom Smart Siren
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", deviceJoinName: "HEIMAN Siren" //HEIMAN Smart Siren
+		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", mnmn: "SmartThings", vid: "generic-siren-8", deviceJoinName: "Ozom Siren" // Ozom Siren - SRAC-23ZBS //Ozom Smart Siren
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", mnmn: "SmartThings", vid: "generic-siren-8", deviceJoinName: "HEIMAN Siren" //HEIMAN Smart Siren
 		fingerprint manufacturer: "frient A/S", model :"SIRZB-110", deviceJoinName: "frient Siren", mnmn: "SmartThingsCommunity", vid: "33d3bbac-144c-3a31-b022-0fc5c74240a3" // frient Smart Siren, 2B 0104 0403 00 05 0000 0003 0502 0500 0001 02 000A 0019
 	}
 
@@ -160,7 +160,7 @@ def siren() {
 
 def strobe() {
 	log.debug "strobe()"
-	startCmd(ALARM_SIREN)
+	startCmd(ALARM_STROBE)
 }
 
 def startCmd(cmd) {

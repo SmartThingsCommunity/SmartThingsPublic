@@ -172,7 +172,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 			map.name = "coolingSetpoint"
 			break
 	}
-	map.value = convertTemperatureIfNeeded(cmd.scaledValue, cmd.scale ? 'F' : 'C', cmd.precision)
+	map.value = cmd.scaledValue
 	map.unit = temperatureScale
 	createEvent(map)
 }
@@ -204,8 +204,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
-	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+	createEvent(name: "temperature", value: cmd.scaledSensorValue, unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -277,17 +276,19 @@ def setCoolingSetpoint(setpoint) {
 }
 
 def updateSetpoint(setpoint, setpointType) {
-	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
-	setpoint = Math.max(Math.min(setpoint.doubleValue(), maxSetpointTemperature.doubleValue()), minSetpointTemperature.doubleValue())
+	def scale = temperatureScale == 'C' ? 0 : 1
 	[
-			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: setpointType, size: 2])),
+			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: scale, scaledValue: setpoint, setpointType: setpointType, size: 2])),
 			"delay 2000",
 			secure(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType))
 	]
 }
 
 def configure() {
-	secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
+	[
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 78, scaledConfigurationValue: temperatureScale == 'C' ? 0 : 1, size: 1)),
+		secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
+	]
 }
 
 def refresh() {

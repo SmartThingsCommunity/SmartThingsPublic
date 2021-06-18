@@ -27,10 +27,12 @@ metadata {
         capability "Refresh"
         capability "Health Check"
         capability "Sensor"
+        capability "Contact Sensor"
 
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
+        fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
     }
     preferences {
         section {
@@ -121,7 +123,11 @@ private Map parseIasMessage(String description) {
 
 private Map translateZoneStatus(ZoneStatus zs) {
     // Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
-    return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
+    if (isDSM300()) {
+    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getContactResult('open') : getContactResult('closed')
+    } else {    
+    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
+    } 
 }
 
 private Map getBatteryResult(rawValue) {
@@ -134,6 +140,8 @@ private Map getBatteryResult(rawValue) {
         result.translatable = true
         def minVolts = 2.3
         def maxVolts = 3.2
+
+        if (isDSM300()) maxVolts = 3.1
 
         // Get the current battery percentage as a multiplier 0 - 1
         def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
@@ -173,6 +181,16 @@ private Map getMotionResult(value) {
     ]
 }
 
+private Map getContactResult(value) {
+	def linkText = getLinkText(device)
+	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	return [
+		name: 'contact',
+		value: value,
+		descriptionText: descriptionText
+	]
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -196,7 +214,13 @@ def refresh() {
 
     if (isUSM300() || isOSM300()) {
         refreshCmds += zigbee.readAttribute(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE)
-        refreshCmds +=  zigbee.enrollResponse()
+        refreshCmds += zigbee.enrollResponse()
+    }
+
+    if (isDSM300()) {
+        refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
+        refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
+        refreshCmds += zigbee.enrollResponse()
     }
 
     return refreshCmds
@@ -232,6 +256,11 @@ def configure() {
         configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, DataType.BITMAP8, 1, 600, 1)
     }
 
+    if (isDSM300()) {
+        configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
+        configCmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 0xffff, null)
+    }
+
     return refresh() + configCmds
 }
 
@@ -247,3 +276,6 @@ private Boolean isOSM300() {
     device.getDataValue("model") == "OSM-300Z"
 }
 
+private Boolean isDSM300() {
+    device.getDataValue("model") == "DSM-300Z"
+}

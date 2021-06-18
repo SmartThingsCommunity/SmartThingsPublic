@@ -179,7 +179,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	def value = (cmd.value ? "on" : "off")
 	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
 	if (evt.isStateChange) {
-		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
+		[evt, response(["delay 3000", encap(meterGet(scale: 2))])]
 	} else {
 		evt
 	}
@@ -189,7 +189,10 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 {
 	log.debug "Switch binary report: "+cmd
 	def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
+	[
+		createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value"),
+		response(["delay 3000", encap(meterGet(scale: 2))])
+	]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -210,16 +213,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+		zwave.switchBinaryV1.switchBinaryGet()
 	], 3000)
 }
 
 def off() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+		zwave.switchBinaryV1.switchBinaryGet()
 	], 3000)
 }
 
@@ -261,6 +262,8 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	} else if (zwaveInfo.mfr == "0154" && zwaveInfo.prod == "0003" && zwaveInfo.model == "000A") {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 25, size: 1, scaledConfigurationValue: 1))) //report every 1W change
+	} else if (zwaveInfo.mfr == "0371" && zwaveInfo.prod == "0103" && zwaveInfo.model == "0017") { //Aeotec Smart Switch 7 US / ZWA023-A
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 21, size: 2, scaledConfigurationValue: 2))) //report every 2W change
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
