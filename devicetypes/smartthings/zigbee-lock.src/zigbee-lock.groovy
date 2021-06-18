@@ -1158,8 +1158,9 @@ def reportsBatteryIncorrectly() {
 			"YRD210 PB DB",
 			"YRD220/240 TSDB",
 			"YRL210 PB LL",
+			"c700000202" //YDF40
 	]
-	return (isYaleLock() && device.getDataValue("model") in badModels)
+	return device.getDataValue("model") in badModels
 }
 
 /**
