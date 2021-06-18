@@ -15,8 +15,7 @@ import groovy.json.JsonOutput
 
 metadata  {
 	definition (name: "TechniSat Series switch", namespace: "TechniSat", author: "TechniSat", vid:"generic-switch-power-energy",
-				mnmn: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
-				executeCommandsLocally: false) {
+				mnmn: "SmartThings") {
 		capability "Energy Meter"
 		capability "Switch"
 		capability "Power Meter"
@@ -54,7 +53,7 @@ private createChild() {
 	log.debug "createChild componentLabel: ${componentLabel}"
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
-        def componentLabel = "${device.displayName[0..-2]}2"
+		def componentLabel = "${device.displayName[0..-2]}2"
 		addChildDevice("TechniSat Series switch child", dni, device.getHub().getId(),
 						[completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Endpoint 2 (TechniSat Series switch child) added as $componentLabel"
