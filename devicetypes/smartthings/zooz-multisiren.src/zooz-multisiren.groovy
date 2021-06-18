@@ -156,7 +156,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	def events = []
 	
 	if(cmd.sensorType == 1) {
-		events << createEvent([name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, "C", cmd.precision), unit: getTemperatureScale()])
+		def cmdScale = cmd.scale == 1 ? "F" : "C"
+		events << createEvent([name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision), unit: getTemperatureScale()])
 	} else if(cmd.sensorType == 5) {
 		events << createEvent([name: "humidity", value: cmd.scaledSensorValue])
 	}

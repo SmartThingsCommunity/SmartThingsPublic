@@ -27,12 +27,13 @@ metadata {
         capability "Refresh"
         capability "Health Check"
         capability "Sensor"
-        
+        capability "Contact Sensor"
+
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
-        fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2"
-        fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "generic-humidity"
+        fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
+        fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
+        fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
     }
-    
     preferences {
         section {
             input "tempOffset"    , "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
@@ -59,8 +60,9 @@ private List<Map> collectAttributes(Map descMap) {
 }
 
 def parse(String description) {
+    log.debug "Parsing message from device: $description"
+
     Map map = zigbee.getEvent(description)
-    
     if (!map) {
         if (description?.startsWith('zone status')) {
             map = parseIasMessage(description)
@@ -89,18 +91,20 @@ def parse(String description) {
         map.translatable = true
     } else if (map.name == "humidity") {
         if (humidityOffset) {
-            map.value = (int) map.value + (int) humidityOffset
+            map.value = map.value + (int) humidityOffset
         }
         map.descriptionText = "${device.displayName} humidity was ${map.value}%"
+        map.unit = "%"
         map.translatable = true
     }
-    
+
     def result = map ? createEvent(map) : [:]
-    
+
     if (description?.startsWith('enroll request')) {
         List cmds = zigbee.enrollResponse()
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
+    log.debug "result: $result"
     return result
 }
 
@@ -119,27 +123,33 @@ private Map parseIasMessage(String description) {
 
 private Map translateZoneStatus(ZoneStatus zs) {
     // Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
-    return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
+    if (isDSM300()) {
+    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getContactResult('open') : getContactResult('closed')
+    } else {    
+    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
+    } 
 }
 
 private Map getBatteryResult(rawValue) {
     def linkText = getLinkText(device)
     def result = [:]
     def volts = rawValue / 10
-    
+
     if (!(rawValue == 0 || rawValue == 255)) {
         result.name = 'battery'
         result.translatable = true
-        def minVolts =  2.3
-        def maxVolts =  3.2
-        
+        def minVolts = 2.3
+        def maxVolts = 3.2
+
+        if (isDSM300()) maxVolts = 3.1
+
         // Get the current battery percentage as a multiplier 0 - 1
         def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
         // Find the corresponding voltage from our range
         curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
         // Round to the nearest 10th of a volt
         curValVolts = Math.round(10 * curValVolts) / 10.0
-        
+
         // Only update the battery reading if we don't have a last reading,
         // OR we have received the same reading twice in a row
         // OR we don't currently have a battery reading
@@ -154,7 +164,7 @@ private Map getBatteryResult(rawValue) {
             // Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
             result.value = device.currentState("battery").value
         }
-        
+
         result.descriptionText = "${device.displayName} battery was ${result.value}%"
         state.lastVolts = volts
     }
@@ -171,6 +181,16 @@ private Map getMotionResult(value) {
     ]
 }
 
+private Map getContactResult(value) {
+	def linkText = getLinkText(device)
+	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	return [
+		name: 'contact',
+		value: value,
+		descriptionText: descriptionText
+	]
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -180,57 +200,67 @@ def ping() {
 
 def refresh() {
     def refreshCmds = []
-    
+
     refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
-    
+
     if (isUSM300() || isTSM300()) {
         refreshCmds += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
         refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
     }
-    
+
     if (isUSM300()) {
         refreshCmds += zigbee.readAttribute(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE)
     }
-    
+
     if (isUSM300() || isOSM300()) {
-        refreshCmds += zigbee.readAttribute(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE)        
-        refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
-        refreshCmds +=  zigbee.enrollResponse()
+        refreshCmds += zigbee.readAttribute(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE)
+        refreshCmds += zigbee.enrollResponse()
     }
-    
+
+    if (isDSM300()) {
+        refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
+        refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
+        refreshCmds += zigbee.enrollResponse()
+    }
+
     return refreshCmds
 }
 
 def configure() {
-    def configCmds = []    
-    
+    def configCmds = []
+
     // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-    
+
     // temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
     // battery minReport 30 seconds, maxReportTime 6 hrs by default
     // humidity minReportTime 30 seconds, maxReportTime 60 min
     // illuminance minReportTime 30 seconds, maxReportTime 60 min
     // occupancy sensing minReportTime 10 seconds, maxReportTime 60 min
     // ex) zigbee.configureReporting(0x0001, 0x0020, DataType.UINT8, 600, 21600, 0x01)
-    // This is for cluster 0x0001 (power cluster), attribute 0x0021 (battery level), whose type is UINT8, 
-    // the minimum time between reports is 10 minutes (600 seconds) and the maximum time between reports is 6 hours (21600 seconds), 
-    // and the amount of change needed to trigger a report is 1 unit (0x01).    
+    // This is for cluster 0x0001 (power cluster), attribute 0x0021 (battery level), whose type is UINT8,
+    // the minimum time between reports is 10 minutes (600 seconds) and the maximum time between reports is 6 hours (21600 seconds),
+    // and the amount of change needed to trigger a report is 1 unit (0x01).
     configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
-    
+
     if (isUSM300() || isTSM300()) {
-        configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 30, 300, 30/*30/100=0.3도*/)
-        configCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 30, 3600, 50/*50/100=0.5%*/)
+        configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 20, 300, 10/*10/100=0.1도*/)
+        configCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 20, 300, 40/*10/100=0.4%*/)
     }
-    
+
     if (isUSM300()) {
-        configCmds += zigbee.configureReporting(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 30, 3600, 20/*20 lux*/)
+        configCmds += zigbee.configureReporting(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 20, 3600, 10/*10 lux*/)
     }
-    
+
     if (isUSM300() || isOSM300()) {
         configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, DataType.BITMAP8, 1, 600, 1)
     }
-    
+
+    if (isDSM300()) {
+        configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
+        configCmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 0xffff, null)
+    }
+
     return refresh() + configCmds
 }
 
@@ -244,4 +274,8 @@ private Boolean isTSM300() {
 
 private Boolean isOSM300() {
     device.getDataValue("model") == "OSM-300Z"
+}
+
+private Boolean isDSM300() {
+    device.getDataValue("model") == "DSM-300Z"
 }
