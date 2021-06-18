@@ -26,11 +26,11 @@ definition(
 )
 
 preferences {
-	section {
-		input(name: "meter", type: "capability.powerMeter", title: "When This Power Meter...", required: true, multiple: false, description: null)
-        input(name: "aboveThreshold", type: "number", title: "Reports Above...", required: true, description: "in either watts or kw.")
-        input(name: "belowThreshold", type: "number", title: "Or Reports Below...", required: true, description: "in either watts or kw.")
-	}
+    section {
+        input(name: "meter", type: "capability.powerMeter", title: "When This Power Meter...", required: true, multiple: false, description: null)
+        input(name: "upperThreshold", type: "number", title: "Reports Above...", required: true, description: "in either watts or kw.")
+        input(name: "lowerThreshold", type: "number", title: "Or Reports Below...", required: true, description: "in either watts or kw.")
+    }
     section {
         input("recipients", "contact", title: "Send notifications to") {
             input(name: "sms", type: "phone", title: "Send A Text To", description: null, required: false)
@@ -40,18 +40,18 @@ preferences {
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-	initialize()
+    log.debug "Installed with settings: ${settings}"
+    initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-	unsubscribe()
-	initialize()
+    log.debug "Updated with settings: ${settings}"
+    unsubscribe()
+    initialize()
 }
 
 def initialize() {
-	subscribe(meter, "power", meterHandler)
+    subscribe(meter, "power", meterHandler)
 }
 
 def meterHandler(evt) {
@@ -67,24 +67,24 @@ def meterHandler(evt) {
 
     def dUnit = evt.unit ?: "Watts"
 
-    def aboveThresholdValue = aboveThreshold as int
+    def aboveThresholdValue = upperThreshold as int
     if (meterValue > aboveThresholdValue) {
-    	if (lastValue < aboveThresholdValue) { // only send notifications when crossing the threshold
-		    def msg = "${meter} reported ${evt.value} ${dUnit} which is above your threshold of ${aboveThreshold}."
+    	if (lastValue <= aboveThresholdValue) { // only send notifications when crossing the threshold
+            def msg = "${meter} reported ${evt.value} ${dUnit} which is above your threshold of ${upperThreshold}."
     	    sendMessage(msg)
         } else {
-//        	log.debug "not sending notification for ${evt.description} because the threshold (${aboveThreshold}) has already been crossed"
+//        log.debug "not sending notification for ${evt.description} because the threshold (${upperThreshold}) has already been crossed"
         }
     }
 
 
-    def belowThresholdValue = belowThreshold as int
+    def belowThresholdValue = lowerThreshold as int
     if (meterValue < belowThresholdValue) {
-    	if (lastValue > belowThresholdValue) { // only send notifications when crossing the threshold
-		    def msg = "${meter} reported ${evt.value} ${dUnit} which is below your threshold of ${belowThreshold}."
+    	if (lastValue >= belowThresholdValue) { // only send notifications when crossing the threshold
+            def msg = "${meter} reported ${evt.value} ${dUnit} which is below your threshold of ${lowerThreshold}."
     	    sendMessage(msg)
         } else {
-//        	log.debug "not sending notification for ${evt.description} because the threshold (${belowThreshold}) has already been crossed"
+//            log.debug "not sending notification for ${evt.description} because the threshold (${lowerThreshold}) has already been crossed"
         }
     }
 }
