@@ -95,14 +95,14 @@ def parseAttrMessage(description) {
 
 def getButtonEvent(descMap) {
 	if (descMap.commandInt == 1) {
-		if (isBSM300() || isMSM300() || isSBM300ZB1() || isSBM300ZB2() || isSBM300ZB3()) {
+		if (isShinaButton()) {
 			def button = descMap.sourceEndpoint.toInteger()
 			getButtonResult("double", button)
 		} else {
 			getButtonResult("press")
 		}	
 	} else if (descMap.commandInt == 0) {
-		if (isBSM300() || isMSM300() || isSBM300ZB1() || isSBM300ZB2() || isSBM300ZB3()) {
+		if (isShinaButton()) {
 			def button = descMap.sourceEndpoint.toInteger()
 			getButtonResult("pushed", button)
 		} else {
@@ -267,7 +267,7 @@ private getSupportedButtonValues() {
 		values = ["pushed"]
 	} else if (isAduroSmartRemote()) {
 		values = ["pushed"]
-	} else if (isBSM300() || isMSM300() || isSBM300ZB1() || isSBM300ZB2() || isSBM300ZB3()) {
+	} else if (isShinaButton()) {
 		values = ["pushed","held","double"]
 	} else {
 		values = ["pushed", "held"]
@@ -345,22 +345,6 @@ def isHeimanButton(){
 	device.getDataValue("model") == "SceneSwitch-EM-3.0"
 }
 
-private Boolean isBSM300() {
-	device.getDataValue("model") == "BSM-300Z"
-}
-
-private Boolean isMSM300() {
-	device.getDataValue("model") == "MSM-300Z"
-}
-
-private Boolean isSBM300ZB1() {
-	device.getDataValue("model") == "SBM300ZB1"
-}
-
-private Boolean isSBM300ZB2() {
-	device.getDataValue("model") == "SBM300ZB2"
-}
-
-private Boolean isSBM300ZB3() {
-	device.getDataValue("model") == "SBM300ZB3"
+private Boolean isShinaButton() {
+	((device.getDataValue("model") == "BSM-300Z") || (device.getDataValue("model") == "MSM-300Z") || (device.getDataValue("model") == "SBM300ZB1") || (device.getDataValue("model") == "SBM300ZB2") || (device.getDataValue("model") == "SBM300ZB3"))	
 }
