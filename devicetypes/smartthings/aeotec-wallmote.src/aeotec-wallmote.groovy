@@ -26,7 +26,7 @@ metadata {
         fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
         fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
         fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
-		fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote 7
+        fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec illumino Wallmote 7
     }
 
     tiles(scale: 2) {
@@ -188,8 +188,8 @@ private getButtonAttributesMap() {
             0: "pushed",
             2: "held",
             3: "double",
-			4: "pushed_3x",
-			5: "pushed_4x",
+            4: "pushed_3x",
+            5: "pushed_4x",
 			6: "pushed_5x"
     ]} else {[
             0: "pushed",
@@ -202,5 +202,5 @@ private isEverspring() {
 }
 
 private isWallMote7() {
-	zwaveInfo.model.equals("0016")
+    zwaveInfo.model.equals("0016")
 }
