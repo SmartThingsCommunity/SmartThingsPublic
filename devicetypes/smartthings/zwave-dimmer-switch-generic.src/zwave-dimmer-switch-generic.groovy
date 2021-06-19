@@ -51,6 +51,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Dimmer Switch" //Minoston Toggle Dimmer Switch
 		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Dimmer Switch
 		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Plug Dimmer
+		fingerprint mfr: "0371", prod: "0103", model: "0025", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec illumino Dimmer Switch
 	}
 
 	simulator {
@@ -101,7 +102,8 @@ metadata {
 def installed() {
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	def commands = refresh()
+    refresh()
+	def commands = []
 	if (zwaveInfo?.mfr?.equals("001A")) {
 		commands << "delay 100"
 		//for Eaton dimmers parameter 7 is ramp time. We set it to 1s for devices to work correctly with local execution
@@ -119,7 +121,7 @@ def installed() {
 		commands << "delay 200"
 		commands << zwave.configurationV1.configurationSet(configurationValue: [0, 1], parameterNumber: 10, size: 2).format()
 	}
-	response(commands)
+	cmdEncap(commands)
 }
 
 def updated() {
@@ -207,20 +209,27 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1, 0x26: 1])
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
 }
 
 def on() {
-	delayBetween([
+	cmdEncap([
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format()
 	], 5000)
 }
 
 def off() {
-	delayBetween([
+	cmdEncap([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format()
 	], 5000)
@@ -235,7 +244,7 @@ def setLevel(value) {
 	} else {
 		sendEvent(name: "switch", value: "off")
 	}
-	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	cmdEncap([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setLevel(value, duration) {
@@ -244,7 +253,7 @@ def setLevel(value, duration) {
 	def level = Math.max(Math.min(valueaux, 99), 0)
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	def getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
-	delayBetween([zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
+	cmdEncap([zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
 				  zwave.switchMultilevelV1.switchMultilevelGet().format()], getStatusDelay)
 }
 
@@ -266,14 +275,26 @@ def refresh() {
 	if (getDataValue("MSR") == null) {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
-	delayBetween(commands, 100)
+	cmdEncap(commands, 100)
 }
 
 def isHoneywellDimmer() {
 	zwaveInfo?.mfr?.equals("0039") && (
 		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3033")) ||
-			(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
-			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
-			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
+		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
+		(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
+		(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
 	)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private cmdEncap(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
 }
