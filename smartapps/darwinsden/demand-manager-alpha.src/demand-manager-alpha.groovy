@@ -33,11 +33,11 @@
  */
 
 def version() {
-    return "v0.3.30.20210617"
+    return "v0.3.30.20210620"
 }
 
 /*   
- *	17-Jun-2021 >>> v0.3.30.20210617 - UI updates.
+ *	17-Jun-2021 >>> v0.3.30.20210620 - UI updates.
  *	27-May-2020 >>> v0.3.2e.20200527 - Additional Hubitat compatibility updates.
  *	10-Jan-2020 >>> v0.3.1e.20200111 - Initial basic cross-platform support for Hubitat.
  *	16-Oct-2019 >>> v0.2.4e.20191016 - Added support for multiple thermostats and updated watchdog to only notify once on issue occurrence and resolution.
@@ -126,9 +126,11 @@ String appendOnNewLine(message, textToAdd) {
 String scheduleStatus() {
     String status
     if (atomicState.scheduleCount > 0) {
-        status = appendOnNewLine(status, "${atomicState.scheduleCount} Active Schedule.")
+        status = appendOnNewLine(status, "${atomicState.scheduleCount} Active Schedule")
         if (atomicState.scheduleCount > 1) {
-            status = status + 's'
+            status = status + 's.'
+        } else {
+            status = status + '.'
         }
     }
     if (peakHoursFromGriddyPricing) {
@@ -2297,8 +2299,8 @@ def hrefMenuPage (String page, String titleStr, String descStr, String image, pa
 @Field static final String solarIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/solar.png"
 @Field static final String eMeterIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/energyMeter.png"
 @Field static final String schedIncomplIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/schedIncompl40.png"
-@Field static final String ddLogoHubitat = "https://darwinsden.com/download/ddlogo-for-hubitat-demandManagerV3-png"
-@Field static final String ddLogoSt = "https://darwinsden.com/download/ddlogo-for-st-demandManagerV3-png"
+@Field static final String ddLogoHubitat = "https://darwinsden.com/download/ddlogo-for-hubitat-demandManagerV3-4-png"
+@Field static final String ddLogoSt = "https://darwinsden.com/download/ddlogo-for-st-demandManagerV3-4-png"
 @Field static final String ppBtn = "https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif"
 @Field static final String activityIcon = "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
 @Field static final String demandIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/meterColor100.png"
