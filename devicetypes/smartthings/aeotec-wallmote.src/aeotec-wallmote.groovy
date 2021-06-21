@@ -190,7 +190,7 @@ private getButtonAttributesMap() {
             3: "double",
             4: "pushed_3x",
             5: "pushed_4x",
-			6: "pushed_5x"
+            6: "pushed_5x"
     ]} else {[
             0: "pushed",
             1: "held"
