@@ -180,14 +180,14 @@ def on() {
 	cmdEncap([
 			zwave.basicV1.basicSet(value: 0xFF).format(),
 			zwave.basicV1.basicGet().format()
-	], 200)
+	])
 }
 
 def off() {
 	cmdEncap([
 			zwave.basicV1.basicSet(value: 0x00).format(),
 			zwave.basicV1.basicGet().format()
-	], 200)
+	])
 }
 
 def poll() {
