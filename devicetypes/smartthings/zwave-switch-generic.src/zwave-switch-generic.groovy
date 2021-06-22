@@ -62,7 +62,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
 		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
 		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
-		fingerprint mfr: "0371", prod: "0103", model: "0026", deviceJoinName: "Aeotec Wall Switch" //Aeotec illumino Wall Switch
+        fingerprint mfr: "0371", prod: "0103", model: "0026", deviceJoinName: "Aeotec Wall Switch" //Aeotec illumino Wall Switch
 	}
 
 	// simulator metadata
@@ -96,7 +96,7 @@ metadata {
 def installed() {
 // Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
+	response(refresh())
 }
 
 def updated() {
@@ -164,27 +164,20 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1])
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
-	}
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
 }
 
 def on() {
-	cmdEncap([
+	delayBetween([
 			zwave.basicV1.basicSet(value: 0xFF).format(),
 			zwave.basicV1.basicGet().format()
 	])
 }
 
 def off() {
-	cmdEncap([
+	delayBetween([
 			zwave.basicV1.basicSet(value: 0x00).format(),
 			zwave.basicV1.basicGet().format()
 	])
@@ -207,17 +200,5 @@ def refresh() {
 	if (getDataValue("MSR") == null) {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
-	cmdEncap(commands)
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
-}
-
-private cmdEncap(commands, delay = 200) {
-	delayBetween(commands.collect { command(it) }, delay)
+	delayBetween(commands)
 }
