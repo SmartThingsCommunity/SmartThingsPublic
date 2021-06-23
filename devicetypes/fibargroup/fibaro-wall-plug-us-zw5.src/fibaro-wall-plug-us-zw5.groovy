@@ -48,7 +48,7 @@ metadata {
 	preferences {
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
