@@ -97,12 +97,12 @@ metadata {
 		attribute "valveDuration", "NUMBER"
 
 		command "zoneOn"
-        command "zoneOff"
+		command "zoneOff"
 		command "setStatus"
 		command "setRainSensor"
 		command "setControllerState"
 		command "setValveDuration"
-        command "settingsMap"
+		command "settingsMap"
 
 		//new release
 		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", zigbeeNodeType: "ROUTER", deviceJoinName: "Spruce Irrigation Controller"
@@ -154,7 +154,7 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(description) {
 	if (DEBUG) log.debug description
-    def result = []
+	def result = []
 	def endpoint, value, command
 	def map = zigbee.parseDescriptionAsMap(description)
 	if (DEBUG && !map.raw) log.debug "map ${map}"
@@ -191,7 +191,7 @@ def parse(description) {
 		def child = childDevices.find{it.deviceNetworkId == "${device.deviceNetworkId}:${endpoint}"}
 		if (child) child.sendEvent(name: "valve", value: onoff)
 
-        sendEvent(name: "status", value: "Zone ${endpoint-1} ${onoff}", descriptionText: "Zone ${endpoint-1} ${onoff}", displayed:true)
+		sendEvent(name: "status", value: "Zone ${endpoint-1} ${onoff}", descriptionText: "Zone ${endpoint-1} ${onoff}", displayed:true)
 		return setTouchButtonDuration()
 		break
 	  case "rainsensor":
@@ -428,12 +428,12 @@ def valveOff(valueMap) {
 
 def zoneOn(endpoint, duration) {
 	//send duration
-    return zoneDuration(duration.toInteger()) + zigbee.command(zigbee.ONOFF_CLUSTER, 1, "", [destEndpoint: endpoint])
+	return zoneDuration(duration.toInteger()) + zigbee.command(zigbee.ONOFF_CLUSTER, 1, "", [destEndpoint: endpoint])
 }
 
 def zoneOff(endpoint) {
 	//reset touchButtonDuration to setting value
-    return zigbee.command(zigbee.ONOFF_CLUSTER, 0, "", [destEndpoint: endpoint]) + setTouchButtonDuration()
+	return zigbee.command(zigbee.ONOFF_CLUSTER, 0, "", [destEndpoint: endpoint]) + setTouchButtonDuration()
 }
 
 def zoneDuration(int duration) {
