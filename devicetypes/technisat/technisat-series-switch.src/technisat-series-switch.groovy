@@ -32,7 +32,7 @@ metadata  {
 				description: it.descr,
 				type: "paragraph",
 				element: "paragraph")
-			if(it.enableSwitch) {
+			if (it.enableSwitch) {
 				input(name: it.enableKey,
 					title: "Enable",
 					type: "bool",
@@ -52,9 +52,9 @@ private createChild() {
 	
 	log.debug "createChild componentLabel: ${componentLabel}"
 	try {
-		String dni = "${device.deviceNetworkId}-ep2"
+		String dni = "${device.deviceNetworkId}:2"
 		def componentLabel = "${device.displayName[0..-2]}2"
-		addChildDevice("TechniSat Series switch child", dni, device.getHub().getId(),
+		addChildDevice("smartthings","Child Metering Switch", dni, device.getHub().getId(),
 						[completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Endpoint 2 (TechniSat Series switch child) added as $componentLabel"
   	} catch (e) {
@@ -105,44 +105,59 @@ def parse(String description) {
 	result
 }
 
-def handleMeterReport(cmd) {
+def createMeterEvent(cmd) {
+	def eventMap = [:]
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
-			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+			eventMap.name = "energy"
+			eventMap.value = cmd.scaledMeterValue
+			eventMap.unit = "kWh"
 		} else if (cmd.scale == 1) {
-			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+			eventMap.name = "energy"
+			eventMap.value = cmd.scaledMeterValue
+			eventMap.unit = "kVAh"
 		} else if (cmd.scale == 2) {
-			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+			eventMap.name = "power"
+			eventMap.value = Math.round(cmd.scaledMeterValue)
+			eventMap.unit = "W"
 		}
 	}
+	eventMap
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, endpoint=null) {
+	log.debug "v3 Meter report endpoint $endpoint: "+cmd
 	if (endpoint == 1) {
-		log.debug "v3 Meter report: "+cmd
-		handleMeterReport(cmd)
+		createEvent(createMeterEvent(cmd))
+	} else if (endpoint == 2) {
+		childDevices[0]?.sendEvent(createMeterEvent(cmd))
+	}
+
+}
+
+def handlOnOffReport(cmd, endpoint) {
+	def value = (cmd.value ? "on" : "off")
+	if (endpoint == 1) {
+		def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
+		if (evt.isStateChange) {
+			[evt, response(["delay 3000",encapEp(endpoint, meterGet(scale: 2))])]
+		} else {
+			evt
+		}
+	} else if (endpoint == 2) {
+		childDevices[0]?.sendEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
+		sendHubCommand(encapEp(endpoint, meterGet(scale: 2)))
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, endpoint=null) {
-	if (endpoint == 1) {
-		log.debug "Basic report: "+cmd
-		def value = (cmd.value ? "on" : "off")
-		def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
-		if (evt.isStateChange) {
-			[evt, response(["delay 3000", meterGet(scale: 2).format()])]
-		} else {
-			evt
-		}
-	}
+	log.debug "Basic report endpoint $endpoint: "+cmd
+	handlOnOffReport(cmd,endpoint)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, endpoint=null) {
-	if (endpoint == 1) {
-		log.debug "Switch binary report: "+cmd
-		def value = (cmd.value ? "on" : "off")
-		createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
-	}
+	log.debug "Switch binary report endpoint: $endpoint: "+cmd
+	handlOnOffReport(cmd,endpoint)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -173,14 +188,8 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.parameter = cmd.parameter.drop(2)
 	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1, 0x32: 3])
-	if (cmd.sourceEndPoint == 1) {
-		log.debug "handle on endpoint 1"
-		zwaveEvent(encapsulatedCommand, 1)
-	} else  { 
-		log.debug "handle on endpoint 2"
-		childDevices[0]?.handleZWave(encapsulatedCommand)
-		[:]
-	}
+	log.debug "handle cmd on endpoint ${cmd.sourceEndPoint}"
+	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint=null) {
@@ -192,20 +201,34 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint=null) {
 	[:]
 }
 
-def on() {
+def getEndpoint(deviceNetworkId) {
+	def split = deviceNetworkId?.split(":")
+	return (split.length > 1) ? split[1] as Integer : null
+}
+
+def createOnOffCmd(value, endpoint = 1) {
+	log.debug "createOnOffCmd value $value endpoint $endpoint"
 	delayBetween([
-		encapEp(1, zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF)),
-		encapEp(1, zwave.switchBinaryV1.switchBinaryGet()),
-		encapEp(1, meterGet(scale: 2))
+		encapEp(endpoint, zwave.switchBinaryV1.switchBinarySet(switchValue: value)),
+		encapEp(endpoint, zwave.switchBinaryV1.switchBinaryGet()),
+		encapEp(endpoint, meterGet(scale: 2))
 	])
 }
 
+def on() {
+	createOnOffCmd(0xFF)
+}
+
 def off() {
-	delayBetween([
-		encapEp(1, zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00)),
-		encapEp(1, zwave.switchBinaryV1.switchBinaryGet()),
-		encapEp(1, meterGet(scale: 2))
-	])
+	createOnOffCmd(0x00)
+}
+
+def childOnOff(deviceNetworkId, value) {
+	def endpoint = getEndpoint(deviceNetworkId)
+	log.debug("childOnOff from endpoint ${endpoint}")
+	if (endpoint != null) {
+		sendHubCommand(createOnOffCmd(value, endpoint))
+	}
 }
 
 def ping() {
@@ -217,13 +240,32 @@ def poll() {
 	sendHubCommand(refresh())
 }
 
-def refresh() {
+def refreshAll() {
+	sendHubCommand(refresh(1))
+	sendHubCommand(refresh(2))
+}
+
+def refresh(endpoint = 1) {
 	log.debug "refresh()"
 	delayBetween([
-		encapEp(1, zwave.switchBinaryV1.switchBinaryGet()),
-		encapEp(1, meterGet(scale: 0)),
-		encapEp(1, meterGet(scale: 2))
+		encapEp(endpoint, zwave.switchBinaryV1.switchBinaryGet()),
+		encapEp(endpoint, meterGet(scale: 0)),
+		encapEp(endpoint, meterGet(scale: 2))
 	])
+}
+
+def childRefresh(deviceNetworkId) {
+	def endpoint = getEndpoint(deviceNetworkId)
+	log.debug("childRefresh from endpoint ${endpoint}")
+	if (endpoint != null) {
+		sendHubCommand(refresh(endpoint))
+	}
+}
+
+
+def childReset(deviceNetworkId) {
+	def endpoint = getEndpoint(deviceNetworkId)
+	log.debug("childReset from endpoint ${endpoint}")
 }
 
 def configure() {
@@ -234,22 +276,11 @@ def configure() {
 
 	initStateConfigFromDevice()
 	logStateConfig()
-	result << response(encap(meterGet(scale: 0)))
-	result << response(encap(meterGet(scale: 2)))
-	result << response(encap(zwave.switchBinaryV1.switchBinaryGet()))
-	result
+	refreshAll()
 }
 
 def meterGet(map) {
 	return zwave.meterV2.meterGet(map)
-}
-
-def sendCommand(endpointDevice, commands) {
-	if (commands instanceof String) {
-		commands = commands.split(',') as List
-	}
-	def result = commands.collect { encapEp(2, it) }
-	sendHubCommand(result, 100)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -344,14 +375,14 @@ private syncConfig() {
 		if (isConfigChanged(it)) {
 			log.debug "Parameter ${it.key} has been updated from value: ${state.currentConfig."$it.key".value} to ${state.currentConfig."$it.key".newValue}"
 			state.currentConfig."$it.key".status = "syncPending"
-			commands << response(encap(zwave.configurationV2.configurationSet(configurationValue: intToParam(state.currentConfig."$it.key".newValue, it.paramZwaveSize),
-																				parameterNumber: it.paramZwaveNum, size: it.paramZwaveSize)))                                                                
+			commands << response(encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: state.currentConfig."$it.key".newValue,
+				parameterNumber: it.paramZwaveNum, size: it.paramZwaveSize)))                                                                
 			commands << response(encap(zwave.configurationV2.configurationGet(parameterNumber: it.paramZwaveNum)))
 		} else if (state.currentConfig."$it.key".value == null) {
 			log.warn "Parameter ${it.key} no. ${it.paramZwaveNum} has no value. Please check preference declaration for errors."
 		}
 	}
-	if(commands) {
+	if (commands) {
 		sendHubCommand(commands,1000)
 	}
 }
@@ -374,7 +405,7 @@ private initStateConfigFromDevice() {
 	parameterMap.each {
 		commands << response(encap(zwave.configurationV2.configurationGet(parameterNumber: it.paramZwaveNum)))
 	}
-	if(commands) {
+	if (commands) {
 		sendHubCommand(commands,1000)
 	}
 }
@@ -383,15 +414,6 @@ private logStateConfig() {
 	parameterMap.each {
 		log.debug "key:$it.key value: ${state.currentConfig."$it.key".value} newValue: ${state.currentConfig."$it.key".newValue} status: ${state.currentConfig."$it.key".status}"
 	}
-}
-
-private List intToParam(Long value, Integer size = 1) {
-	def result = []
-	size.times {
-		result = result.plus(0, (value & 0xFF) as Short)
-		value = (value >> 8)
-	}
-	return result
 }
 
 private getParameterMap() {
