@@ -1,8 +1,11 @@
 /*
- *  Sensative Strips Guard 700 v1.1
+ *  Sensative Strips Guard 700 v1.2
  *
  *
  *  Changelog:
+ *
+ *    1.2 (28/06/2021)
+ *      - Requested Changes
  *
  *    1.1 (06/06/2021)
  *      - Requested Changes
@@ -79,10 +82,8 @@ metadata {
 
 		attribute "lastCheckIn", "string"
 
-		fingerprint mfr:"019A", prod:"0004", model:"0004", deviceJoinName: "Strips Guard 700"
+		fingerprint mfr:"019A", prod:"0004", model:"0004", deviceJoinName: "Strips Guard 700" //Raw Description: zw:Ss2a type:0701 mfr:019A prod:0004 model:0004 ver:8.1A zwv:7.13 lib:07 cc:5E,22,55,9F,6C sec:86,85,8E,59,72,30,5A,87,73,80,70,71,84,7A
 	}
-
-	simulator { }
 
 	preferences {
 		configParams.each { param ->
@@ -100,7 +101,6 @@ metadata {
 			options: [0:"Disabled", 1:"Enabled [DEFAULT]"]
 	}
 }
-
 
 def installed() {
 	logDebug "installed()..."
@@ -136,7 +136,6 @@ void initialize() {
 		sendEvent(name: "checkInterval", value: ((wakeUpIntervalSeconds * 2) + 300), displayed: falsle, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 }
-
 
 def configure() {
 	logDebug "configure()..."
@@ -183,12 +182,10 @@ List<String> getConfigureCmds() {
 	return cmds
 }
 
-
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
 	logDebug "ping()"
 }
-
 
 def refresh() {
 	logDebug "refresh()..."
@@ -199,7 +196,6 @@ def refresh() {
 void logForceWakeupMessage(String msg) {
 	log.warn "${msg}  To force the device to wake up immediately, move the magnet towards the round end 3 times."
 }
-
 
 String batteryGetCmd() {
 	return secureCmd(zwave.batteryV1.batteryGet())
@@ -231,7 +227,6 @@ void sendCommands(List<String> cmds, Integer delay=100) {
 	}
 }
 
-
 def parse(String description) {
 	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
@@ -247,7 +242,6 @@ def parse(String description) {
 void updateLastCheckIn() {
 	if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
 		state.lastCheckInTime = new Date().time
-
 		sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
 	}
 }
@@ -265,7 +259,6 @@ String convertToLocalTimeString(dt) {
 	}
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCmd = cmd.encapsulatedCommand(commandClassVersions)
 	if (encapsulatedCmd) {
@@ -274,7 +267,6 @@ void zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsula
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 	}
 }
-
 
 void zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	logDebug "Device Woke Up..."
@@ -291,18 +283,15 @@ void zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	sendCommands(cmds)
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
 	logDebug "Wake Up Interval = ${cmd.seconds} seconds"
 	state.wakeUpInterval = cmd.seconds
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 	logDebug "${cmd}"
 	sendEventIfNew("firmwareVersion", (cmd.applicationVersion + (cmd.applicationSubVersion / 100)))
 }
-
 
 void zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	int val = (cmd.batteryLevel == 0xFF ? 1 : safeToInt(cmd.batteryLevel))
@@ -314,7 +303,6 @@ void zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 	sendEvent(name: "battery", value: val, unit: "%", isStateChange: true, descriptionText: desc)
 }
-
 
 void zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	runIn(4, refreshSyncStatus)
@@ -328,12 +316,10 @@ void zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport
 	}
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
 	logDebug "${cmd}"
 	sendContactEvent(cmd.sensorValue)
 }
-
 
 void zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	logDebug "${cmd}"
@@ -361,11 +347,9 @@ void sendTamperEvent(rawVal) {
 	sendEventIfNew("tamper", (rawVal ? "detected" : "clear"))
 }
 
-
 void zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logDebug "${cmd}"
 }
-
 
 void refreshSyncStatus() {
 	int changes = pendingChanges
@@ -388,7 +372,6 @@ void setParamStoredValue(int paramNum, int value) {
 	state["configVal${paramNum}"] = value
 }
 
-
 void sendEventIfNew(String name, value, boolean displayed=true) {
 	String desc = "${device.displayName}: ${name} is ${value}"
 	if (device.currentValue(name) != value) {
@@ -398,7 +381,6 @@ void sendEventIfNew(String name, value, boolean displayed=true) {
 		sendEvent(name: name, value: value, descriptionText: desc, displayed: displayed)
 	}
 }
-
 
 List<Map> getConfigParams() {
 	return [
@@ -424,7 +406,6 @@ Integer safeToInt(val, Integer defaultVal=0) {
 		return  defaultVal
 	}
 }
-
 
 boolean isDuplicateCommand(lastExecuted, allowedMil) {
 	!lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
