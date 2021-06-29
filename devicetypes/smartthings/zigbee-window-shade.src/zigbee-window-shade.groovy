@@ -132,6 +132,7 @@ def getLastLevel() {
 }
 
 def levelEventHandler(currentLevel) {
+	def lastLevel = getLastLevel()
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
 
 	if ((lastLevel == "undefined" || currentLevel == lastLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
