@@ -51,6 +51,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Dimmer Switch" //Minoston Toggle Dimmer Switch
 		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Dimmer Switch
 		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Dimmer Switch" //Evalogik Smart Plug Dimmer
+		fingerprint mfr: "0371", prod: "0103", model: "0025", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec illumino Dimmer Switch
 	}
 
 	simulator {
@@ -272,8 +273,8 @@ def refresh() {
 def isHoneywellDimmer() {
 	zwaveInfo?.mfr?.equals("0039") && (
 		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3033")) ||
-			(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
-			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
-			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
+		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
+		(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
+		(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
 	)
 }
