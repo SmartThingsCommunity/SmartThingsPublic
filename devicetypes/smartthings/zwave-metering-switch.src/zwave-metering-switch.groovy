@@ -52,6 +52,7 @@ metadata {
 		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch" //US //Inovelli Switch Red Series
 		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
 		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
+		fingerprint mfr: "0312", prod: "FF00", model: "FF0E", deviceJoinName: "Minoston Outlet Meter", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP21ZP
 	}
 
 	// simulator metadata
