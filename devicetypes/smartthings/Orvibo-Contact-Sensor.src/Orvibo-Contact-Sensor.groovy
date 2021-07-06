@@ -127,7 +127,7 @@ def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
 	def manufacturer = getDataValue("manufacturer")
 	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN" || manufacturer == "Third Reality, Inc") {
+	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN" ) {
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
