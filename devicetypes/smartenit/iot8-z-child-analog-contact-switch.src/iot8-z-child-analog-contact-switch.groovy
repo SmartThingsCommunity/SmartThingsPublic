@@ -22,18 +22,6 @@ metadata {
 	}
 }
 
-def installed() {
-	log.debug "Installed"
-}
-
-def updated() {
-	log.debug "Updated"
-}
-
-
-def parse(String description) {
-}
-
 // handle commands
 def on() {
 	parent.childOn(device.deviceNetworkId)

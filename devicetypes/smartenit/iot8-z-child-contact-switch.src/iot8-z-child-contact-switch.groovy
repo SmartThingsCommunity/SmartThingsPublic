@@ -21,18 +21,6 @@ metadata {
 	}
 }
 
-def installed() {
-	log.debug "Installed"
-}
-
-def updated() {
-	log.debug "Updated"
-}
-
-// Parse incoming device messages to generate events
-def parse(String description) {
-}
-
 def on() {
 	log.debug "Executing 'on'"
 	parent.childOn(device.deviceNetworkId)

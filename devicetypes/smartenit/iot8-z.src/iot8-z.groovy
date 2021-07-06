@@ -26,12 +26,12 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint manufacturer: "Smartenit, Inc", model: "IOT8-Z", deviceJoinName: "Smartenit Switch Sensor ", profileId: "0104", inClusters: "0000, 0003, 0006, 000C, 000F", outClusters: "0019" 
+		fingerprint manufacturer: "Smartenit, Inc", model: "IOT8-Z", deviceJoinName: "Smartenit Switch ", profileId: "0104", inClusters: "0000, 0003, 0006, 000C, 000F", outClusters: "0019" 
 	}
 }
 
 private getANALOG_INPUT_CLUSTER() { 0x000C }
-private getBINARY_INPUT_CLUETER() { 0x000F }
+private getBINARY_INPUT_CLUSTER() { 0x000F }
 private getPRESENT_VALUE_ATTRIBUTE() { 0x0055 }
 private getONOFF_ATTRIBUTE() { 0x0000 }
 
@@ -51,7 +51,7 @@ def parse(String description) {
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
 	if (eventMap) {
-		if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
+		if ((eventDescMap?.sourceEndpoint == "01") || (eventDescMap?.endpoint == "01")) {
 			if (eventDescMap?.clusterId == "000C") {
 				return createEvent(name: "inputValue", value: eventDescMap?.value)
 			} else {
@@ -68,14 +68,14 @@ def parse(String description) {
 			}
 		}
 	} else if (eventDescMap) {
-		if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
-			if (eventDescMap?.clusterId == "000F" || eventDescMap?.cluster == "000F") {
+		if ((eventDescMap?.sourceEndpoint == "01") || (eventDescMap?.endpoint == "01")) {
+			if (eventDescMap?.cluster == "000F") {
 				if (eventDescMap?.value == "00") {
 					return createEvent(name: "contact", value: "open")
 				} else if (eventDescMap?.value == "01") {
 					return createEvent(name: "contact", value: "closed")
 				}
-			} else if (eventDescMap?.clusterId == "000C" || eventDescMap?.cluster == "000C") {
+			} else if ((eventDescMap?.clusterId == "000C") || (eventDescMap?.cluster == "000C")) {
 				long convertedValue = Long.parseLong(eventDescMap?.value, 16)
 				Float percentage = Float.intBitsToFloat(convertedValue.intValue())
 				percentage = (percentage / 1.60) * 100.0
@@ -83,7 +83,7 @@ def parse(String description) {
 				if (ceilingVal > 100.0) {
 					ceilingVal = 100.0
 				}
-                
+
 				int intValue = (int) ceilingVal
 				return createEvent(name: "inputValue", value: intValue)
 			}
@@ -92,7 +92,7 @@ def parse(String description) {
 				it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
 			}
 			if (childDevice) {
-				if (eventDescMap?.clusterId == "000F" || eventDescMap?.cluster == "000F") {
+				if ((eventDescMap?.clusterId == "000F") || (eventDescMap?.cluster == "000F")) {
 					if (eventDescMap?.value == "00") {
 						def map = createEvent(name: "contact", value: "open")
 						childDevice.sendEvent(map)
@@ -100,7 +100,7 @@ def parse(String description) {
 						def map = createEvent(name: "contact", value: "closed")
 						childDevice.sendEvent(map)
 					}
-				} else if (eventDescMap?.clusterId == "000C" || eventDescMap?.cluster == "000C") {
+				} else if ((eventDescMap?.clusterId == "000C") || (eventDescMap?.cluster == "000C")) {
 					long convertedValue = Long.parseLong(eventDescMap?.value, 16)
 					Float percentage = Float.intBitsToFloat(convertedValue.intValue())
 					percentage = (percentage / 1.60) * 100.0
@@ -146,14 +146,14 @@ def refresh() {
 	def numberOfChildDevices = 8
 
 	for(def endpoint : 2..numberOfChildDevices) {
-		refreshCommands += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, getONOFF_ATTRIBUTE(), [destEndpoint: endpoint])
+		refreshCommands += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, ONOFF_ATTRIBUTE, [destEndpoint: endpoint])
 	}
 	for(def endpoint : 1..4) {
-		refreshCommands += zigbee.readAttribute(getBINARY_INPUT_CLUETER(), getPRESENT_VALUE_ATTRIBUTE(), [destEndpoint: endpoint])
+		refreshCommands += zigbee.readAttribute(BINARY_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, [destEndpoint: endpoint])
 	}
 
-	refreshCommands += zigbee.readAttribute(getANALOG_INPUT_CLUSTER(), getPRESENT_VALUE_ATTRIBUTE(), [destEndpoint: 0x0001]);
-	refreshCommands += zigbee.readAttribute(getANALOG_INPUT_CLUSTER(), getPRESENT_VALUE_ATTRIBUTE(), [destEndpoint: 0x0002]);
+	refreshCommands += zigbee.readAttribute(ANALOG_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, [destEndpoint: 0x0001]);
+	refreshCommands += zigbee.readAttribute(ANALOG_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, [destEndpoint: 0x0002]);
 	log.debug "refreshCommands: $refreshCommands"
 
 	return refreshCommands
@@ -179,7 +179,7 @@ private void createChildDevices() {
 			} else if (endpoint >= 5 && endpoint <= 8) {
 				addChildDevice("smartthings", "ZigBee Switch", "${device.deviceNetworkId}:0${endpoint}", device.hubId,
 					[completedSetup: true,
-					label: "${device.displayName[0..-7]}${endpoint}",
+					label: "${device.displayName} ${endpoint}",
 					isComponent: false
 					])
 			}
@@ -193,18 +193,18 @@ def configure() {
 	log.debug "configure"
     
 	configureHealthCheck()
-	def configurationCommands = zigbee.configureReporting(getBINARY_INPUT_CLUETER(), getPRESENT_VALUE_ATTRIBUTE(), 0x10, 10, 600, null)
+	def configurationCommands = zigbee.configureReporting(BINARY_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, 0x10, 10, 600, null)
 	for (def endpoint: 2..4) {
-		configurationCommands += zigbee.configureReporting(getBINARY_INPUT_CLUETER(), getPRESENT_VALUE_ATTRIBUTE(), 0x10, 10, 600, null, [destEndpoint: endpoint])
+		configurationCommands += zigbee.configureReporting(BINARY_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, 0x10, 10, 600, null, [destEndpoint: endpoint])
 	}
 	
 	configurationCommands += zigbee.onOffConfig(0, 120)
 	for(def endpoint : 2..8) {
-		configurationCommands += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, getONOFF_ATTRIBUTE(), 0x10, 0, 120, null, [destEndpoint: endpoint])
+		configurationCommands += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, ONOFF_ATTRIBUTE, 0x10, 0, 120, null, [destEndpoint: endpoint])
 	}
 	
-	configurationCommands += zigbee.configureReporting(getANALOG_INPUT_CLUSTER(), getPRESENT_VALUE_ATTRIBUTE(), 0x39, 10, 600, 0x3dcccccd)
-	configurationCommands += zigbee.configureReporting(getANALOG_INPUT_CLUSTER(), getPRESENT_VALUE_ATTRIBUTE(), 0x39, 10, 600, 0x3dcccccd, [destEndpoint: 2])
+	configurationCommands += zigbee.configureReporting(ANALOG_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, 0x39, 10, 600, 0x3dcccccd)
+	configurationCommands += zigbee.configureReporting(ANALOG_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, 0x39, 10, 600, 0x3dcccccd, [destEndpoint: 2])
 	
 	configurationCommands << refresh()
 	log.debug "configurationCommands: $configurationCommands"
