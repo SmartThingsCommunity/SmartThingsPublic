@@ -7,12 +7,13 @@ import groovy.json.JsonOutput
 metadata {
 	definition (name: "Logitech Harmony Hub C2C", namespace: "smartthings", author: "SmartThings") {
 		capability "Media Controller"
-        capability "Refresh"
+		capability "Refresh"
 		capability "Health Check"
         
-        command "activityoff"   
-        command "alloff" 
-        command "refresh"          
+		command "activityoff"
+		command "alloff"
+		command "startActivityById" 
+		command "refresh"
 	}
 
 	simulator {
@@ -54,9 +55,16 @@ def updated() {
 	initialize()
 }
 
-def startActivity(String activityId) {
-	log.debug "Executing 'Start Activity'"
-	log.trace parent.activity("$device.deviceNetworkId-$activityId","start")    
+def startActivity(String activityName) {
+	log.debug "Executing 'Start Activity' - $activityName"
+	def hubId = device.deviceNetworkId.split("-")[1]
+	def activityId = parent.getActivityId(activityName, "$hubId")
+	startActivityById(activityId)
+}
+
+def startActivityById(String activityId) {
+	log.debug "Executing 'Start Activity by ID' - $activityId"
+	log.trace parent.activity("$device.deviceNetworkId-$activityId","start")
 }
 
 def activityoff() {
