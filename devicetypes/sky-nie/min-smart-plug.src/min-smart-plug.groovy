@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v1.0.1
+ *      Min Smart Plug v1.0.2
  *
  *  	Models: MINOSTON (MP21Z)
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.2 (07/07/2021)
+ *      - delete dummy code
  *
  *    1.0.1 (03/17/2021)
  *      - Simplify the code, delete dummy code
@@ -41,8 +44,6 @@ import groovy.transform.Field
 
 @Field static Map powerFailureRecoveryOptions = [0:"Turn Off", 1:"Turn On", 2:"Restore Last State"]
 
-@Field static Map noYesOptions = [0:"No", 1:"Yes"]
-
 metadata {
     definition (
             name: "Min Smart Plug",
@@ -64,36 +65,34 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Mini Plug" // old MP21Z
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Mini Plug" //MP21Z Minoston Mini Smart Plug
+        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
     }
 
-    simulator { }
-
-	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			}
-		}
-		standardTile("refresh", "device.refresh", width: 2, height: 2) {
-			state "refresh", label:'Refresh', action: "refresh"
-		}
-		valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "syncStatus", label:'${currentValue}'
-		}
-		standardTile("sync", "device.configure", width: 2, height: 2) {
-			state "default", label: 'Sync', action: "configure"
-		}
-		valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-			state "firmwareVersion", label:'Firmware ${currentValue}'
-		}
-		main "switch"
-		details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-	}
+    tiles(scale: 2) {
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
+                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+        }
+        standardTile("refresh", "device.refresh", width: 2, height: 2) {
+            state "refresh", label:'Refresh', action: "refresh"
+        }
+        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "syncStatus", label:'${currentValue}'
+        }
+        standardTile("sync", "device.configure", width: 2, height: 2) {
+            state "default", label: 'Sync', action: "configure"
+        }
+        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
+            state "firmwareVersion", label:'Firmware ${currentValue}'
+        }
+        main "switch"
+        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
+    }
     preferences {
         configParams.each {
             createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
@@ -120,21 +119,9 @@ def updated() {
 
         logDebug "updated()..."
 
-        initialize()
-
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
     return []
-}
-
-private initialize() {
-    def checkInterval = ((60 * 60 * 3) + (5 * 60))
-
-    def checkIntervalEvt = [name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]]
-
-    if (!device.currentValue("checkInterval")) {
-        sendEvent(checkIntervalEvt)
-    }
 }
 
 def configure() {
@@ -281,10 +268,6 @@ private updateLastCheckIn() {
         def evt = [name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false]
 
         sendEvent(evt)
-
-        if (childDevices) {
-            childDevices*.sendEvent(evt)
-        }
     }
 }
 
@@ -361,42 +344,6 @@ private sendSwitchEvents(rawVal, type) {
     def switchVal = (rawVal == 0xFF) ? "on" : "off"
 
     sendEventIfNew("switch", switchVal, true, type)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
-    if (state.lastSequenceNumber != cmd.sequenceNumber) {
-        state.lastSequenceNumber = cmd.sequenceNumber
-
-        logTrace "${cmd}"
-
-        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
-        def btnVal
-        switch (cmd.keyAttributes){
-            case 0:
-                btnVal = paddle
-                break
-            case 1:
-                logDebug "Button released not supported"
-                break
-            case 2:
-                logDebug "Button held not supported"
-                break
-            case 3:
-                btnVal = paddle + "_2x"
-                break
-        }
-
-        if (btnVal) {
-            sendButtonEvent(btnVal)
-        }
-    }
-    return []
-}
-
-private sendButtonEvent(value) {
-    if (childDevices) {
-        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -522,7 +469,7 @@ private static isDuplicateCommand(lastExecuted, allowedMil) {
 }
 
 private logDebug(msg) {
-        log.debug "$msg"
+    log.debug "$msg"
 }
 
 private logTrace(msg) {
