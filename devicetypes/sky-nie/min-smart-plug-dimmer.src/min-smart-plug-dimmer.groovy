@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.2
+ *      Min Smart Plug Dimmer v1.1.3
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -10,7 +10,10 @@
  *
  *  Changelog:
  *
- *    1.0.1 (06/30/2021)
+ *    1.1.3 (07/07/2021)
+ *      - delete dummy code
+ *
+ *    1.1.2 (06/30/2021)
  *      - Add new product supported
  *
  *    1.1.1 (05/06/2021)
@@ -45,40 +48,37 @@ metadata {
             name: "Min Smart Plug Dimmer",
             namespace: "sky-nie",
             author: "winnie",
-       //     mnmn: "SmartThings",
-       //     vid:"generic-dimmer-3",
             ocfDeviceType: "oic.d.smartplug"
     ) {
-            capability "Actuator"
-            capability "Sensor"
-            capability "Switch"
-            capability "Temperature Measurement"
-            capability "Switch Level"
-            capability "Light"
-            capability "Configuration"
-            capability "Refresh"
-            capability "Health Check"
+        capability "Actuator"
+        capability "Sensor"
+        capability "Switch"
+        capability "Temperature Measurement"
+        capability "Switch Level"
+        capability "Configuration"
+        capability "Refresh"
+        capability "Health Check"
 
-            attribute "firmwareVersion", "string"
-            attribute "lastCheckIn", "string"
-            attribute "syncStatus", "string"
+        attribute "firmwareVersion", "string"
+        attribute "lastCheckIn", "string"
+        attribute "syncStatus", "string"
 
-            fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
-            fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD Minoston Outdoor Smart Plug Dimmer
-	}
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
+        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD Minoston Outdoor Smart Plug Dimmer
+    }
 
-	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"switch level.setLevel"
-			}
-		}
+    tiles(scale: 2) {
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
+                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel"
+            }
+        }
 
         multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
             tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
@@ -95,26 +95,24 @@ metadata {
             }
         }
 
-		standardTile("refresh", "device.refresh", width: 2, height: 2) {
-			state "refresh", label:'Refresh', action: "refresh"
-		}
-		valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "syncStatus", label:'${currentValue}'
-		}
-		standardTile("sync", "device.configure", width: 2, height: 2) {
-			state "default", label: 'Sync', action: "configure"
-		}
-		valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-			state "firmwareVersion", label:'Firmware ${currentValue}'
-		}
-		valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
-			state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
-		}
-		main "switch", "temperature"
-		details(["switch", "temperature", "refresh", "syncStatus", "sync", "firmwareVersion"])
-	}
-
-    simulator { }
+        standardTile("refresh", "device.refresh", width: 2, height: 2) {
+            state "refresh", label:'Refresh', action: "refresh"
+        }
+        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "syncStatus", label:'${currentValue}'
+        }
+        standardTile("sync", "device.configure", width: 2, height: 2) {
+            state "default", label: 'Sync', action: "configure"
+        }
+        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
+            state "firmwareVersion", label:'Firmware ${currentValue}'
+        }
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+            state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        main "switch", "temperature"
+        details(["switch", "temperature", "refresh", "syncStatus", "sync", "firmwareVersion"])
+    }
 
     preferences {
         configParams.each {
@@ -157,24 +155,11 @@ def updated() {
 
         logDebug "updated()..."
 
-        initialize()
-
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
 
     return []
 }
-
-private initialize() {
-    def checkInterval = ((60 * 60 * 3) + (5 * 60))
-
-    def checkIntervalEvt = [name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]]
-
-    if (!device.currentValue("checkInterval")) {
-        sendEvent(checkIntervalEvt)
-    }
-}
-
 
 def configure() {
     logDebug "configure()..."
@@ -214,11 +199,11 @@ def executeConfigureCmds() {
         }
     }
 
-	state.resyncAll = false
-	if (cmds) {
-		sendCommands(delayBetween(cmds, 500))
-	}
-	return []
+    state.resyncAll = false
+    if (cmds) {
+        sendCommands(delayBetween(cmds, 500))
+    }
+    return []
 }
 
 private sendCommands(cmds) {
@@ -233,7 +218,6 @@ private sendCommands(cmds) {
 
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
-	logDebug "ping()"	
 }
 
 
@@ -333,7 +317,7 @@ def refreshSyncStatus() {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	logDebug "Ignored Command: $cmd"
+    logDebug "Ignored Command: $cmd"
     return []
 }
 
@@ -412,11 +396,11 @@ private getPendingChanges() {
 }
 
 private getParamStoredValue(paramNum) {
-	return safeToInt(state["configParam${paramNum}"] , null)
+    return safeToInt(state["configParam${paramNum}"] , null)
 }
 
 private setParamStoredValue(paramNum, value) {
-	state["configParam${paramNum}"] = value
+    state["configParam${paramNum}"] = value
 }
 
 // Sensor Types
@@ -440,23 +424,23 @@ private getConfigParams() {
 }
 
 private getLedModeParam() {
-	return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
+    return getParam(2, "LED Indicator Mode", 1, 0, ledModeOptions)
 }
 
 private getAutoOffIntervalParam() {
-	return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-	return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getNightLightParam() {
-	return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1..10")
+    return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1..10")
 }
 
 private getPowerFailureRecoveryParam() {
-	return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
+    return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
 }
 
 private getPushDimmingDurationParam() {
@@ -488,10 +472,10 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
 
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
-		map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
+        map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
-	if (range) map.range = range
+    if (range) map.range = range
 
     return map
 }
@@ -578,13 +562,13 @@ private static safeToInt(val, defaultVal=0) {
 }
 
 private convertToLocalTimeString(dt) {
-	def timeZoneId = location?.timeZone?.ID
-	if (timeZoneId) {
-		return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-	}
-	else {
-		return "$dt"
-	}
+    def timeZoneId = location?.timeZone?.ID
+    if (timeZoneId) {
+        return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
+    }
+    else {
+        return "$dt"
+    }
 }
 
 private static isDuplicateCommand(lastExecuted, allowedMil) {
@@ -592,11 +576,11 @@ private static isDuplicateCommand(lastExecuted, allowedMil) {
 }
 
 private logDebug(msg) {
-        log.debug "$msg"
+    log.debug "$msg"
 }
 
 private logTrace(msg) {
-	log.trace "$msg"
+    log.trace "$msg"
 }
 
 def on() {
