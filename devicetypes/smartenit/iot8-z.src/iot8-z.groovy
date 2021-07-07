@@ -69,13 +69,13 @@ def parse(String description) {
 		}
 	} else if (eventDescMap) {
 		if ((eventDescMap?.sourceEndpoint == "01") || (eventDescMap?.endpoint == "01")) {
-			if (eventDescMap?.cluster == "000F") {
+			if (eventDescMap?.clusterInt == BINARY_INPUT_CLUSTER) {
 				if (eventDescMap?.value == "00") {
 					return createEvent(name: "contact", value: "open")
 				} else if (eventDescMap?.value == "01") {
 					return createEvent(name: "contact", value: "closed")
 				}
-			} else if ((eventDescMap?.clusterId == "000C") || (eventDescMap?.cluster == "000C")) {
+			} else if (eventDescMap?.clusterInt == ANALOG_INPUT_CLUSTER) {
 				long convertedValue = Long.parseLong(eventDescMap?.value, 16)
 				Float percentage = Float.intBitsToFloat(convertedValue.intValue())
 				percentage = (percentage / 1.60) * 100.0
@@ -92,7 +92,7 @@ def parse(String description) {
 				it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
 			}
 			if (childDevice) {
-				if ((eventDescMap?.clusterId == "000F") || (eventDescMap?.cluster == "000F")) {
+				if (eventDescMap?.clusterInt == BINARY_INPUT_CLUSTER) {
 					if (eventDescMap?.value == "00") {
 						def map = createEvent(name: "contact", value: "open")
 						childDevice.sendEvent(map)
@@ -100,7 +100,7 @@ def parse(String description) {
 						def map = createEvent(name: "contact", value: "closed")
 						childDevice.sendEvent(map)
 					}
-				} else if ((eventDescMap?.clusterId == "000C") || (eventDescMap?.cluster == "000C")) {
+				} else if (eventDescMap?.clusterInt == ANALOG_INPUT_CLUSTER) {
 					long convertedValue = Long.parseLong(eventDescMap?.value, 16)
 					Float percentage = Float.intBitsToFloat(convertedValue.intValue())
 					percentage = (percentage / 1.60) * 100.0
