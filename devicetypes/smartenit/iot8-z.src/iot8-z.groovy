@@ -26,7 +26,7 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint manufacturer: "Smartenit, Inc", model: "IOT8-Z", deviceJoinName: "Smartenit Switch ", profileId: "0104", inClusters: "0000, 0003, 0006, 000C, 000F", outClusters: "0019" 
+		fingerprint manufacturer: "Smartenit, Inc", model: "IOT8-Z", deviceJoinName: "Smartenit Switch", profileId: "0104", inClusters: "0000, 0003, 0006, 000C, 000F", outClusters: "0019" 
 	}
 }
 
@@ -52,7 +52,7 @@ def parse(String description) {
 
 	if (eventMap) {
 		if ((eventDescMap?.sourceEndpoint == "01") || (eventDescMap?.endpoint == "01")) {
-			if (eventDescMap?.clusterId == "000C") {
+			if (eventDescMap?.clusterInt == ANALOG_INPUT_CLUSTER) {
 				return createEvent(name: "inputValue", value: eventDescMap?.value)
 			} else {
 				sendEvent(eventMap)
@@ -145,10 +145,10 @@ def refresh() {
 	def refreshCommands = zigbee.onOffRefresh() 
 	def numberOfChildDevices = 8
 
-	for(def endpoint : 2..numberOfChildDevices) {
+	for (def endpoint : 2..numberOfChildDevices) {
 		refreshCommands += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, ONOFF_ATTRIBUTE, [destEndpoint: endpoint])
 	}
-	for(def endpoint : 1..4) {
+	for (def endpoint : 1..4) {
 		refreshCommands += zigbee.readAttribute(BINARY_INPUT_CLUSTER, PRESENT_VALUE_ATTRIBUTE, [destEndpoint: endpoint])
 	}
 
@@ -199,7 +199,7 @@ def configure() {
 	}
 	
 	configurationCommands += zigbee.onOffConfig(0, 120)
-	for(def endpoint : 2..8) {
+	for (def endpoint : 2..8) {
 		configurationCommands += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, ONOFF_ATTRIBUTE, 0x10, 0, 120, null, [destEndpoint: endpoint])
 	}
 	
