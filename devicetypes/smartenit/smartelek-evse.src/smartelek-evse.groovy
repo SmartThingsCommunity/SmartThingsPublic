@@ -90,24 +90,22 @@ def parse(String description) {
 		if (event.name == "power") {
 			sendEvent(name: "power", value: (event.value/EnergyDivisor))
 		}
-		else {
-			sendEvent(event)
-		}
+		else { sendEvent(event) }
 	}
 	else {
 		def mapDescription = zigbee.parseDescriptionAsMap(description)
 		log.debug "mapDescription... : ${mapDescription}"
-		if(mapDescription) {
-			if(mapDescription.clusterInt == MeteringCluster) {
-				if(mapDescription.attrInt == MeteringCurrentSummation) {
+		if (mapDescription) {
+			if (mapDescription.clusterInt == MeteringCluster) {
+				if (mapDescription.attrInt == MeteringCurrentSummation) {
                 	return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
-				} else if(mapDescription.attrInt == MeteringInstantDemand) {
+				} else if (mapDescription.attrInt == MeteringInstantDemand) {
 					return sendEvent(name:"power", value: getFPoint(mapDescription.value/EnergyDivisor))
 				}
 			}
-			else if(mapDescription.clusterInt == EVSECluster) {
+			else if (mapDescription.clusterInt == EVSECluster) {
 				log.debug "EVSE cluster, attrId: ${mapDescription.attrId}, value: ${mapDescription.value}"
-				if(mapDescription.attrInt == ChargingStatus) {
+				if (mapDescription.attrInt == ChargingStatus) {
 					def strvalue = parseChargerStatusValue(mapDescription.value)
 					log.debug "charging status attribute: ${mapDescription.value}, ${strvalue}"
 					if (strvalue == "unplugged") {
@@ -141,16 +139,16 @@ def parse(String description) {
 					def mins = Math.round(Math.floor(secs / 60))
 					def timestr = "${hours} hr:${mins} min"
 					return sendEvent(name:"sessionDuration", value: timestr)
-				} else if(mapDescription.attrInt == ChargerSessionSummation) {
+				} else if (mapDescription.attrInt == ChargerSessionSummation) {
 					log.debug "ChargerSessionSummation attribute: ${mapDescription.value}"
 					return sendEvent(name:"sessionSummation", value: getFPoint(mapDescription.value)/EnergyDivisor, unit: "Wh")
-				} else if(mapDescription.attrInt == ChargerSessionPeakCurrent) {
+				} else if (mapDescription.attrInt == ChargerSessionPeakCurrent) {
 					log.debug "ChargerSessionPeakCurrent attribute: ${mapDescription.value}"
 					return sendEvent(name:"sessionPeakCurrent", value: getFPoint(mapDescription.value) / 100, unit: "A")
-				} else if(mapDescription.attrInt == ChargerVRMS) {
+				} else if (mapDescription.attrInt == ChargerVRMS) {
 					log.debug "ChargerVRMS attribute: ${mapDescription.value}"
 					return sendEvent(name:"voltage", value: getFPoint(mapDescription.value) / 100)
-				} else if(mapDescription.attrInt == ChargerIRMS) {
+				} else if (mapDescription.attrInt == ChargerIRMS) {
 					log.debug "ChargerIRMS attribute: ${mapDescription.value}"
 					return sendEvent(name:"current", value: getFPoint(mapDescription.value) / 100, unit: "A")
 				} else {
@@ -252,7 +250,7 @@ def parseChargerFaultValue(val) {
 
 def parseChargerStatusValue(val) {
 	log.debug "parseChargerStatusValue: ${val}"
-	switch(val as Integer) {
+	switch (val as Integer) {
 		case 0:
 			log.debug "value is Unplugged"
 			return "unplugged"
