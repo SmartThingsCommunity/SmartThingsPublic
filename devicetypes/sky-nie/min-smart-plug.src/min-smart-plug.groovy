@@ -117,7 +117,7 @@ private getNumberInput(param) {
 
 def installed() {
     logDebug "installed()..."
-    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 private static def getCheckInterval() {
