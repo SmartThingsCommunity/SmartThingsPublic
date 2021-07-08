@@ -1,7 +1,7 @@
 /**
  *  Minoston Wallmote v1.0.1
  *
- *  	Models: Eva Logik (ZW30) / MINOSTON (MS10Z)
+ *  	Models: Eva Logik (ZW924) / MINOSTON (MR40Z)
  *
  *  Author:
  *   winnie (sky-nie)
@@ -37,7 +37,7 @@ metadata {
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0312", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button", prod: "0924"//ZW924
+        fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button"//ZW924
     }
 
     tiles(scale: 2) {
@@ -304,19 +304,13 @@ private static getLedColorOptions() {
 }
 
 private static getBrightnessOptions() {
-    return [
-            "0":"LED off",
-            "1":"10% Brightness",
-            "2":"20% Brightness",
-            "3":"30% Brightness",
-            "4":"40% Brightness",
-            "5":"50% Brightness",
-            "6":"60% Brightness",
-            "7":"70% Brightness",
-            "8":"80% Brightness",
-            "9":"90% Brightness",
-            "10":"100% Brightness"
-    ]
+    def options = [:]
+    options["0"] = "LED off"
+
+    (1..10).each {
+        options["${it}"] = "${it}% Brightness"
+    }
+    return options
 }
 
 private static safeToInt(val, defaultVal=0) {
