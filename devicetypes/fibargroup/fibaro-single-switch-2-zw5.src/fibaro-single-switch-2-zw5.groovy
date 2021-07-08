@@ -47,7 +47,7 @@ metadata {
     preferences {
         parameterMap().each {
             input (
-                    title: "${it.num}. ${it.title}",
+                    title: "${it.title}",
                     description: it.descr,
                     type: "paragraph",
                     element: "paragraph"
@@ -75,7 +75,7 @@ private getPrefsFor(String name) {
     parameterMap().findAll( {it.key.contains(name)} ).each {
         input (
                 name: it.key,
-                title: "${it.num}. ${it.title}",
+                title: "${it.title}",
                 description: it.descr,
                 type: it.type,
                 options: it.options,
