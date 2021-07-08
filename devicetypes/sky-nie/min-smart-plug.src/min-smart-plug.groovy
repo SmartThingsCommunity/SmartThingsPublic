@@ -36,14 +36,6 @@
  *
  */
 
-import groovy.transform.Field
-
-@Field static Map ledModeOptions = [0:"On When On", 1:"Off When On", 2:"Always Off"]//, 3:"Always On"
-
-@Field static Map autoOnOffIntervalOptions = [0:"Disabled", 1:"1 Minute", 2:"2 Minutes", 3:"3 Minutes", 4:"4 Minutes", 5:"5 Minutes", 6:"6 Minutes", 7:"7 Minutes", 8:"8 Minutes", 9:"9 Minutes", 10:"10 Minutes", 15:"15 Minutes", 20:"20 Minutes", 25:"25 Minutes", 30:"30 Minutes", 45:"45 Minutes", 60:"1 Hour", 120:"2 Hours", 180:"3 Hours", 240:"4 Hours", 300:"5 Hours", 360:"6 Hours", 420:"7 Hours", 480:"8 Hours", 540:"9 Hours", 600:"10 Hours", 720:"12 Hours", 1080:"18 Hours", 1440:"1 Day", 2880:"2 Days", 4320:"3 Days", 5760:"4 Days", 7200:"5 Days", 8640:"6 Days", 10080:"1 Week", 20160:"2 Weeks", 30240:"3 Weeks", 40320:"4 Weeks", 50400:"5 Weeks", 60480:"6 Weeks"]
-
-@Field static Map powerFailureRecoveryOptions = [0:"Turn Off", 1:"Turn On", 2:"Restore Last State"]
-
 metadata {
     definition (
             name: "Min Smart Plug",
@@ -95,22 +87,43 @@ metadata {
     }
     preferences {
         configParams.each {
-            createEnumInput("configParam${it.num}", "${it.name}:", it.value, it.options)
+            if (it.name) {
+                if (it.range) {
+                    getNumberInput(it)
+                }
+                else {
+                    getOptionsInput(it)
+                }
+            }
         }
     }
 }
 
-private createEnumInput(name, title, defaultVal, options) {
-    input name, "enum",
-            title: title,
+private getOptionsInput(param) {
+    input "configParam${param.num}", "enum",
+            title: "${param.name}:",
             required: false,
-            defaultValue: defaultVal.toString(),
-            options: options
+            defaultValue: "${param.value}",
+            options: param.options
+}
+
+private getNumberInput(param) {
+    input "configParam${param.num}", "number",
+            title: "${param.name}:",
+            required: false,
+            defaultValue: "${param.value}",
+            range: param.range
 }
 
 def installed() {
     logDebug "installed()..."
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
 
+private static def getCheckInterval() {
+    // These are battery-powered devices, and it's not very critical
+    // to know whether they're online or not – 12 hrs
+    return (60 * 60 * 3) + (5 * 60)
 }
 
 def updated() {
@@ -118,6 +131,9 @@ def updated() {
         state.lastUpdated = new Date().time
 
         logDebug "updated()..."
+        if (device.latestValue("checkInterval") != checkInterval) {
+            sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+        }
 
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
@@ -409,24 +425,26 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(2, "Auto Turn-Off Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(2, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(4, "Auto Turn-On Timer", 4, 0, autoOnOffIntervalOptions)
+    return getParam(4, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getPowerFailureRecoveryParam() {
     return getParam(6, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
 }
 
-private getParam(num, name, size, defaultVal, options) {
+private getParam(num, name, size, defaultVal, options=null, range=null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
 
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
+        map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
+    if (range) map.range = range
 
     return map
 }
@@ -438,6 +456,18 @@ private static setDefaultOption(options, defaultVal) {
         }
         ["$k": "$v"]
     }
+}
+
+private static getLedModeOptions() {
+    return [
+            0:"On When On", 1:"Off When On", 2:"Always Off"
+    ]
+}
+
+private static getPowerFailureRecoveryOptions() {
+    return [
+            "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
+    ]
 }
 
 private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
