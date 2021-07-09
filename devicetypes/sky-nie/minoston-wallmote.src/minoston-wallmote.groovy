@@ -29,7 +29,7 @@
  */
 
 metadata {
-    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
+    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller") {
         capability "Actuator"
         capability "Button"
         capability "Battery"
@@ -69,7 +69,7 @@ metadata {
 }
 
 def getNumberOfButtons() {
-    def modelToButtons = ["D001":4, "0082" : 4, "0081": 2, "0003": 2]
+    def modelToButtons = ["D001":4]
     return modelToButtons[zwaveInfo.model] ?: 1
 }
 
