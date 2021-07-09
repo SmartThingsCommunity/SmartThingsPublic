@@ -51,10 +51,8 @@ metadata {
         capability "Light"
         capability "Configuration"
         capability "Refresh"
-        capability "Health Check"
 
         attribute "firmwareVersion", "string"
-        attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
         fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
@@ -117,7 +115,7 @@ private getNumberInput(param) {
 
 def installed() {
     logDebug "installed()..."
-    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 private static def getCheckInterval() {
@@ -268,23 +266,11 @@ def parse(String description) {
         else {
             log.warn "Unable to parse: $description"
         }
-
-        updateLastCheckIn()
     }
     catch (e) {
         log.error "${e}"
     }
     return result
-}
-
-private updateLastCheckIn() {
-    if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
-        state.lastCheckInTime = new Date().time
-
-        def evt = [name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false]
-
-        sendEvent(evt)
-    }
 }
 
 private convertToLocalTimeString(dt) {
