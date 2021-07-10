@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Door/Window Sensor ZW5 with Temperature", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.contact") {
+	definition (name: "Fibaro Door/Window Sensor ZW5 with Temperature", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.contact", mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Battery"
 		capability "Contact Sensor"
 		capability "Sensor"
