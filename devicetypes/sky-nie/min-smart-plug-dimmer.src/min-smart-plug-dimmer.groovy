@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.3
+ *      Min Smart Plug Dimmer v1.1.4
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -10,6 +10,7 @@
  *
  *  Changelog:
  *
+ *    1.1.4 (07/12/2021)
  *    1.1.3 (07/07/2021)
  *      - delete dummy code
  *
@@ -57,7 +58,6 @@ metadata {
         capability "Switch Level"
         capability "Configuration"
         capability "Refresh"
-        capability "Health Check"
 
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
@@ -227,25 +227,6 @@ private sendCommands(cmds) {
 }
 
 
-// Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
-def ping() {
-}
-
-
-// Forces the configuration to be resent to the device the next time it wakes up.
-def refresh() {
-    logForceWakeupMessage "The sensor data will be refreshed the next time the device wakes up."
-    state.lastBattery = null
-    if (!state.refreshSensors) {
-        state.refreshSensors = true
-    }
-    else {
-        state.refreshConfig = true
-    }
-    refreshSyncStatus()
-    return []
-}
-
 private logForceWakeupMessage(msg) {
     logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
 }
@@ -291,7 +272,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
                 def unit = cmd.scale ? "F" : "C"
                 def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
 
-                sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
+                def isStateChange = (device.currentValue("temperature") != temp)
+                def eventMap = [
+                        name: "temperature",
+                        value: temp,
+                        displayed: true,
+                        isStateChange: isStateChange,
+                        descriptionText: desc ?: "${device.displayName} ${"temperature"} is ${temp}"
+                ]
+                sendEvent(eventMap)
                 break
             default:
                 logDebug "Unknown Sensor Type: ${cmd.sensorType}"
@@ -319,38 +308,17 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     return []
 }
 private updateSyncingStatus() {
-    sendEventIfNew("syncStatus", "Syncing...", false)
+    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
 }
 
 def refreshSyncStatus() {
     def changes = pendingChanges
-    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
+    sendEvent(name: "syncStatus", value:  (changes ?  "${changes} Pending Changes" : "Synced"), displayed:  false)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
     logDebug "Ignored Command: $cmd"
     return []
-}
-
-private getEventMap(name, value, displayed=null, desc=null, unit=null) {
-    def isStateChange = (device.currentValue(name) != value)
-    displayed = (displayed == null ? isStateChange : displayed)
-    def eventMap = [
-            name: name,
-            value: value,
-            displayed: displayed,
-            isStateChange: isStateChange,
-            descriptionText: desc ?: "${device.displayName} ${name} is ${value}"
-    ]
-
-    if (unit) {
-        eventMap.unit = unit
-        eventMap.descriptionText = "${eventMap.descriptionText}${unit}"
-    }
-    if (displayed) {
-        logDebug "${eventMap.descriptionText}"
-    }
-    return eventMap
 }
 
 private sensorMultilevelGetCmd(sensorType) {
@@ -524,26 +492,6 @@ private static getTemperatureReportThresholdOptions() {
     return options
 }
 
-private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
-    def desc = "${name} is ${value}${unit}"
-    if (device.currentValue(name) != value) {
-        logDebug(desc)
-
-        def evt = [name: name, value: value, descriptionText: "${device.displayName} ${desc}", displayed: displayed]
-
-        if (type) {
-            evt.type = type
-        }
-        if (unit) {
-            evt.unit = unit
-        }
-        sendEvent(evt)
-    }
-    else {
-        logTrace(desc)
-    }
-}
-
 private static validateRange(val, defaultVal, lowVal, highVal) {
     val = safeToInt(val, defaultVal)
     if (val > highVal) {
@@ -626,7 +574,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
 
-    sendEventIfNew("firmwareVersion", fullVersion)
+    sendEvent(name: "firmwareVersion",  value:fullVersion, displayed: true, type:  null)
     return []
 }
 
@@ -643,14 +591,11 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 }
 
 private sendSwitchEvents(rawVal, type) {
-    def oldSwitch = device.currentValue("switch")
-    def oldLevel = device.currentValue("level")
-
     def switchVal = rawVal ? "on" : "off"
 
-    sendEventIfNew("switch", switchVal, true, type)
+    sendEvent(name: "switch",  value:switchVal, displayed: true, type:  type)
 
     if (rawVal) {
-        sendEventIfNew("level", rawVal, true, type, "%")
+        sendEvent(name: "level",  value:rawVal, displayed: true, type:  type, unit:"%")
     }
 }
