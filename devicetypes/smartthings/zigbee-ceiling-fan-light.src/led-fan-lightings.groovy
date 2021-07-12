@@ -1,4 +1,4 @@
-/**
+/*
  *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -20,7 +20,7 @@ import physicalgraph.zigbee.zcl.DataType
 import groovy.json.JsonOutput
 
 metadata {
-	definition(name: "LED FAN lightings", namespace: "SAMSUNG LED", author: "SAMSUNG LED", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
+	definition (name: "LED FAN lightings", namespace: "SAMSUNG LED", author: "SAMSUNG LED", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
 
 		capability "Actuator"		
 		capability "Configuration"
@@ -51,6 +51,7 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
+		
 		main(["switch"])
 		details(["switch", "refresh", "switchLevel"])
 	}
@@ -59,7 +60,7 @@ metadata {
 def parse(String description) {
 	log.debug "description is $description"
 	def event = zigbee.getEvent(description)
-    def zigbeeMap = zigbee.parseDescriptionAsMap(description)
+	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
@@ -190,7 +191,7 @@ def configure() {
 
 def installed() {
 	log.debug "Samsung ITM test prod installed"
-    addChildFan()    
+	addChildFan()    
 	configure()
 }
 
@@ -212,7 +213,8 @@ def addChildFan() {
 	} catch (e) {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
-    	def childDevice = getChildDevices()?.find {		//find light child device
+    	def childDevice = getChildDevices()?.find {
+		//find light child device
         	log.debug "parse() child device found"
         	it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
     	}
@@ -235,14 +237,14 @@ def delete(){
 
 def uninstalled(){
 	log.debug "[Parent] - uninstalled"
-    try{
-        def childDevice = getChildDevices()?.find {		//find light child device
-            log.debug "parse() child device found"
-            it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
-        }
-	if (childDevice != null) {
-		deleteChildren()
-	}
-    }
-    catch (e) {}    
+	try{
+		def childDevice = getChildDevices()?.find {		
+			//find light child device
+			log.debug "parse() child device found"
+			it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
+        	}
+		if (childDevice != null) {
+			deleteChildren()
+		}
+    	} catch (e) {}    
 }
