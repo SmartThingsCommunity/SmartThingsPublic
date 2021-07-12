@@ -55,8 +55,6 @@ metadata {
 		details(["switch", "refresh", "switchLevel"])
 	}
 }
-
-
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description is $description"
@@ -64,8 +62,8 @@ def parse(String description) {
     def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	if (event) {
 		sendEvent(event)
-	} else if (description?.startsWith('read attr -')){
-		if(zigbeeMap.cluster == "0202" && zigbeeMap.attrId == "0000") {		
+	} else if (description?.startsWith('read attr -')) {
+		if (zigbeeMap.cluster == "0202" && zigbeeMap.attrId == "0000") {		
 			log.debug "read attribute event for fan cluster attrib 0x0000"
 			def childDevice = getChildDevices()?.find {		//find light child device
 				log.debug "parse() child device found"
@@ -75,12 +73,11 @@ def parse(String description) {
 			
 			zigbeeMap.name = "fanSpeed"
 			childDevice.sendEvent(zigbeeMap)
-			if(zigbeeMap.value == "00"){
+			if (zigbeeMap.value == "00") {
 				log.debug "fan_off => switch off"
 				childDevice.sendEvent(name: "switch", value: "off")
 				childDevice.sendEvent(name: "level", value: 0)	// For cloud to cloud device UI update
-			}
-			else{
+			} else {
 				log.debug "fan_on => switch on"
 				childDevice.sendEvent(name: "switch", value: "on")
 				def int_v  = zigbeeMap.value as Integer
@@ -89,22 +86,8 @@ def parse(String description) {
 				log.debug "child device Level set $int_v"
 				childDevice.sendEvent(name: "level", value: int_v)	// For cloud to cloud device UI update
 			}
-		}
-		/*else if(zigbeeMap.cluster == "0006" && zigbeeMap.attrId == "0000") {		
-			zigbeeMap.name = "switch"
-			if(zigbeeMap.value == "00"){
-				sendEvent(name: "switch", value: "off")
-			}
-			else{
-				sendEvent(name: "switch", value: "on")
-			}
-		}
-		else if(zigbeeMap.cluster == "0008" && zigbeeMap.attrId == "0000") {		
-			zigbeeMap.name = "level"
-			sendEvent(name: "level", value: zigbeeMap.value)
-		}*/
-	}
-    else {
+		}		
+	} else {
 		def cluster = zigbee.parse(description)
 
 		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
@@ -114,9 +97,7 @@ def parse(String description) {
 			} else {
 				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
-		} else {
-			
-		}
+		} else {}
 	}
 }
 
@@ -129,66 +110,62 @@ def on() {
 }
 
 def setLevel(value, rate = null, device = null) {
-	if(device == null)	zigbee.setLevel(value)
-    else{
-    	if(value <= 1){
-            setFanSpeed(0, device)
-        }
-        else if(value <= 25){
-            setFanSpeed(1, device)
-        }
-        else if(value <= 50){
-            setFanSpeed(2, device)
-        }
-        else if(value <= 75){
-            setFanSpeed(3, device)
-        }        
-        else if(value <= 100){
-            setFanSpeed(4, device)
-        }        
-    }
+	if (device == null) {
+		zigbee.setLevel(value)
+	} else {
+    		if (value <= 1) {
+            		setFanSpeed(0, device)
+        	} else if (value <= 25) {
+            		setFanSpeed(1, device)
+        	} else if (value <= 50) {
+            		setFanSpeed(2, device)
+        	} else if (value <= 75) {
+            		setFanSpeed(3, device)
+        	} else if (value <= 100) {
+            		setFanSpeed(4, device)
+        	}        
+    	}
 }
 
-def setFanSpeed(speed, device=null){
-	if(device == null) return
-    log.debug "parent setFanSpeed"
-    if (speed as Integer == 0) {        
+def setFanSpeed(speed, device=null) {
+	if (device == null) {
+		return
+	}
+    	log.debug "parent setFanSpeed"
+    	if (speed as Integer == 0) {        
 		// + createEvent(name: "fanSpeed", value: 0)
-        log.debug "fan_off"
-	    send_fanSpeed(0x00)
+        	log.debug "fan_off"
+	    	send_fanSpeed(0x00)
 	} else if (speed as Integer == 1) {
 		// + createEvent(name: "fanSpeed", value: 1)
-        log.debug "low"
-	    send_fanSpeed(0x01)
+        	log.debug "low"
+	    	send_fanSpeed(0x01)
 	} else if (speed as Integer == 2) {
 		// + createEvent(name: "fanSpeed", value: 2)
-        log.debug "medium"	
-        send_fanSpeed(0x02)    
+        	log.debug "medium"	
+        	send_fanSpeed(0x02)    
 	} else if (speed as Integer == 3) {
 		// + createEvent(name: "fanSpeed", value: 3)
-        log.debug "high"	
-	    send_fanSpeed(0x03)
-    } else if (speed as Integer == 4) {
+        	log.debug "high"	
+	    	send_fanSpeed(0x03)
+    	} else if (speed as Integer == 4) {
 		// + createEvent(name: "fanSpeed", value: 4)
-        log.debug "max"
-	    send_fanSpeed(0x04)
-    } else {
+        	log.debug "max"
+	    	send_fanSpeed(0x04)
+    	} else {
 		// + createEvent(name: "fanSpeed", value: 4)
-        log.debug "max"
-	    send_fanSpeed(0x04)
-    }    
+        	log.debug "max"
+	    	send_fanSpeed(0x04)
+    	}    
 }
 
-private send_fanSpeed(val){
+private send_fanSpeed(val) {
 	delayBetween([     	
         zigbee.writeAttribute(0x0202, 0x0000, DataType.ENUM8, val),
 		zigbee.readAttribute(0x0202, 0x0000)
 	], 100)
 }
-
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
+// PING is used by Device-Watch in attempt to reach the Device
 def ping() {
 	return zigbee.onOffRefresh()
 }
@@ -217,7 +194,7 @@ def installed() {
 	configure()
 }
 
-def addChildFan(){
+def addChildFan() {
         log.debug "add child fan"
 	def componentLabel
 	if (device.displayName.endsWith(' Light') || device.displayName.endsWith(' light')) {
@@ -226,6 +203,7 @@ def addChildFan(){
 		// no '1' at the end of deviceJoinName - use 2 to indicate second switch anyway
 		componentLabel = "$device.displayName Fan"
 	}
+	
 	try {
 		String dni = "${device.deviceNetworkId}-Fan"
 		addChildDevice("ITM Fan Child", dni, device.hub.id,
@@ -234,19 +212,21 @@ def addChildFan(){
 	} catch (e) {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
-    def childDevice = getChildDevices()?.find {		//find light child device
-        log.debug "parse() child device found"
-        it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
-    }
-    if(childDevice != null)    childDevice.sendEvent(name: "switch", value: "off")
+    	def childDevice = getChildDevices()?.find {		//find light child device
+        	log.debug "parse() child device found"
+        	it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
+    	}
+	if (childDevice != null) {
+		childDevice.sendEvent(name: "switch", value: "off")
+	}
 }
 
 def deleteChildren() {	
 	def children = getChildDevices()        	
-    children.each {child->
-  		deleteChildDevice(child.deviceNetworkId)
-    }	
-    log.info "Deleting children"                  
+	children.each { child->
+		deleteChildDevice(child.deviceNetworkId)
+    	}	
+	log.info "Deleting children"                  
 }
 
 def delete(){
@@ -260,7 +240,9 @@ def uninstalled(){
             log.debug "parse() child device found"
             it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
         }
-        if(childDevice != null)    deleteChildren()
+	if (childDevice != null) {
+		deleteChildren()
+	}
     }
-    catch(e){}    
+    catch (e) {}    
 }
