@@ -29,7 +29,6 @@
  import groovy.transform.Field
  
  @Field final EVSECluster = 0xFF00
- @Field final MeteringCluster = 0x0702
  @Field final MeteringCurrentSummation = 0x0000
  @Field final MeteringInstantDemand = 0x0400
  @Field final EnergyDivisor = 100000
@@ -89,21 +88,19 @@ def parse(String description) {
 		log.debug "event: ${event}, ${event.name}, ${event.value}"
 		if (event.name == "power") {
 			sendEvent(name: "power", value: (event.value/EnergyDivisor))
-		}
-		else { sendEvent(event) }
+		} else { sendEvent(event) }
 	}
 	else {
 		def mapDescription = zigbee.parseDescriptionAsMap(description)
 		log.debug "mapDescription... : ${mapDescription}"
 		if (mapDescription) {
-			if (mapDescription.clusterInt == MeteringCluster) {
+			if (mapDescription.clusterInt == zigbee.SIMPLE_METERING_CLUSTER) {
 				if (mapDescription.attrInt == MeteringCurrentSummation) {
                 	return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
 				} else if (mapDescription.attrInt == MeteringInstantDemand) {
 					return sendEvent(name:"power", value: getFPoint(mapDescription.value/EnergyDivisor))
 				}
-			}
-			else if (mapDescription.clusterInt == EVSECluster) {
+			} else if (mapDescription.clusterInt == EVSECluster) {
 				log.debug "EVSE cluster, attrId: ${mapDescription.attrId}, value: ${mapDescription.value}"
 				if (mapDescription.attrInt == ChargingStatus) {
 					def strvalue = parseChargerStatusValue(mapDescription.value)
@@ -301,8 +298,8 @@ def startcharging() {
 }
 
 def refresh() {
-	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation) +
-	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand) +
+	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation) +
+	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringInstantDemand) +
 	zigbee.readAttribute(EVSECluster, ChargingStatus, [mfgCode: SmartenitMfrCode]) +
 	zigbee.readAttribute(EVSECluster, ChargerVRMS, [mfgCode: SmartenitMfrCode]) +
 	zigbee.readAttribute(EVSECluster, ChargerSessionSummation, [mfgCode: SmartenitMfrCode]) +
@@ -318,8 +315,8 @@ def refresh() {
 def configure() {
 	log.debug "in configure()"
 	return (configureHealthCheck() +
-		zigbee.configureReporting(MeteringCluster, MeteringCurrentSummation, 0x25, 0, 600, 50) +
-		zigbee.configureReporting(MeteringCluster, MeteringInstantDemand, 0x2a, 0, 600, 50) +
+		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation, 0x25, 0, 600, 50) +
+		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, MeteringInstantDemand, 0x2a, 0, 600, 50) +
 		zigbee.configureReporting(EVSECluster, ChargingStatus, 0x30, 0x0, 0x0, null, [mfgCode: SmartenitMfrCode])
 	)
 }
