@@ -64,7 +64,8 @@ def parse(String description) {
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
-		if (zigbeeMap.cluster == "0202" && zigbeeMap.attrId == "0000") {		
+		if (zigbeeMap.cluster == "0202" &&
+		    zigbeeMap.attrId == "0000") {		
 			log.debug "read attribute event for fan cluster attrib 0x0000"
 			def childDevice = getChildDevices()?.find {		//find light child device
 				log.debug "parse() child device found"
@@ -91,7 +92,8 @@ def parse(String description) {
 	} else {
 		def cluster = zigbee.parse(description)
 
-		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+		if (cluster && cluster.clusterId == 0x0006 &&
+		    cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
@@ -161,10 +163,7 @@ def setFanSpeed(speed, device=null) {
 }
 
 private send_fanSpeed(val) {
-	delayBetween([     	
-        zigbee.writeAttribute(0x0202, 0x0000, DataType.ENUM8, val),
-		zigbee.readAttribute(0x0202, 0x0000)
-	], 100)
+	delayBetween([zigbee.writeAttribute(0x0202, 0x0000, DataType.ENUM8, val), zigbee.readAttribute(0x0202, 0x0000)], 100)
 }
 // PING is used by Device-Watch in attempt to reach the Device
 def ping() {
