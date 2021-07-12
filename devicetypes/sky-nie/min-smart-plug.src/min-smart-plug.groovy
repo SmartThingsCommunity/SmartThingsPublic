@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v1.0.2
+ *      Min Smart Plug v1.0.3
  *
  *  	Models: MINOSTON (MP21Z)
  *
@@ -9,7 +9,8 @@
  *	Documentation:
  *
  *  Changelog:
- *
+ *  
+ *    1.0.3 (07/12/2021)
  *    1.0.2 (07/07/2021)
  *      - delete dummy code
  *
@@ -325,7 +326,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
 
-    sendEventIfNew("firmwareVersion", fullVersion)
+    sendEvent(name:  "firmwareVersion", value:  fullVersion)
     return []
 }
 
@@ -345,7 +346,7 @@ private sendSwitchEvents(rawVal, type) {
 
     def switchVal = (rawVal == 0xFF) ? "on" : "off"
 
-    sendEventIfNew("switch", switchVal, true, type)
+    sendEvent(name:  "switch", value:  switchVal, displayed:  true,type:  type)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -354,12 +355,12 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private updateSyncingStatus() {
-    sendEventIfNew("syncStatus", "Syncing...", false)
+    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
 }
 
 def refreshSyncStatus() {
     def changes = pendingChanges
-    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
+    sendEvent(name:  "syncStatus", value:  (changes ?  "${changes} Pending Changes" : "Synced"), displayed:  false)
 }
 
 private static getCommandClassVersions() {
@@ -454,26 +455,6 @@ private static getPowerFailureRecoveryOptions() {
     return [
             "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
     ]
-}
-
-private sendEventIfNew(name, value, displayed=true, type=null, unit="") {
-    def desc = "${name} is ${value}${unit}"
-    if (device.currentValue(name) != value) {
-        logDebug(desc)
-
-        def evt = [name: name, value: value, descriptionText: "${device.displayName} ${desc}", displayed: displayed]
-
-        if (type) {
-            evt.type = type
-        }
-        if (unit) {
-            evt.unit = unit
-        }
-        sendEvent(evt)
-    }
-    else {
-        logTrace(desc)
-    }
 }
 
 private static safeToInt(val, defaultVal=0) {
