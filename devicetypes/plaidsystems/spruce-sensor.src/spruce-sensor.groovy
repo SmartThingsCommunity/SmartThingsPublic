@@ -24,7 +24,9 @@ import physicalgraph.zigbee.zcl.DataType
 //dth version
 def getVERSION() {"v1.0 6-2021"}
 def getDEBUG() {true}
-def getHC_INTERVAL_MINS() {60}
+def getHC_INTERVAL_SECS() {3720}
+def getMEASURED_VALUE_ATTRIBUTE() {0x0000}
+def getCONFIGURE_REPORTING_RESPONSE_COMMAND() {0x07}
 
 metadata {
 	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "Plaid Systems", mnmn: "SmartThingsCommunity",
@@ -41,9 +43,9 @@ metadata {
 		attribute "reportingInterval", "NUMBER"
 
 		//new release
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation Sensor"
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation Sensor"
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation Sensor"
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
 	}
 
 	preferences {
@@ -96,7 +98,7 @@ private Map parseCatchAllMessage(String description) {
 	if (DEBUG) log.debug "command: ${command} cluster: ${cluster} value: ${value}"
 
 	//check humidity configuration update is complete
-	if (command == 0x07 && cluster == 0x0405){
+	if (command == CONFIGURE_REPORTING_RESPONSE_COMMAND && cluster == zigbee.RELATIVE_HUMIDITY_CLUSTER){
 		sendEvent(name: "reportingInterval", value: getReportInterval(), descriptionText: "Configuration Successful")
 		sendEvent(name: "checkInterval", value: deviceWatchSeconds(), displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 		log.debug "config complete ${getReportInterval()}"
@@ -114,7 +116,7 @@ private Map parseReportAttributeMessage(String description) {
 	def attribute = ( map.attrId != null ? zigbee.convertHexToInt(map.attrId) : null )
 	def value = ( map.value != null ? zigbee.convertHexToInt(map.value) : null )
 
-	if (cluster == 0x0001 && attribute == 0x0000) {
+	if (cluster == zigbee.POWER_CONFIGURATION_CLUSTER && attribute == MEASURED_VALUE_ATTRIBUTE) {
 		return getBatteryResult(value)
 	}
 
@@ -179,9 +181,7 @@ private Map getBatteryResult(value) {
 	def linkText = getLinkText(device)
 
 	def min = 2500
-	//def percent = ((Integer.parseInt(value, 16) - min) / 5)
 	def percent = (value - min) / 5
-	log.debug percent
 	percent = Math.max(0, Math.min(percent, 100.0))
 	value = Math.round(percent)
 
@@ -225,7 +225,7 @@ def getReportInterval() {
 //Device-Watch every 62mins or settings interval + 120s
 def deviceWatchSeconds() {
 	def intervalSeconds = getReportInterval() * 60 + 2 * 60
-	if (intervalSeconds < 3720) intervalSeconds = 3720
+	if (intervalSeconds < HC_INTERVAL_SECS) intervalSeconds = HC_INTERVAL_SECS
 	return intervalSeconds
 }
 
@@ -252,9 +252,9 @@ def reporting() {
 	def maxReport = getReportInterval() * 61
 
 	def reportingCmds = []
-	reportingCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0, DataType.INT16, 1, 0, 0x01, [destEndpoint: 1])
-	reportingCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0, DataType.UINT16, minReport, maxReport, 0x6400, [destEndpoint: 1])
-	reportingCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0, DataType.UINT16, 0x0C, 0, 0x0500, [destEndpoint: 1])
+	reportingCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 1, 0, 0x01, [destEndpoint: 1])
+	reportingCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, minReport, maxReport, 0x6400, [destEndpoint: 1])
+	reportingCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 0x0C, 0, 0x0500, [destEndpoint: 1])
 
 	return reportingCmds
 }
@@ -262,9 +262,9 @@ def reporting() {
 def refresh() {
 	log.debug "refresh"
 	def refreshCmds = []
-	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0, [destEndpoint: 1])
-	refreshCmds += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0, [destEndpoint: 1])
-	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0, [destEndpoint: 1])
+	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, MEASURED_VALUE_ATTRIBUTE, [destEndpoint: 1])
+	refreshCmds += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, MEASURED_VALUE_ATTRIBUTE, [destEndpoint: 1])
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, MEASURED_VALUE_ATTRIBUTE, [destEndpoint: 1])
 
 	return refreshCmds
 }
