@@ -201,7 +201,7 @@ def callback() {
 			redirect_uri: callbackUrl
 		]
 
-		def tokenUrl = "https://www.ecobee.com/home/token?${toQueryString(tokenParams)}"
+		def tokenUrl = "${apiEndpoint}/token?${toQueryString(tokenParams)}"
 
 		httpPost(uri: tokenUrl) { resp ->
 			state.refreshToken = resp.data.refresh_token
