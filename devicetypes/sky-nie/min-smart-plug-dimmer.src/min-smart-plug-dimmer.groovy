@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.4
+ *      Min Smart Plug Dimmer v1.1.5
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.1.5 (07/13/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
  *
  *    1.1.4 (07/12/2021)
  *    1.1.3 (07/07/2021)
@@ -45,12 +49,7 @@
  */
 
 metadata {
-    definition (
-            name: "Min Smart Plug Dimmer",
-            namespace: "sky-nie",
-            author: "winnie",
-            ocfDeviceType: "oic.d.smartplug"
-    ) {
+    definition (name: "Min Smart Plug Dimmer",namespace: "sky-nie",author: "winnie",ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
@@ -67,81 +66,26 @@ metadata {
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD Minoston Outdoor Smart Plug Dimmer
     }
 
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel"
-            }
-        }
-
-        multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-            tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-                attributeState "temperature", label: '${currentValue}°',
-                        backgroundColors:[
-                                [value: 31, color: "#153591"],
-                                [value: 44, color: "#1e9cbb"],
-                                [value: 59, color: "#90d2a7"],
-                                [value: 74, color: "#44b621"],
-                                [value: 84, color: "#f1d801"],
-                                [value: 95, color: "#d04e00"],
-                                [value: 96, color: "#bc2323"]
-                        ]
-            }
-        }
-
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
-            state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
-        }
-        main "switch", "temperature"
-        details(["switch", "temperature", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
-
     preferences {
         configParams.each {
             if (it.name) {
                 if (it.range) {
-                    getNumberInput(it)
+                    input "configParam${it.num}", "number",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            range: it.range
                 }
                 else {
-                    getOptionsInput(it)
+                    input "configParam${it.num}", "enum",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            options: it.options
                 }
             }
         }
     }
-}
-
-private getOptionsInput(param) {
-    input "configParam${param.num}", "enum",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            options: param.options
-}
-
-private getNumberInput(param) {
-    input "configParam${param.num}", "number",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            range: param.range
 }
 
 def installed() {
@@ -165,7 +109,6 @@ def updated() {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
 
-
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
 
@@ -178,8 +121,7 @@ def configure() {
     if (state.resyncAll == null) {
         state.resyncAll = true
         runIn(8, executeConfigureCmds, [overwrite: true])
-    }
-    else {
+    } else {
         if (!pendingChanges) {
             state.resyncAll = true
         }
@@ -193,42 +135,28 @@ def executeConfigureCmds() {
 
     def cmds = []
 
-//	cmds << sensorBinaryGetCmd()
-//	cmds << batteryGetCmd()
-
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
-            cmds << configSetCmd(param, paramVal)
+            cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             if (param.num == temperatureReportThresholdParam.num) {
                 cmds << "delay 3000"
-                cmds << sensorMultilevelGetCmd(tempSensorType)
+                cmds << secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: tempSensorType))
             }else{
-                cmds << configGetCmd(param)
+                cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
             }
         }
     }
 
     state.resyncAll = false
-    if (cmds) {
-        sendCommands(delayBetween(cmds, 500))
-    }
-    return []
-}
-
-private sendCommands(cmds) {
+    def cmds1 =delayBetween(cmds, 500)
     def actions = []
-    cmds?.each {
+    cmds1.each {
         actions << new physicalgraph.device.HubAction(it)
     }
     sendHubCommand(actions, 100)
     return []
-}
-
-
-private logForceWakeupMessage(msg) {
-    logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
 }
 
 def parse(String description) {
@@ -237,14 +165,12 @@ def parse(String description) {
         def cmd = zwave.parse(description, commandClassVersions)
         if (cmd) {
             result += zwaveEvent(cmd)
-        }
-        else {
+        } else {
             logDebug "Unable to parse description: $description"
         }
 
         sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
-    }
-    catch (e) {
+    } catch (e) {
         log.error "$e"
     }
     return result
@@ -256,8 +182,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     def result = []
     if (encapCmd) {
         result += zwaveEvent(encapCmd)
-    }
-    else {
+    } else {
         log.warn "Unable to extract encapsulated cmd from $cmd"
     }
     return result
@@ -292,7 +217,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     logTrace "ConfigurationReport ${cmd}"
 
-    updateSyncingStatus()
+    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
 
     def param = configParams.find { it.num == cmd.parameterNumber }
@@ -300,15 +225,11 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
         def val = cmd.scaledConfigurationValue
 
         logDebug "${param.name}(#${param.num}) = ${val}"
-        setParamStoredValue(param.num, val)
-    }
-    else {
+        state["configParam${param.num}"] = val
+    } else {
         logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
     }
     return []
-}
-private updateSyncingStatus() {
-    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
 }
 
 def refreshSyncStatus() {
@@ -321,52 +242,37 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     return []
 }
 
-private sensorMultilevelGetCmd(sensorType) {
-    def scale = (sensorType == tempSensorType) ? 0 : 1
-    return secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: scale, sensorType: sensorType))
-}
-
-private configGetCmd(param) {
-    return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
-}
-
-private configSetCmd(param, value) {
-    return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
-}
-
 private secureCmd(cmd) {
     try {
         if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
             return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-        }
-        else {
+        } else {
             return cmd.format()
         }
-    }
-    catch (ex) {
+    } catch (ex) {
         return cmd.format()
     }
 }
 
 private static getCommandClassVersions() {
     [
-            0x20: 1,	// Basic
-            0x26: 3,	// Switch Multilevel
-            0x55: 1,	// Transport Service
-            0x59: 1,	// AssociationGrpInfo
-            0x5A: 1,	// DeviceResetLocally
-            0x31: 5,    // SENSOR_MULTILEVEL_V11
-            0x71: 3,	// NOTIFICATION_V8
-            0x6C: 1,	// Supervision
-            0x70: 1,	// Configuration
-            0x7A: 2,	// FirmwareUpdateMd
-            0x72: 2,	// ManufacturerSpecific
-            0x73: 1,	// Powerlevel
-            0x85: 2,	// Association
-            0x86: 1,	// Version (2)
-            0x8E: 2,	// Multi Channel Association
-            0x98: 1,	// Security S0
-            0x9F: 1	// Security S2
+        0x20: 1,	// Basic
+        0x26: 3,	// Switch Multilevel
+        0x55: 1,	// Transport Service
+        0x59: 1,	// AssociationGrpInfo
+        0x5A: 1,	// DeviceResetLocally
+        0x31: 5,    // SENSOR_MULTILEVEL_V11
+        0x71: 3,	// NOTIFICATION_V8
+        0x6C: 1,	// Supervision
+        0x70: 1,	// Configuration
+        0x7A: 2,	// FirmwareUpdateMd
+        0x72: 2,	// ManufacturerSpecific
+        0x73: 1,	// Powerlevel
+        0x85: 2,	// Association
+        0x86: 1,	// Version (2)
+        0x8E: 2,	// Multi Channel Association
+        0x98: 1,	// Security S0
+        0x9F: 1	// Security S2
     ]
 }
 
@@ -378,27 +284,23 @@ private getParamStoredValue(paramNum) {
     return safeToInt(state["configParam${paramNum}"] , null)
 }
 
-private setParamStoredValue(paramNum, value) {
-    state["configParam${paramNum}"] = value
-}
-
 // Sensor Types
 private static getTempSensorType() { return 1 }
 
 // Configuration Parameters
 private getConfigParams() {
     [
-            ledModeParam,
-            autoOffIntervalParam,
-            autoOnIntervalParam,
-            nightLightParam,
-            powerFailureRecoveryParam,
-            pushDimmingDurationParam,
-            holdDimmingDurationParam,
-            minimumBrightnessParam,
-            maximumBrightnessParam,
-            temperatureReportTimeParam,
-            temperatureReportThresholdParam
+        ledModeParam,
+        autoOffIntervalParam,
+        autoOnIntervalParam,
+        nightLightParam,
+        powerFailureRecoveryParam,
+        pushDimmingDurationParam,
+        holdDimmingDurationParam,
+        minimumBrightnessParam,
+        maximumBrightnessParam,
+        temperatureReportTimeParam,
+        temperatureReportThresholdParam
     ]
 }
 
@@ -454,7 +356,9 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
         map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
-    if (range) map.range = range
+    if (range) {
+        map.range = range
+    }
 
     return map
 }
@@ -470,13 +374,18 @@ private static setDefaultOption(options, defaultVal) {
 
 private static getLedModeOptions() {
     return [
-            "0":"Off When On", "1":"On When On", "2":"Always Off", "3":"Always On"
+        "0":"Off When On",
+        "1":"On When On",
+        "2":"Always Off",
+        "3":"Always On"
     ]
 }
 
 private static getPowerFailureRecoveryOptions() {
     return [
-            "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
+        "0":"Turn Off",
+        "1":"Turn On",
+        "2":"Restore Last State"
     ]
 }
 
@@ -496,11 +405,9 @@ private static validateRange(val, defaultVal, lowVal, highVal) {
     val = safeToInt(val, defaultVal)
     if (val > highVal) {
         return highVal
-    }
-    else if (val < lowVal) {
+    } else if (val < lowVal) {
         return lowVal
-    }
-    else {
+    }else {
         return val
     }
 }
@@ -513,8 +420,7 @@ private convertToLocalTimeString(dt) {
     def timeZoneId = location?.timeZone?.ID
     if (timeZoneId) {
         return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-    }
-    else {
+    } else {
         return "$dt"
     }
 }
