@@ -29,7 +29,7 @@
  */
 
 metadata {
-    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller") {
+    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller",mcdSync: true) {
         capability "Actuator"
         capability "Button"
         capability "Battery"
@@ -37,7 +37,7 @@ metadata {
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button"//ZW924
+        fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button"//MR40Z
     }
 
     tiles(scale: 2) {
