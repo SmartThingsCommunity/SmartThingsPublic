@@ -88,7 +88,9 @@ def parse(String description) {
 		log.debug "event: ${event}, ${event.name}, ${event.value}"
 		if (event.name == "power") {
 			sendEvent(name: "power", value: (event.value/EnergyDivisor))
-		} else { sendEvent(event) }
+		} else { 
+			sendEvent(event) 
+		}
 	}
 	else {
 		def mapDescription = zigbee.parseDescriptionAsMap(description)
@@ -96,7 +98,7 @@ def parse(String description) {
 		if (mapDescription) {
 			if (mapDescription.clusterInt == zigbee.SIMPLE_METERING_CLUSTER) {
 				if (mapDescription.attrInt == MeteringCurrentSummation) {
-                	return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
+					return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
 				} else if (mapDescription.attrInt == MeteringInstantDemand) {
 					return sendEvent(name:"power", value: getFPoint(mapDescription.value/EnergyDivisor))
 				}
@@ -273,7 +275,7 @@ def parseChargerStatusValue(val) {
 			break;
 		default:
 			return ""
-			break;            
+			break;
 	}
 }
 
@@ -324,12 +326,11 @@ def configure() {
 def configureHealthCheck() {
 	Integer hcIntervalMinutes = 10
 	sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-	return refresh()
 }
 
 def updated() {
 	log.debug "in updated()"
-    // updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
+	// updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
 	def cmds = configureHealthCheck()
 	cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
 }
