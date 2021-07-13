@@ -31,7 +31,7 @@ metadata {
 		capability "Light"
 
 		// Samsung LED
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-003", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-003" //ITM CCT
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-003", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-003"
 	}
 
 	// UI tile definitions
@@ -56,8 +56,9 @@ metadata {
 		details(["switch", "refresh", "switchLevel"])
 	}
 }
-// Parse incoming device messages to generate events
+
 def parse(String description) {
+	// Parse incoming device messages to generate events
 	log.debug "description is $description"
 	def event = zigbee.getEvent(description)
 	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
@@ -67,12 +68,12 @@ def parse(String description) {
 		if (zigbeeMap.cluster == "0202" &&
 		    zigbeeMap.attrId == "0000") {		
 			log.debug "read attribute event for fan cluster attrib 0x0000"
-			def childDevice = getChildDevices()?.find {		//find light child device
+			def childDevice = getChildDevices()?.find {
+				//find light child device
 				log.debug "parse() child device found"
 				it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
 			}          
-			event.displayed = true          
-			
+			event.displayed = true
 			zigbeeMap.name = "fanSpeed"
 			childDevice.sendEvent(zigbeeMap)
 			if (zigbeeMap.value == "00") {
@@ -91,8 +92,8 @@ def parse(String description) {
 		}		
 	} else {
 		def cluster = zigbee.parse(description)
-
-		if (cluster && cluster.clusterId == 0x0006 &&
+		if (cluster && 
+		    cluster.clusterId == 0x0006 &&
 		    cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
@@ -135,38 +136,33 @@ def setFanSpeed(speed, device=null) {
 		return
 	}
     	log.debug "parent setFanSpeed"
-    	if (speed as Integer == 0) {        
-		// + createEvent(name: "fanSpeed", value: 0)
+    	if (speed as Integer == 0) {		
         	log.debug "fan_off"
-	    	send_fanSpeed(0x00)
-	} else if (speed as Integer == 1) {
-		// + createEvent(name: "fanSpeed", value: 1)
+	    	sendFanSpeed(0x00)
+	} else if (speed as Integer == 1) {		
         	log.debug "low"
-	    	send_fanSpeed(0x01)
-	} else if (speed as Integer == 2) {
-		// + createEvent(name: "fanSpeed", value: 2)
+	    	sendFanSpeed(0x01)
+	} else if (speed as Integer == 2) {		
         	log.debug "medium"	
-        	send_fanSpeed(0x02)    
-	} else if (speed as Integer == 3) {
-		// + createEvent(name: "fanSpeed", value: 3)
+        	sendFanSpeed(0x02)    
+	} else if (speed as Integer == 3) {		
         	log.debug "high"	
-	    	send_fanSpeed(0x03)
-    	} else if (speed as Integer == 4) {
-		// + createEvent(name: "fanSpeed", value: 4)
+	    	sendFanSpeed(0x03)
+    	} else if (speed as Integer == 4) {		
         	log.debug "max"
-	    	send_fanSpeed(0x04)
-    	} else {
-		// + createEvent(name: "fanSpeed", value: 4)
+	    	sendFanSpeed(0x04)
+    	} else {		
         	log.debug "max"
-	    	send_fanSpeed(0x04)
+	    	sendFanSpeed(0x04)
     	}    
 }
 
-private send_fanSpeed(val) {
+private sendFanSpeed(val) {
 	delayBetween([zigbee.writeAttribute(0x0202, 0x0000, DataType.ENUM8, val), zigbee.readAttribute(0x0202, 0x0000)], 100)
 }
-// PING is used by Device-Watch in attempt to reach the Device
+
 def ping() {
+	// PING is used by Device-Watch in attempt to reach the Device
 	return zigbee.onOffRefresh()
 }
 
@@ -183,7 +179,6 @@ def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	refresh()
 }
@@ -197,19 +192,18 @@ def installed() {
 def addChildFan() {
         log.debug "add child fan"
 	def componentLabel
-	if (device.displayName.endsWith(' Light') || device.displayName.endsWith(' light')) {
+	if (device.displayName.endsWith(' Light') ||
+	    device.displayName.endsWith(' light')) {
 		componentLabel = "${device.displayName[0..-6]} Fan"
 	} else {
 		// no '1' at the end of deviceJoinName - use 2 to indicate second switch anyway
 		componentLabel = "$device.displayName Fan"
-	}
-	
+	}	
 	try {
 		String dni = "${device.deviceNetworkId}-Fan"
-		addChildDevice("ITM Fan Child", dni, device.hub.id,
-			[completedSetup: true, label: "${componentLabel}", isComponent: false])
+		addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Child Fan device (ITM Fan Controller) added as $componentLabel"
-	} catch (e) {
+	} catch(e) {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
     	def childDevice = getChildDevices()?.find {
@@ -224,17 +218,17 @@ def addChildFan() {
 
 def deleteChildren() {	
 	def children = getChildDevices()        	
-	children.each { child->
-		deleteChildDevice(child.deviceNetworkId)
+	children.each { 
+		child -> deleteChildDevice(child.deviceNetworkId)
     	}	
 	log.info "Deleting children"                  
 }
 
-def delete(){
+def delete() {
 	log.debug "[Parent] - delete()"
 }
 
-def uninstalled(){
+def uninstalled() {
 	log.debug "[Parent] - uninstalled"
 	try{
 		def childDevice = getChildDevices()?.find {		
@@ -245,5 +239,5 @@ def uninstalled(){
 		if (childDevice != null) {
 			deleteChildren()
 		}
-    	} catch (e) {}    
+    	} catch(e) {}
 }
