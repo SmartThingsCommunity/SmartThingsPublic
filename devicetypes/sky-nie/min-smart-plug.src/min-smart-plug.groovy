@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v1.0.3
+ *      Min Smart Plug v1.0.4
  *
  *  	Models: MINOSTON (MP21Z)
  *
@@ -9,7 +9,11 @@
  *	Documentation:
  *
  *  Changelog:
- *  
+ *
+ *    1.0.4 (07/13/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
+ *
  *    1.0.3 (07/12/2021)
  *    1.0.2 (07/07/2021)
  *      - delete dummy code
@@ -38,14 +42,7 @@
  */
 
 metadata {
-    definition (
-            name: "Min Smart Plug",
-            namespace: "sky-nie",
-            author: "winnie",
-            mnmn: "SmartThings",
-            vid:"generic-switch",
-            ocfDeviceType: "oic.d.smartplug"
-    ) {
+    definition (name: "Min Smart Plug",namespace: "sky-nie",author: "winnie",mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug" ) {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
@@ -60,58 +57,25 @@ metadata {
         fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
     }
 
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.Lighting.light13", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.Lighting.light13", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'TURNING ON', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
-                attributeState "turningOff", label:'TURNING OFF', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-        }
-        standardTile("refresh", "device.refresh", width: 2, height: 2) {
-            state "refresh", label:'Refresh', action: "refresh"
-        }
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-        standardTile("sync", "device.configure", width: 2, height: 2) {
-            state "default", label: 'Sync', action: "configure"
-        }
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-        main "switch"
-        details(["switch", "refresh", "syncStatus", "sync", "firmwareVersion"])
-    }
     preferences {
         configParams.each {
             if (it.name) {
                 if (it.range) {
-                    getNumberInput(it)
-                }
-                else {
-                    getOptionsInput(it)
+                    input "configParam${it.num}", "number",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            range: it.range
+                } else {
+                    input "configParam${it.num}", "enum",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            options: it.options
                 }
             }
         }
     }
-}
-
-private getOptionsInput(param) {
-    input "configParam${param.num}", "enum",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            options: param.options
-}
-
-private getNumberInput(param) {
-    input "configParam${param.num}", "number",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            range: param.range
 }
 
 def installed() {
@@ -145,8 +109,7 @@ def configure() {
     if (state.resyncAll == null) {
         state.resyncAll = true
         runIn(8, executeConfigureCmds, [overwrite: true])
-    }
-    else {
+    } else {
         if (!pendingChanges) {
             state.resyncAll = true
         }
@@ -165,7 +128,7 @@ def executeConfigureCmds() {
     }
 
     if (state.resyncAll || !device.currentValue("firmwareVersion")) {
-        cmds << versionGetCmd()
+        cmds << secureCmd(zwave.versionV1.versionGet())
     }
 
     configParams.each { param ->
@@ -174,8 +137,8 @@ def executeConfigureCmds() {
 
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
-            cmds << configSetCmd(param, paramVal)
-            cmds << configGetCmd(param)
+            cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
+            cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
     }
 
@@ -223,10 +186,6 @@ private sendCommands(cmds) {
     return []
 }
 
-private versionGetCmd() {
-    return secureCmd(zwave.versionV1.versionGet())
-}
-
 private switchBinaryGetCmd() {
     return secureCmd(zwave.switchBinaryV1.switchBinaryGet())
 }
@@ -235,20 +194,11 @@ private switchBinarySetCmd(val) {
     return secureCmd(zwave.switchBinaryV1.switchBinarySet(switchValue: val))
 }
 
-private configSetCmd(param, value) {
-    return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
-}
-
-private configGetCmd(param) {
-    return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
-}
-
 private secureCmd(cmd) {
     try {
         if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
             return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-        }
-        else {
+        } else {
             return cmd.format()
         }
     }
@@ -263,30 +213,13 @@ def parse(String description) {
         def cmd = zwave.parse(description, commandClassVersions)
         if (cmd) {
             result += zwaveEvent(cmd)
-        }
-        else {
+        } else {
             log.warn "Unable to parse: $description"
         }
-    }
-    catch (e) {
+    } catch (e) {
         log.error "${e}"
     }
     return result
-}
-
-private convertToLocalTimeString(dt) {
-    try {
-        def timeZoneId = location?.timeZone?.ID
-        if (timeZoneId) {
-            return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-        }
-        else {
-            return "$dt"
-        }
-    }
-    catch (ex) {
-        return "$dt"
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -295,8 +228,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     def result = []
     if (encapsulatedCmd) {
         result += zwaveEvent(encapsulatedCmd)
-    }
-    else {
+    }  else {
         log.warn "Unable to extract encapsulated cmd from $cmd"
     }
     return result
@@ -305,16 +237,15 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     logTrace "${cmd}"
 
-    updateSyncingStatus()
+    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
 
     def param = configParams.find { it.num == cmd.parameterNumber }
     if (param) {
         def val = cmd.scaledConfigurationValue
         logDebug "${param.name}(#${param.num}) = ${val}"
-        setParamStoredValue(param.num, val)
-    }
-    else {
+        state["configVal${param.num}"] = val
+    } else {
         logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
     return []
@@ -343,19 +274,12 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 private sendSwitchEvents(rawVal, type) {
-
-    def switchVal = (rawVal == 0xFF) ? "on" : "off"
-
-    sendEvent(name:  "switch", value:  switchVal, displayed:  true,type:  type)
+    sendEvent(name:  "switch", value:  (rawVal == 0xFF) ? "on" : "off", displayed:  true,type:  type)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
     logDebug "Unhandled zwaveEvent: $cmd"
     return []
-}
-
-private updateSyncingStatus() {
-    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
 }
 
 def refreshSyncStatus() {
@@ -365,23 +289,23 @@ def refreshSyncStatus() {
 
 private static getCommandClassVersions() {
     [
-            0x20: 1,	// Basic
-            0x25: 1,	// Switch Binary
-            0x55: 1,	// Transport Service
-            0x59: 1,	// AssociationGrpInfo
-            0x5A: 1,	// DeviceResetLocally
-            0x27: 1,	// Switch All
-            0x5E: 2,	// ZwaveplusInfo
-            0x6C: 1,	// Supervision
-            0x70: 1,	// Configuration
-            0x7A: 2,	// FirmwareUpdateMd
-            0x72: 2,	// ManufacturerSpecific
-            0x73: 1,	// Powerlevel
-            0x85: 2,	// Association
-            0x86: 1,	// Version (2)
-            0x8E: 2,	// Multi Channel Association
-            0x98: 1,	// Security S0
-            0x9F: 1		// Security S2
+        0x20: 1,	// Basic
+        0x25: 1,	// Switch Binary
+        0x55: 1,	// Transport Service
+        0x59: 1,	// AssociationGrpInfo
+        0x5A: 1,	// DeviceResetLocally
+        0x27: 1,	// Switch All
+        0x5E: 2,	// ZwaveplusInfo
+        0x6C: 1,	// Supervision
+        0x70: 1,	// Configuration
+        0x7A: 2,	// FirmwareUpdateMd
+        0x72: 2,	// ManufacturerSpecific
+        0x73: 1,	// Powerlevel
+        0x85: 2,	// Association
+        0x86: 1,	// Version (2)
+        0x8E: 2,	// Multi Channel Association
+        0x98: 1,	// Security S0
+        0x9F: 1		// Security S2
     ]
 }
 
@@ -393,19 +317,14 @@ private getParamStoredValue(paramNum) {
     return safeToInt(state["configVal${paramNum}"] , null)
 }
 
-private setParamStoredValue(paramNum, value) {
-    state["configVal${paramNum}"] = value
-}
-
 private getConfigParams() {
     return [
-            ledModeParam,
-            autoOffIntervalParam,
-            autoOnIntervalParam,
-            powerFailureRecoveryParam
+        ledModeParam,
+        autoOffIntervalParam,
+        autoOnIntervalParam,
+        powerFailureRecoveryParam
     ]
 }
-
 
 private getLedModeParam() {
     return getParam(1, "LED Indicator Mode", 1, 0, ledModeOptions)
@@ -447,13 +366,17 @@ private static setDefaultOption(options, defaultVal) {
 
 private static getLedModeOptions() {
     return [
-            0:"On When On", 1:"Off When On", 2:"Always Off"
+        "0":"On When On",
+        "1":"Off When On",
+        "2":"Always Off"
     ]
 }
 
 private static getPowerFailureRecoveryOptions() {
     return [
-            "0":"Turn Off", "1":"Turn On", "2":"Restore Last State"
+        "0":"Turn Off",
+        "1":"Turn On",
+        "2":"Restore Last State"
     ]
 }
 
