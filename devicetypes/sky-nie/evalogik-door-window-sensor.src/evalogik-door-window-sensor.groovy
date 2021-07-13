@@ -111,7 +111,13 @@ def executeConfigure() {
 
 	cmds += getConfigCmds()
 
-	sendCommands(delayBetween(cmds, 500))
+	sendCommands()
+	def cmds1 = delayBetween(cmds, 500)
+	def actions = []
+	cmds1?.each {
+		actions << new physicalgraph.device.HubAction(it)
+	}
+	sendHubCommand(actions, 100)
 }
 
 private getConfigCmds() {
@@ -129,8 +135,7 @@ private getConfigCmds() {
 			if (param.num == minTemperatureOffsetParam.num) {
 				cmds << "delay 3000"
 				cmds << sensorMultilevelGetCmd(tempSensorType)
-			}
-			else if (param.num == minHumidityOffsetParam.num) {
+			}else if (param.num == minHumidityOffsetParam.num) {
 				cmds << "delay 3000"
 				cmds << sensorMultilevelGetCmd(lightSensorType)
 			}
@@ -139,16 +144,6 @@ private getConfigCmds() {
 	state.refreshConfig = false
 	return cmds
 }
-
-private sendCommands(cmds) {
-	def actions = []
-	cmds?.each {
-		actions << new physicalgraph.device.HubAction(it)
-	}
-	sendHubCommand(actions, 100)
-	return []
-}
-
 
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
@@ -173,15 +168,13 @@ private logForceWakeupMessage(msg) {
 	logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
 }
 
-
 def parse(String description) {
 	def result = []
 	try {
 		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result += zwaveEvent(cmd)
-		}
-		else {
+		}else {
 			logDebug "Unable to parse description: $description"
 		}
 
