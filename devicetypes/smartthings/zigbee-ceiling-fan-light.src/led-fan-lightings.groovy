@@ -52,6 +52,10 @@ metadata {
 	}
 }
 
+private getFAN_CLUSTER_VALUE() { 0x0202 }
+private getFAN_STATUS_VALUE() { 0x0000 }
+private getON_OFF_CLUSTER_VALUE() { 0x0006 }
+
 def parse(String description) {
 	// Parse incoming device messages to generate events
 	log.debug "description is $description"
@@ -60,9 +64,9 @@ def parse(String description) {
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
-		if (zigbeeMap.cluster == "0202" &&
-		    zigbeeMap.attrId == "0000") {		
-			log.debug "read attribute event for fan cluster attrib 0x0000"
+		if (zigbeeMap.cluster == FAN_CLUSTER_VALUE &&
+		    zigbeeMap.attrId == FAN_STATUS_VALUE) {		
+			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
 			def childDevice = getChildDevices()?.find {
 				//find light child device
 				log.debug "parse() child device found"
@@ -80,7 +84,7 @@ def parse(String description) {
 				childDevice.sendEvent(name: "switch", value: "on")
 				def int_v  = zigbeeMap.value as Integer
 				int_v = int_v * 25
-				int_v = int_v>100?100:int_v
+				int_v = int_v > 100 ? 100 : int_v
 				log.debug "child device Level set $int_v"
 				childDevice.sendEvent(name: "level", value: int_v)	// For cloud to cloud device UI update
 			}
@@ -88,7 +92,7 @@ def parse(String description) {
 	} else {
 		def cluster = zigbee.parse(description)
 		if (cluster && 
-		    cluster.clusterId == 0x0006 &&
+		    cluster.clusterId == ON_OFF_CLUSTER_VALUE &&
 		    cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
@@ -153,7 +157,7 @@ def setFanSpeed(speed, device=null) {
 }
 
 private sendFanSpeed(val) {
-	delayBetween([zigbee.writeAttribute(0x0202, 0x0000, DataType.ENUM8, val), zigbee.readAttribute(0x0202, 0x0000)], 100)
+	delayBetween([zigbee.writeAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE, DataType.ENUM8, val), zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)], 100)
 }
 
 def ping() {
@@ -166,7 +170,7 @@ def refresh() {
 	zigbee.levelRefresh() +
 	zigbee.onOffConfig(0, 300) +
 	zigbee.levelConfig()+
-	zigbee.readAttribute(0x0202, 0x0000)
+	zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)
 }
 
 def configure() {
