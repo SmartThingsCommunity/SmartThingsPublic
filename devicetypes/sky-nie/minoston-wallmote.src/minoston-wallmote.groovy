@@ -1,5 +1,5 @@
 /**
- *  Minoston Wallmote v1.0.2
+ *  Minoston Wallmote v1.0.3
  *
  *  	Models: Eva Logik (ZW924) / MINOSTON (MR40Z)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.3 (07/13/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
  *
  *    1.0.2 (07/13/2021)
  *      - complete the function about preferences
@@ -47,36 +51,21 @@ metadata {
         fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button"//MR40Z
     }
 
-    tiles(scale: 2) {
-        multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-            tileAttribute("device.button", key: "PRIMARY_CONTROL") {
-                attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            }
-        }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "battery", label:'${currentValue}% battery', unit:""
-        }
-
-        valueTile("syncStatus", "device.syncStatus", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "syncStatus", label:'${currentValue}'
-        }
-
-        valueTile("firmwareVersion", "device.firmwareVersion", decoration:"flat", width:3, height: 1) {
-            state "firmwareVersion", label:'Firmware ${currentValue}'
-        }
-
-        main("rich-control")
-        details(["rich-control", childDeviceTiles("endpoints"), "battery", "syncStatus", "firmwareVersion"])
-    }
-
     preferences {
         configParams.each {
             if (it.name) {
                 if (it.range) {
-                    getNumberInput(it)
-                }
-                else {
-                    getOptionsInput(it)
+                    input "configParam${it.num}", "number",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            range: it.range
+                }else {
+                    input "configParam${it.num}", "enum",
+                            title: "${it.name}:",
+                            required: false,
+                            defaultValue: "${it.value}",
+                            options: it.options
                 }
             }
         }
@@ -119,8 +108,7 @@ def configure() {
     if (state.resyncAll == null) {
         state.resyncAll = true
         runIn(8, executeConfigureCmds, [overwrite: true])
-    }
-    else {
+    } else {
         if (!pendingChanges) {
             state.resyncAll = true
         }
@@ -135,14 +123,12 @@ def parse(String description) {
         def cmd = zwave.parse(description, commandClassVersions)
         if (cmd) {
             result += zwaveEvent(cmd)
-        }
-        else {
+        } else {
             log.warn "Unable to parse: $description"
         }
 
         updateLastCheckIn()
-    }
-    catch (e) {
+    } catch (e) {
         log.error "${e}"
     }
     return result
@@ -160,16 +146,13 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    def encapsulatedCmd = cmd.encapsulatedCommand(commandClassVersions)
-
-    def result = []
-    if (encapsulatedCmd) {
-        result += zwaveEvent(encapsulatedCmd)
-    }
-    else {
+    def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+    if (encapsulatedCommand) {
+        return zwaveEvent(encapsulatedCommand)
+    } else {
         log.warn "Unable to extract encapsulated cmd from $cmd"
+        createEvent(descriptionText: cmd.toString())
     }
-    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -177,14 +160,13 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     [linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def results = []
     results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
     results += response([
-            secure(zwave.batteryV1.batteryGet()),
+            secureCmd(zwave.batteryV1.batteryGet()),
             "delay 2000",
-            secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+            secureCmd(zwave.wakeUpV2.wakeUpNoMoreInformation())
     ])
     results
 }
@@ -214,14 +196,6 @@ def createChildDevices() {
     }
 }
 
-def secure(cmd) {
-    if (zwaveInfo.zw.contains("s")) {
-        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-    } else {
-        cmd.format()
-    }
-}
-
 def getChildDevice(button) {
     String childDni = "${device.deviceNetworkId}:${button}"
     def child = childDevices.find{it.deviceNetworkId == childDni}
@@ -233,48 +207,32 @@ def getChildDevice(button) {
 
 private static getSupportedButtonValues() {
     return [
-            "pushed",
-            "held",
-            "double",
-            'pushed_3x'
+        "pushed",
+        "held",
+        "double",
+        'pushed_3x'
     ]
 }
 
 private static getButtonAttributesMap() {
     [
-            0: "pushed",
-            1: "held",
-            3: "double",
-            4: "pushed_3x",
+        0: "pushed",
+        1: "held",
+        3: "double",
+        4: "pushed_3x",
     ]
-}
-
-private getOptionsInput(param) {
-    input "configParam${param.num}", "enum",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            options: param.options
-}
-
-private getNumberInput(param) {
-    input "configParam${param.num}", "number",
-            title: "${param.name}:",
-            required: false,
-            defaultValue: "${param.value}",
-            range: param.range
 }
 
 // Configuration Parameters
 private getConfigParams() {
     [
-            batteryReportThresholdParam,
-            lowBatteryAlarmReportParam,
-            ledIndicator1ColorParam,
-            ledIndicator2ColorParam,
-            ledIndicator3ColorParam,
-            ledIndicator4ColorParam,
-            ledIndicatorBrightnessParam
+        batteryReportThresholdParam,
+        lowBatteryAlarmReportParam,
+        ledIndicator1ColorParam,
+        ledIndicator2ColorParam,
+        ledIndicator3ColorParam,
+        ledIndicator4ColorParam,
+        ledIndicatorBrightnessParam
     ]
 }
 
@@ -314,7 +272,9 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
         map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
-    if (range) map.range = range
+    if (range) {
+        map.range = range
+    }
 
     return map
 }
@@ -331,13 +291,13 @@ private static setDefaultOption(options, defaultVal) {
 // Setting Options
 private static getLedColorOptions() {
     return [
-            "0":"White",
-            "1":"Purple",
-            "2":"Orange",
-            "3":"Cyan",
-            "4":"Red",
-            "5":"Green",
-            "6":"Blue"
+        "0":"White",
+        "1":"Purple",
+        "2":"Orange",
+        "3":"Cyan",
+        "4":"Red",
+        "5":"Green",
+        "6":"Blue"
     ]
 }
 
@@ -360,13 +320,11 @@ def executeConfigureCmds() {
 
     def cmds = []
 
-    cmds << secure(zwave.batteryV1.batteryGet())
-    cmds << secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
-
-
+    cmds << secureCmd(zwave.batteryV1.batteryGet())
+    cmds << secureCmd(zwave.wakeUpV2.wakeUpNoMoreInformation())
 
     if (state.resyncAll || !device.currentValue("firmwareVersion")) {
-        cmds << versionGetCmd()
+        cmds << secureCmd(zwave.versionV1.versionGet())
     }
 
     configParams.each { param ->
@@ -375,63 +333,37 @@ def executeConfigureCmds() {
 
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
-            cmds << configSetCmd(param, paramVal)
-            cmds << configGetCmd(param)
+            cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
+            cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
     }
 
     state.resyncAll = false
-    if (cmds) {
-        sendCommands(delayBetween(cmds, 500))
+    def cmds1 =delayBetween(cmds, 500)
+    def actions = []
+    cmds1.each {
+        actions << new physicalgraph.device.HubAction(it)
     }
+    sendHubCommand(actions)
     return []
-}
-
-private sendCommands(cmds) {
-    if (cmds) {
-        def actions = []
-        cmds.each {
-            actions << new physicalgraph.device.HubAction(it)
-        }
-        sendHubCommand(actions)
-    }
-    return []
-}
-
-private versionGetCmd() {
-    return secureCmd(zwave.versionV1.versionGet())
-}
-
-private configSetCmd(param, value) {
-    return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
-}
-
-private configGetCmd(param) {
-    return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
 }
 
 private secureCmd(cmd) {
     try {
         if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
             return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-        }
-        else {
+        } else {
             return cmd.format()
         }
-    }
-    catch (ex) {
+    }  catch (ex) {
         return cmd.format()
     }
 }
 
-
 private updateLastCheckIn() {
     if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
         state.lastCheckInTime = new Date().time
-
-        def evt = [name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false]
-
-        sendEvent(evt)
+        sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
     }
 }
 
@@ -440,30 +372,26 @@ private convertToLocalTimeString(dt) {
         def timeZoneId = location?.timeZone?.ID
         if (timeZoneId) {
             return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-        }
-        else {
+        } else {
             return "$dt"
         }
-    }
-    catch (ex) {
+    }  catch (ex) {
         return "$dt"
     }
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     logTrace "${cmd}"
 
-    updateSyncingStatus()
+    sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
 
     def param = configParams.find { it.num == cmd.parameterNumber }
     if (param) {
         def val = cmd.scaledConfigurationValue
         logDebug "${param.name}(#${param.num}) = ${val}"
-        setParamStoredValue(param.num, val)
-    }
-    else {
+        state["configVal${paramNum}"] = val
+    } else {
         logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
     return []
@@ -475,7 +403,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
 
-    sendEventIfNew("firmwareVersion", fullVersion)
+    sendEvent(name:  "firmwareVersion", value:  fullVersion)
     return []
 }
 
@@ -485,37 +413,32 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
     return []
 }
 
-
-private updateSyncingStatus() {
-    sendEventIfNew("syncStatus", "Syncing...", false)
-}
-
 def refreshSyncStatus() {
     def changes = pendingChanges
-    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Changes" : "Synced"), false)
+    sendEvent(name:  "syncStatus", value:  (changes ?  "${changes} Pending Changes" : "Synced"), displayed:  false)
 }
 
 private static getCommandClassVersions() {
     [
-            0x20: 1,	// Basic
-            0x26: 3,	// Switch Multilevel (4)
-            0x55: 1,	/// Transport Service
-            0x59: 1,	/// AssociationGrpInfo
-            0x5A: 1,	/// DeviceResetLocally
-            0x5B: 1,	/// CentralScene (3)
-            0x5E: 2,	/// ZwaveplusInfo
-            0x6C: 1,	/// Supervision
-            0x70: 2,	/// Configuration
-            0x72: 2,	/// ManufacturerSpecific
-            0x73: 1,	/// Powerlevel
-            0x7A: 2,	/// Firmware Update Md (3)
-            0x80: 1,	/// Battery
-            0x84: 2,	/// WakeUp
-            0x85: 2,	/// Association
-            0x86: 1,	/// Version (2)
-            0x87: 1,	/// Indicator
-            0x8E: 2,	/// MultiChannelAssociation (3)
-            0x9F: 1     /// Security 2
+        0x20: 1,	// Basic
+        0x26: 3,	// Switch Multilevel (4)
+        0x55: 1,	/// Transport Service
+        0x59: 1,	/// AssociationGrpInfo
+        0x5A: 1,	/// DeviceResetLocally
+        0x5B: 1,	/// CentralScene (3)
+        0x5E: 2,	/// ZwaveplusInfo
+        0x6C: 1,	/// Supervision
+        0x70: 2,	/// Configuration
+        0x72: 2,	/// ManufacturerSpecific
+        0x73: 1,	/// Powerlevel
+        0x7A: 2,	/// Firmware Update Md (3)
+        0x80: 1,	/// Battery
+        0x84: 2,	/// WakeUp
+        0x85: 2,	/// Association
+        0x86: 1,	/// Version (2)
+        0x87: 1,	/// Indicator
+        0x8E: 2,	/// MultiChannelAssociation (3)
+        0x9F: 1     /// Security 2
     ]
 }
 
@@ -525,10 +448,6 @@ private getPendingChanges() {
 
 private getParamStoredValue(paramNum) {
     return safeToInt(state["configVal${paramNum}"] , null)
-}
-
-private setParamStoredValue(paramNum, value) {
-    state["configVal${paramNum}"] = value
 }
 
 private static isDuplicateCommand(lastExecuted, allowedMil) {
