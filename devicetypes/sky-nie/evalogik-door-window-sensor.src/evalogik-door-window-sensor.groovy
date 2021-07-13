@@ -1,5 +1,5 @@
 /**
- *     Evalogik Door/Window Sensor v1.0.0
+ *     Evalogik Door/Window Sensor v1.0.1
  *
  *  	Models: MSE30Z/ZWS713
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.1 (07/13/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
  *
  *    1.0.0 (04/26/2021)
  *      - Initial Release
@@ -27,16 +31,7 @@
  *
  */
 metadata {
-	definition(
-			name: "Evalogik Door/Window Sensor",
-			namespace: "sky-nie",
-			author: "winnie",
-			ocfDeviceType: "x.com.st.d.sensor.contact",
-			runLocally: true,
-			minHubCoreVersion: '000.017.0012',
-			executeCommandsLocally: false,
-			genericHandler: "Z-Wave"
-	) {
+	definition(name: "Evalogik Door/Window Sensor",namespace: "sky-nie",author: "winnie",ocfDeviceType: "x.com.st.d.sensor.contact",runLocally: true,executeCommandsLocally: false,genericHandler: "Z-Wave") {
 		capability "Sensor"
 		capability "Contact Sensor"
 		capability "Temperature Measurement"
@@ -52,78 +47,25 @@ metadata {
 		fingerprint mfr: "0312", prod: "0713", model: "D100", deviceJoinName: "Minoston 3 in 1 Sensor" //MSE30Z/ZWS713
 	}
 
-	tiles(scale: 2) {
-		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
-			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
-			}
-		}
-
-		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState "temperature", label: '${currentValue}°',
-					backgroundColors:[
-							[value: 31, color: "#153591"],
-							[value: 44, color: "#1e9cbb"],
-							[value: 59, color: "#90d2a7"],
-							[value: 74, color: "#44b621"],
-							[value: 84, color: "#f1d801"],
-							[value: 95, color: "#d04e00"],
-							[value: 96, color: "#bc2323"]
-					]
-		}
-		}
-		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
-			state "humidity", label: '${currentValue}% humidity', unit: ""
-		}
-
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "battery", label: '${currentValue}% battery', unit: ""
-		}
-
-		valueTile("pendingChanges", "device.pendingChanges", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "pendingChanges", label:'${currentValue}'
-		}
-
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
-		}
-
-		main "contact", "temperature", "humidity"
-		details(["contact", "temperature", "humidity", "battery", "refresh", "pendingChanges"])
-	}
-
-	simulator { }
-
 	preferences {
 		configParams.each {
 			if (it.name) {
 				if (it.range) {
-					getNumberInput(it)
-				}
-				else {
-					getOptionsInput(it)
+					input "configParam${it.num}", "number",
+						title: "${it.name}:",
+						required: false,
+						defaultValue: "${it.value}",
+						range: it.range
+				}else {
+					input "configParam${it.num}", "enum",
+						title: "${it.name}:",
+						required: false,
+						defaultValue: "${it.value}",
+						options: it.options
 				}
 			}
 		}
 	}
-}
-
-private getOptionsInput(param) {
-	input "configParam${param.num}", "enum",
-			title: "${param.name}:",
-			required: false,
-			defaultValue: "${param.value}",
-			options: param.options
-}
-
-private getNumberInput(param) {
-	input "configParam${param.num}", "number",
-			title: "${param.name}:",
-			required: false,
-			defaultValue: "${param.value}",
-			range: param.range
 }
 
 def installed() {
@@ -178,8 +120,7 @@ private getConfigCmds() {
 		def storedVal = getParamStoredValue(param.num)
 		if (state.refreshConfig) {
 			cmds << configGetCmd(param)
-		}
-		else if ("${storedVal}" != "${param.value}") {
+		}else if ("${storedVal}" != "${param.value}") {
 			def paramVal = param.value
 			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
 			cmds << configSetCmd(param, paramVal)
@@ -221,8 +162,7 @@ def refresh() {
 	state.lastBattery = null
 	if (!state.refreshSensors) {
 		state.refreshSensors = true
-	}
-	else {
+	}else {
 		state.refreshConfig = true
 	}
 	refreshPendingChanges()
@@ -246,8 +186,7 @@ def parse(String description) {
 		}
 
 		sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
-	}
-	catch (e) {
+	} catch (e) {
 		log.error "$e"
 	}
 	return result
@@ -260,8 +199,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	def result = []
 	if (encapCmd) {
 		result += zwaveEvent(encapCmd)
-	}
-	else {
+	}else {
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 	}
 	return result
@@ -302,8 +240,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
 	if (val > 100) {
 		val = 100
-	}
-	else if (val < 1) {
+	}else if (val < 1) {
 		val = 1
 	}
 	state.lastBattery = new Date().time
@@ -348,8 +285,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 
 		logDebug "${param.name}(#${param.num}) = ${val}"
 		setParamStoredValue(param.num, val)
-	}
-	else {
+	}else {
 		logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
 	}
 	return []
@@ -396,8 +332,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 	map.name = "contact"
 	if (map.value == "open") {
 		map.descriptionText = "${device.displayName} is open"
-	}
-	else {
+	}else {
 		map.descriptionText = "${device.displayName} is closed"
 	}
 	createEvent(map)
@@ -463,11 +398,10 @@ private secureCmd(cmd) {
 	try {
 		if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
 			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		}
-		else {
+		}else {
 			return cmd.format()
 		}
-	}catch (ex) {
+	} catch (ex) {
 		return cmd.format()
 	}
 }
@@ -475,25 +409,25 @@ private secureCmd(cmd) {
 
 private static getCommandClassVersions() {
 	[
-			0x30: 2,  // SensorBinary
-			0x31: 5,  // SensorMultilevel
-			0x55: 1,  // TransportServices
-			0x59: 1,  // AssociationGrpInfo
-			0x5A: 1,  // DeviceResetLocally
-			0x5E: 2,  // ZwaveplusInfo
-			0x6C: 1,  // Supervision
-			0x70: 1,  // Configuration
-			0x71: 3,  // Notification
-			0x72: 2,  // ManufacturerSpecific
-			0x73: 1,  // Powerlevel
-			0x7A: 2,  // FirmwareUpdateMd
-			0x80: 1,  // Battery
-			0x84: 1,  // WakeUp
-			0x85: 2,  // Association
-			0x86: 1,  // Version
-			0x8E: 2,  // MultChannelAssociation
-			0x87: 1,  // Indicator
-			0x9F: 1   // Security 2
+		0x30: 2,  // SensorBinary
+		0x31: 5,  // SensorMultilevel
+		0x55: 1,  // TransportServices
+		0x59: 1,  // AssociationGrpInfo
+		0x5A: 1,  // DeviceResetLocally
+		0x5E: 2,  // ZwaveplusInfo
+		0x6C: 1,  // Supervision
+		0x70: 1,  // Configuration
+		0x71: 3,  // Notification
+		0x72: 2,  // ManufacturerSpecific
+		0x73: 1,  // Powerlevel
+		0x7A: 2,  // FirmwareUpdateMd
+		0x80: 1,  // Battery
+		0x84: 1,  // WakeUp
+		0x85: 2,  // Association
+		0x86: 1,  // Version
+		0x8E: 2,  // MultChannelAssociation
+		0x87: 1,  // Indicator
+		0x9F: 1   // Security 2
 	]
 }
 
@@ -523,19 +457,19 @@ private static getLightSensorType() { return 5 }
 // Configuration Parameters
 private getConfigParams() {
 	[
-			batteryReportThresholdParam,
-			lowBatteryAlarmReportParam,
-			sensorModeWhenClosedParam,
-			delayReportSecondsWhenClosedParam,
-			delayReportSecondsWhenOpenedParam,
-			minTemperatureOffsetParam,
-			minHumidityOffsetParam,
-			temperatureUpperWatermarkParam,
-			temperatureLowerWatermarkParam,
-			humidityUpperWatermarkParam,
-			humidityLowerWatermarkParam,
-			switchTemperatureUnitParam,
-			associationGroupSettingParam
+		batteryReportThresholdParam,
+		lowBatteryAlarmReportParam,
+		sensorModeWhenClosedParam,
+		delayReportSecondsWhenClosedParam,
+		delayReportSecondsWhenOpenedParam,
+		minTemperatureOffsetParam,
+		minHumidityOffsetParam,
+		temperatureUpperWatermarkParam,
+		temperatureLowerWatermarkParam,
+		humidityUpperWatermarkParam,
+		humidityLowerWatermarkParam,
+		switchTemperatureUnitParam,
+		associationGroupSettingParam
 	]
 }
 
@@ -588,14 +522,7 @@ private getSwitchTemperatureUnitParam() {
 }
 
 private getAssociationGroupSettingParam() {
-	return getParam(13, "Association Group 2 Setting", 1, 1, [0:"Disable completely",
-															  1:"Send Basic SET 0xFF when Magnet is away,and send Basic SET 0x00 when Magnet is near.",
-															  2:"Send Basic SET 0x00 when Magnet is away,and send Basic SET 0xFF when Magnet is near",
-															  3:"Only send Basic SET 0xFF when Magnet is away",
-															  4:"Only send Basic SET 0x00 when Magnet is near",
-															  5:"Only send Basic SET 0x00 when Magnet is away",
-															  6:"Only send Basic SET 0xFF when Magnet is near"
-	])
+	return getParam(13, "Association Group 2 Setting", 1, 1, associationGroupSettingOptions)
 }
 
 private getParam(num, name, size, defaultVal, options=null, range=null) {
@@ -606,7 +533,9 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
 		map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
 		map.options = setDefaultOption(options, defaultVal)
 	}
-	if (range) map.range = range
+	if (range) {
+		map.range = range
+	}
 
 	return map
 }
@@ -623,15 +552,27 @@ private static setDefaultOption(options, defaultVal) {
 // Setting Options
 private static getSwitchTemperatureUnitOptions() {
 	return [
-			"0":"Celsius",
-			"1":"Fahrenheit"
+		"0":"Celsius",
+		"1":"Fahrenheit"
+	]
+}
+
+private static getAssociationGroupSettingOptions() {
+	return [
+		"0":"Disable completely",
+		"1":"Send Basic SET 0xFF when Magnet is away,and send Basic SET 0x00 when Magnet is near.",
+		"2":"Send Basic SET 0x00 when Magnet is away,and send Basic SET 0xFF when Magnet is near",
+		"3":"Only send Basic SET 0xFF when Magnet is away",
+		"4":"Only send Basic SET 0x00 when Magnet is near",
+		"5":"Only send Basic SET 0x00 when Magnet is away",
+		"6":"Only send Basic SET 0xFF when Magnet is near"
 	]
 }
 
 private static getSensorModeWhenCloseOptions() {
 	return [
-			"0":"door/window closed",
-			"1":"door/window opened"
+		"0":"door/window closed",
+		"1":"door/window opened"
 	]
 }
 
@@ -664,8 +605,7 @@ private convertToLocalTimeString(dt) {
 	def timeZoneId = location?.timeZone?.ID
 	if (timeZoneId) {
 		return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-	}
-	else {
+	}else {
 		return "$dt"
 	}
 }
