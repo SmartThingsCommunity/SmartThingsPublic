@@ -20,7 +20,7 @@ import physicalgraph.zigbee.zcl.DataType
 import groovy.json.JsonOutput
 
 metadata {
-	definition(name: "ITM Fan Child", namespace: "SAMSUNG LED", author: "SAMSUNG LED", ocfDeviceType: "oic.d.fan"){
+	definition(name: "ITM Fan Child", namespace: "SAMSUNG LED", author: "SAMSUNG LED", ocfDeviceType: "oic.d.fan") {
 		capability "Actuator"
         	capability "Configuration"
         	capability "Refresh"
@@ -38,14 +38,12 @@ def on() {
 }
 
 def setFanSpeed(speed) {
-	log.debug "child setFanSpeed $speed"
-	
+	log.debug "child setFanSpeed $speed"	
 	if (speed as Integer == 0) {
         	sendEvent(name: "switch", value: "off", displayed: true, isStateChange: true)
     	} else {
         	sendEvent(name: "switch", value: "on", displayed: true, isStateChange: true)
-    	}
-	
+    	}	
 	parent.setFanSpeed(speed, device)
 }
 
