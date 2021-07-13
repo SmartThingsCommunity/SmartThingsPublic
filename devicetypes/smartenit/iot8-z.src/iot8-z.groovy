@@ -177,7 +177,7 @@ private void createChildDevices() {
 					isComponent: false
 					])
 			} else if (endpoint >= 5 && endpoint <= 8) {
-				addChildDevice("smartthings", "ZigBee Switch", "${device.deviceNetworkId}:0${endpoint}", device.hubId,
+				addChildDevice("smartthings", "Child Switch", "${device.deviceNetworkId}:0${endpoint}", device.hubId,
 					[completedSetup: true,
 					label: "${device.displayName} ${endpoint}",
 					isComponent: false
