@@ -31,7 +31,7 @@
  *
  */
 metadata {
-	definition(name: "Evalogik Door/Window Sensor",namespace: "sky-nie",author: "winnie",ocfDeviceType: "x.com.st.d.sensor.contact",runLocally: true,executeCommandsLocally: false,genericHandler: "Z-Wave") {
+	definition(name: "Evalogik Door/Window Sensor", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.sensor.contact", executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Sensor"
 		capability "Contact Sensor"
 		capability "Temperature Measurement"
@@ -49,20 +49,10 @@ metadata {
 
 	preferences {
 		configParams.each {
-			if (it.name) {
-				if (it.range) {
-					input "configParam${it.num}", "number",
-						title: "${it.name}:",
-						required: false,
-						defaultValue: "${it.value}",
-						range: it.range
-				}else {
-					input "configParam${it.num}", "enum",
-						title: "${it.name}:",
-						required: false,
-						defaultValue: "${it.value}",
-						options: it.options
-				}
+			if (it.range) {
+				input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+			} else {
+				input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
 			}
 		}
 	}
@@ -111,13 +101,7 @@ def executeConfigure() {
 
 	cmds += getConfigCmds()
 
-	sendCommands()
-	def cmds1 = delayBetween(cmds, 500)
-	def actions = []
-	cmds1?.each {
-		actions << new physicalgraph.device.HubAction(it)
-	}
-	sendHubCommand(actions, 100)
+	sendCommands(delayBetween(cmds, 500))
 }
 
 private getConfigCmds() {
@@ -126,7 +110,7 @@ private getConfigCmds() {
 		def storedVal = getParamStoredValue(param.num)
 		if (state.refreshConfig) {
 			cmds << configGetCmd(param)
-		}else if ("${storedVal}" != "${param.value}") {
+		} else if ("${storedVal}" != "${param.value}") {
 			def paramVal = param.value
 			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
 			cmds << configSetCmd(param, paramVal)
@@ -135,7 +119,7 @@ private getConfigCmds() {
 			if (param.num == minTemperatureOffsetParam.num) {
 				cmds << "delay 3000"
 				cmds << sensorMultilevelGetCmd(tempSensorType)
-			}else if (param.num == minHumidityOffsetParam.num) {
+			} else if (param.num == minHumidityOffsetParam.num) {
 				cmds << "delay 3000"
 				cmds << sensorMultilevelGetCmd(lightSensorType)
 			}
@@ -144,6 +128,16 @@ private getConfigCmds() {
 	state.refreshConfig = false
 	return cmds
 }
+
+private sendCommands(cmds) {
+	def actions = []
+	cmds?.each {
+		actions << new physicalgraph.device.HubAction(it)
+	}
+	sendHubCommand(actions, 100)
+	return []
+}
+
 
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
@@ -157,7 +151,7 @@ def refresh() {
 	state.lastBattery = null
 	if (!state.refreshSensors) {
 		state.refreshSensors = true
-	}else {
+	} else {
 		state.refreshConfig = true
 	}
 	refreshPendingChanges()
@@ -174,7 +168,7 @@ def parse(String description) {
 		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result += zwaveEvent(cmd)
-		}else {
+		} else {
 			logDebug "Unable to parse description: $description"
 		}
 
@@ -192,7 +186,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	def result = []
 	if (encapCmd) {
 		result += zwaveEvent(encapCmd)
-	}else {
+	} else {
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 	}
 	return result
@@ -233,7 +227,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
 	if (val > 100) {
 		val = 100
-	}else if (val < 1) {
+	} else if (val < 1) {
 		val = 1
 	}
 	state.lastBattery = new Date().time
@@ -278,7 +272,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 
 		logDebug "${param.name}(#${param.num}) = ${val}"
 		setParamStoredValue(param.num, val)
-	}else {
+	} else {
 		logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
 	}
 	return []
@@ -325,7 +319,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 	map.name = "contact"
 	if (map.value == "open") {
 		map.descriptionText = "${device.displayName} is open"
-	}else {
+	} else {
 		map.descriptionText = "${device.displayName} is closed"
 	}
 	createEvent(map)
@@ -391,7 +385,7 @@ private secureCmd(cmd) {
 	try {
 		if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
 			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		}else {
+		} else {
 			return cmd.format()
 		}
 	} catch (ex) {
@@ -598,7 +592,7 @@ private convertToLocalTimeString(dt) {
 	def timeZoneId = location?.timeZone?.ID
 	if (timeZoneId) {
 		return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-	}else {
+	} else {
 		return "$dt"
 	}
 }
