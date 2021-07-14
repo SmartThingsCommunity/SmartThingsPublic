@@ -36,7 +36,7 @@
  */
 
 metadata {
-    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller",mcdSync: true) {
+    definition (name: "Minoston Wallmote", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
         capability "Actuator"
         capability "Button"
         capability "Battery"
@@ -53,20 +53,10 @@ metadata {
 
     preferences {
         configParams.each {
-            if (it.name) {
-                if (it.range) {
-                    input "configParam${it.num}", "number",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            range: it.range
-                }else {
-                    input "configParam${it.num}", "enum",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            options: it.options
-                }
+            if (it.range) {
+                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+            } else {
+                input "configParam${it.num}", "enum",  title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
             }
         }
     }
@@ -210,7 +200,7 @@ private static getSupportedButtonValues() {
         "pushed",
         "held",
         "double",
-        'pushed_3x'
+        "pushed_3x"
     ]
 }
 
@@ -219,7 +209,7 @@ private static getButtonAttributesMap() {
         0: "pushed",
         1: "held",
         3: "double",
-        4: "pushed_3x",
+        4: "pushed_3x"
     ]
 }
 
@@ -245,19 +235,19 @@ private getLowBatteryAlarmReportParam() {
 }
 
 private getLedIndicator1ColorParam() {
-    return getParam(3, "Led Indicator Color for the First button remote control", 1, 0, ledColorOptions)
+    return getParam(3, "Led Indicator Color for the First Button", 1, 0, ledColorOptions)
 }
 
 private getLedIndicator2ColorParam() {
-    return getParam(4, "Led Indicator Color for the Second button remote control", 1, 1, ledColorOptions)
+    return getParam(4, "Led Indicator Color for the Second Button", 1, 1, ledColorOptions)
 }
 
 private getLedIndicator3ColorParam() {
-    return getParam(5, "Led Indicator Color for the Third button remote control", 1, 2, ledColorOptions)
+    return getParam(5, "Led Indicator Color for the Third Button", 1, 2, ledColorOptions)
 }
 
 private getLedIndicator4ColorParam() {
-    return getParam(6, "Led Indicator Color for the Fourth button remote control", 1, 3, ledColorOptions)
+    return getParam(6, "Led Indicator Color for the Fourth Button", 1, 3, ledColorOptions)
 }
 
 private getLedIndicatorBrightnessParam() {
@@ -339,12 +329,20 @@ def executeConfigureCmds() {
     }
 
     state.resyncAll = false
-    def cmds1 =delayBetween(cmds, 500)
-    def actions = []
-    cmds1.each {
-        actions << new physicalgraph.device.HubAction(it)
+    if (cmds) {
+        sendCommands(delayBetween(cmds, 500))
     }
-    sendHubCommand(actions)
+    return []
+}
+
+private sendCommands(cmds) {
+    if (cmds) {
+        def actions = []
+        cmds.each {
+            actions << new physicalgraph.device.HubAction(it)
+        }
+        sendHubCommand(actions)
+    }
     return []
 }
 
