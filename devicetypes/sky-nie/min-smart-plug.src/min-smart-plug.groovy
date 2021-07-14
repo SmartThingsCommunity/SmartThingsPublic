@@ -42,13 +42,14 @@
  */
 
 metadata {
-    definition (name: "Min Smart Plug",namespace: "sky-nie",author: "winnie",mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug" ) {
+    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
         capability "Light"
         capability "Configuration"
         capability "Refresh"
+        capability "Health Check"
 
         attribute "firmwareVersion", "string"
         attribute "syncStatus", "string"
@@ -59,20 +60,10 @@ metadata {
 
     preferences {
         configParams.each {
-            if (it.name) {
-                if (it.range) {
-                    input "configParam${it.num}", "number",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            range: it.range
-                } else {
-                    input "configParam${it.num}", "enum",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            options: it.options
-                }
+            if (it.range) {
+                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+            } else {
+                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
             }
         }
     }
@@ -228,7 +219,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     def result = []
     if (encapsulatedCmd) {
         result += zwaveEvent(encapsulatedCmd)
-    }  else {
+    } else {
         log.warn "Unable to extract encapsulated cmd from $cmd"
     }
     return result
@@ -274,7 +265,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 private sendSwitchEvents(rawVal, type) {
-    sendEvent(name:  "switch", value:  (rawVal == 0xFF) ? "on" : "off", displayed:  true,type:  type)
+    sendEvent(name:  "switch", value:  (rawVal == 0xFF) ? "on" : "off", displayed:  true, type:  type)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -331,11 +322,11 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(2, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(4, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -350,7 +341,9 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
         map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
         map.options = setDefaultOption(options, defaultVal)
     }
-    if (range) map.range = range
+    if (range) {
+        map.range = range
+    }
 
     return map
 }
