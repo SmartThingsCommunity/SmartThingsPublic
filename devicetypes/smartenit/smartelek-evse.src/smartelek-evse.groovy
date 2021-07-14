@@ -140,7 +140,7 @@ def parse(String description) {
 					return sendEvent(name:"sessionDuration", value: timestr)
 				} else if (mapDescription.attrInt == ChargerSessionSummation) {
 					log.debug "ChargerSessionSummation attribute: ${mapDescription.value}"
-					return sendEvent(name:"sessionSummation", value: getFPoint(mapDescription.value)/EnergyDivisor, unit: "Wh")
+					return sendEvent(name:"sessionSummation", value: getFPoint(mapDescription.value)/EnergyDivisor, unit: "kWh")
 				} else if (mapDescription.attrInt == ChargerSessionPeakCurrent) {
 					log.debug "ChargerSessionPeakCurrent attribute: ${mapDescription.value}"
 					return sendEvent(name:"sessionPeakCurrent", value: getFPoint(mapDescription.value) / 100, unit: "A")
@@ -316,10 +316,11 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
-	return (configureHealthCheck() +
-		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation, 0x25, 0, 600, 50) +
+	configureHealthCheck()
+	return (zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation, 0x25, 0, 600, 50) +
 		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, MeteringInstantDemand, 0x2a, 0, 600, 50) +
-		zigbee.configureReporting(EVSECluster, ChargingStatus, 0x30, 0x0, 0x0, null, [mfgCode: SmartenitMfrCode])
+		zigbee.configureReporting(EVSECluster, ChargingStatus, 0x30, 0x0, 0x0, null, [mfgCode: SmartenitMfrCode]) + 
+		refresh()
 	)
 }
 
@@ -336,5 +337,5 @@ def updated() {
 }
 
 def ping() {
-	return zigbee.readAttribute(EVSECluster, ChargingStatus, [mfgCode: SmartenitMfrCode])
+	return refresh()
 }
