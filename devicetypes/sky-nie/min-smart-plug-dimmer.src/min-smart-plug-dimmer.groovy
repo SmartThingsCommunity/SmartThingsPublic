@@ -49,7 +49,7 @@
  */
 
 metadata {
-    definition (name: "Min Smart Plug Dimmer",namespace: "sky-nie",author: "winnie",ocfDeviceType: "oic.d.smartplug") {
+    definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
@@ -62,27 +62,16 @@ metadata {
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD Minoston Mini Smart Plug Dimmer
-        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD Minoston Outdoor Smart Plug Dimmer
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
+        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
     }
 
     preferences {
         configParams.each {
-            if (it.name) {
-                if (it.range) {
-                    input "configParam${it.num}", "number",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            range: it.range
-                }
-                else {
-                    input "configParam${it.num}", "enum",
-                            title: "${it.name}:",
-                            required: false,
-                            defaultValue: "${it.value}",
-                            options: it.options
-                }
+            if (it.range) {
+                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+            } else {
+                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
             }
         }
     }
@@ -143,16 +132,22 @@ def executeConfigureCmds() {
             if (param.num == temperatureReportThresholdParam.num) {
                 cmds << "delay 3000"
                 cmds << secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: tempSensorType))
-            }else{
+            } else {
                 cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
             }
         }
     }
 
     state.resyncAll = false
-    def cmds1 =delayBetween(cmds, 500)
+    if (cmds) {
+        sendCommands(delayBetween(cmds, 500))
+    }
+    return []
+}
+
+private sendCommands(cmds) {
     def actions = []
-    cmds1.each {
+    cmds?.each {
         actions << new physicalgraph.device.HubAction(it)
     }
     sendHubCommand(actions, 100)
@@ -272,7 +267,7 @@ private static getCommandClassVersions() {
         0x86: 1,	// Version (2)
         0x8E: 2,	// Multi Channel Association
         0x98: 1,	// Security S0
-        0x9F: 1	// Security S2
+        0x9F: 1     // Security S2
     ]
 }
 
@@ -309,15 +304,15 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer(0,Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getNightLightParam() {
-    return getParam(7, "Night Light Settings(1,10%;2,20%,...10,100%)", 1, 2, null, "1..10")
+    return getParam(7, "Night Light Settings(1, 10%;2, 20%,...10, 100%)", 1, 2, null, "1..10")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -325,7 +320,7 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration(0,Disabled; 1--10 Seconds)", 1, 2, null, "0..10")
+    return getParam(9, "Push Dimming Duration(0, Disabled; 1--10 Seconds)", 1, 2, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
@@ -333,11 +328,11 @@ private getHoldDimmingDurationParam() {
 }
 
 private getMinimumBrightnessParam() {
-    return getParam(11, "Minimum Brightness(0,Disabled; 1--99:1%--99%)", 1, 10, null,"0..99")
+    return getParam(11, "Minimum Brightness(0, Disabled; 1--99:1%--99%)", 1, 10, null,"0..99")
 }
 
 private getMaximumBrightnessParam() {
-    return getParam(12, "Maximum Brightness(0,Disabled; 1--99:1%--99%)", 1, 99, null,"0..99")
+    return getParam(12, "Maximum Brightness(0, Disabled; 1--99:1%--99%)", 1, 99, null,"0..99")
 }
 
 private getTemperatureReportTimeParam() {
@@ -407,7 +402,7 @@ private static validateRange(val, defaultVal, lowVal, highVal) {
         return highVal
     } else if (val < lowVal) {
         return lowVal
-    }else {
+    } else {
         return val
     }
 }
@@ -499,9 +494,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 private sendSwitchEvents(rawVal, type) {
     def switchVal = rawVal ? "on" : "off"
 
-    sendEvent(name: "switch",  value:switchVal, displayed: true, type:  type)
+    sendEvent(name: "switch",  value:switchVal, displayed: true, type: type)
 
     if (rawVal) {
-        sendEvent(name: "level",  value:rawVal, displayed: true, type:  type, unit:"%")
+        sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
     }
 }
