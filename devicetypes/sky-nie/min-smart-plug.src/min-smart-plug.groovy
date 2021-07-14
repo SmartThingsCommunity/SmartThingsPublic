@@ -46,7 +46,6 @@ metadata {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
-        capability "Light"
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
@@ -60,10 +59,12 @@ metadata {
 
     preferences {
         configParams.each {
-            if (it.range) {
-                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
-            } else {
-                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
+            if (it.name) {
+                if (it.range) {
+                    input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+                } else {
+                    input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
+                }
             }
         }
     }
@@ -192,8 +193,7 @@ private secureCmd(cmd) {
         } else {
             return cmd.format()
         }
-    }
-    catch (ex) {
+    } catch (ex) {
         return cmd.format()
     }
 }
