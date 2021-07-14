@@ -36,7 +36,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0020,0402,0405", outClusters: "0003,000A,0019", manufacturer: "frient A/S", model :"HMSZB-110", deviceJoinName: "frient Multipurpose Sensor" // frient Humidity Sensor
 
 		//eWeLink
-		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0402, 0405",  outClusters: "0003", manufacturer: "eWeLink", model: "TH01", deviceJoinName: "eWeLink Temp/Humidity Sensor"
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0402, 0405",  outClusters: "0003", manufacturer: "eWeLink", model: "TH01", deviceJoinName: "eWeLink Multipurpose Sensor"
 	}
 
 	simulator {
