@@ -319,11 +319,9 @@ def executeConfigureCmds() {
 
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
-        def paramVal = param.value
-
-        if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
-            logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
-            cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
+        if (state.resyncAll || ("${storedVal}" != "${param.value}")) {
+            logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
+            cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: param.value))
             cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
     }
@@ -388,7 +386,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     if (param) {
         def val = cmd.scaledConfigurationValue
         logDebug "${param.name}(#${param.num}) = ${val}"
-        state["configVal${paramNum}"] = val
+        state["configVal${param.num}"] = val
     } else {
         logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
@@ -418,25 +416,25 @@ def refreshSyncStatus() {
 
 private static getCommandClassVersions() {
     [
-        0x20: 1,	// Basic
-        0x26: 3,	// Switch Multilevel (4)
-        0x55: 1,	/// Transport Service
-        0x59: 1,	/// AssociationGrpInfo
-        0x5A: 1,	/// DeviceResetLocally
-        0x5B: 1,	/// CentralScene (3)
-        0x5E: 2,	/// ZwaveplusInfo
-        0x6C: 1,	/// Supervision
-        0x70: 2,	/// Configuration
-        0x72: 2,	/// ManufacturerSpecific
-        0x73: 1,	/// Powerlevel
-        0x7A: 2,	/// Firmware Update Md (3)
-        0x80: 1,	/// Battery
-        0x84: 2,	/// WakeUp
-        0x85: 2,	/// Association
-        0x86: 1,	/// Version (2)
-        0x87: 1,	/// Indicator
-        0x8E: 2,	/// MultiChannelAssociation (3)
-        0x9F: 1     /// Security 2
+            0x20: 1,	// Basic
+            0x26: 3,	// Switch Multilevel (4)
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x5B: 1,	// CentralScene (3)
+            0x5E: 2,	// ZwaveplusInfo
+            0x6C: 1,	// Supervision
+            0x70: 2,	// Configuration
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x7A: 2,	// Firmware Update Md (3)
+            0x80: 1,	// Battery
+            0x84: 2,	// WakeUp
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x87: 1,	// Indicator
+            0x8E: 2,	// MultiChannelAssociation (3)
+            0x9F: 1     // Security 2
     ]
 }
 
