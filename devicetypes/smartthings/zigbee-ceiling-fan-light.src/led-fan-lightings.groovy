@@ -67,8 +67,8 @@ def parse(String description) {
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
-		if (zigbeeMap.cluster == "0202" &&
-		    zigbeeMap.attrId == "0000") {		
+		if (zigbeeMap.clusterInt == FAN_CLUSTER_VALUE &&
+		    zigbeeMap.attrInt == FAN_STATUS_VALUE) {		
 			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
 			def childDevice = getChildDevices()?.find {
 				//find light child device
