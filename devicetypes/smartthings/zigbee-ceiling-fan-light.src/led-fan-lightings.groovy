@@ -23,7 +23,10 @@ metadata {
 	definition (name: "LED FAN lightings", namespace: "SAMSUNG LED", author: "SAMSUNG LED", genericHandler: "Zigbee") {
 		capability "Actuator"		
 		capability "Configuration"
-		capability "Health Check"		
+		capability "Health Check"
+		capability "Refresh"
+		capability "Switch"
+		capability "Switch Level"
 
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-003", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-003"
