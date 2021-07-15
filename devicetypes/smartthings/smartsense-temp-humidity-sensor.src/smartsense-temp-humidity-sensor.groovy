@@ -231,10 +231,6 @@ private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "frient A/S"
 }
 
-private boolean isEWeLink() {
-	device.getDataValue("manufacturer") == "eWeLink"
-}
-
-private boolean isEWeLinkTh01() {
-	isEWeLink() && device.getDataValue("model") == "TH01"
+private Boolean isEWeLinkTh01() {
+	device.getDataValue("manufacturer") == "eWeLink" && device.getDataValue("model") == "TH01"
 }
