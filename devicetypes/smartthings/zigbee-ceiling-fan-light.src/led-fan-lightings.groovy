@@ -20,7 +20,7 @@ import physicalgraph.zigbee.zcl.DataType
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "LED FAN lightings", namespace: "SAMSUNG LED", author: "SAMSUNG LED", genericHandler: "Zigbee") {
+	definition (name: "LED FAN lightings", namespace: "SAMSUNG LED", author: "SAMSUNG LED") {
 		capability "Actuator"		
 		capability "Configuration"
 		capability "Health Check"
@@ -67,8 +67,8 @@ def parse(String description) {
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
-		if (zigbeeMap.cluster == FAN_CLUSTER_VALUE &&
-		    zigbeeMap.attrId == FAN_STATUS_VALUE) {		
+		if (zigbeeMap.cluster == "0202" &&
+		    zigbeeMap.attrId == "0000") {		
 			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
 			def childDevice = getChildDevices()?.find {
 				//find light child device
