@@ -41,8 +41,8 @@ metadata {
 		capability "monthpublic25501.load2"
 		capability "monthpublic25501.levelControl"
 
-		fingerprint model: "ZBMLC30NC", manufacturer: "Smartenit, Inc", deviceJoinName: "Smartenit Dual Switch Meter"
-		fingerprint model: "ZBMLC30NO", manufacturer: "Smartenit, Inc", deviceJoinName: "Smartenit Dual Switch Meter"
+		fingerprint model: "ZBMLC30NC", manufacturer: "Smartenit, Inc", deviceJoinName: "Smartenit Switch"
+		fingerprint model: "ZBMLC30NO", manufacturer: "Smartenit, Inc", deviceJoinName: "Smartenit Switch"
 	}
 }
 
@@ -62,12 +62,17 @@ def parse(String description) {
 	}
 
 	if (event && event.name != "switch") {
-		log.debug "event: ${event}, ${event.name}, ${event.value}"
+		log.debug "Collecting event: ${event}, ${event.name}, ${event.value}"
 		if ((eventDescMap?.sourceEndpoint == "01") || (eventDescMap?.endpoint == "01")) {
 			if (event.name == "power") {
-				sendEvent(name: "power", value: (event.value/EnergyDivisor))
+				return createEvent(name: "power", value: (event.value/EnergyDivisor))
 			} else {
 				sendEvent(event) 
+			}
+		} else if ((eventDescMap?.sourceEndpoint == "03") || (eventDescMap?.endpoint == "03")) {
+			if (event.name == "level") {
+				log.debug "Creating level event"
+				return createEvent(name: "level", value: event.value)
 			}
 		}
 	} else {
@@ -77,27 +82,28 @@ def parse(String description) {
 		if (mapDescription) {
 			if (mapDescription.clusterInt == zigbee.SIMPLE_METERING_CLUSTER) {
 				if (mapDescription.attrInt == MeteringCurrentSummation) {
-					return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
+					return createEvent(name:"energy", value: getFPoint(mapDescription.value)/EnergyDivisor)
 				} else if (mapDescription.attrInt == MeteringInstantDemand) {
-					return sendEvent(name:"power", value: getFPoint(mapDescription.value/EnergyDivisor))
+					return createEvent(name:"power", value: getFPoint(mapDescription.value/EnergyDivisor))
 				} else if (mapDescription.attrInt == Voltage) {
-					return sendEvent(name:"voltage", value: getFPoint(mapDescription.value) / 100)
+					return createEvent(name:"voltage", value: getFPoint(mapDescription.value) / 100)
 				} else if (mapDescription.attrInt == Current) {
-					return sendEvent(name:"current", value: getFPoint(mapDescription.value) / 100, unit: "A")
+					return createEvent(name:"current", value: getFPoint(mapDescription.value) / 100, unit: "A")
 				}
 			} else if (mapDescription.clusterInt == zigbee.ONOFF_CLUSTER) {
 				if (mapDescription.attrInt == OnOff) {
 					def nameVal = mapDescription.sourceEndpoint == "01" ? "loadone" : "loadtwo"
 					def status = mapDescription.value == "00" ? "off" : "on"
-					return sendEvent(name:nameVal, value: status)
+					return createEvent(name:nameVal, value: status)
 				} else {
 					sendEvent(event) 
 				}
 			} else if (mapDescription.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
 				if (mapDescription.attrInt == CurrentLevel) {
+					log.debug "Received response for level control: ${eventDescMap?.value}"
 					long convertedValue = Long.parseLong(eventDescMap?.value, 16)
 					def ceilingVal = Math.ceil((convertedValue * 100) / 255.0 )
-					return sendEvent(name: "level", value: ceilingVal)
+					return createEvent(name: "level", value: ceilingVal)
 				}
 			}
 		}
@@ -105,20 +111,18 @@ def parse(String description) {
 }
 
 def setLevel(val) {
-	sendEvent(name:"level", value:val)
-
+	log.debug "Setting level to ${val}"
 	int newval = 0
 	if (val != 0) {
 		newval = (255.0 / (100.0 / val))
 	}
 
 	zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, MoveToLevelWOnOff,
-		DataType.pack(newval, DataType.UINT8, 1) + DataType.pack(0xffff, DataType.UINT16, 1), [destEndpoint: 3])
+		DataType.pack(newval, DataType.UINT8, 1) + DataType.pack(0xffff, DataType.UINT16, 1), [destEndpoint: 3]) 
 }
 
 def setLoadone(val) {
-	log.debug "Setting load one to: ${val}"
-	sendEvent(name:"loadone", value: val)
+	log.debug "toggling load one to: ${val}"
 
 	if (val == "on") {
 		zigbee.on()
@@ -129,7 +133,6 @@ def setLoadone(val) {
 
 def setLoadtwo(val) {
 	log.debug "Setting load two to: ${val}"
-	sendEvent(name:"loadtwo", value: val)
 
 	if (val == "on") {
 		zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: 2])
@@ -166,8 +169,7 @@ def configureHealthCheck() {
 
 def updated() {
 	log.debug "in updated()"
-	def cmds = configureHealthCheck()
-	cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
+	configureHealthCheck()
 }
 
 def ping() {
