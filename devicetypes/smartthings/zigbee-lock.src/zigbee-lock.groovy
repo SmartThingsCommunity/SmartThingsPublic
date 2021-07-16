@@ -477,10 +477,11 @@ private def parseAttributeResponse(String description) {
 	def deviceName = device.displayName
 	if (clusterInt == CLUSTER_POWER && attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
 		responseMap.name = "battery"
-		responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		// Handling Yale locks incorrect battery reporting issue
 		if (reportsBatteryIncorrectly()) {
 			responseMap.value = Integer.parseInt(descMap.value, 16)
+		} else {
+			responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		}
 		responseMap.descriptionText = "Battery is at ${responseMap.value}%"
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_LOCKSTATE) {
@@ -1158,8 +1159,9 @@ def reportsBatteryIncorrectly() {
 			"YRD210 PB DB",
 			"YRD220/240 TSDB",
 			"YRL210 PB LL",
+			"c700000202" //YDF40
 	]
-	return (isYaleLock() && device.getDataValue("model") in badModels)
+	return device.getDataValue("model") in badModels
 }
 
 /**
