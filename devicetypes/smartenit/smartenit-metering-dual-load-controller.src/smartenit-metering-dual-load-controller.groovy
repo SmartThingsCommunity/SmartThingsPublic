@@ -67,7 +67,7 @@ def parse(String description) {
 			if (event.name == "power") {
 				return createEvent(name: "power", value: (event.value/EnergyDivisor))
 			} else {
-				sendEvent(event) 
+				return createEvent(event)
 			}
 		} else if ((eventDescMap?.sourceEndpoint == "03") || (eventDescMap?.endpoint == "03")) {
 			if (event.name == "level") {
@@ -96,7 +96,7 @@ def parse(String description) {
 					def status = mapDescription.value == "00" ? "off" : "on"
 					return createEvent(name:nameVal, value: status)
 				} else {
-					sendEvent(event) 
+					return createEvent(event)
 				}
 			} else if (mapDescription.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
 				if (mapDescription.attrInt == CurrentLevel) {
