@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.5
+ *      Min Smart Plug Dimmer v1.1.6
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,11 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.1.6 (07/13/2021)
+ *      - Syntax format compliance adjustment
+ *      - Adjust the preferences interface prompts for SmartTings App
+ *      - Simplify the process of calling sendHubCommand
  *
  *    1.1.5 (07/13/2021)
  *      - Syntax format compliance adjustment
@@ -131,7 +136,7 @@ def executeConfigureCmds() {
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             if (param.num == temperatureReportThresholdParam.num) {
                 cmds << "delay 3000"
-                cmds << secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: tempSensorType))
+                cmds << secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: 1))
             } else {
                 cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
             }
@@ -140,17 +145,9 @@ def executeConfigureCmds() {
 
     state.resyncAll = false
     if (cmds) {
-        sendCommands(delayBetween(cmds, 500))
+        def commands = [List, of, cmds]
+        sendHubCommand(commands, 500)
     }
-    return []
-}
-
-private sendCommands(cmds) {
-    def actions = []
-    cmds?.each {
-        actions << new physicalgraph.device.HubAction(it)
-    }
-    sendHubCommand(actions, 100)
     return []
 }
 
@@ -188,7 +185,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
     if (cmd.sensorValue != [255, 255]) { // Bug in beta device
         switch (cmd.sensorType) {
-            case tempSensorType:
+            case 1:
                 def unit = cmd.scale ? "F" : "C"
                 def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
 
@@ -256,7 +253,7 @@ private static getCommandClassVersions() {
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
-        0x31: 5,    // SENSOR_MULTILEVEL_V11
+        0x31: 5,	// SENSOR_MULTILEVEL_V11
         0x71: 3,	// NOTIFICATION_V8
         0x6C: 1,	// Supervision
         0x70: 1,	// Configuration
@@ -267,7 +264,7 @@ private static getCommandClassVersions() {
         0x86: 1,	// Version (2)
         0x8E: 2,	// Multi Channel Association
         0x98: 1,	// Security S0
-        0x9F: 1     // Security S2
+        0x9F: 1 	// Security S2
     ]
 }
 
@@ -278,9 +275,6 @@ private getPendingChanges() {
 private getParamStoredValue(paramNum) {
     return safeToInt(state["configParam${paramNum}"] , null)
 }
-
-// Sensor Types
-private static getTempSensorType() { return 1 }
 
 // Configuration Parameters
 private getConfigParams() {
@@ -304,15 +298,15 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1 - 60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1 - 60480 minutes)", 4, 0, null, "0..60480")
 }
 
 private getNightLightParam() {
-    return getParam(7, "Night Light Settings(1, 10%;2, 20%,...10, 100%)", 1, 2, null, "1..10")
+    return getParam(7, "Night Light Settings(1 - 10:10% - 100%)", 1, 2, null, "1..10")
 }
 
 private getPowerFailureRecoveryParam() {
@@ -320,23 +314,23 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration(0, Disabled; 1--10 Seconds)", 1, 2, null, "0..10")
+    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, 2, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
-    return getParam(10, "Hold Dimming Duration(1--10 Seconds)", 1, 4, null, "1..10")
+    return getParam(10, "Hold Dimming Duration(1 - 10 Seconds)", 1, 4, null, "1..10")
 }
 
 private getMinimumBrightnessParam() {
-    return getParam(11, "Minimum Brightness(0, Disabled; 1--99:1%--99%)", 1, 10, null,"0..99")
+    return getParam(11, "Minimum Brightness(0, Disabled; 1 - 99:1% - 99%)", 1, 10, null,"0..99")
 }
 
 private getMaximumBrightnessParam() {
-    return getParam(12, "Maximum Brightness(0, Disabled; 1--99:1%--99%)", 1, 99, null,"0..99")
+    return getParam(12, "Maximum Brightness(0, Disabled; 1 - 99:1% - 99%)", 1, 99, null,"0..99")
 }
 
 private getTemperatureReportTimeParam() {
-    return getParam(13, "Temperature report time(1--60 minutes)", 1, 1, null, "1..60")
+    return getParam(13, "Temperature report time(1 - 60 minutes)", 1, 1, null, "1..60")
 }
 
 private getTemperatureReportThresholdParam() {
@@ -366,6 +360,7 @@ private static setDefaultOption(options, defaultVal) {
         ["$k": "$v"]
     }
 }
+
 
 private static getLedModeOptions() {
     return [
