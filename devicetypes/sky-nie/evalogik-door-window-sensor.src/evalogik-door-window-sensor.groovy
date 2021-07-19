@@ -1,7 +1,7 @@
 /**
- *     Evalogik Door/Window Sensor v1.0.1
+ *     Minoston Door/Window Sensor v1.0.3
  *
- *  	Models: MSE30Z/ZWS713
+ *  	Models: MSE30Z
  *
  *  Author:
  *   winnie (sky-nie)
@@ -9,6 +9,14 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.3 (07/16/2021)
+ *     - change lastBatteryReport to record the time of fresh battery
+ *     - add lastBattery to record the battery value
+ *
+ *    1.0.2 (07/15/2021)
+ *      - update ConfigParams as product designed
+ *      - update DTH name as product designed
  *
  *    1.0.1 (07/13/2021)
  *      - Syntax format compliance adjustment
@@ -44,7 +52,58 @@ metadata {
 		attribute "lastCheckIn", "string"
 		attribute "pendingChanges", "string"
 
-		fingerprint mfr: "0312", prod: "0713", model: "D100", deviceJoinName: "Minoston 3 in 1 Sensor" //MSE30Z/ZWS713
+		fingerprint mfr: "0312", prod: "0713", model: "D100", deviceJoinName: "Minoston 3 in 1 Sensor"//MSE30Z
+	}
+
+	tiles(scale: 2) {
+		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
+		}
+
+		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState "temperature", label: '${currentValue}°',
+						backgroundColors:[
+								[value: 31, color: "#153591"],
+								[value: 44, color: "#1e9cbb"],
+								[value: 59, color: "#90d2a7"],
+								[value: 74, color: "#44b621"],
+								[value: 84, color: "#f1d801"],
+								[value: 95, color: "#d04e00"],
+								[value: 96, color: "#bc2323"]
+						]
+			}
+		}
+
+		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
+			state "humidity", label: '${currentValue}% humidity', unit: ""
+		}
+
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label: '${currentValue}% battery', unit: ""
+		}
+
+		valueTile("pendingChanges", "device.pendingChanges", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "pendingChanges", label:'${currentValue}'
+		}
+
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
+		}
+
+		main(["contact", "temperature", "humidity"])
+		details(["contact", "temperature", "humidity", "battery", "refresh", "pendingChanges"])
+	}
+
+	// simulator metadata
+	simulator {
+		// status messages
+		status "open": "command: 2001, payload: FF"
+		status "closed": "command: 2001, payload: 00"
+		status "wake up": "command: 8407, payload: "
 	}
 
 	preferences {
@@ -111,9 +170,8 @@ private getConfigCmds() {
 		if (state.refreshConfig) {
 			cmds << configGetCmd(param)
 		} else if ("${storedVal}" != "${param.value}") {
-			def paramVal = param.value
-			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
-			cmds << configSetCmd(param, paramVal)
+			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
+			cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: param.value))
 			cmds << configGetCmd(param)
 
 			if (param.num == minTemperatureOffsetParam.num) {
@@ -138,18 +196,17 @@ private sendCommands(cmds) {
 	return []
 }
 
-
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
 	logDebug "ping()"
 }
 
-
 // Forces the configuration to be resent to the device the next time it wakes up.
 def refresh() {
 	logForceWakeupMessage "The sensor data will be refreshed the next time the device wakes up."
+	state.lastBatteryReport = null
 	state.lastBattery = null
-	if (!state.refreshSensors) {
+	if (!state.refreshSensors) {	
 		state.refreshSensors = true
 	} else {
 		state.refreshConfig = true
@@ -179,7 +236,6 @@ def parse(String description) {
 	return result
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapCmd = cmd.encapsulatedCommand(commandClassVersions)
 
@@ -191,7 +247,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 	return result
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	logDebug "Device Woke Up"
@@ -218,10 +273,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 		cmds = delayBetween(cmds, 1000)
 		cmds << "delay 3000"
 	}
-	cmds << wakeUpNoMoreInfoCmd()
+	cmds << secureCmd(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	return response(cmds)
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
@@ -230,13 +284,12 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else if (val < 1) {
 		val = 1
 	}
-	state.lastBattery = new Date().time
-
+	state.lastBatteryReport = new Date().time
+	state.lastBattery = val
 	logDebug "Battery ${val}%"
 	sendEvent(getEventMap("battery", val, null, null, "%"))
 	return []
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	logTrace "SensorMultilevelReport: ${cmd}"
@@ -260,7 +313,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	return []
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
 	logTrace "ConfigurationReport ${cmd}"
 
@@ -271,7 +323,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 		def val = cmd.scaledConfigurationValue
 
 		logDebug "${param.name}(#${param.num}) = ${val}"
-		setParamStoredValue(param.num, val)
+		state["configParam${param.num}"] = val
 	} else {
 		logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
 	}
@@ -281,7 +333,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 def refreshPendingChanges() {
 	sendEvent(name: "pendingChanges", value: "${pendingChanges} Pending Changes", displayed: false)
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	logTrace "NotificationReport: $cmd"
@@ -325,7 +376,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 	createEvent(map)
 }
 
-void zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
 	logTrace "${cmd}"
 }
 
@@ -355,11 +406,6 @@ private getEventMap(name, value, displayed=null, desc=null, unit=null) {
 	return eventMap
 }
 
-
-private wakeUpNoMoreInfoCmd() {
-	return secureCmd(zwave.wakeUpV1.wakeUpNoMoreInformation())
-}
-
 private batteryGetCmd() {
 	return secureCmd(zwave.batteryV1.batteryGet())
 }
@@ -377,10 +423,6 @@ private configGetCmd(param) {
 	return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
 }
 
-private configSetCmd(param, value) {
-	return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
-}
-
 private secureCmd(cmd) {
 	try {
 		if (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" "))) {
@@ -392,7 +434,6 @@ private secureCmd(cmd) {
 		return cmd.format()
 	}
 }
-
 
 private static getCommandClassVersions() {
 	[
@@ -418,9 +459,8 @@ private static getCommandClassVersions() {
 	]
 }
 
-
 private canReportBattery() {
-	return state.refreshSensors || (!isDuplicateCommand(state.lastBattery, (12 * 60 * 60 * 1000)))
+	return state.refreshSensors || (!isDuplicateCommand(state.lastBatteryReport, (12 * 60 * 60 * 1000)))
 }
 
 private getPendingChanges() {
@@ -431,15 +471,9 @@ private getParamStoredValue(paramNum) {
 	return safeToInt(state["configParam${paramNum}"] , null)
 }
 
-private setParamStoredValue(paramNum, value) {
-	state["configParam${paramNum}"] = value
-}
-
-
 // Sensor Types
 private static getTempSensorType() { return 1 }
 private static getLightSensorType() { return 5 }
-
 
 // Configuration Parameters
 private getConfigParams() {
@@ -452,20 +486,26 @@ private getConfigParams() {
 		minTemperatureOffsetParam,
 		minHumidityOffsetParam,
 		temperatureUpperWatermarkParam,
+		temperatureUpperControlParam,
 		temperatureLowerWatermarkParam,
+		temperatureLowerControlParam,
 		humidityUpperWatermarkParam,
+		humidityUpperControlParam,
 		humidityLowerWatermarkParam,
+		humidityLowerControlParam,
 		switchTemperatureUnitParam,
+		temperatureOffsetParam,
+		humidityOffsetParam,
 		associationGroupSettingParam
 	]
 }
 
 private getBatteryReportThresholdParam() {
-	return getParam(1, "Battery report threshold\n(1% - 20%)", 1, 10, null,"1..20")
+	return getParam(1, "Battery report threshold(1% - 20%)", 1, 10, null,"1..20")
 }
 
 private getLowBatteryAlarmReportParam() {
-	return getParam(2, "Low battery alarm report\n(5% - 20%)", 1, 5, null, "5..20")
+	return getParam(2, "Low battery alarm report(5% - 20%)", 1, 5, null, "5..20")
 }
 
 private getSensorModeWhenClosedParam() {
@@ -481,35 +521,59 @@ private getDelayReportSecondsWhenOpenedParam() {
 }
 
 private getMinTemperatureOffsetParam() {
-	return getParam(6, "Minimum Temperature change to report", 1, 3, minTemperatureOffsetOptions)
+	return getParam(6, "Minimum Temperature change to report(0.5℃/0.9°F - 5.0℃/9°F)", 1, 10, null, "5..50")
 }
 
 private getMinHumidityOffsetParam() {
-	return getParam(7, "Minimum Humidity change to report\n(5% - 20%)", 1, 10, null, "5..20")
+	return getParam(7, "Minimum Humidity change to report(5% - 20%)", 1, 10, null, "5..20")
 }
 
 private getTemperatureUpperWatermarkParam() {
-	return getParam(8, "Temperature Upper Watermark value\n(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
+	return getParam(8, "Temperature Upper Watermark value(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
+}
+
+private getTemperatureUpperControlParam() {
+	return getParam(9, "Temperature Upper Notification and Association Group Control", 1, 7,getNotificationAndAssociationGroupControlOptions(3))
 }
 
 private getTemperatureLowerWatermarkParam() {
-	return getParam(9, "Temperature Lower Watermark value\n(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
+	return getParam(10, "Temperature Lower Watermark value(0,Disabled; 1℃/33.8°F - 50℃/122.0°F)", 2, 0, null, "0..50")
+}
+
+private getTemperatureLowerControlParam() {
+	return getParam(11, "Temperature Lower Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(4))
 }
 
 private getHumidityUpperWatermarkParam() {
-	return getParam(10, "Humidity Upper Watermark value\n(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
+	return getParam(12, "Humidity Upper Watermark value(0,Disabled; 1% - 100%)", 1, 0, null, "0..100")
+}
+
+private getHumidityUpperControlParam() {
+	return getParam(13, "Humidity Upper Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(5))
 }
 
 private getHumidityLowerWatermarkParam() {
-	return getParam(11, "Humidity Lower Watermark value\n(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
+	return getParam(14, "Humidity Lower Watermark value(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
+}
+
+private getHumidityLowerControlParam() {
+	return getParam(15, "Humidity Lower Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(6))
 }
 
 private getSwitchTemperatureUnitParam() {
-	return getParam(12, "Switch the unit of Temperature report", 1, 1,  switchTemperatureUnitOptions)
+	return getParam(16, "Switch the unit of Temperature report", 1, 1,  switchTemperatureUnitOptions)
+}
+
+private getTemperatureOffsetParam() {
+	return getParam(17, "Offset value for temperature(-10℃/14.0°F - 10℃/50.0°F)", 1, 0,  null, "-100..100")
+}
+
+private getHumidityOffsetParam() {
+	return getParam(18, "Offset value for humidity (-20% - 20%)", 1, 0,  null, "-20..20")
 }
 
 private getAssociationGroupSettingParam() {
-	return getParam(13, "Association Group 2 Setting", 1, 1, associationGroupSettingOptions)
+	return getParam(19, "Association Group 2 Setting", 1, 1, associationGroupSettingOptions)
 }
 
 private getParam(num, name, size, defaultVal, options=null, range=null) {
@@ -563,17 +627,17 @@ private static getSensorModeWhenCloseOptions() {
 	]
 }
 
-private static getMinTemperatureOffsetOptions() {
-	def options = [:]
-	options["1"] = "1℃/1.8°F"
-	def it1, it2
-
-	(2..9).each {
-		it1 = (it + 1)*0.5
-		it2 = (it + 1)*0.9
-		options["${it}"] = "${it1}℃/${it2}°F"
-	}
-	return options
+private static getNotificationAndAssociationGroupControlOptions(int groupId){
+	return [
+			"0":"disable notification and association group basic set",
+			"1":"only notification report to lifeline group",
+			"2":"only basic set on to association group ${groupId}",
+			"3":"notification to lifeline and basic set on to association group ${groupId}",
+			"4":"only basic set off to association group ${groupId}",
+			"5":"notification to lifeline and basic off to association group ${groupId}",
+			"6":"basic set on and off to association group ${groupId}",
+			"7":"notification to lifeline and basic set on and off to association group ${groupId}"
+	]
 }
 
 def sensorValueEvent(value) {
