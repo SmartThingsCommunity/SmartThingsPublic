@@ -73,7 +73,7 @@ def parse(String description) {
 			def childDevice = getChildDevices()?.find {
 				//find light child device
 				log.debug "parse() child device found"
-				it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
+				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
 			}          
 			event.displayed = true
 			zigbeeMap.name = "fanSpeed"
@@ -202,7 +202,7 @@ def addChildFan() {
 		componentLabel = "$device.displayName Fan"
 	}	
 	try {
-		String dni = "${device.deviceNetworkId}-Fan"
+		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Child Fan device (ITM Fan Controller) added as $componentLabel"
 	} catch(e) {
@@ -211,7 +211,7 @@ def addChildFan() {
     	def childDevice = getChildDevices()?.find {
 		//find light child device
         	log.debug "parse() child device found"
-        	it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
+        	it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
     	}
 	if (childDevice != null) {
 		childDevice.sendEvent(name: "switch", value: "off")
@@ -236,7 +236,7 @@ def uninstalled() {
 		def childDevice = getChildDevices()?.find {		
 			//find light child device
 			log.debug "parse() child device found"
-			it.device.deviceNetworkId == "${device.deviceNetworkId}-Fan" 
+			it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
         	}
 		if (childDevice != null) {
 			deleteChildren()
