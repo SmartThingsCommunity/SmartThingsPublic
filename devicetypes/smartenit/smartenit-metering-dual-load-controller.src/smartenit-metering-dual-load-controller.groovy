@@ -95,7 +95,7 @@ def parse(String description) {
 					def nameVal = mapDescription.sourceEndpoint == "01" ? "loadone" : "loadtwo"
 					def status = mapDescription.value == "00" ? "off" : "on"
 					return createEvent(name:nameVal, value: status)
-				} else {
+				} else if (event) {
 					return createEvent(event)
 				}
 			} else if (mapDescription.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
