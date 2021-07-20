@@ -1,5 +1,5 @@
 /**
- *     Minoston Door/Window Sensor v1.0.3
+ *     Evalogik Door/Window Sensor v1.0.3
  *
  *  	Models: MSE30Z
  *
