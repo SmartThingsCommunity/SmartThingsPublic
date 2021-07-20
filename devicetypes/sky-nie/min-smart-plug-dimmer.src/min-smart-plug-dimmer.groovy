@@ -145,8 +145,7 @@ def executeConfigureCmds() {
 
     state.resyncAll = false
     if (cmds) {
-        def commands = [List, of, cmds]
-        sendHubCommand(commands, 500)
+        sendHubCommand(cmds, 500)
     }
     return []
 }
