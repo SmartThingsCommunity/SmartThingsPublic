@@ -10,6 +10,9 @@
  *
  *  Changelog:
  *
+ *    1.1.7 (07/22/2021)
+ *      - fix a bug about temperature report threshold sync.
+ *
  *    1.1.6 (07/13/2021)
  *      - Syntax format compliance adjustment
  *      - Adjust the preferences interface prompts for SmartTings App
@@ -38,6 +41,7 @@
  *
  * Reference：
  *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/eva-logik-in-wall-smart-dimmer.src/eva-logik-in-wall-smart-dimmer.groovy
+ *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/aeotec-trisensor.src/aeotec-trisensor.groovy
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -134,12 +138,7 @@ def executeConfigureCmds() {
         def paramVal = param.value
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
-            if (param.num == temperatureReportThresholdParam.num) {
-                cmds << "delay 3000"
-                cmds << secureCmd(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: 1))
-            } else {
-                cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
-            }
+            cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
     }
 
@@ -247,23 +246,23 @@ private secureCmd(cmd) {
 
 private static getCommandClassVersions() {
     [
-        0x20: 1,	// Basic
-        0x26: 3,	// Switch Multilevel
-        0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo
-        0x5A: 1,	// DeviceResetLocally
-        0x31: 5,	// SENSOR_MULTILEVEL_V11
-        0x71: 3,	// NOTIFICATION_V8
-        0x6C: 1,	// Supervision
-        0x70: 1,	// Configuration
-        0x7A: 2,	// FirmwareUpdateMd
-        0x72: 2,	// ManufacturerSpecific
-        0x73: 1,	// Powerlevel
-        0x85: 2,	// Association
-        0x86: 1,	// Version (2)
-        0x8E: 2,	// Multi Channel Association
-        0x98: 1,	// Security S0
-        0x9F: 1 	// Security S2
+            0x20: 1,	// Basic
+            0x26: 3,	// Switch Multilevel
+            0x55: 1,	// Transport Service
+            0x59: 1,	// AssociationGrpInfo
+            0x5A: 1,	// DeviceResetLocally
+            0x31: 5,	// SensorMultilevel
+            0x71: 3,	// Notification
+            0x6C: 1,	// Supervision
+            0x70: 1,	// Configuration
+            0x7A: 2,	// FirmwareUpdateMd
+            0x72: 2,	// ManufacturerSpecific
+            0x73: 1,	// Powerlevel
+            0x85: 2,	// Association
+            0x86: 1,	// Version (2)
+            0x8E: 2,	// Multi Channel Association
+            0x98: 1,	// Security S0
+            0x9F: 1 	// Security S2
     ]
 }
 
@@ -278,17 +277,17 @@ private getParamStoredValue(paramNum) {
 // Configuration Parameters
 private getConfigParams() {
     [
-        ledModeParam,
-        autoOffIntervalParam,
-        autoOnIntervalParam,
-        nightLightParam,
-        powerFailureRecoveryParam,
-        pushDimmingDurationParam,
-        holdDimmingDurationParam,
-        minimumBrightnessParam,
-        maximumBrightnessParam,
-        temperatureReportTimeParam,
-        temperatureReportThresholdParam
+            ledModeParam,
+            autoOffIntervalParam,
+            autoOnIntervalParam,
+            nightLightParam,
+            powerFailureRecoveryParam,
+            pushDimmingDurationParam,
+            holdDimmingDurationParam,
+            minimumBrightnessParam,
+            maximumBrightnessParam,
+            temperatureReportTimeParam,
+            temperatureReportThresholdParam
     ]
 }
 
@@ -360,21 +359,20 @@ private static setDefaultOption(options, defaultVal) {
     }
 }
 
-
 private static getLedModeOptions() {
     return [
-        "0":"Off When On",
-        "1":"On When On",
-        "2":"Always Off",
-        "3":"Always On"
+            "0":"Off When On",
+            "1":"On When On",
+            "2":"Always Off",
+            "3":"Always On"
     ]
 }
 
 private static getPowerFailureRecoveryOptions() {
     return [
-        "0":"Turn Off",
-        "1":"Turn On",
-        "2":"Restore Last State"
+            "0":"Turn Off",
+            "1":"Turn On",
+            "2":"Restore Last State"
     ]
 }
 
