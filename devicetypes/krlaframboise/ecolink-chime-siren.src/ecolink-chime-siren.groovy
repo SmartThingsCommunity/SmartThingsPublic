@@ -1,13 +1,10 @@
 /*
- *  Ecolink Chime+Siren v0.2
+ *  Ecolink Chime+Siren v1.0
  *
  *  Changelog:
  *
- *    0.2 (05/04/2021)
- *      - New Firmware
- *
- *    0.1 (03/13/2021)
- *      - Beta Release
+ *    1.0 (07/15/2021)
+ *      - Initial Release
  *
  *
  *  Copyright 2021 Ecolink
@@ -49,7 +46,6 @@ import groovy.transform.Field
 	0x9F: 1		// Security S2
 ]
 
-
 @Field static List<Map> sounds = [
 	[number:1, name:"1. One long beep"],
 	[number:2, name:"2. Two beeps"],
@@ -87,6 +83,25 @@ import groovy.transform.Field
 	[number:129, name:"Entry/Exit Delay (255 Seconds)", indicatorID:0xF6]
 ]
 
+@Field static int powerManagement = 8
+@Field static int powerDisconnected = 2
+@Field static int powerReconnected = 3
+@Field static int batteryCharging = 12
+@Field static int batteryFullyCharged = 13
+@Field static int chargeBatterySoon = 14
+@Field static int chargeBatteryNow = 15
+@Field static int batteryStatusDischarging = 0
+@Field static int batteryStatusCharging = 1
+@Field static int batteryStatusMaintaining = 2
+@Field static String batteryCC = "80"
+@Field static String soundSwitchCC = "79"
+@Field static String soundSwitchConfigurationSet = "7905"
+@Field static String soundSwitchConfigurationGet = "7906"
+@Field static String soundSwitchConfigurationReport = "7907"
+@Field static String soundSwitchTonePlaySet = "7908"
+@Field static String soundSwitchTonePlayGet = "7909"
+@Field static String soundSwitchTonePlayReport = "790A"
+
 
 metadata {
 	definition (
@@ -115,12 +130,8 @@ metadata {
 		capability "Health Check"
 		capability "platemusic11009.firmware"
 
-		attribute "lastCheckIn", "string"
-
-		fingerprint mfr:"014A", prod:"0007", model: "3975", deviceJoinName:"Ecolink Chime+Siren"
+		fingerprint mfr:"014A", prod:"0007", model: "3975", deviceJoinName:"Ecolink Chime+Siren" // zw:L type:0301 mfr:014A prod:0007 model:3975 ver:2.04 zwv:7.13 lib:03 cc:5E,85,59,80,70,5A,7A,87,72,8E,71,73,98,9F,79,6C,55,86
 	}
-
-	simulator { }
 
 	preferences {
 		[heartBeatParam, supervisionParam].each { param ->
@@ -131,8 +142,7 @@ metadata {
 					displayDuringSetup: false,
 					defaultValue: param.defaultVal,
 					options: param.options
-			}
-			else if (param.range) {
+			} else if (param.range) {
 				input "configParam${param.num}", "number",
 					title: "${param.name}:",
 					required: false,
@@ -151,15 +161,11 @@ metadata {
 	}
 }
 
-
 def installed() {
 	logDebug "installed()..."
 
 	initialize()
-
-	return []
 }
-
 
 def updated() {
 	if (!isDuplicateCommand(state.lastUpdated, 2000)) {
@@ -171,13 +177,11 @@ def updated() {
 
 		runIn(2, executeConfigureCmds)
 	}
-	return []
 }
 
 void initialize() {
 	if (!device.currentValue("checkInterval")) {
-		def checkInterval = ((60 * 60) + (5 * 60))
-		sendEvent([name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]])
+		sendEvent([name: "checkInterval", value: ((60 * 60) + (5 * 60)), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]])
 	}
 
 	sendInitEvent("activeSoundNumber", 0)
@@ -195,7 +199,6 @@ void sendInitEvent(String name, value, String unit="") {
 		sendEventIfNew(name, value, unit)
 	}
 }
-
 
 def configure() {
 	logDebug "configure()..."
@@ -217,35 +220,30 @@ void executeConfigureCmds() {
 	}
 
 	configParams.each { param ->
-		Integer storedVal = getParamStoredValue(param.num)
-		if ((storedVal != param.value) && (param.value != null)) {
-			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
-			cmds << configSetCmd(param, param.value)
-			cmds << configGetCmd(param)
+		if (param.value != null) {
+			Integer storedVal = getParamStoredValue(param.num)
+			if (storedVal != param.value) {
+				logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
+				cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: param.value))
+				cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
+			}
 		}
 	}
-
 	sendCommands(cmds)
 }
-
 
 def ping() {
 	logDebug "ping()..."
 	return [ batteryGetCmd() ]
 }
 
-
 def setChimeVolume(chimeVolume) {
-	logTrace "setChimeVolume(${chimeVolume})..."
 	sendEventIfNew("chimeVolume", chimeVolume, "%")
 }
 
-
 def setChimeSound(chimeSound) {
-	logTrace "setChimeSound(${chimeSound})..."
 	sendEventIfNew("chimeSound", chimeSound)
 }
-
 
 def chime() {
 	logDebug "chime()..."
@@ -257,12 +255,9 @@ def chime() {
 	playSoundAtVolume(sound, volume)
 }
 
-
 def setSoundVolume(soundVolume) {
-	logTrace "setSoundVolume(${soundVolume})..."
 	sendEventIfNew("soundVolume", soundVolume, "%")
 }
-
 
 def playSound(soundNumber) {
 	logDebug "playSound(${soundNumber})..."
@@ -274,18 +269,13 @@ def playSound(soundNumber) {
 	playSoundAtVolume(sound, volume)
 }
 
-
 def setSirenVolume(sirenVolume) {
-	logTrace "setSirenVolume(${sirenVolume})..."
 	sendEventIfNew("sirenVolume", sirenVolume, "%")
 }
 
-
 def setSirenSound(sirenSound) {
-	logTrace "setSirenSound(${sirenSound})..."
 	sendEventIfNew("sirenSound", sirenSound)
 }
-
 
 def both() {
 	siren()
@@ -305,9 +295,8 @@ def siren() {
 	playSoundAtVolume(sound, volume)
 }
 
-
 void playSoundAtVolume(soundNumber, volume) {
-	logTrace "playSoundAtVolume(${soundNumber}, ${volume})..."
+	logDebug "playSoundAtVolume(${soundNumber}, ${volume})..."
 
 	Map sound = getSound(soundNumber)
 	state.lastSound = sound
@@ -319,9 +308,8 @@ void playSoundAtVolume(soundNumber, volume) {
 	]
 
 	if (sound.indicatorID) {
-		cmds << indicatorSetCmd(sound.indicatorID)
-	}
-	else {
+		cmds << secureCmd(zwave.indicatorV1.indicatorSet(value: sound.indicatorID))
+	} else {
 		cmds << soundSwitchTonePlaySetCmd(soundNumber)
 	}
 
@@ -330,33 +318,26 @@ void playSoundAtVolume(soundNumber, volume) {
 	sendCommands(cmds, 100)
 }
 
-
 def on() {
-	logTrace "on()..."
-
 	chime()
 }
-
 
 def off() {
 	logDebug "off()..."
 	return delayBetween([
 		soundSwitchTonePlaySetCmd(0),
 		soundSwitchTonePlayGetCmd()
-	], 100)
-}
-
-
-def refresh() {
-	logDebug "refresh()..."
-
-	sendCommands([
-		batteryGetCmd(),
-		versionGetCmd(),
-		soundSwitchTonePlayGetCmd()
 	])
 }
 
+def refresh() {
+	logDebug "refresh()..."
+	sendCommands([
+		batteryGetCmd(),
+		secureCmd(zwave.versionV1.versionGet()),
+		soundSwitchTonePlayGetCmd()
+	])
+}
 
 void sendCommands(List<String> cmds, Integer delay=1000) {
 	if (cmds) {
@@ -368,122 +349,82 @@ void sendCommands(List<String> cmds, Integer delay=1000) {
 	}
 }
 
-
-String versionGetCmd() {
-	return secureCmd(zwave.versionV1.versionGet())
-}
-
-String indicatorSetCmd(int value) {
-	return secureCmd(zwave.indicatorV1.indicatorSet(value: value))
-}
-
 String batteryGetCmd() {
 	return secureCmd(zwave.batteryV1.batteryGet())
-}
-
-String configSetCmd(Map param, int value) {
-	return secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: value))
-}
-
-String configGetCmd(Map param) {
-	return secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
 }
 
 String secureCmd(cmd) {
 	try {
 		if (isSecurityEnabled()) {
 			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		}
-		else {
+		} else {
 			return cmd.format()
 		}
-	}
-	catch (ex) {
+	} catch (ex) {
 		return cmd.format()
 	}
 }
 
 String soundSwitchConfigSetCmd(int volume, int tone) {
-	return soundSwitchCmd("05${intToHex(volume)}${intToHex(tone)}")
+	return soundSwitchCmd("${soundSwitchConfigurationSet}${intToHex(volume)}${intToHex(tone)}")
 }
 
 String soundSwitchConfigGetCmd() {
-	return soundSwitchCmd("06")
+	return soundSwitchCmd(soundSwitchConfigurationGet)
 }
 
 String soundSwitchTonePlaySetCmd(int tone) {
-	return soundSwitchCmd("08${intToHex(tone)}")
+	return soundSwitchCmd("${soundSwitchTonePlaySet}${intToHex(tone)}")
 }
 
 String soundSwitchTonePlayGetCmd() {
-	return soundSwitchCmd("09")
+	return soundSwitchCmd(soundSwitchTonePlayGet)
 }
 
 String soundSwitchCmd(cmd) {
-	cmd = "79${cmd}"
 	if (isSecurityEnabled()) {
 		return "988100${cmd}"
-	}
-	else {
+	} else {
 		return cmd
 	}
 }
 
 boolean isSecurityEnabled() {
-	return (zwaveInfo?.zw?.contains("s") || ("0x98" in device?.rawDescription?.split(" ")))
+	return zwaveInfo?.zw?.contains("s")
 }
 
-
 def parse(String description) {
-	if ("${description}".contains("command: 9881, payload: 00 79") || "${description}".contains("command: 79")) {
+	if ("${description}".contains("command: 9881, payload: 00 ${soundSwitchCC}") || "${description}".contains("command: ${soundSwitchCC}")) {
 		// SOUND SWITCH NOT SUPPORTED BY SMARTTHINGS
 		handleSoundSwitchEvent(description)
-	}
-	else if ("${description}".contains("command: 9881, payload: 00 80") || "${description}".contains("command: 80")) {
+	} else if ("${description}".contains("command: 9881, payload: 00 ${batteryCC}") || "${description}".contains("command: ${batteryCC}")) {
 		// BATTERY V2 NOT SUPPORTED BY SMARTTHINGS
 		handleBatteryReport(description)
-	}
-	else {
+	} else {
 		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			zwaveEvent(cmd)
-		}
-		else {
+		} else {
 			log.warn "Unable to parse: $description"
 		}
 	}
-
-	updateLastCheckIn()
 	return []
 }
-
-void updateLastCheckIn() {
-	if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
-		state.lastCheckInTime = new Date().time
-		sendEvent(name: "lastCheckIn", value: new Date().time, displayed: false)
-	}
-}
-
 
 void zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCmd = cmd.encapsulatedCommand(commandClassVersions)
 	if (encapsulatedCmd) {
 		zwaveEvent(encapsulatedCmd)
-	}
-	else {
+	} else {
 		log.warn "Unable to extract encapsulated cmd from $cmd"
 	}
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	logTrace "${cmd}"
-
 	Map param = configParams.find { it.num == cmd.parameterNumber }
 	if (param) {
 		Integer val = cmd.scaledConfigurationValue
 		logDebug "${param.name}(#${param.num}) = ${val}"
-
 		setParamStoredValue(param.num, val)
 	}
 	else {
@@ -491,76 +432,54 @@ void zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport
 	}
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	logTrace "$cmd"
 	sendEventIfNew("firmwareVersion", (cmd.applicationVersion + (cmd.applicationSubVersion / 100)))
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	logTrace "${cmd}"
 	sendEventIfNew("switch", (cmd.value ? "on" : "off"))
 }
-
 
 void zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logDebug "Unhandled zwaveEvent: $cmd"
 }
 
-
 void zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
-	logTrace "${cmd}"
-
-	if (cmd.notificationType == 0x08) {
+	if (cmd.notificationType == powerManagement) {
 		String powerSource = null
 		switch (cmd.event) {
-			case 0x02:
+			case powerDisconnected:
 				logDebug "AC Mains Disconnected"
 				powerSource = "battery"
 				break
-			case 0x03:
+			case powerReconnected:
 				logDebug "AC Mains Re-Connected"
 				powerSource = "mains"
 				break
-			case 0x0C:
-				// logDebug "Battery is charging"
-				// powerSource = "mains"
+			case batteryCharging:
+				logDebug "Battery is charging"
 				break
-			case 0x0D:
-				// logDebug "battery is fully charged"
-				// powerSource = "mains"
+			case batteryFullyCharged:
+				logDebug "battery is fully charged"
 				break
-			case 0x0E:
-				// logDebug "charge battery soon"
-				// powerSource = "battery"
+			case chargeBatterySoon:
+				logDebug "charge battery soon"
 				break
-			case 0x0F:
-				// logDebug "charge battery now"
-				// powerSource = "battery"
+			case chargeBatteryNow:
+				logDebug "charge battery now"
 				break
 			default:
-				logDebug "Unknown Power Event: ${cmd}"
+				logDebug "Unknown Power Management Event: ${cmd}"
 		}
 		if (powerSource) {
 			sendEventIfNew("powerSource", powerSource)
 		}
-	}
-	else if (cmd.notificationType == 0x09) {
-		if (cmd.event == 0x04) {
-			// 0x5501 Watchdog Reset on the Z-Wave Module
-			// 0x5502 Watchdog Reset on the STM32
-		}
-	}
-	else {
+	} else {
 		logDebug "Unknown notificationType: ${cmd}"
 	}
 }
 
-
 void handleBatteryReport(String description) {
-	// logTrace "handleBatteryReport(${description})..."
-
 	// BATTERY V2 NOT SUPPORTED BY SMARTTHINGS
 
 	// The handler can't rely on the Power Management Notification Reports to determine the power source because of a firmware issue that occurs when the device is plugged back in after the battery gets low.
@@ -578,18 +497,13 @@ void handleBatteryReport(String description) {
 			int chargingStatus = Integer.parseInt(Integer.toBinaryString(hexToInt(cmd.payloadBytes[1])).padLeft(8, "0").substring(0, 2), 2)
 
 			switch (chargingStatus) {
-				case 0:
-					// discharging
+				case batteryStatusDischarging:
 					powerSource = "battery"
 					break
-
-				case 1:
-					// charging
+				case batteryStatusCharging:
 					powerSource = "mains"
 					break
-
-				case 2:
-					// maintaining
+				case batteryStatusMaintaining:
 					powerSource = "mains"
 					break
 			}
@@ -597,26 +511,21 @@ void handleBatteryReport(String description) {
 			if (powerSource) {
 				sendEventIfNew("powerSource", powerSource)
 			}
-		}
-		catch (ex) {
+		} catch (ex) {
 			log.warn "Unable to parse battery charging status from ${description}"
 		}
 	}
 }
 
-
 void handleSoundSwitchEvent(String description) {
-	// logTrace "handleSoundSwitchEvent(${description})..."
-
 	// SOUND SWITCH CC NOT SUPPORTED BY SMARTTHINGS
-
 	Map cmd = parseCommand(description)
 
 	switch (cmd?.command) {
-		case "7907":
+		case soundSwitchConfigurationReport:
 			handleSoundSwitchConfigurationReport(cmd.payloadBytes)
 			break
-		case "790A":
+		case soundSwitchTonePlayReport:
 			handleSoundSwitchTonePlayReport(cmd.payloadBytes)
 			break
 		default:
@@ -624,25 +533,17 @@ void handleSoundSwitchEvent(String description) {
 	}
 }
 
-
 void handleSoundSwitchConfigurationReport(List<String> payloadBytes) {
-	// logTrace "handleSoundSwitchConfigurationReport(${payloadBytes})..."
-
 	if (payloadBytes?.size() == 2) {
 		int volume = hexToInt(payloadBytes[0])
 		int tone = hexToInt(payloadBytes[1])
-
 		logDebug "Tone: ${tone} - Volume: ${volume}"
-	}
-	else {
+	} else {
 		log.warn "Sound Switch Configuration Report: Unexpected Payload '${payloadBytes}'"
 	}
 }
 
-
 void handleSoundSwitchTonePlayReport(List<String> payloadBytes) {
-	// logTrace "handleSoundSwitchTonePlayReport(${payloadBytes})"
-
 	if (payloadBytes?.size() == 1) {
 		int soundNumber = hexToInt(payloadBytes[0])
 		if (soundNumber) {
@@ -651,8 +552,7 @@ void handleSoundSwitchTonePlayReport(List<String> payloadBytes) {
 			if ((sound?.number != soundNumber) && !sound?.indicatorID) {
 				sound = getSound(soundNumber)
 				state.lastSound = sound
-			}
-			else {
+			} else {
 				logDebug "Active Sound Number: ${soundNumber}"
 			}
 
@@ -662,18 +562,14 @@ void handleSoundSwitchTonePlayReport(List<String> payloadBytes) {
 				case "siren":
 					sendEventIfNew("alarm", "siren")
 					break
-
 				case "chime":
 					sendEventIfNew("chime", "chime")
 					break
-
 				default:
 					sendEvent(getEventMap("activeSoundNumber", soundNumber))
 			}
-
 			state.pendingAction = null
-		}
-		else {
+		} else {
 			if ("${state.pendingAction}".isNumber()) {
 				// Workaround for timeout error the mobile app throws when a user attempts to play an unsupported sound #.  This workaround wouldn't be necessary if the device followed the z-wave specs and played the default sound.
 				log.warn "Sound #${state.pendingAction} Doesn't Exist"
@@ -686,12 +582,10 @@ void handleSoundSwitchTonePlayReport(List<String> payloadBytes) {
 			sendEventIfNew("chime", "off")
 			sendEventIfNew("activeSoundNumber", 0)
 		}
-	}
-	else {
+	} else {
 		log.warn "Sound Switch Tone Play Report: Unexpected Payload '${payloadBytes}'"
 	}
 }
-
 
 Map parseCommand(String description) {
 	Map cmd = description.split(", ").collectEntries { entry ->
@@ -708,7 +602,6 @@ Map parseCommand(String description) {
 	return cmd
 }
 
-
 Map getSound(int soundNumber) {
 	Map sound = sounds.find { it.number == soundNumber }
 	if (!sound) {
@@ -716,7 +609,6 @@ Map getSound(int soundNumber) {
 	}
 	return sound
 }
-
 
 Integer getParamStoredValue(Integer paramNum) {
 	return safeToInt(state["configVal${paramNum}"] , null)
@@ -726,20 +618,12 @@ void setParamStoredValue(Integer paramNum, Integer value) {
 	state["configVal${paramNum}"] = value
 }
 
-
 List<Map> getConfigParams() {
 	return [
-		// defaultSoundParam,
 		heartBeatParam,
 		supervisionParam,
-		// soundVolumeParam,
-		// soundsAvailableParam,
 		emergencySoundVolumeParam
 	]
-}
-
-Map getDefaultSoundParam() {
-	return getParam(1, "Default Sound", 1, 5, null, "1..100")
 }
 
 Map getHeartBeatParam() {
@@ -748,14 +632,6 @@ Map getHeartBeatParam() {
 
 Map getSupervisionParam() {
 	return getParam(3, "Supervision Encapsulation", 1, 1, [0:"Disabled", 1:"Enabled [DEFAULT]"])
-}
-
-Map getSoundVolumeParam() {
-	return getParam(4, "Sound Volume", 1, 50, null, "0..100") //255 = restore last before mute
-}
-
-Map getSoundsAvailableParam() {
-	return getParam(5, "Sounds Available", 1, null, null, "0..125")
 }
 
 Map getEmergencySoundVolumeParam() {
@@ -768,13 +644,9 @@ Map getParam(Integer num, String name, Integer size, Integer defaultVal, Map opt
 	return [num: num, name: name, size: size, value: val, options: options, range: range, defaultVal: defaultVal]
 }
 
-
 void sendEventIfNew(String name, value, String unit="") {
 	if (device.currentValue(name) != value) {
 		sendEvent(getEventMap(name, value, unit))
-	}
-	else {
-		logTrace("${name} is ${value}${unit}")
 	}
 }
 
@@ -793,7 +665,6 @@ Map getEventMap(String name, value, String unit="") {
 	return event
 }
 
-
 String intToHex(int value) {
 	return Integer.toHexString(value).padLeft(2, "0").toUpperCase()
 }
@@ -805,27 +676,19 @@ Integer hexToInt(String value) {
 Integer safeToInt(val, Integer defaultVal=0) {
 	if ("${val}"?.isInteger()) {
 		return "${val}".toInteger()
-	}
-	else if ("${val}".isDouble()) {
+	} else if ("${val}".isDouble()) {
 		return "${val}".toDouble()?.round()
-	}
-	else {
+	} else {
 		return  defaultVal
 	}
 }
-
 
 boolean isDuplicateCommand(lastExecuted, allowedMil) {
 	!lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
 }
 
-
 void logDebug(String msg) {
 	if (state.debugLoggingEnabled != false) {
 		log.debug "$msg"
 	}
-}
-
-void logTrace(String msg) {
-	// log.trace "$msg"
 }
