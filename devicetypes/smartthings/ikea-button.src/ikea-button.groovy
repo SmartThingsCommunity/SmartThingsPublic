@@ -35,7 +35,7 @@ metadata {
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 
 		//eWeLink
-        fingerprint inClusters: "0000, 0001, 0003",  outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Remote Control"
+		fingerprint inClusters: "0000, 0001, 0003",  outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Remote Control"
 	}
 
 	tiles {
@@ -383,19 +383,22 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
-	} else if (isEWeLinkWb01()){
-		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+	} 
+	else if (isEWeLinkWb01())
+	{
+		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) 
+		{
 			buttonNumber = 1
 			if (descMap.commandInt == 0x00) 
-            {
+			{
 				buttonState = "held"
 			} 
-            else if (descMap.commandInt == 0x01)
-            {
+			else if (descMap.commandInt == 0x01)
+			{
 				buttonState = "double"
 			}
-            else if (descMap.commandInt == 0x02)
-            {
+			else if (descMap.commandInt == 0x02)
+			{
 				buttonState = "pushed"
 			}
 		}
