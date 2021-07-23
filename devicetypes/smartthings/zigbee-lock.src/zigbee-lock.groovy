@@ -506,7 +506,7 @@ private def parseAttributeResponse(String description) {
 				with less info will be marked as not displayed
 			 */
 			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
-			runIn(1, "delayLockEvent", [data : [map : responseMap]])
+			runIn(1, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: responseMap]])
 			return [:]
 		}
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_MIN_PIN_LENGTH && descMap.value) {
