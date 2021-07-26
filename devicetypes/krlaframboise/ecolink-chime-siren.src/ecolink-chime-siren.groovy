@@ -1,7 +1,10 @@
 /*
- *  Ecolink Chime+Siren v1.0
+ *  Ecolink Chime+Siren v1.0.1
  *
  *  Changelog:
+ *
+ *    1.0.1 (07/25/2021)
+ *      - Changes requested by ST
  *
  *    1.0 (07/15/2021)
  *      - Initial Release
@@ -181,7 +184,7 @@ def updated() {
 
 void initialize() {
 	if (!device.currentValue("checkInterval")) {
-		sendEvent([name: "checkInterval", value: ((60 * 60) + (5 * 60)), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"]])
+		sendEvent([name: "checkInterval", value: ((60 * 60) + (5 * 60)), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID]])
 	}
 
 	sendInitEvent("activeSoundNumber", 0)
@@ -353,14 +356,10 @@ String batteryGetCmd() {
 	return secureCmd(zwave.batteryV1.batteryGet())
 }
 
-String secureCmd(cmd) {
-	try {
-		if (isSecurityEnabled()) {
-			return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-		} else {
-			return cmd.format()
-		}
-	} catch (ex) {
+String secureCmd(cmd) {	
+	if (isSecurityEnabled()) {
+		return zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
 		return cmd.format()
 	}
 }
