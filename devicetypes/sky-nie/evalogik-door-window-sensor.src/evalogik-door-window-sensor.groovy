@@ -172,7 +172,7 @@ def executeConfigure() {
 	]
 
 	cmds += getConfigCmds()
-	sendCommands(delayBetween(cmds, 500))
+	sendHubCommand(cmds, 500)
 }
 
 private getConfigCmds() {
@@ -197,15 +197,6 @@ private getConfigCmds() {
 	}
 	state.refreshConfig = false
 	return cmds
-}
-
-private sendCommands(cmds) {
-	def actions = []
-	cmds?.each {
-		actions << new physicalgraph.device.HubAction(it)
-	}
-	sendHubCommand(actions, 100)
-	return []
 }
 
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
@@ -352,7 +343,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		} else if(cmd.event == NOTIFICATION_EVENT_DOOR_WINDOW_CLOSED) {
 			result << sensorValueEvent(0)
 		}
-	}else if (cmd.notificationType == NOTIFICATION_TYPE_HOME_SECURITY) {
+	} else if (cmd.notificationType == NOTIFICATION_TYPE_HOME_SECURITY) {
 		if (cmd.event == NOTIFICATION_EVENT_STATE_IDLE) {//State idle
 			result << createEvent(descriptionText: "$device.displayName covering was restored", isStateChange: true)
 			cmds = [zwave.batteryV1.batteryGet(), zwave.wakeUpV1.wakeUpNoMoreInformation()]
