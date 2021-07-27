@@ -72,24 +72,24 @@ metadata {
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
-			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+				tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+					attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+					attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
 			}
 		}
 
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState "temperature", label: '${currentValue}°',
-						backgroundColors:[
-								[value: 31, color: "#153591"],
-								[value: 44, color: "#1e9cbb"],
-								[value: 59, color: "#90d2a7"],
-								[value: 74, color: "#44b621"],
-								[value: 84, color: "#f1d801"],
-								[value: 95, color: "#d04e00"],
-								[value: 96, color: "#bc2323"]
-						]
+					backgroundColors:[
+						[value: 31, color: "#153591"],
+						[value: 44, color: "#1e9cbb"],
+						[value: 59, color: "#90d2a7"],
+						[value: 74, color: "#44b621"],
+						[value: 84, color: "#f1d801"],
+						[value: 95, color: "#d04e00"],
+						[value: 96, color: "#bc2323"]
+					]
 			}
 		}
 
@@ -172,7 +172,6 @@ def executeConfigure() {
 	]
 
 	cmds += getConfigCmds()
-
 	sendCommands(delayBetween(cmds, 500))
 }
 
@@ -275,9 +274,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 	if (state.refreshSensors) {
 		cmds += [
-				sensorBinaryGetCmd(),
-				sensorMultilevelGetCmd(tempSensorType),
-				sensorMultilevelGetCmd(lightSensorType)
+			sensorBinaryGetCmd(),
+			sensorMultilevelGetCmd(tempSensorType),
+			sensorMultilevelGetCmd(lightSensorType)
 		]
 		state.refreshSensors = false
 	}
