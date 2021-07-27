@@ -1,5 +1,5 @@
 /**
- *     Evalogik Door/Window Sensor v1.0.3
+ *     Evalogik Door/Window Sensor v1.0.4
  *
  *  	Models: MSE30Z
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.4 (07/16/2021)
+ *     - Syntax format compliance adjustment
+ *     - fixed a bug for order repeated
  *
  *    1.0.3 (07/16/2021)
  *     - change lastBatteryReport to record the time of fresh battery
@@ -38,6 +42,17 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+final  NOTIFICATION_TYPE_ACCESS_CONTROL = 0x06
+final  NOTIFICATION_TYPE_HOME_SECURITY = 0x07
+
+final  NOTIFICATION_EVENT_DOOR_WINDOW_OPEN = 0x16
+final  NOTIFICATION_EVENT_DOOR_WINDOW_CLOSED = 0x17
+
+final  NOTIFICATION_EVENT_STATE_IDLE = 0x00
+final  NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION = 0x01
+final  NOTIFICATION_EVENT_INSTRUSION = 0x02
+final  NOTIFICATION_EVENT_TEMPERING = 0x03
+
 metadata {
 	definition(name: "Evalogik Door/Window Sensor", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.sensor.contact", executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Sensor"
@@ -152,10 +167,8 @@ def configure() {
 
 def executeConfigure() {
 	def cmds = [
-			sensorBinaryGetCmd(),
-			batteryGetCmd(),
-			sensorMultilevelGetCmd(tempSensorType),
-			sensorMultilevelGetCmd(lightSensorType)
+		sensorBinaryGetCmd(),
+		batteryGetCmd()
 	]
 
 	cmds += getConfigCmds()
@@ -206,7 +219,7 @@ def refresh() {
 	logForceWakeupMessage "The sensor data will be refreshed the next time the device wakes up."
 	state.lastBatteryReport = null
 	state.lastBattery = null
-	if (!state.refreshSensors) {	
+	if (!state.refreshSensors) {
 		state.refreshSensors = true
 	} else {
 		state.refreshConfig = true
@@ -293,22 +306,18 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	logTrace "SensorMultilevelReport: ${cmd}"
+	switch (cmd.sensorType) {
+		case tempSensorType:
+			def unit = cmd.scale ? "F" : "C"
+			def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
+			sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
+			break
 
-	if (cmd.sensorValue != [255, 255]) { // Bug in beta device
-		switch (cmd.sensorType) {
-			case tempSensorType:
-				def unit = cmd.scale ? "F" : "C"
-				def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
-
-				sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
-				break
-
-			case lightSensorType:
-				sendEvent(getEventMap( "humidity", cmd.scaledSensorValue, true, null, "%"))
-				break
-			default:
-				logDebug "Unknown Sensor Type: ${cmd.sensorType}"
-		}
+		case lightSensorType:
+			sendEvent(getEventMap( "humidity", cmd.scaledSensorValue, true, null, "%"))
+			break
+		default:
+			logDebug "Unknown Sensor Type: ${cmd.sensorType}"
 	}
 	return []
 }
@@ -338,18 +347,20 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	logTrace "NotificationReport: $cmd"
 	def result = []
 
-	if (cmd.notificationType == 0x06 && cmd.event == 0x16) {
-		result << sensorValueEvent(1)
-	} else if (cmd.notificationType == 0x06 && cmd.event == 0x17) {
-		result << sensorValueEvent(0)
-	} else if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x00) {
+	if(cmd.notificationType == NOTIFICATION_TYPE_ACCESS_CONTROL){
+		if(cmd.event == NOTIFICATION_EVENT_DOOR_WINDOW_OPEN){
+			result << sensorValueEvent(1)
+		} else if(cmd.event == NOTIFICATION_EVENT_DOOR_WINDOW_CLOSED) {
+			result << sensorValueEvent(0)
+		}
+	}else if (cmd.notificationType == NOTIFICATION_TYPE_HOME_SECURITY) {
+		if (cmd.event == NOTIFICATION_EVENT_STATE_IDLE) {//State idle
 			result << createEvent(descriptionText: "$device.displayName covering was restored", isStateChange: true)
 			cmds = [zwave.batteryV1.batteryGet(), zwave.wakeUpV1.wakeUpNoMoreInformation()]
 			result << response(commands(cmds, 1000))
-		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
+		} else if (cmd.event == NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION || cmd.event == NOTIFICATION_EVENT_INSTRUSION) {//Intrusion (location provided) || Intrusion
 			result << sensorValueEvent(1)
-		} else if (cmd.event == 0x03) {
+		} else if (cmd.event == NOTIFICATION_EVENT_TEMPERING) {//Tampering, product cover removed
 			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
 		}
 	} else if (cmd.notificationType) {
@@ -389,11 +400,11 @@ private getEventMap(name, value, displayed=null, desc=null, unit=null) {
 	def isStateChange = (device.currentValue(name) != value)
 	displayed = (displayed == null ? isStateChange : displayed)
 	def eventMap = [
-			name: name,
-			value: value,
-			displayed: displayed,
-			isStateChange: isStateChange,
-			descriptionText: desc ?: "${device.displayName} ${name} is ${value}"
+		name: name,
+		value: value,
+		displayed: displayed,
+		isStateChange: isStateChange,
+		descriptionText: desc ?: "${device.displayName} ${name} is ${value}"
 	]
 
 	if (unit) {
@@ -431,7 +442,7 @@ private secureCmd(cmd) {
 			return cmd.format()
 		}
 	} catch (ex) {
-		return cmd.format()
+		throw new RuntimeException(ex)
 	}
 }
 
@@ -629,14 +640,14 @@ private static getSensorModeWhenCloseOptions() {
 
 private static getNotificationAndAssociationGroupControlOptions(int groupId){
 	return [
-			"0":"disable notification and association group basic set",
-			"1":"only notification report to lifeline group",
-			"2":"only basic set on to association group ${groupId}",
-			"3":"notification to lifeline and basic set on to association group ${groupId}",
-			"4":"only basic set off to association group ${groupId}",
-			"5":"notification to lifeline and basic off to association group ${groupId}",
-			"6":"basic set on and off to association group ${groupId}",
-			"7":"notification to lifeline and basic set on and off to association group ${groupId}"
+		"0":"disable notification and association group basic set",
+		"1":"only notification report to lifeline group",
+		"2":"only basic set on to association group ${groupId}",
+		"3":"notification to lifeline and basic set on to association group ${groupId}",
+		"4":"only basic set off to association group ${groupId}",
+		"5":"notification to lifeline and basic off to association group ${groupId}",
+		"6":"basic set on and off to association group ${groupId}",
+		"7":"notification to lifeline and basic set on and off to association group ${groupId}"
 	]
 }
 
