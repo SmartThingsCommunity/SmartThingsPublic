@@ -42,16 +42,16 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-final  NOTIFICATION_TYPE_ACCESS_CONTROL = 0x06
-final  NOTIFICATION_TYPE_HOME_SECURITY = 0x07
+final  int NOTIFICATION_TYPE_ACCESS_CONTROL = 0x06
+final  int NOTIFICATION_TYPE_HOME_SECURITY = 0x07
 
-final  NOTIFICATION_EVENT_DOOR_WINDOW_OPEN = 0x16
-final  NOTIFICATION_EVENT_DOOR_WINDOW_CLOSED = 0x17
+final  int NOTIFICATION_EVENT_DOOR_WINDOW_OPEN = 0x16
+final  int NOTIFICATION_EVENT_DOOR_WINDOW_CLOSED = 0x17
 
-final  NOTIFICATION_EVENT_STATE_IDLE = 0x00
-final  NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION = 0x01
-final  NOTIFICATION_EVENT_INSTRUSION = 0x02
-final  NOTIFICATION_EVENT_TEMPERING = 0x03
+final  int NOTIFICATION_EVENT_STATE_IDLE = 0x00
+final  int NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION = 0x01
+final  int NOTIFICATION_EVENT_INSTRUSION = 0x02
+final  int NOTIFICATION_EVENT_TEMPERING = 0x03
 
 metadata {
 	definition(name: "Evalogik Door/Window Sensor", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.sensor.contact", executeCommandsLocally: false, genericHandler: "Z-Wave") {
@@ -72,9 +72,9 @@ metadata {
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
-				tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-					attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-					attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
 			}
 		}
 
@@ -133,7 +133,7 @@ metadata {
 }
 
 def installed() {
-	logDebug "installed()..."
+	log.debug "installed()..."
 	state.refreshConfig = true
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
@@ -148,7 +148,7 @@ def updated() {
 	if (!isDuplicateCommand(state.lastUpdated, 5000)) {
 		state.lastUpdated = new Date().time
 
-		logTrace "updated()"
+		log.trace "updated()"
 		if (device.latestValue("checkInterval") != checkInterval) {
 			sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
 		}
@@ -160,7 +160,7 @@ def updated() {
 }
 
 def configure() {
-	logTrace "configure()"
+	log.trace "configure()"
 
 	runIn(8, executeConfigure)
 }
@@ -182,7 +182,7 @@ private getConfigCmds() {
 		if (state.refreshConfig) {
 			cmds << configGetCmd(param)
 		} else if ("${storedVal}" != "${param.value}") {
-			logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
+			log.debug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${param.value}"
 			cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: param.value))
 			cmds << configGetCmd(param)
 
@@ -201,7 +201,7 @@ private getConfigCmds() {
 
 // Required for HealthCheck Capability, but doesn't actually do anything because this device sleeps.
 def ping() {
-	logDebug "ping()"
+	log.debug "ping()"
 }
 
 // Forces the configuration to be resent to the device the next time it wakes up.
@@ -219,7 +219,7 @@ def refresh() {
 }
 
 private logForceWakeupMessage(msg) {
-	logDebug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
+	log.debug "${msg}  You can force the device to wake up immediately by holding the z-button for 2 seconds."
 }
 
 def parse(String description) {
@@ -229,7 +229,7 @@ def parse(String description) {
 		if (cmd) {
 			result += zwaveEvent(cmd)
 		} else {
-			logDebug "Unable to parse description: $description"
+			log.debug "Unable to parse description: $description"
 		}
 
 		sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
@@ -252,7 +252,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
-	logDebug "Device Woke Up"
+	log.debug "Device Woke Up"
 
 	def cmds = []
 	if (state.refreshConfig || pendingChanges > 0) {
@@ -289,13 +289,13 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	}
 	state.lastBatteryReport = new Date().time
 	state.lastBattery = val
-	logDebug "Battery ${val}%"
+	log.debug "Battery ${val}%"
 	sendEvent(getEventMap("battery", val, null, null, "%"))
 	return []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	logTrace "SensorMultilevelReport: ${cmd}"
+	log.trace "SensorMultilevelReport: ${cmd}"
 	switch (cmd.sensorType) {
 		case tempSensorType:
 			def unit = cmd.scale ? "F" : "C"
@@ -307,13 +307,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			sendEvent(getEventMap( "humidity", cmd.scaledSensorValue, true, null, "%"))
 			break
 		default:
-			logDebug "Unknown Sensor Type: ${cmd.sensorType}"
+			log.debug "Unknown Sensor Type: ${cmd.sensorType}"
 	}
 	return []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	logTrace "ConfigurationReport ${cmd}"
+	log.trace "ConfigurationReport ${cmd}"
 
 	runIn(4, refreshPendingChanges)
 
@@ -321,10 +321,10 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	if (param) {
 		def val = cmd.scaledConfigurationValue
 
-		logDebug "${param.name}(#${param.num}) = ${val}"
+		log.debug "${param.name}(#${param.num}) = ${val}"
 		state["configParam${param.num}"] = val
 	} else {
-		logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
+		log.debug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
 	}
 	return []
 }
@@ -334,7 +334,7 @@ def refreshPendingChanges() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
-	logTrace "NotificationReport: $cmd"
+	log.trace "NotificationReport: $cmd"
 	def result = []
 
 	if(cmd.notificationType == NOTIFICATION_TYPE_ACCESS_CONTROL){
@@ -344,13 +344,13 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			result << sensorValueEvent(0)
 		}
 	} else if (cmd.notificationType == NOTIFICATION_TYPE_HOME_SECURITY) {
-		if (cmd.event == NOTIFICATION_EVENT_STATE_IDLE) {//State idle
+		if (cmd.event == NOTIFICATION_EVENT_STATE_IDLE) {
 			result << createEvent(descriptionText: "$device.displayName covering was restored", isStateChange: true)
 			cmds = [zwave.batteryV1.batteryGet(), zwave.wakeUpV1.wakeUpNoMoreInformation()]
 			result << response(commands(cmds, 1000))
-		} else if (cmd.event == NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION || cmd.event == NOTIFICATION_EVENT_INSTRUSION) {//Intrusion (location provided) || Intrusion
+		} else if (cmd.event == NOTIFICATION_EVENT_INSTRUSION_WITH_LOCATION || cmd.event == NOTIFICATION_EVENT_INSTRUSION) {
 			result << sensorValueEvent(1)
-		} else if (cmd.event == NOTIFICATION_EVENT_TEMPERING) {//Tampering, product cover removed
+		} else if (cmd.event == NOTIFICATION_EVENT_TEMPERING) {
 			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
 		}
 	} else if (cmd.notificationType) {
@@ -365,7 +365,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
-	logTrace "SensorBinaryReport: $cmd"
+	log.trace "SensorBinaryReport: $cmd"
 	def map = [:]
 	map.value = cmd.sensorValue ? "open" : "closed"
 	map.name = "contact"
@@ -378,11 +378,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
-	logTrace "${cmd}"
+	log.trace "${cmd}"
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	logDebug "Ignored Command: $cmd"
+	log.debug "Ignored Command: $cmd"
 	return []
 }
 
@@ -402,7 +402,7 @@ private getEventMap(name, value, displayed=null, desc=null, unit=null) {
 		eventMap.descriptionText = "${eventMap.descriptionText}${unit}"
 	}
 	if (displayed) {
-		logDebug "${eventMap.descriptionText}"
+		log.debug "${eventMap.descriptionText}"
 	}
 	return eventMap
 }
@@ -664,12 +664,4 @@ private convertToLocalTimeString(dt) {
 
 private static isDuplicateCommand(lastExecuted, allowedMil) {
 	!lastExecuted ? false : (lastExecuted + allowedMil > new Date().time)
-}
-
-private logDebug(msg) {
-	log.debug "$msg"
-}
-
-private logTrace(msg) {
-	log.trace "$msg"
 }
