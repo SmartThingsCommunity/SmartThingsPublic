@@ -380,7 +380,7 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	}
 	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
 		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
-		runIn(3, "delayLockEvent", [data: [map: map]])
+		runIn(3, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: map]])
 		return [:]
 	} else {
 		return result ? [createEvent(map), *result] : createEvent(map)
