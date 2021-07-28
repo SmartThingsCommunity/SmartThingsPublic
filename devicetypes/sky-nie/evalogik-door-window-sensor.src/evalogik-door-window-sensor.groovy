@@ -70,57 +70,6 @@ metadata {
 		fingerprint mfr: "0312", prod: "0713", model: "D100", deviceJoinName: "Minoston 3-in-1 Sensor"//MSE30Z
 	}
 
-	tiles(scale: 2) {
-		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
-			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
-			}
-		}
-
-		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState "temperature", label: '${currentValue}°',
-					backgroundColors:[
-						[value: 31, color: "#153591"],
-						[value: 44, color: "#1e9cbb"],
-						[value: 59, color: "#90d2a7"],
-						[value: 74, color: "#44b621"],
-						[value: 84, color: "#f1d801"],
-						[value: 95, color: "#d04e00"],
-						[value: 96, color: "#bc2323"]
-					]
-			}
-		}
-
-		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
-			state "humidity", label: '${currentValue}% humidity', unit: ""
-		}
-
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "battery", label: '${currentValue}% battery', unit: ""
-		}
-
-		valueTile("pendingChanges", "device.pendingChanges", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "pendingChanges", label:'${currentValue}'
-		}
-
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
-		}
-
-		main(["contact", "temperature", "humidity"])
-		details(["contact", "temperature", "humidity", "battery", "refresh", "pendingChanges"])
-	}
-
-	// simulator metadata
-	simulator {
-		// status messages
-		status "open": "command: 2001, payload: FF"
-		status "closed": "command: 2001, payload: 00"
-		status "wake up": "command: 8407, payload: "
-	}
-
 	preferences {
 		configParams.each {
 			if (it.range) {
@@ -302,7 +251,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
 			sendEvent(getEventMap("temperature", temp, true, null, getTemperatureScale()))
 			break
-
 		case lightSensorType:
 			sendEvent(getEventMap( "humidity", cmd.scaledSensorValue, true, null, "%"))
 			break
