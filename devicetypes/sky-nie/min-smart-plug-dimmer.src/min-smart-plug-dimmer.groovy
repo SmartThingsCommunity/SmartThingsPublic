@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.6
+ *      Min Smart Plug Dimmer v1.1.8
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.1.8 (07/22/2021)
+ *      - remove code about "Temperature Measurement" as beta product.
+ *      - change "auto off interval"  and "auto on interval" 's range
  *
  *    1.1.7 (07/22/2021)
  *      - fix a bug about temperature report threshold sync.
@@ -60,9 +64,7 @@
 metadata {
     definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
-        capability "Sensor"
         capability "Switch"
-        capability "Temperature Measurement"
         capability "Switch Level"
         capability "Configuration"
         capability "Refresh"
@@ -178,31 +180,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-    logTrace "SensorMultilevelReport: ${cmd}"
 
-    if (cmd.sensorValue != [255, 255]) { // Bug in beta device
-        switch (cmd.sensorType) {
-            case 1:
-                def unit = cmd.scale ? "F" : "C"
-                def temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, unit, cmd.precision)
-
-                def isStateChange = (device.currentValue("temperature") != temp)
-                def eventMap = [
-                        name: "temperature",
-                        value: temp,
-                        displayed: true,
-                        isStateChange: isStateChange,
-                        descriptionText: desc ?: "${device.displayName} ${"temperature"} is ${temp}"
-                ]
-                sendEvent(eventMap)
-                break
-            default:
-                logDebug "Unknown Sensor Type: ${cmd.sensorType}"
-        }
-    }
-    return []
-}
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     logTrace "ConfigurationReport ${cmd}"
@@ -240,7 +218,7 @@ private secureCmd(cmd) {
             return cmd.format()
         }
     } catch (ex) {
-        return cmd.format()
+        log.error("caught exception", ex)
     }
 }
 
@@ -251,7 +229,6 @@ private static getCommandClassVersions() {
             0x55: 1,	// Transport Service
             0x59: 1,	// AssociationGrpInfo
             0x5A: 1,	// DeviceResetLocally
-            0x31: 5,	// SensorMultilevel
             0x71: 3,	// Notification
             0x6C: 1,	// Supervision
             0x70: 1,	// Configuration
@@ -285,9 +262,7 @@ private getConfigParams() {
         pushDimmingDurationParam,
         holdDimmingDurationParam,
         minimumBrightnessParam,
-        maximumBrightnessParam,
-        temperatureReportTimeParam,
-        temperatureReportThresholdParam
+        maximumBrightnessParam
     ]
 }
 
@@ -296,11 +271,11 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1 - 60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1 - 60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getNightLightParam() {
@@ -325,14 +300,6 @@ private getMinimumBrightnessParam() {
 
 private getMaximumBrightnessParam() {
     return getParam(12, "Maximum Brightness(0, Disabled; 1 - 99:1% - 99%)", 1, 99, null,"0..99")
-}
-
-private getTemperatureReportTimeParam() {
-    return getParam(13, "Temperature report time(1 - 60 minutes)", 1, 1, null, "1..60")
-}
-
-private getTemperatureReportThresholdParam() {
-    return getParam(14, "Temperature report threshold", 1, 5, temperatureReportThresholdOptions)
 }
 
 private getParam(num, name, size, defaultVal, options=null, range=null) {
@@ -374,18 +341,6 @@ private static getPowerFailureRecoveryOptions() {
         "1":"Turn On",
         "2":"Restore Last State"
     ]
-}
-
-private static getTemperatureReportThresholdOptions() {
-    def options = [:]
-    options["1"] = "1℃/1.8°F"
-    def it2
-
-    (2..10).each {
-        it2 = it*1.8
-        options["${it}"] = "${it}℃/${it2}°F"
-    }
-    return options
 }
 
 private static validateRange(val, defaultVal, lowVal, highVal) {
