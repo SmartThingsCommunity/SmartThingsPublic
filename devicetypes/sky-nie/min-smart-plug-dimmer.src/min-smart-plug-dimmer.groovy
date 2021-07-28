@@ -277,17 +277,17 @@ private getParamStoredValue(paramNum) {
 // Configuration Parameters
 private getConfigParams() {
     [
-            ledModeParam,
-            autoOffIntervalParam,
-            autoOnIntervalParam,
-            nightLightParam,
-            powerFailureRecoveryParam,
-            pushDimmingDurationParam,
-            holdDimmingDurationParam,
-            minimumBrightnessParam,
-            maximumBrightnessParam,
-            temperatureReportTimeParam,
-            temperatureReportThresholdParam
+        ledModeParam,
+        autoOffIntervalParam,
+        autoOnIntervalParam,
+        nightLightParam,
+        powerFailureRecoveryParam,
+        pushDimmingDurationParam,
+        holdDimmingDurationParam,
+        minimumBrightnessParam,
+        maximumBrightnessParam,
+        temperatureReportTimeParam,
+        temperatureReportThresholdParam
     ]
 }
 
@@ -361,18 +361,18 @@ private static setDefaultOption(options, defaultVal) {
 
 private static getLedModeOptions() {
     return [
-            "0":"Off When On",
-            "1":"On When On",
-            "2":"Always Off",
-            "3":"Always On"
+        "0":"Off When On",
+        "1":"On When On",
+        "2":"Always Off",
+        "3":"Always On"
     ]
 }
 
 private static getPowerFailureRecoveryOptions() {
     return [
-            "0":"Turn Off",
-            "1":"Turn On",
-            "2":"Restore Last State"
+        "0":"Turn Off",
+        "1":"Turn On",
+        "2":"Restore Last State"
     ]
 }
 
