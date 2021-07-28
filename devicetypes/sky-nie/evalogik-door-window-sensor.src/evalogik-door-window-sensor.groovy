@@ -1,5 +1,5 @@
 /**
- *     Evalogik Door/Window Sensor v1.0.4
+ *     Evalogik Door/Window Sensor v1.0.5
  *
  *  	Models: MSE30Z
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.0.5 (07/28/2021)
+ *     - omitted  all the parameters related to associations group
  *
  *    1.0.4 (07/16/2021)
  *     - Syntax format compliance adjustment
@@ -435,13 +438,9 @@ private getConfigParams() {
 		minTemperatureOffsetParam,
 		minHumidityOffsetParam,
 		temperatureUpperWatermarkParam,
-		temperatureUpperControlParam,
 		temperatureLowerWatermarkParam,
-		temperatureLowerControlParam,
 		humidityUpperWatermarkParam,
-		humidityUpperControlParam,
 		humidityLowerWatermarkParam,
-		humidityLowerControlParam,
 		switchTemperatureUnitParam,
 		temperatureOffsetParam,
 		humidityOffsetParam,
@@ -481,32 +480,16 @@ private getTemperatureUpperWatermarkParam() {
 	return getParam(8, "Temperature Upper Watermark value(0,Disabled; 1℃/33.8°F-50℃/122.0°F)", 2, 0, null, "0..50")
 }
 
-private getTemperatureUpperControlParam() {
-	return getParam(9, "Temperature Upper Notification and Association Group Control", 1, 7,getNotificationAndAssociationGroupControlOptions(3))
-}
-
 private getTemperatureLowerWatermarkParam() {
 	return getParam(10, "Temperature Lower Watermark value(0,Disabled; 1℃/33.8°F - 50℃/122.0°F)", 2, 0, null, "0..50")
-}
-
-private getTemperatureLowerControlParam() {
-	return getParam(11, "Temperature Lower Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(4))
 }
 
 private getHumidityUpperWatermarkParam() {
 	return getParam(12, "Humidity Upper Watermark value(0,Disabled; 1% - 100%)", 1, 0, null, "0..100")
 }
 
-private getHumidityUpperControlParam() {
-	return getParam(13, "Humidity Upper Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(5))
-}
-
 private getHumidityLowerWatermarkParam() {
 	return getParam(14, "Humidity Lower Watermark value(0,Disabled; 1%-100%)", 1, 0, null, "0..100")
-}
-
-private getHumidityLowerControlParam() {
-	return getParam(15, "Humidity Lower Notification and Association Group Control", 1, 7, getNotificationAndAssociationGroupControlOptions(6))
 }
 
 private getSwitchTemperatureUnitParam() {
@@ -573,19 +556,6 @@ private static getSensorModeWhenCloseOptions() {
 	return [
 		"0":"door/window closed",
 		"1":"door/window opened"
-	]
-}
-
-private static getNotificationAndAssociationGroupControlOptions(int groupId){
-	return [
-		"0":"disable notification and association group basic set",
-		"1":"only notification report to lifeline group",
-		"2":"only basic set on to association group ${groupId}",
-		"3":"notification to lifeline and basic set on to association group ${groupId}",
-		"4":"only basic set off to association group ${groupId}",
-		"5":"notification to lifeline and basic off to association group ${groupId}",
-		"6":"basic set on and off to association group ${groupId}",
-		"7":"notification to lifeline and basic set on and off to association group ${groupId}"
 	]
 }
 
