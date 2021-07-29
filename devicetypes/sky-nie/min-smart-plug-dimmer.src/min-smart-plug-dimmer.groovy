@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.8
+ *      Min Smart Plug Dimmer v1.1.9
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,9 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    1.1.9 (07/29/2021)
+ *      - add a fingerprint for a new device
  *
  *    1.1.8 (07/22/2021)
  *      - remove code about "Temperature Measurement" as beta product.
@@ -75,6 +78,7 @@ metadata {
 
         fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
+        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "Minoston Dimmer Switch" //N4002
     }
 
     preferences {
@@ -179,8 +183,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     }
     return result
 }
-
-
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     logTrace "ConfigurationReport ${cmd}"
