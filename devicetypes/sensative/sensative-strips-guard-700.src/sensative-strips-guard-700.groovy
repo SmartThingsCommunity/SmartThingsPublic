@@ -4,6 +4,9 @@
  *
  *  Changelog:
  *
+ *    1.3 (26/07/2021)
+ *      - Remove updateLastCheckIn() and String convertToLocalTimeString(dt)functions based on review and Kevin's input
+ *
  *    1.2 (28/06/2021)
  *      - Requested Changes
  *
@@ -78,9 +81,7 @@ metadata {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Health Check"
-		capability "platemusic11009.firmware"
-
-		attribute "lastCheckIn", "string"
+		capability "platemusic11009.firmware"		
 
 		fingerprint mfr:"019A", prod:"0004", model:"0004", deviceJoinName: "Strips Guard 700" //Raw Description: zw:Ss2a type:0701 mfr:019A prod:0004 model:0004 ver:8.1A zwv:7.13 lib:07 cc:5E,22,55,9F,6C sec:86,85,8E,59,72,30,5A,87,73,80,70,71,84,7A
 	}
@@ -234,29 +235,7 @@ def parse(String description) {
 	} else {
 		log.warn "Unable to parse: $description"
 	}
-
-	updateLastCheckIn()
 	return []
-}
-
-void updateLastCheckIn() {
-	if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
-		state.lastCheckInTime = new Date().time
-		sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
-	}
-}
-
-String convertToLocalTimeString(dt) {
-	try {
-		def timeZoneId = location?.timeZone?.ID
-		if (timeZoneId) {
-			return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-		} else {
-			return "$dt"
-		}
-	} catch (ex) {
-		return "$dt"
-	}
 }
 
 void zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
