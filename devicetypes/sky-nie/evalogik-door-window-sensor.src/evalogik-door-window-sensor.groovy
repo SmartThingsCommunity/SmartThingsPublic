@@ -57,7 +57,7 @@ final  int NOTIFICATION_EVENT_INSTRUSION = 0x02
 final  int NOTIFICATION_EVENT_TEMPERING = 0x03
 
 metadata {
-	definition(name: "Evalogik Door/Window Sensor", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.sensor.contact", executeCommandsLocally: false, genericHandler: "Z-Wave") {
+	definition(name: "Evalogik Door/Window Sensor", namespace: "sky-nie", author: "winnie", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Sensor"
 		capability "Contact Sensor"
 		capability "Temperature Measurement"
