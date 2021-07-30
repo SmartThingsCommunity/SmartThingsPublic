@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Child Switch Health Power", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power") {
+	definition(name: "Child Switch Health Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch-power") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
