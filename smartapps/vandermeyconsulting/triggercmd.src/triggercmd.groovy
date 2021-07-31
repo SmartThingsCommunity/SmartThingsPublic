@@ -1,5 +1,5 @@
 /**
- *  TRIGGERcmd V2
+ *  TRIGGERcmd V3
  *
  *  Copyright 2017 VanderMey Consulting, LLC
  *
