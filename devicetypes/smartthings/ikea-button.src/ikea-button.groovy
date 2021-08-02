@@ -36,6 +36,7 @@ metadata {
 
 		//eWeLink
 		fingerprint inClusters: "0000, 0001, 0003",  outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Remote Control"
+		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57",  outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Remote Control"
 	}
 
 	tiles {
@@ -198,7 +199,7 @@ def installed() {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	if (isEWeLinkWb01()){
+	if (isEWeLinkWb01() || isEWeLinkSnzb01p()){
 		supportedButtons = ["pushed", "held", "double"]
 	} else {
 		supportedButtons = isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"]
@@ -384,7 +385,7 @@ private Map getButtonEvent(Map descMap) {
 			}
 		}
 	} 
-	else if (isEWeLinkWb01())
+	else if (isEWeLinkWb01() || isEWeLinkSnzb01p())
 	{
 		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) 
 		{
@@ -449,6 +450,10 @@ private boolean isEWeLink() {
 
 private boolean isEWeLinkWb01() {
 	isEWeLink() && device.getDataValue("model") == "WB01"
+}
+
+private boolean isEWeLinkSnzb01p() {
+	isEWeLink() && device.getDataValue("model") == "SNZB-01P"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {

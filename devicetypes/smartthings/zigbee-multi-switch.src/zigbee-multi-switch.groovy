@@ -64,6 +64,12 @@ metadata {
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW05", deviceJoinName: "eWeLink Switch 1" //eWeLink 5 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW06", deviceJoinName: "eWeLink Switch 1" //eWeLink 6 Gang Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-2", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 2 Gang ZED Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-3", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 3 Gang ZED Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-4", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 4 Gang ZED Switch 1
+        fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-2", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 2 Gang ZR Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-3", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 3 Gang ZR Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-4", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 4 Gang ZR Switch 1
 
 		// LELLKI
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
@@ -272,11 +278,15 @@ private getChildCount() {
 		case "PM-S350-ZB":
 		case "ST-S350-ZB":
 		case "SBM300Z3":
+		case "SWITCH-ZED01-3":
+		case "SWITCH-ZR02-3":
 			return 3
 		case "E220-KR4N0Z0-HA":
 		case "ZB-SW04":
 		case "JZ-ZB-004":
 		case "SBM300Z4":
+		case "SWITCH-ZED01-4":
+		case "SWITCH-ZR02-4":
 			return 4
 		case "E220-KR5N0Z0-HA":
 		case "ZB-SW05":
