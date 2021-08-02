@@ -35,8 +35,8 @@ metadata {
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 
 		//eWeLink
-		fingerprint inClusters: "0000, 0001, 0003",  outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Remote Control"
-		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57",  outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Remote Control"
+		fingerprint inClusters: "0000, 0001, 0003",  outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Button"
+		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57",  outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Button"
 	}
 
 	tiles {
@@ -199,10 +199,12 @@ def installed() {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	if (isEWeLinkWb01() || isEWeLinkSnzb01p()){
+	if (isIkeaOpenCloseRemote() || isSomfy()) {
+		supportedButtons = ["pushed"]
+	} else if (isEWeLinkWb01() || isEWeLinkSnzb01p()) {
 		supportedButtons = ["pushed", "held", "double"]
 	} else {
-		supportedButtons = isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"]
+		supportedButtons = ["pushed", "held"]
 	}
 
 	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
@@ -398,7 +400,7 @@ private Map getButtonEvent(Map descMap) {
 			{
 				buttonState = "double"
 			}
-			else if (descMap.commandInt == 0x02)
+			else
 			{
 				buttonState = "pushed"
 			}
