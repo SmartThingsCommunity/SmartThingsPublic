@@ -31,6 +31,8 @@ metadata {
 		// eWeLink
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "eWeLink", model: "ZB-SW01", deviceJoinName: "eWeLink Switch"
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-1", deviceJoinName: "eWeLink ZED Switch" //eWeLink ZED01
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-1", deviceJoinName: "eWeLink ZR Switch" //eWeLink ZR02
 		
 		// LELLKI
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "LELLKI", model: "JZ-ZB-001", deviceJoinName: "LELLKI Switch"
@@ -90,7 +92,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Outlet", ocfDeviceType: "oic.d.smartplug" //SONOFF Basic (R3 Zigbee)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Outlet", ocfDeviceType: "oic.d.smartplug" //S31 Lite zb
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "1000", manufacturer: "SONOFF", model: "01MINIZB", deviceJoinName: "SONOFF 01MINIZB" //01MINIZB
-        
+		fingerprint manufacturer: "SONOFF", model: "S26R2ZB", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S26R2 Plug
+
 		// Terncy
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
 
