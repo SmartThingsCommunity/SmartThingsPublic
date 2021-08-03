@@ -24,8 +24,9 @@ metadata {
 		capability "Actuator"
         	capability "Configuration"
         	capability "Refresh"
-        	capability "Switch"        
-        	capability "Fan Speed"		
+        	capability "Switch"
+		capability "Switch Level"
+        	capability "Fan Speed"
     }    
 }
 
@@ -35,6 +36,10 @@ def off() {
 
 def on() {
 	setFanSpeed(1)
+}
+
+def setLevel(value){
+	parent.setLevel(value, null, device)
 }
 
 def setFanSpeed(speed) {
