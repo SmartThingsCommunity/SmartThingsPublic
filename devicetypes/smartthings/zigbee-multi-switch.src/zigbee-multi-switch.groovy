@@ -67,7 +67,7 @@ metadata {
 		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-2", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 2 Gang ZED Switch 1
 		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-3", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 3 Gang ZED Switch 1
 		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZED01-4", deviceJoinName: "eWeLink ZED Switch 1" //eWeLink 4 Gang ZED Switch 1
-        fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-2", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 2 Gang ZR Switch 1
+		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-2", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 2 Gang ZR Switch 1
 		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-3", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 3 Gang ZR Switch 1
 		fingerprint manufacturer: "eWeLink", model: "SWITCH-ZR02-4", deviceJoinName: "eWeLink ZR Switch 1" //eWeLink 4 Gang ZR Switch 1
 
