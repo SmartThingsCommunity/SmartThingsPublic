@@ -39,7 +39,17 @@ def on() {
 }
 
 def setLevel(value){
-	parent.setLevel(value, null, device)
+	if (value <= 1) {
+		setFanSpeed(0)
+        } else if (value <= 25) {
+		setFanSpeed(1)
+        } else if (value <= 50) {
+		setFanSpeed(2)
+        } else if (value <= 75) {
+		setFanSpeed(3)
+	} else if (value <= 100) {
+		setFanSpeed(4)
+       	}	
 }
 
 def setFanSpeed(speed) {
