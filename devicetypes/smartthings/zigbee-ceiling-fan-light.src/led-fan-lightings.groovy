@@ -115,22 +115,8 @@ def on() {
 	zigbee.on()
 }
 
-def setLevel(value, rate = null, device = null) {
-	if (device == null) {
-		zigbee.setLevel(value)
-	} else {
-    		if (value <= 1) {
-            		setFanSpeed(0, device)
-        	} else if (value <= 25) {
-            		setFanSpeed(1, device)
-        	} else if (value <= 50) {
-            		setFanSpeed(2, device)
-        	} else if (value <= 75) {
-            		setFanSpeed(3, device)
-        	} else if (value <= 100) {
-            		setFanSpeed(4, device)
-        	}        
-    	}
+def setLevel(value) {
+	zigbee.setLevel(value)
 }
 
 def setFanSpeed(speed, device=null) {
