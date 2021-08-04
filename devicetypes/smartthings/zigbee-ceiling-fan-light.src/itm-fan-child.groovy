@@ -25,6 +25,8 @@ metadata {
         	capability "Configuration"
         	capability "Refresh"
         	capability "Switch"
+		/* Capability "Switch Level" is used to control fan speed for platforms don't support capability "Fan speed"
+		 * when you connect other platforms via SmartThings cloud to cloud connection. */
 		capability "Switch Level"
         	capability "Fan Speed"
     }    
