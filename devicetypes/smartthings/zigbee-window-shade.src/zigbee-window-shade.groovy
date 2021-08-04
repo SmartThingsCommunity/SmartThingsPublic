@@ -132,9 +132,10 @@ def getLastLevel() {
 }
 
 def levelEventHandler(currentLevel) {
-	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
+	def priorLevel = lastLevel
+	log.debug "levelEventHandle - currentLevel: ${currentLevel} priorLevel: ${priorLevel}"
 
-	if ((lastLevel == "undefined" || currentLevel == lastLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
+	if ((priorLevel == "undefined" || currentLevel == priorLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
 		state.invalidSameLevelEvent = true
@@ -145,9 +146,9 @@ def levelEventHandler(currentLevel) {
 		if (currentLevel == 0 || currentLevel == 100) {
 			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 		} else {
-			if (lastLevel < currentLevel) {
+			if (priorLevel < currentLevel) {
 				sendEvent([name:"windowShade", value: "opening"])
-			} else if (lastLevel > currentLevel) {
+			} else if (priorLevel > currentLevel) {
 				sendEvent([name:"windowShade", value: "closing"])
 			}
 			runIn(1, "updateFinalState", [overwrite:true])
