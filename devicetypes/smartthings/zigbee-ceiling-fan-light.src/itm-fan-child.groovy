@@ -40,7 +40,7 @@ def on() {
 	setFanSpeed(1)
 }
 
-def setLevel(value){
+def setLevel(value) {
 	if (value <= 1) {
 		setFanSpeed(0)
         } else if (value <= 25) {
@@ -51,7 +51,7 @@ def setLevel(value){
 		setFanSpeed(3)
 	} else if (value <= 100) {
 		setFanSpeed(4)
-       	}	
+	}	
 }
 
 def setFanSpeed(speed) {
@@ -62,10 +62,6 @@ def setFanSpeed(speed) {
         	sendEvent(name: "switch", value: "on", displayed: true, isStateChange: true)
     	}	
 	parent.setFanSpeed(speed, device)
-}
-
-def parse(String description) {
-	log.debug "[Child] - PARSE IN Child: $description"
 }
 
 void refresh() {
