@@ -62,15 +62,15 @@ private getON_OFF_CLUSTER_VALUE() { 0x0006 }
 def parse(String description) {
 	// Parse incoming device messages to generate events
 	log.debug "description is $description"
-	def event = zigbee.getEvent(description)
-	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
+	def event = zigbee.getEvent(description)	
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
+		def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 		if (zigbeeMap.clusterInt == FAN_CLUSTER_VALUE &&
 		    zigbeeMap.attrInt == FAN_STATUS_VALUE) {		
 			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
-			def childDevice = getChildDevices()?.find {
+			def childDevice = childDevice.find {
 				//find light child device
 				log.debug "parse() child device found"
 				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
@@ -139,10 +139,7 @@ def setFanSpeed(speed, device=null) {
     	} else if (speed as Integer == 4) {		
         	log.debug "max"
 	    	sendFanSpeed(0x04)
-    	} else {		
-        	log.debug "max"
-	    	sendFanSpeed(0x04)
-    	}    
+    	}
 }
 
 private sendFanSpeed(val) {
@@ -156,9 +153,7 @@ def ping() {
 
 def refresh() {
 	zigbee.onOffRefresh() +
-	zigbee.levelRefresh() +
-	zigbee.onOffConfig(0, 300) +
-	zigbee.levelConfig()+
+	zigbee.levelRefresh() +	
 	zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)
 }
 
@@ -168,6 +163,8 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
+	zigbee.onOffConfig(0, 300)
+	zigbee.levelConfig()
 	refresh()
 }
 
@@ -204,28 +201,6 @@ def addChildFan() {
 	}
 }
 
-def deleteChildren() {	
-	def children = getChildDevices()        	
-	children.each { 
-		child -> deleteChildDevice(child.deviceNetworkId)
-    	}	
-	log.info "Deleting children"                  
-}
-
 def delete() {
 	log.debug "[Parent] - delete()"
-}
-
-def uninstalled() {
-	log.debug "[Parent] - uninstalled"
-	try{
-		def childDevice = getChildDevices()?.find {		
-			//find light child device
-			log.debug "parse() child device found"
-			it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
-        	}
-		if (childDevice != null) {
-			deleteChildren()
-		}
-    	} catch(e) {}
 }
