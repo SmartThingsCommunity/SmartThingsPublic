@@ -178,7 +178,7 @@ def refresh() {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
-	} else if (isEWeLinkTh01() || isEWeLinkSnzb02p()) {
+	} else if (isEWeLink()) {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
 			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
@@ -212,7 +212,7 @@ def configure() {
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
 			zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
-	} else if (isEWeLinkTh01() || isEWeLinkSnzb02p()) {
+	} else if (isEWeLink()) {
 		return refresh() +
 			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
 			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
@@ -234,12 +234,4 @@ private Boolean isFrientSensor() {
 
 private Boolean isEWeLink() {
 	device.getDataValue("manufacturer") == "eWeLink"
-}
-
-private Boolean isEWeLinkTh01() {
-	isEWeLink() && device.getDataValue("model") == "TH01"
-}
-
-private Boolean isEWeLinkSnzb02p() {
-	isEWeLink() && device.getDataValue("model") == "SNZB-02P"
 }
