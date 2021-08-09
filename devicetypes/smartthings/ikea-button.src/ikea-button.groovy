@@ -201,7 +201,7 @@ def installed() {
 
 	if (isIkeaOpenCloseRemote() || isSomfy()) {
 		supportedButtons = ["pushed"]
-	} else if (isEWeLinkWb01() || isEWeLinkSnzb01p()) {
+	} else if (isEWeLink()) {
 		supportedButtons = ["pushed", "held", "double"]
 	} else {
 		supportedButtons = ["pushed", "held"]
@@ -387,21 +387,16 @@ private Map getButtonEvent(Map descMap) {
 			}
 		}
 	} 
-	else if (isEWeLinkWb01() || isEWeLinkSnzb01p())
-	{
-		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) 
-		{
+	else if (isEWeLink()) {
+		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
 			buttonNumber = 1
-			if (descMap.commandInt == 0x00) 
-			{
+			if (descMap.commandInt == 0x00) {
 				buttonState = "held"
 			} 
-			else if (descMap.commandInt == 0x01)
-			{
+			else if (descMap.commandInt == 0x01) {
 				buttonState = "double"
 			}
-			else
-			{
+			else {
 				buttonState = "pushed"
 			}
 		}
@@ -448,14 +443,6 @@ private boolean isSomfySituo4() {
 
 private boolean isEWeLink() {
 	device.getDataValue("manufacturer") == "eWeLink"
-}
-
-private boolean isEWeLinkWb01() {
-	isEWeLink() && device.getDataValue("model") == "WB01"
-}
-
-private boolean isEWeLinkSnzb01p() {
-	isEWeLink() && device.getDataValue("model") == "SNZB-01P"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {
