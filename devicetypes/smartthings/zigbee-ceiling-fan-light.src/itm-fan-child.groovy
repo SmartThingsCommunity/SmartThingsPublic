@@ -33,11 +33,11 @@ metadata {
 }
 
 def off() {
-	setFanSpeed(0)
+	setFanSpeed(0x00)
 }
 
 def on() {
-	setFanSpeed(1)
+	setFanSpeed(0x01)
 }
 
 def setLevel(value) {
