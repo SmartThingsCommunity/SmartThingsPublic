@@ -70,7 +70,7 @@ def parse(String description) {
 		if (zigbeeMap.clusterInt == FAN_CLUSTER_VALUE &&
 		    zigbeeMap.attrInt == FAN_STATUS_VALUE) {		
 			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
-			def childDevice = childDevice.find {
+			def childDevice = childDevices.find {
 				//find light child device
 				log.debug "parse() child device found"
 				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
@@ -170,8 +170,7 @@ def configure() {
 
 def installed() {
 	log.debug "Samsung ITM test prod installed"
-	addChildFan()    
-	configure()
+	addChildFan()
 }
 
 def addChildFan() {
