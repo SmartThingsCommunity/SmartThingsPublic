@@ -42,15 +42,15 @@ def on() {
 
 def setLevel(value) {
 	if (value <= 1) {
-		setFanSpeed(0)
+		setFanSpeed(0x00)
 	} else if (value <= 25) {
-		setFanSpeed(1)
+		setFanSpeed(0x01)
 	} else if (value <= 50) {
-		setFanSpeed(2)
+		setFanSpeed(0x02)
 	} else if (value <= 75) {
-		setFanSpeed(3)
+		setFanSpeed(0x03)
 	} else if (value <= 100) {
-		setFanSpeed(4)
+		setFanSpeed(0x04)
 	}	
 }
 
@@ -61,7 +61,7 @@ def setFanSpeed(speed) {
     	} else {
         	sendEvent(name: "switch", value: "on", displayed: true, isStateChange: true)
     	}	
-	parent.setFanSpeed(speed, device)
+	parent.sendFanSpeed(speed)
 }
 
 void refresh() {
