@@ -119,29 +119,6 @@ def setLevel(value) {
 	zigbee.setLevel(value)
 }
 
-def setFanSpeed(speed, device=null) {
-	if (device == null) {
-		return
-	}
-    	log.debug "parent setFanSpeed"
-    	if (speed as Integer == 0) {		
-        	log.debug "fan_off"
-	    	sendFanSpeed(0x00)
-	} else if (speed as Integer == 1) {		
-        	log.debug "low"
-	    	sendFanSpeed(0x01)
-	} else if (speed as Integer == 2) {		
-        	log.debug "medium"	
-        	sendFanSpeed(0x02)    
-	} else if (speed as Integer == 3) {		
-        	log.debug "high"	
-	    	sendFanSpeed(0x03)
-    	} else if (speed as Integer == 4) {		
-        	log.debug "max"
-	    	sendFanSpeed(0x04)
-    	}
-}
-
 private sendFanSpeed(val) {
 	delayBetween([zigbee.writeAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE, DataType.ENUM8, val), zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)], 100)
 }
