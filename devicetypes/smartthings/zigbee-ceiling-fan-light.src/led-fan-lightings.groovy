@@ -76,7 +76,7 @@ def parse(String description) {
 				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
 			}          
 			event.displayed = true
-			zigbeeMap.name = "fanSpeed"
+			zigbeeMap.name = "fanSpeedEvent"
 			childDevice.sendEvent(zigbeeMap)
 			if (zigbeeMap.value == "00") {
 				log.debug "fan_off => switch off"
