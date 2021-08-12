@@ -74,11 +74,10 @@ def parse(String description) {
 				//find light child device
 				log.debug "parse() child device found"
 				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
-			}          
-			event.displayed = true
-			zigbeeMap.name = "fanSpeedEvent"
-			childDevice.sendEvent(zigbeeMap)
-			if (zigbeeMap.value == "00") {
+			}
+			def fanSpeedEvent = createEvent(name: "fanSpeed", value: zigbeeMap.value)
+			childDevice.sendEvent(fanSpeedEvent)
+			if (fanSpeedEvent.value == "00") {
 				log.debug "fan_off => switch off"
 				childDevice.sendEvent(name: "switch", value: "off")
 				childDevice.sendEvent(name: "level", value: 0)	// For cloud to cloud device UI update
