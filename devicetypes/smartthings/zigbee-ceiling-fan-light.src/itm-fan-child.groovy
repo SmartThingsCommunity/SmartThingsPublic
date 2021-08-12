@@ -55,12 +55,8 @@ def setLevel(value) {
 }
 
 def setFanSpeed(speed) {
-	log.debug "child setFanSpeed $speed"	
-	if (speed as Integer == 0) {
-        	sendEvent(name: "switch", value: "off", displayed: true, isStateChange: true)
-    	} else {
-        	sendEvent(name: "switch", value: "on", displayed: true, isStateChange: true)
-    	}	
+	log.debug "child setFanSpeed $speed"
+	
 	parent.sendFanSpeed(speed)
 }
 
