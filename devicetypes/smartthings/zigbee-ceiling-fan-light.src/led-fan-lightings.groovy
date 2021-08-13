@@ -84,7 +84,7 @@ def parse(String description) {
 			} else {
 				log.debug "fan_on => switch on"
 				childDevice.sendEvent(name: "switch", value: "on")
-				def int_v  = zigbeeMap.value as Integer
+				def int_v = fanSpeedEvent.value as Integer
 				int_v = int_v * 25
 				int_v = int_v > 100 ? 100 : int_v
 				log.debug "child device Level set $int_v"
