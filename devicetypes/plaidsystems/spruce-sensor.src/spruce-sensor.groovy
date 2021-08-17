@@ -15,6 +15,9 @@
 
  -------6/2021 Updates--------
  - Update for 2021 Samsung SmartThings App
+	
+ -------8/2021 Updates--------
+ - remove zigbeeNodeType from fingerprints
 
  */
 
@@ -43,9 +46,9 @@ metadata {
 		attribute "reportingInterval", "NUMBER"
 
 		//new release
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", zigbeeNodeType: "SLEEPY_END_DEVICE", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
 	}
 
 	preferences {
