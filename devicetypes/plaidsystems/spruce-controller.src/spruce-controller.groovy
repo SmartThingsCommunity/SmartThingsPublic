@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
 
+Version v3.8
+ * remove zigbeeNodeType: "ROUTER" from fingerprint
+
 Version v3.7
  * update add zoneOn, zoneOff commands for external integration
  * move zone status update to parse
@@ -64,7 +67,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 //dth version
-def getVERSION() {'v3.7 6-2021'}
+def getVERSION() {'v3.8 8-2021'}
 def getDEBUG() {false}
 def getHC_INTERVAL_MINS() {60}
 //zigbee cluster, attribute, identifiers
@@ -105,7 +108,7 @@ metadata {
 		command "settingsMap"
 
 		//new release
-		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", zigbeeNodeType: "ROUTER", deviceJoinName: "Spruce Irrigation Controller"
+		fingerprint manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01", deviceJoinName: "Spruce Irrigation Controller"
 	}
 
 	preferences {
