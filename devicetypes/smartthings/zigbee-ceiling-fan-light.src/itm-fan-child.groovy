@@ -55,8 +55,7 @@ def setLevel(value) {
 }
 
 def setFanSpeed(speed) {
-	log.debug "child setFanSpeed $speed"
-	
+	log.debug "child setFanSpeed $speed"	
 	parent.sendFanSpeed(speed)
 }
 
