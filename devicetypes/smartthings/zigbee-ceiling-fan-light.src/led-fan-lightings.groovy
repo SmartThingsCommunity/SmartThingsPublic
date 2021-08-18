@@ -94,7 +94,7 @@ def parse(String description) {
 	} else {
 		def cluster = zigbee.parse(description)
 		if (cluster && 
-		    cluster.clusterId == ON_OFF_CLUSTER_VALUE &&
+		    cluster.clusterInt == ON_OFF_CLUSTER_VALUE &&
 		    cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
