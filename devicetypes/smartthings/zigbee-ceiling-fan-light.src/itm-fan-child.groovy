@@ -26,7 +26,7 @@ metadata {
         	capability "Refresh"
         	capability "Switch"
 		/* Capability "Switch Level" is used to control fan speed for platforms don't support capability "Fan speed"
-		 * when you connect other platforms via SmartThings cloud to cloud connection. */
+		* when you connect other platforms via SmartThings cloud to cloud connection. */
 		capability "Switch Level"
         	capability "Fan Speed"
     }    
@@ -67,7 +67,7 @@ void refresh() {
 
 def ping() {
 	log.debug "[Child] - ping()"
-	parent.ping(device)
+	parent.ping()
 }
 
 def configure() {
