@@ -62,8 +62,7 @@ def setFanSpeed(speed) {
 
 void refresh() {
 	log.debug "[Child] - refresh()"
-	parent.refresh(device)
-	parent.childRefresh(device.deviceNetworkId)
+	parent.refresh()	
 }
 
 def ping() {
