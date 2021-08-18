@@ -123,9 +123,9 @@ def sendFanSpeed(val) {
 }
 
 def ping() {
-	// PING is used by Device-Watch in attempt to reach the Device
-	zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)
-	return zigbee.onOffRefresh()
+	// PING is used by Device-Watch in attempt to reach the Device	
+	return zigbee.onOffRefresh() +
+		zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)
 }
 
 def refresh() {
