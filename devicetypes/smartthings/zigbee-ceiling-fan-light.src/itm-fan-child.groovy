@@ -21,15 +21,15 @@ import groovy.json.JsonOutput
 
 metadata {
 	definition(name: "ITM Fan Child", namespace: "SAMSUNG LED", author: "SAMSUNG LED", ocfDeviceType: "oic.d.fan") {
-	capability "Actuator"
-        capability "Configuration"
-        capability "Refresh"
-        capability "Switch"
-	/* Capability "Switch Level" is used to control fan speed for platforms don't support capability "Fan speed"
-	 * when you connect other platforms via SmartThings cloud to cloud connection. */
-	capability "Switch Level"
-        capability "Fan Speed"
-    }    
+		capability "Actuator"
+		capability "Configuration"
+		capability "Refresh"
+		capability "Switch"
+		/* Capability "Switch Level" is used to control fan speed for platforms don't support capability "Fan speed"
+		 * when you connect other platforms via SmartThings cloud to cloud connection. */
+		capability "Switch Level"
+		capability "Fan Speed"
+	}
 }
 
 def off() {
