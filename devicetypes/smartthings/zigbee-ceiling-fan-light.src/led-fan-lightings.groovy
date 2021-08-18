@@ -118,7 +118,7 @@ def setLevel(value) {
 	zigbee.setLevel(value)
 }
 
-private sendFanSpeed(val) {
+def sendFanSpeed(val) {
 	delayBetween([zigbee.writeAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE, DataType.ENUM8, val), zigbee.readAttribute(FAN_CLUSTER_VALUE, FAN_STATUS_VALUE)], 100)
 }
 
