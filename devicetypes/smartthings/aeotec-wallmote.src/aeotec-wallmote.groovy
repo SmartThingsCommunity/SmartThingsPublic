@@ -10,7 +10,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- */ 
+ */
 metadata {
     definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
         capability "Actuator"
@@ -23,6 +23,7 @@ metadata {
         fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
         fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
         fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
+        fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec illumino Wallmote 7
         fingerprint mfr: "0312", model: "D001", deviceJoinName: "S2 Remote Control Switch", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
     }
 
@@ -42,7 +43,7 @@ metadata {
 }
 
 def getNumberOfButtons() {
-    def modelToButtons = ["D001" : 4, "0082" : 4, "0081": 2, "0003": 2]
+    def modelToButtons = ["D001" : 4, "0082" : 4, "0081": 2, "0003": 2, "0016": 2]
     return modelToButtons[zwaveInfo.model] ?: 1
 }
 
@@ -169,6 +170,8 @@ def getChildDevice(button) {
 private getSupportedButtonValues() {
     if (isEverspring()) {
         return ["pushed", "held", "double"]
+    } else if (isWallMote7()) {
+        return ["pushed", "held", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
     } else {
         return ["pushed", "held"]
     }
@@ -179,8 +182,14 @@ private getButtonAttributesMap() {
             0: "pushed",
             2: "held",
             3: "double"
-    ]}
-    else {[
+    ]} else if (isWallMote7()) {[
+            0: "pushed",
+            2: "held",
+            3: "double",
+            4: "pushed_3x",
+            5: "pushed_4x",
+            6: "pushed_5x"
+    ]} else {[
             0: "pushed",
             1: "held"
     ]}
@@ -188,4 +197,8 @@ private getButtonAttributesMap() {
 
 private isEverspring() {
     return (zwaveInfo.model == "0003" ||  zwaveInfo.model == "D001")
+}
+
+private isWallMote7() {
+    zwaveInfo.model.equals("0016")
 }
