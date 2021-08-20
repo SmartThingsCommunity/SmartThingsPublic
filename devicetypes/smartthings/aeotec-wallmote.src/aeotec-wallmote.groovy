@@ -171,9 +171,11 @@ def getChildDevice(button) {
 }
 
 private getSupportedButtonValues() {
-    if (isEverspring()||isMinoston()) {
+    if (isEverspring()) {
         return ["pushed", "held", "double"]
-    } else if (isWallMote7()) {
+    } else if (isMinoston()) {
+        return ["pushed", "held", "double", "pushed_3x"]
+    }else if (isWallMote7()) {
         return ["pushed", "held", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
     } else {
         return ["pushed", "held"]
@@ -181,11 +183,16 @@ private getSupportedButtonValues() {
 }
 
 private getButtonAttributesMap() {
-    if (isEverspring()||isMinoston()) {[
+    if (isEverspring()) {[
             0: "pushed",
             2: "held",
             3: "double"
-    ]} else if (isWallMote7()) {[
+    ]} else if (isMinoston()) {[
+            0: "pushed",
+            2: "held",
+            3: "double",
+            4: "pushed_3x"
+    ]}else if (isWallMote7()) {[
             0: "pushed",
             2: "held",
             3: "double",
