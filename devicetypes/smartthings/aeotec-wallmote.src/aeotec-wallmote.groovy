@@ -11,6 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+
 metadata {
     definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
         capability "Actuator"
@@ -24,7 +27,7 @@ metadata {
         fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
         fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
         fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec illumino Wallmote 7
-        fingerprint mfr: "0312", model: "D001", deviceJoinName: "S2 Remote Control Switch", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
+        fingerprint mfr: "0312", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
     }
 
     tiles(scale: 2) {
@@ -168,7 +171,7 @@ def getChildDevice(button) {
 }
 
 private getSupportedButtonValues() {
-    if (isEverspring()) {
+    if (isEverspring()||isMinoston()) {
         return ["pushed", "held", "double"]
     } else if (isWallMote7()) {
         return ["pushed", "held", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
@@ -178,7 +181,7 @@ private getSupportedButtonValues() {
 }
 
 private getButtonAttributesMap() {
-    if (isEverspring()) {[
+    if (isEverspring()||isMinoston()) {[
             0: "pushed",
             2: "held",
             3: "double"
@@ -196,7 +199,11 @@ private getButtonAttributesMap() {
 }
 
 private isEverspring() {
-    return (zwaveInfo.model == "0003" ||  zwaveInfo.model == "D001")
+    zwaveInfo.model.equals("0003")
+}
+
+private isMinoston() {
+    zwaveInfo.model.equals("D001")
 }
 
 private isWallMote7() {
