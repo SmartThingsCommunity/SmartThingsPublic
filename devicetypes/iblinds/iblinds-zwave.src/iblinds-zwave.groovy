@@ -28,6 +28,7 @@ metadata {
 
 		fingerprint mfr:"0287", prod:"0003", model:"000D", deviceJoinName: "iBlinds Window Treatment"
 		fingerprint mfr:"0287", prod:"0004", model:"0071", deviceJoinName: "iBlinds Window Treatment"
+		fingerprint mfr:"0287", prod:"0004", model:"0072", deviceJoinName: "iBlinds Window Treatment"
 	}
 
 	simulator {
