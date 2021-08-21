@@ -40,7 +40,12 @@
 import groovy.json.JsonOutput
 
 metadata {
-    definition (name: "In-Wall Smart Switch", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
+    definition (
+            name: "In-Wall Smart Switch",
+            namespace: "sky-nie",
+            author: "winnie",
+            ocfDeviceType: "oic.d.smartplug"
+    ) {
         capability "Actuator"
         capability "Switch"
         capability "Configuration"
@@ -222,7 +227,7 @@ def off() {
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    sendHubCommand([switchBinaryGetCmd()])
+    return [ switchBinaryGetCmd() ]
 }
 
 private switchBinaryGetCmd() {
@@ -344,17 +349,17 @@ private static getCommandClassVersions() {
         0x25: 1,	// Switch Binary            //SwitchBinaryReport
         0x5B: 1,	// CentralScene (3)         //CentralSceneNotification
         0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo       //AssociationGroupInfoReport     //DTH unimplemented interface
-        0x5A: 1,	// DeviceResetLocally       //DeviceResetLocallyNotification //DTH unimplemented interface
+        0x59: 1,	// AssociationGrpInfo       //AssociationGroupInfoReport*
+        0x5A: 1,	// DeviceResetLocally       //DeviceResetLocallyNotification*
         0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision              //SupervisionGet                 //DTH unimplemented interface
+        0x6C: 1,	// Supervision              //SupervisionGet*
         0x70: 1,	// Configuration            //ConfigurationReport
-        0x7A: 2,	// FirmwareUpdateMd         //FirmwareMdReport               //DTH unimplemented interface
-        0x72: 2,	// ManufacturerSpecific     //ManufacturerSpecificReport     //DTH unimplemented interface
+        0x7A: 2,	// FirmwareUpdateMd         //FirmwareMdReport*
+        0x72: 2,	// ManufacturerSpecific     //ManufacturerSpecificReport*
         0x73: 1,	// Powerlevel
-        0x85: 2,	// Association              //AssociationReport              //DTH unimplemented interface
+        0x85: 2,	// Association              //AssociationReport*
         0x86: 1,	// Version (2)              //VersionReport
-        0x8E: 2,	// Multi Channel Association//MultiChannelAssociationReport  //DTH unimplemented interface
+        0x8E: 2,	// Multi Channel Association//MultiChannelAssociationReport*
         0x9F: 1		// Security S2              //SecurityMessageEncapsulation
     ]
 }
