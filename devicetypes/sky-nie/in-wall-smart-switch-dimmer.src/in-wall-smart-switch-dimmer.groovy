@@ -40,7 +40,12 @@
 import groovy.json.JsonOutput
 
 metadata {
-    definition ( name: "In-Wall Smart Switch Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
+    definition (
+            name: "In-Wall Smart Switch Dimmer",
+            namespace: "sky-nie",
+            author: "winnie",
+            ocfDeviceType: "oic.d.smartplug"
+    ) {
         capability "Actuator"
         capability "Switch"
         capability "Switch Level"
@@ -157,7 +162,7 @@ def ping() {
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    sendHubCommand([switchMultilevelGetCmd()])
+    return [ switchMultilevelGetCmd() ]
 }
 
 private switchMultilevelGetCmd() {
@@ -330,17 +335,17 @@ private static getCommandClassVersions() {
         0x26: 3,	// Switch Multilevel         //SwitchMultilevelReport
         0x5B: 1,	// CentralScene (3)          //CentralSceneNotification
         0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo        //AssociationGroupInfoReport       //DTH unimplemented interface
-        0x5A: 1,	// DeviceResetLocally        //DeviceResetLocallyNotification   //DTH unimplemented interface
+        0x59: 1,	// AssociationGrpInfo        //AssociationGroupInfoReport*
+        0x5A: 1,	// DeviceResetLocally        //DeviceResetLocallyNotification*
         0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision               //SupervisionGet                   //DTH unimplemented interface
+        0x6C: 1,	// Supervision               //SupervisionGet*
         0x70: 1,	// Configuration             //ConfigurationReport
-        0x7A: 2,	// FirmwareUpdateMd          //FirmwareMdReport                 //DTH unimplemented interface
-        0x72: 2,	// ManufacturerSpecific      //ManufacturerSpecificReport       //DTH unimplemented interface
+        0x7A: 2,	// FirmwareUpdateMd          //FirmwareMdReport*
+        0x72: 2,	// ManufacturerSpecific      //ManufacturerSpecificReport*
         0x73: 1,	// Powerlevel
-        0x85: 2,	// Association               //AssociationReport                //DTH unimplemented interface
+        0x85: 2,	// Association               //AssociationReport*
         0x86: 1,	// Version (2)               //VersionReport
-        0x8E: 2,	// Multi Channel Association //MultiChannelAssociationReport    //DTH unimplemented interface
+        0x8E: 2,	// Multi Channel Association //MultiChannelAssociationReport*
         0x9F: 1		// Security S2               //SecurityMessageEncapsulation
     ]
 }
@@ -355,12 +360,12 @@ private getParamStoredValue(paramNum) {
 
 // Configuration Parameters
 private getConfigParams() {
-    [
+    return [
+        paddleControlParam,
         ledModeParam,
         autoOffIntervalParam,
         autoOnIntervalParam,
         powerFailureRecoveryParam,
-        paddleControlParam,
         pushDimmingDurationParam,
         holdDimmingDurationParam,
         minimumBrightnessParam
@@ -515,18 +520,14 @@ private basicSetCmd(val) {
 
 private switchMultilevelSetCmd(level, duration) {
     def levelVal = validateRange(level, 99, 0, 99)
-
     def durationVal = validateRange(duration, 1, 0, 100)
-
     return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     logTrace "VersionReport: ${cmd}"
-
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
-
     sendEvent(name: "firmwareVersion",  value:fullVersion, displayed: true, type:  null)
     return []
 }
@@ -549,9 +550,7 @@ private sendSwitchEvents(rawVal, type) {
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
     }
-
     def paddlesReversed = (paddleControlParam.value == 1)
-
     if (state.createButtonEnabled && (type == "physical") && childDevices) {
         if (paddleControlParam.value == 2) {
             sendButtonEvent("pushed")
