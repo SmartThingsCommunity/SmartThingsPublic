@@ -149,7 +149,7 @@ def setupBulbs() {
     // def exp = "* 0 * * * ?"    // <- the was a bug.  It meant cleanup every second for the first minute of every hour.  Not good.
     def second = (Math.abs(new Random().nextInt() % 60) + 1).toString()
     def minute = (Math.abs(new Random().nextInt() % 60) + 1).toString()
-    def hour = (Math.abs(new Random().nextInt() % 24) + 1).toStrong()
+    def hour = (Math.abs(new Random().nextInt() % 24) + 1).toString()
     def exp = second + " " + minute + " " + hour + " * * ?"  // cleanup at a random time once per day
     debugOut "new schedule: " + exp
     schedule(exp, cleanupTriggers) 
