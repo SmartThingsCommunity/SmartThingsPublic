@@ -14,10 +14,10 @@
  *  under the License.
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-leak", genericHandler: "Zigbee") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
@@ -26,15 +26,15 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "Water Leak Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Smart Water Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-G", deviceJoinName: "Centralite Water Sensor"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Water Leak Sensor" //Iris Smart Water Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-G", deviceJoinName: "Centralite Water Leak Sensor" //Centralite Water Sensor
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-IM6001"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-WTD03", deviceJoinName: "Sercomm Water Leak Sensor" //Sercomm Water Leak Detector
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"FLSZB-110", deviceJoinName: "frient Water Leak Sensor" // frient Water Leak Detector
 	}
 
 	simulator {
@@ -50,8 +50,7 @@ metadata {
 			])
 		}
 		section {
-			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 		}
 	}
 
@@ -86,6 +85,21 @@ metadata {
 	}
 }
 
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
+
+private List<Map> collectAttributes(Map descMap) {
+	List<Map> descMaps = new ArrayList<Map>()
+
+	descMaps.add(descMap)
+
+	if (descMap.additionalAttrs) {
+		descMaps.addAll(descMap.additionalAttrs)
+	}
+
+	return  descMaps
+}
+
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -96,12 +110,30 @@ def parse(String description) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+				List<Map> descMaps = collectAttributes(descMap)
+
+				if (device.getDataValue("manufacturer") == "Samjin") {
+					def battMap = descMaps.find { it.attrInt == BATTERY_PERCENT_ATTR }
+
+					if (battMap) {
+						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+					}
+				} else {
+					def battMap = descMaps.find { it.attrInt == BATTERY_VOLTAGE_ATTR }
+
+					if (battMap) {
+						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
+					}
+				}
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
 					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
-					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
@@ -111,7 +143,7 @@ def parse(String description) {
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
@@ -164,7 +196,7 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
-			def minVolts = 2.1
+			def minVolts = isFrientSensor() ? 2.3 : 2.1
 			def maxVolts = 3.0
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
 			def roundedPct = Math.round(pct * 100)
@@ -173,6 +205,20 @@ private Map getBatteryResult(rawValue) {
 			result.value = Math.min(100, roundedPct)
 		}
 
+	}
+
+	return result
+}
+
+private Map getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+		result.value = Math.round(rawValue / 2)
 	}
 
 	return result
@@ -197,24 +243,50 @@ private Map getMoistureResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh() {
-	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	log.debug "Refreshing Values"
+	def refreshCmds = []
 
-	return refreshCmds + zigbee.enrollResponse()
+	if (device.getDataValue("manufacturer") == "Samjin") {
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR)
+	} else {
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR)
+	}
+	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+		zigbee.enrollResponse()
+
+	return refreshCmds
 }
 
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	log.debug "Configuring Reporting"
+	def configCmds = []
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
+	if (device.getDataValue("manufacturer") == "Samjin") {
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 0x10)
+	} else {
+		configCmds += zigbee.batteryConfig()
+	}
+	
+	if (isFrientSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0x64, [destEndpoint: 0x26])
+	} else {
+		configCmds += zigbee.temperatureConfig(30, 300)
+	}
+
+	return refresh() + configCmds + refresh() // send refresh cmds as part of config
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
 }

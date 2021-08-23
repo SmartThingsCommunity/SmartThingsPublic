@@ -65,7 +65,7 @@ metadata {
 	}
 
 	preferences {
-		input "stepsize", "number", title: "Step Size", description: "Dimmer Step Size", defaultValue: 5
+		input "stepsize", "number", title: "Step Size", description: "Dimmer level step size", defaultValue: 5
 	}
 
 	tiles {
@@ -165,7 +165,7 @@ def levelDown() {
 	setLevel(level)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.debug "in setLevel with value: ${value}"
 	def level = value as Integer
 

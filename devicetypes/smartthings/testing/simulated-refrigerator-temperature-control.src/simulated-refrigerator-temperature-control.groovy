@@ -14,81 +14,92 @@
  *
  */
 metadata {
-	definition (name: "Simulated Refrigerator Temperature Control", namespace: "smartthings/testing", author: "SmartThings") {
-		capability "Temperature Measurement"
-		capability "Thermostat Cooling Setpoint"
+    definition (name: "Simulated Refrigerator Temperature Control", namespace: "smartthings/testing", author: "SmartThings") {
+        capability "Temperature Measurement"
+        capability "Thermostat Cooling Setpoint"
+        capability "Health Check"
 
-		command "tempUp"
-		command "tempDown"
-		command "setpointUp"
-		command "setpointDown"
-	}
+        command "tempUp"
+        command "tempDown"
+        command "setpointUp"
+        command "setpointDown"
+    }
 
-	tiles {
-		valueTile("refrigerator", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
-			state("temperature", label:'${currentValue}°', unit:"F",
-					backgroundColors:[
-							[value: 0, color: "#153591"],
-							[value: 40, color: "#1e9cbb"],
-							[value: 45, color: "#f1d801"]
-					]
-			)
-		}
-		valueTile("freezer", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
-			state("temperature", label:'${currentValue}°', unit:"F",
-					backgroundColors:[
-							[value: 0, color: "#153591"],
-							[value: 5, color: "#1e9cbb"],
-							[value: 15, color: "#f1d801"]
-					]
-			)
-		}
-		valueTile("freezerSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", label:'Freezer Set: ${currentValue}°', unit:"F"
-		}
-		valueTile("refrigeratorSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'Fridge Set: ${currentValue}°', unit:"F"
-		}
-		standardTile("tempUp", "device.temperature", inactiveLabel: false, decoration: "flat") {
-			state "default", action:"tempUp", icon:"st.thermostat.thermostat-up"
-		}
-		standardTile("tempDown", "device.temperature", inactiveLabel: false, decoration: "flat") {
-			state "default", action:"tempDown", icon:"st.thermostat.thermostat-down"
-		}
-		standardTile("setpointUp", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "default", action:"setpointUp", icon:"st.thermostat.thermostat-up"
-		}
-		standardTile("setpointDown", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "default", action:"setpointDown", icon:"st.thermostat.thermostat-down"
-		}
-	}
+    tiles {
+        valueTile("refrigerator", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
+            state("temperature", label:'${currentValue}°', unit:"F",
+                    backgroundColors:[
+                            [value: 0, color: "#153591"],
+                            [value: 40, color: "#1e9cbb"],
+                            [value: 45, color: "#f1d801"]
+                    ]
+            )
+        }
+        valueTile("freezer", "device.temperature", width: 2, height: 2, canChangeBackground: true) {
+            state("temperature", label:'${currentValue}°', unit:"F",
+                    backgroundColors:[
+                            [value: 0, color: "#153591"],
+                            [value: 5, color: "#1e9cbb"],
+                            [value: 15, color: "#f1d801"]
+                    ]
+            )
+        }
+        valueTile("freezerSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+            state "setpoint", label:'Freezer Set: ${currentValue}°', unit:"F"
+        }
+        valueTile("refrigeratorSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+            state "heat", label:'Fridge Set: ${currentValue}°', unit:"F"
+        }
+        standardTile("tempUp", "device.temperature", inactiveLabel: false, decoration: "flat") {
+            state "default", action:"tempUp", icon:"st.thermostat.thermostat-up"
+        }
+        standardTile("tempDown", "device.temperature", inactiveLabel: false, decoration: "flat") {
+            state "default", action:"tempDown", icon:"st.thermostat.thermostat-down"
+        }
+        standardTile("setpointUp", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+            state "default", action:"setpointUp", icon:"st.thermostat.thermostat-up"
+        }
+        standardTile("setpointDown", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+            state "default", action:"setpointDown", icon:"st.thermostat.thermostat-down"
+        }
+    }
 }
 
+
 def installed() {
-	sendEvent(name: "temperature", value: device.componentName == "freezer" ? 2 : 40)
-	sendEvent(name: "coolingSetpoint", value: device.componentName == "freezer" ? 2 : 40)
+    initialize()
 }
 
 def updated() {
-	installed()
+    initialize()
 }
 
+def initialize() {
+    sendEvent(name: "temperature", value: device.componentName == "freezer" ? 2 : 40)
+    sendEvent(name: "coolingSetpoint", value: device.componentName == "freezer" ? 2 : 40)
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
+
 void tempUp() {
-	def value = device.currentValue("temperature") as Integer
-	sendEvent(name: "temperature", value: value + 1)
+    def value = device.currentValue("temperature") as Integer
+    sendEvent(name: "temperature", value: value + 1)
 }
 
 void tempDown() {
-	def value = device.currentValue("temperature") as Integer
-	sendEvent(name: "temperature", value: value - 1)
+    def value = device.currentValue("temperature") as Integer
+    sendEvent(name: "temperature", value: value - 1)
 }
 
 void setpointUp() {
-	def value = device.currentValue("coolingSetpoint") as Integer
-	sendEvent(name: "coolingSetpoint", value: value + 1)
+    def value = device.currentValue("coolingSetpoint") as Integer
+    sendEvent(name: "coolingSetpoint", value: value + 1)
 }
 
 void setpointDown() {
-	def value = device.currentValue("coolingSetpoint") as Integer
-	sendEvent(name: "coolingSetpoint", value: value - 1)
+    def value = device.currentValue("coolingSetpoint") as Integer
+    sendEvent(name: "coolingSetpoint", value: value - 1)
 }

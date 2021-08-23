@@ -11,6 +11,8 @@ Works with:
 * [Leviton 15A Switch (VRS15-1LZ)](https://www.smartthings.com/works-with-smartthings/lighting-and-switches/leviton-15a-switch)
 * [Enerwave Duplex Receptacle (ZW15R)](https://www.smartthings.com/works-with-smartthings/outlets/enerwave-duplex-receptacle)
 * [Enerwave On/Off Switch (ZW15S)](https://www.smartthings.com/works-with-smartthings/lighting-and-switches/enerwave-onoff-switch)
+* [Eaton Wireless Receptacle](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/aspire_rf_15a_tamper_resistant_split_control_duplex_receptacle_rftr9505_t.html)
+* [Eaton Master Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/switches/aspire_rf_15a_wireless_switch_rf9501.html)
 
 ## Table of contents
 

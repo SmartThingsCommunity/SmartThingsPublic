@@ -12,6 +12,7 @@ Works with:
 * [Leviton 3-Speed Fan Controller](https://www.smartthings.com/works-with-smartthings/leviton/leviton-3-speed-fan-controller)
 * [Leviton Magnetic Low Voltage Dimmer](https://www.smartthings.com/works-with-smartthings/leviton/leviton-magnetic-low-voltage-dimmer)
 * [Remotec Technology Plug-In Dimmer](https://www.smartthings.com/works-with-smartthings/remotec-technology/remotec-technology-plug-in-dimmer)
+* [Eaton RF All Load Smart Dimmer - RF9540-N](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/dimmers/ASPIRE-RF-All-Load-Smart-Dimmer-RF9540-N.html)
 
 ## Table of contents
 

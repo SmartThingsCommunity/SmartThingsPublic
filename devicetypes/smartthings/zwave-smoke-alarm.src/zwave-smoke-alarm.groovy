@@ -12,16 +12,16 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Smoke Alarm", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Smoke Detector"
 		capability "Carbon Monoxide Detector"
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
 
-		attribute "alarmState", "string"
-
-		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
+		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector" //First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)
+		fingerprint mfr:"0138", prod:"0001", model:"0003", deviceJoinName: "First Alert Smoke Detector" //First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)
+		fingerprint mfr:"0154", prod:"0004", model:"0003", deviceJoinName: "POPP Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide-3" //POPP Co Detector
 	}
 
 	simulator {
@@ -36,19 +36,23 @@ metadata {
 
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
-			tileAttribute ("device.alarmState", key: "PRIMARY_CONTROL") {
+			tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
 				attributeState("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-				attributeState("smoke", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
-				attributeState("carbonMonoxide", label:"MONOXIDE", icon:"st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor:"#e86d13")
+				attributeState("detected", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 				attributeState("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
 			}
+		}
+		standardTile("co", "device.carbonMonoxide", width:6, height:4, inactiveLabel: false, decoration: "flat") {
+			state("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
+			state("detected", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
+			state("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
 		main "smoke"
-		details(["smoke", "battery"])
+		details(["smoke", "co", "battery"])
 	}
 }
 
@@ -120,8 +124,7 @@ def createSmokeOrCOEvents(name, results) {
 			name = "clear"
 			break
 	}
-	// This composite event is used for updating the tile
-	results << createEvent(name: "alarmState", value: name, descriptionText: text)
+	results
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
@@ -188,9 +191,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response(zwave.batteryV1.batteryGet(), "delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
+				zwave.batteryV1.batteryGet().format(),
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		], 2000))
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		], 2000))
 	}
 }
 
@@ -204,6 +214,18 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results
 		map.value = cmd.batteryLevel
 	}
 	results << createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, results) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+	state.sec = 1
+	log.debug "encapsulated: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand, results)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		results << createEvent(descriptionText: cmd.toString())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, results) {

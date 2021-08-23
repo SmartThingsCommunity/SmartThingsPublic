@@ -21,7 +21,8 @@ definition(
     category: "Green Living",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/text.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png"
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png",
+    pausable: true
 )
 
 preferences {

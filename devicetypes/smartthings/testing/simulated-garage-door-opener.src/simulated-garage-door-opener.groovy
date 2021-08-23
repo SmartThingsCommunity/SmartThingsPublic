@@ -16,11 +16,11 @@
 metadata {
 	definition (name: "Simulated Garage Door Opener", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Actuator"
-		capability "Door Control"
-        capability "Garage Door Control"
+        capability "Door Control"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	simulator {
@@ -69,4 +69,22 @@ def finishOpening() {
 def finishClosing() {
     sendEvent(name: "door", value: "closed")
     sendEvent(name: "contact", value: "closed")
+}
+
+def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+}
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }

@@ -20,7 +20,8 @@ definition(
     description: "Notify me when the humidity rises above or falls below the given threshold. It will turn on a switch when it rises above the first threshold and off when it falls below the second threshold.",
     category: "Convenience",
     iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
-    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
+    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x",
+    pausable: true
 )
 
 

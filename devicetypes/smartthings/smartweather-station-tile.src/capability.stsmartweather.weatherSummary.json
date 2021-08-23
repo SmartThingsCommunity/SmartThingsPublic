@@ -1,0 +1,35 @@
+{
+  "name": "Weather Summary",
+  "attributes": {
+    "weather": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
+    },
+    "weatherIcon": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
+    }
+  },
+  "commands": {
+  }
+}

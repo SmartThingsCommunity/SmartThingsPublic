@@ -22,7 +22,8 @@ definition(
     description: "Control devices with buttons like the Aeon Labs Minimote",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png",
+    pausable: true
 )
 
 preferences {
@@ -55,6 +56,10 @@ def selectButton() {
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
+		}
+
+		section([title: " ", mobileOnly:true]) {
+			label title: "Assign a name", required: false
 		}
 	}
 }

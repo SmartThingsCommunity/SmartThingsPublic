@@ -30,7 +30,8 @@ definition(
     description: "Turn off and on devices based on the state that your Jenkins Build is in.",
     category: "Fun & Social",
     iconUrl: "http://i.imgur.com/tyIp8wQ.jpg",
-    iconX2Url: "http://i.imgur.com/tyIp8wQ.jpg"
+    iconX2Url: "http://i.imgur.com/tyIp8wQ.jpg",
+    pausable: true
 )
 
 preferences {
