@@ -73,7 +73,6 @@ def installed() {
 	sendEvent(name: "moldHealthConcern", value: "good", displayed: false)
 
 	def cmds = [
-		secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId)),
 		secure(zwave.batteryV1.batteryGet()),
 		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05)), // humidity
 		secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)), // temperature
