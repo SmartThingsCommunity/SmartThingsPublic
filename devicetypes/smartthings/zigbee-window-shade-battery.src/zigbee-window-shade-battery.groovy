@@ -334,7 +334,7 @@ def isIkeaFyrtur() {
 }
 
 def isYooksmartOrYookee() {
-	device.getDataValue("model") == "D10110"   
+	device.getDataValue("model") == "D10110"
 }
 def isSmartwings() {
 	device.getDataValue("model") == "WM25/L-Z"
