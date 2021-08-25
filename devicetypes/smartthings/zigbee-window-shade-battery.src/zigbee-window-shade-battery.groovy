@@ -283,7 +283,7 @@ def configure() {
 }
 
 def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()|| isSmartwings()
+	isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 private def parseBindingTableMessage(description) {
