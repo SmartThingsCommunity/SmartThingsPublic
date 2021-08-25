@@ -42,20 +42,20 @@
  */
 
 metadata {
-    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
+    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
+        capability "Sensor"
         capability "Switch"
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
 
         attribute "firmwareVersion", "string"
-        attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet", mnmn: "SmartThings", vid:"generic-switch"    // old MP21Z
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet", mnmn: "SmartThings", vid:"generic-switch"    //MP21Z Minoston Mini Smart Plug
-        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet", mnmn: "SmartThings", vid:"generic-switch"    // N4001 New One  Mini Smart Plug
+        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
+        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet"  // N4001 New One  Mini Smart Plug
     }
 
     preferences {
@@ -73,7 +73,6 @@ metadata {
 
 def installed() {
     logDebug "installed()..."
-
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
@@ -113,7 +112,6 @@ def configure() {
 }
 
 def executeConfigureCmds() {
-
     runIn(6, refreshSyncStatus)
 
     def cmds = []
@@ -131,6 +129,7 @@ def executeConfigureCmds() {
         def paramVal = param.value
 
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
+            logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
@@ -138,7 +137,7 @@ def executeConfigureCmds() {
 
     state.resyncAll = false
     if (cmds) {
-        sendHubCommand(cmds, 500)
+        sendCommands(delayBetween(cmds, 500))
     }
     return []
 }
@@ -161,7 +160,18 @@ def off() {
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    return [ switchBinaryGetCmd() ]
+    sendCommands([switchBinaryGetCmd()])
+}
+
+private sendCommands(cmds) {
+    if (cmds) {
+        def actions = []
+        cmds.each {
+            actions << new physicalgraph.device.HubAction(it)
+        }
+        sendHubCommand(actions)
+    }
+    return []
 }
 
 private switchBinaryGetCmd() {
@@ -180,7 +190,7 @@ private secureCmd(cmd) {
             return cmd.format()
         }
     } catch (ex) {
-        log.error("caught exception", ex)
+        return cmd.format()
     }
 }
 
@@ -191,9 +201,8 @@ def parse(String description) {
         if (cmd) {
             result += zwaveEvent(cmd)
         } else {
-            logDebug "Unable to parse description: $description"
+            log.warn "Unable to parse: $description"
         }
-        updateLastCheckIn()
     } catch (e) {
         log.error "${e}"
     }
@@ -213,7 +222,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-    logTrace "ConfigurationReport ${cmd}"
+    logTrace "${cmd}"
 
     sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
@@ -222,7 +231,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     if (param) {
         def val = cmd.scaledConfigurationValue
         logDebug "${param.name}(#${param.num}) = ${val}"
-        state["configParam${param.num}"] = val
+        state["configVal${param.num}"] = val
     } else {
         logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
@@ -235,7 +244,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
 
-    sendEvent(name: "firmwareVersion",  value:fullVersion, displayed: true, type:  null)
+    sendEvent(name:  "firmwareVersion", value:  fullVersion)
     return []
 }
 
@@ -252,8 +261,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 private sendSwitchEvents(rawVal, type) {
-    def switchVal = (rawVal == 0xFF) ? "on" : "off"
-    sendEvent(name:  "switch", value: switchVal, displayed:  true, type:  type)
+    sendEvent(name:  "switch", value:  (rawVal == 0xFF) ? "on" : "off", displayed:  true, type:  type)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -268,22 +276,23 @@ def refreshSyncStatus() {
 
 private static getCommandClassVersions() {
     [
-        0x20: 1,	// Basic                    //BasicReport
-        0x25: 1,	// Switch Binary            //SwitchBinaryReport
+        0x20: 1,	// Basic
+        0x25: 1,	// Switch Binary
         0x55: 1,	// Transport Service
-        0x59: 1,	// AssociationGrpInfo       //AssociationGroupInfoReport     //DTH unimplemented interface
-        0x5A: 1,	// DeviceResetLocally       //DeviceResetLocallyNotification //DTH unimplemented interface
+        0x59: 1,	// AssociationGrpInfo
+        0x5A: 1,	// DeviceResetLocally
         0x27: 1,	// Switch All
         0x5E: 2,	// ZwaveplusInfo
-        0x6C: 1,	// Supervision              //SupervisionGet                 //DTH unimplemented interface
-        0x70: 1,	// Configuration            //ConfigurationReport
-        0x7A: 2,	// FirmwareUpdateMd         //FirmwareMdReport               //DTH unimplemented interface
-        0x72: 2,	// ManufacturerSpecific     //ManufacturerSpecificReport     //DTH unimplemented interface
+        0x6C: 1,	// Supervision
+        0x70: 1,	// Configuration
+        0x7A: 2,	// FirmwareUpdateMd
+        0x72: 2,	// ManufacturerSpecific
         0x73: 1,	// Powerlevel
-        0x85: 2,	// Association              //AssociationReport              //DTH unimplemented interface
-        0x86: 1,	// Version (2)              //VersionReport
-        0x8E: 2,	// Multi Channel Association//MultiChannelAssociationReport  //DTH unimplemented interface
-        0x9F: 1		// Security S2              //SecurityMessageEncapsulation
+        0x85: 2,	// Association
+        0x86: 1,	// Version (2)
+        0x8E: 2,	// Multi Channel Association
+        0x98: 1,	// Security S0
+        0x9F: 1		// Security S2
     ]
 }
 
@@ -292,7 +301,7 @@ private getPendingChanges() {
 }
 
 private getParamStoredValue(paramNum) {
-    return safeToInt(state["configParam${paramNum}"] , null)
+    return safeToInt(state["configVal${paramNum}"] , null)
 }
 
 private getConfigParams() {
@@ -320,14 +329,6 @@ private getPowerFailureRecoveryParam() {
     return getParam(6, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
 }
 
-private static getLedModeOptions() {
-    return [
-            "0":"On When On",
-            "1":"Off When On",
-            "2":"Always Off"
-    ]
-}
-
 private getParam(num, name, size, defaultVal, options=null, range=null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
 
@@ -352,6 +353,14 @@ private static setDefaultOption(options, defaultVal) {
     }
 }
 
+private static getLedModeOptions() {
+    return [
+        "0":"On When On",
+        "1":"Off When On",
+        "2":"Always Off"
+    ]
+}
+
 private static getPowerFailureRecoveryOptions() {
     return [
         "0":"Turn Off",
@@ -374,27 +383,4 @@ private logDebug(msg) {
 
 private logTrace(msg) {
     log.trace "$msg"
-}
-
-private updateLastCheckIn() {
-    if (!isDuplicateCommand(state.lastCheckInTime, 60000)) {
-        state.lastCheckInTime = new Date().time
-
-        def evt = [name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false]
-
-        sendEvent(evt)
-
-        if (childDevices) {
-            childDevices*.sendEvent(evt)
-        }
-    }
-}
-
-private convertToLocalTimeString(dt) {
-    def timeZoneId = location?.timeZone?.ID
-    if (timeZoneId) {
-        return dt.format("MM/dd/yyyy hh:mm:ss a", TimeZone.getTimeZone(timeZoneId))
-    } else {
-        return "$dt"
-    }
 }
