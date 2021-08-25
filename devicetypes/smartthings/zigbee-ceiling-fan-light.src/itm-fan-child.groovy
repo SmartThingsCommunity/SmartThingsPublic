@@ -55,33 +55,26 @@ def setLevel(value) {
 }
 
 def setFanSpeed(speed) {
-	log.debug "child setFanSpeed $speed"	
 	parent.sendFanSpeed(speed)
 }
 
 void refresh() {
-	log.debug "[Child] - refresh()"
 	parent.refresh()	
 }
 
 def ping() {
-	log.debug "[Child] - ping()"
 	parent.ping()
 }
 
 def configure() {
-	log.debug "[Child] - configure()"   
 }
 
 def updated() {
-	log.debug "[Child] - updated()"
 }
 
 def installed() {
-	log.debug "[Child] - installed"
 	configure()
 }
 
 def uninstalled() {
-	log.debug "[Child] - uninstalled()"	
 }
