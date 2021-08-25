@@ -61,33 +61,27 @@ private getON_OFF_CLUSTER_VALUE() { 0x0006 }
 
 def parse(String description) {
 	// Parse incoming device messages to generate events
-	log.debug "description is $description"
 	def event = zigbee.getEvent(description)	
 	if (event) {
 		sendEvent(event)
 	} else if (description?.startsWith('read attr -')) {
 		def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 		if (zigbeeMap.clusterInt == FAN_CLUSTER_VALUE &&
-		    zigbeeMap.attrInt == FAN_STATUS_VALUE) {		
-			log.debug "read attribute event for fan cluster attrib FAN_STATUS"
+		    zigbeeMap.attrInt == FAN_STATUS_VALUE) {
 			def childDevice = childDevices.find {
 				//find light child device
-				log.debug "parse() child device found"
 				it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
 			}
 			def fanSpeedEvent = createEvent(name: "fanSpeed", value: zigbeeMap.value as Integer)
 			childDevice.sendEvent(fanSpeedEvent)
 			if (fanSpeedEvent.value == 0) {
-				log.debug "fan_off => switch off"
 				childDevice.sendEvent(name: "switch", value: "off")
 				childDevice.sendEvent(name: "level", value: 0)	// For cloud to cloud device UI update
 			} else {
-				log.debug "fan_on => switch on"
 				childDevice.sendEvent(name: "switch", value: "on")
 				def int_v = fanSpeedEvent.value
 				int_v = int_v * 25
 				int_v = int_v > 100 ? 100 : int_v
-				log.debug "child device Level set $int_v"
 				childDevice.sendEvent(name: "level", value: int_v)	// For cloud to cloud device UI update
 			}
 		}		
@@ -97,10 +91,7 @@ def parse(String description) {
 		    cluster.clusterInt == ON_OFF_CLUSTER_VALUE &&
 		    cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
-				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-			} else {
-				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
 		}
 	}
@@ -135,7 +126,6 @@ def refresh() {
 }
 
 def configure() {
-	log.debug "Configuring Reporting and Bindings."
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
@@ -146,12 +136,10 @@ def configure() {
 }
 
 def installed() {
-	log.debug "Samsung ITM test prod installed"
 	addChildFan()
 }
 
 def addChildFan() {
-	log.debug "add child fan"
 	def componentLabel
 	if (device.displayName.endsWith(' Light') ||
 	    device.displayName.endsWith(' light')) {
@@ -163,13 +151,10 @@ def addChildFan() {
 	try {
 		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
-		log.debug "Child Fan device (ITM Fan Controller) added as $componentLabel"
 	} catch(e) {
-		log.warn "Failed to add ITM Fan Controller - $e"
 	}
     	def childDevice = getChildDevices()?.find {
 		//find light child device
-        	log.debug "parse() child device found"
         	it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
     	}
 	if (childDevice != null) {
@@ -178,5 +163,4 @@ def addChildFan() {
 }
 
 def delete() {
-	log.debug "[Parent] - delete()"
 }
