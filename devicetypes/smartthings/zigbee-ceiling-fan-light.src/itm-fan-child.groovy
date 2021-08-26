@@ -65,6 +65,3 @@ void refresh() {
 def ping() {
 	parent.ping()
 }
-
-def installed() {
-}
