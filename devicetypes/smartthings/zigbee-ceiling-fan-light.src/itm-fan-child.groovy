@@ -66,9 +66,5 @@ def ping() {
 	parent.ping()
 }
 
-def configure() {
-}
-
 def installed() {
-	configure()
 }
