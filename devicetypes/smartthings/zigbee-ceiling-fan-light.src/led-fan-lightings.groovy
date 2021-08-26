@@ -105,8 +105,8 @@ def on() {
 	zigbee.on()
 }
 
-def setLevel(value) {
-	zigbee.setLevel(value)
+def setLevel(value, duration) {
+	zigbee.setLevel(value, duration)
 }
 
 def sendFanSpeed(val) {
@@ -152,6 +152,7 @@ def addChildFan() {
 		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 	} catch(e) {
+		log.warn "Failed to add ITM Fan Controller - $e"
 	}
     	def childDevice = getChildDevices()?.find {
 		//find light child device
