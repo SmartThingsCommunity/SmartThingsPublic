@@ -69,12 +69,6 @@ def ping() {
 def configure() {
 }
 
-def updated() {
-}
-
 def installed() {
 	configure()
-}
-
-def uninstalled() {
 }
