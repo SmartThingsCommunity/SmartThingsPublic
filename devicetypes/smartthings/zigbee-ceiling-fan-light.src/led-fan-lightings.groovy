@@ -106,7 +106,7 @@ def on() {
 }
 
 def setLevel(value, duration) {
-	zigbee.setLevel(value, duration)
+	zigbee.setLevel(value)
 }
 
 def sendFanSpeed(val) {
