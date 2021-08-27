@@ -72,20 +72,24 @@ metadata {
     }
 
     preferences {
-        configParams.each {
-            if (it.name) {
-                if (it.range) {
-                    input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
-                } else {
-                    input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
-                }
-            }
-        }
+        getConfigParamInput(ledModeParam)
+        getConfigParamInput(autoOffIntervalParam)
+        getConfigParamInput(autoOnIntervalParam)
+        getConfigParamInput(powerFailureRecoveryParam)
         input "disclaimer", "paragraph",
                 title: "WARNING",
                 description: "Configuring for 'Paddle Control' and 'createButton' are only valid for the devices with product number of MS10ZS, MS12ZS, ZW30, ZW30S, ZW30TS(one of them)",
                 required: false
+        getConfigParamInput(paddleControlParam)
         input(type: "enum", name: "createButton", required: false, title: "Create Button for Paddles?", options: ["No", "Yes"], defaultValue:"Yes")
+    }
+}
+
+private getConfigParamInput(param) {
+    if (param.range) {
+        input "configParam${param.num}", "number", title: "${param.name}:", required: false, defaultValue: "${param.value}", range: param.range
+    } else {
+        input "configParam${param.num}", "enum", title: "${param.name}:", required: false, defaultValue: "${param.value}", options: param.options
     }
 }
 
@@ -447,8 +451,7 @@ private sendButtonEvent(value) {
 }
 
 private getPaddleControlParam() {
-    def name = isButtonAvailable()? "Paddle Control":null
-    return getParam(1, name, 1, 0, paddleControlOptions)
+    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
 }
 
 private getLedModeParam() {
