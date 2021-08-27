@@ -1,7 +1,7 @@
 /**
- *      Min Smart Plug v1.0.4
+ *      Min Smart Plug v2.0.1
  *
- *  	Models: MINOSTON (MP21Z)
+ *  	Models: MINOSTON (MP21Z) And Eva Logik (ZW30) / MINOSTON (MS10Z)
  *
  *  Author:
  *   winnie (sky-nie)
@@ -9,6 +9,13 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.0.1 (08/27/2021)
+ *      - Syntax format compliance adjustment
+ *      - fix some bugs
+ *
+ *    2.0.0 (08/26/2021)
+ *      - add new products supported
  *
  *    1.0.4 (07/13/2021)
  *      - Syntax format compliance adjustment
@@ -40,6 +47,7 @@
  *  limitations under the License.
  *
  */
+import groovy.json.JsonOutput
 
 metadata {
     definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug") {
@@ -56,6 +64,11 @@ metadata {
         fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
         fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
         fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet"  // N4001 New One  Mini Smart Plug
+        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Switch" //MS10ZS Minoston Smart Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Switch" //MS12ZS Minoston Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik Switch" //ZW30
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Switch" //ZW30S Evalogik Smart on/off Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Switch" //ZW30TS Evalogik Smart on/off Toggle Switch
     }
 
     preferences {
@@ -68,11 +81,67 @@ metadata {
                 }
             }
         }
+        input "disclaimer", "paragraph",
+                title: "WARNING",
+                description: "Configuring for 'Paddle Control' and 'createButton' are only valid for the devices with product number of MS10ZS, MS12ZS, ZW30, ZW30S, ZW30TS(one of them)",
+                required: false
+        input(type: "enum", name: "createButton", required: false, title: "Create Button for Paddles?", options: ["No", "Yes"], defaultValue:"Yes")
+    }
+}
+
+private initialize() {
+    if (device.latestValue("checkInterval") != checkInterval) {
+        sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    }
+    if(isButtonAvailable()) {
+        if (state.createButtonEnabled && !childDevices) {
+            try {
+                def child = addChildButton()
+                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+            } catch (ex) {
+                log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
+            }
+        } else if (!state.createButtonEnabled && childDevices) {
+            removeChildButton(childDevices[0])
+        }
+    }
+}
+
+private addChildButton() {
+    log.warn "Creating Button Device"
+    def child = addChildDevice(
+            "smartthings",
+            "Child Button",
+            "${device.deviceNetworkId}-2",
+            device.getHub().getId(),
+            [
+                    completedSetup: true,
+                    isComponent: false,
+                    label: "plugButton",
+                    componentLabel: "${device.displayName[0..-8]} Button"
+            ]
+    )
+    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down", "down_2x", "up", "up_2x"]), displayed:false)
+    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
+    sendButtonEvent("pushed")
+    return child
+}
+
+private removeChildButton(child) {
+    try {
+        log.warn "Removing ${child.displayName}} "
+        deleteChildDevice(child.deviceNetworkId)
+    } catch (ex) {
+        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
     }
 }
 
 def installed() {
     logDebug "installed()..."
+    if (isButtonAvailable() && state.debugLoggingEnabled == null) {
+        state.debugLoggingEnabled = true
+        state.createButtonEnabled = true
+    }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
@@ -90,6 +159,10 @@ def updated() {
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
+        if(isButtonAvailable()) {
+            state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
+        }
+        initialize()
 
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
@@ -127,6 +200,11 @@ def executeConfigureCmds() {
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
+        if (isButtonAvailable()) {
+            if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == 2)) {
+                log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
+            }
+        }
 
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
@@ -262,6 +340,17 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 private sendSwitchEvents(rawVal, type) {
     sendEvent(name:  "switch", value:  (rawVal == 0xFF) ? "on" : "off", displayed:  true, type:  type)
+    if(isButtonAvailable()) {
+        def paddlesReversed = (paddleControlParam.value == 1)
+        if (state.createButtonEnabled && (type == "physical") && childDevices) {
+            if (paddleControlParam.value == 2) {
+                sendButtonEvent("pushed")
+            } else {
+                def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
+                sendButtonEvent(btnVal)
+            }
+        }
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -278,6 +367,7 @@ private static getCommandClassVersions() {
     [
         0x20: 1,	// Basic
         0x25: 1,	// Switch Binary
+        0x5B: 1,	// CentralScene (3)
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
@@ -309,24 +399,76 @@ private getConfigParams() {
         ledModeParam,
         autoOffIntervalParam,
         autoOnIntervalParam,
-        powerFailureRecoveryParam
+        powerFailureRecoveryParam,
+        paddleControlParam
     ]
 }
 
+private static getPaddleControlOptions() {
+    return [
+        "0":"Normal",
+        "1":"Reverse",
+        "2":"Toggle"
+    ]
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
+    if (state.lastSequenceNumber != cmd.sequenceNumber) {
+        state.lastSequenceNumber = cmd.sequenceNumber
+        logTrace "${cmd}"
+        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
+        def btnVal
+        switch (cmd.keyAttributes){
+            case 0:
+                btnVal = paddle
+                break
+            case 1:
+                logDebug "Button released not supported"
+                break
+            case 2:
+                logDebug "Button held not supported"
+                break
+            case 3:
+                btnVal = paddle + "_2x"
+                break
+        }
+
+        if (btnVal) {
+            sendButtonEvent(btnVal)
+        }
+    }
+    return []
+}
+
+private sendButtonEvent(value) {
+    if (childDevices) {
+        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
+    }
+}
+
+private getPaddleControlParam() {
+    def name = isButtonAvailable()? "Paddle Control":null
+    return getParam(1, name, 1, 0, paddleControlOptions)
+}
+
 private getLedModeParam() {
-    return getParam(1, "LED Indicator Mode", 1, 0, ledModeOptions)
+    def num = isButtonAvailable()? 2 : 1
+    return getParam(num, "LED Indicator Mode", 1, 0,  alternativeLedOptions)
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    def num = isButtonAvailable()? 4 : 2
+    return getParam(num, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    def num = isButtonAvailable()? 6 : 4
+    return getParam(num, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getPowerFailureRecoveryParam() {
-    return getParam(6, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
+    def num = isButtonAvailable()? 8 : 6
+    return getParam(num, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
 }
 
 private getParam(num, name, size, defaultVal, options=null, range=null) {
@@ -353,12 +495,21 @@ private static setDefaultOption(options, defaultVal) {
     }
 }
 
-private static getLedModeOptions() {
-    return [
-        "0":"On When On",
-        "1":"Off When On",
-        "2":"Always Off"
-    ]
+private getAlternativeLedOptions() {
+    if(isButtonAvailable()){
+        return [
+                "0":"On When On",
+                "1":"Off When On",
+                "2":"Always Off"
+        ]
+    }else{
+        return [
+                "0":"Off When On",
+                "1":"On When On",
+                "2":"Always Off",
+                "3":"Always On"
+        ]
+    }
 }
 
 private static getPowerFailureRecoveryOptions() {
@@ -383,4 +534,20 @@ private logDebug(msg) {
 
 private logTrace(msg) {
     log.trace "$msg"
+}
+
+private isButtonAvailable() {
+    if(device == null){
+        log.error "isButtonAvailable device = null"
+        return true
+    }else{
+        log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
+        def v20 = "${device.rawDescription}".contains("model:EE01")
+        def v21 = "${device.rawDescription}".contains("model:EE03")
+        def v22 = "${device.rawDescription}".contains("model:A005")
+        def v23 = "${device.rawDescription}".contains("model:BB01")
+        def v24 = "${device.rawDescription}".contains("model:BB03")
+        def v2 = v20||v21||v22||v23||v24
+        return v2
+    }
 }
