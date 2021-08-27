@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.9
+ *      Min Smart Plug Dimmer v2.0.1
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,13 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.0.1 (08/27/2021)
+ *      - Syntax format compliance adjustment
+ *      - fix some bugs
+ *
+ *    2.0.0  (07/30/2021)
+ *      - add some fingerprint for new devices
  *
  *    1.1.9 (07/29/2021)
  *      - add a fingerprint for a new device
@@ -48,7 +55,6 @@
  *
  * Reference：
  *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/eva-logik-in-wall-smart-dimmer.src/eva-logik-in-wall-smart-dimmer.groovy
- *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/aeotec-trisensor.src/aeotec-trisensor.groovy
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -63,6 +69,7 @@
  *  limitations under the License.
  *
  */
+import groovy.json.JsonOutput
 
 metadata {
     definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
@@ -71,6 +78,7 @@ metadata {
         capability "Switch Level"
         capability "Configuration"
         capability "Refresh"
+        capability "Health Check"
 
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
@@ -79,21 +87,139 @@ metadata {
         fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
         fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Dimmer Switch" //N4002
+        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS11ZS Minoston Smart Dimmer Switch   
+        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS13ZS Minoston Smart Toggle Dimmer Switch  
+        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31S Evalogik Smart Dimmer Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31TS Evalogik Smart Toggle Dimmer Switch
     }
 
     preferences {
-        configParams.each {
-            if (it.range) {
-                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
-            } else {
-                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
-            }
+        getConfigParamInput(ledModeParam)
+        getConfigParamInput(autoOffIntervalParam)
+        getConfigParamInput(autoOnIntervalParam)
+        getConfigParamInput(powerFailureRecoveryParam)
+        getConfigParamInput(pushDimmingDurationParam)
+        getConfigParamInput(holdDimmingDurationParam)
+        getConfigParamInput(minimumBrightnessParam)
+        input "disclaimer", "paragraph",
+                title: "WARNING",
+                description: "Configuring for 'Night Light Settings' is only valid for the devices with product number of MP21ZD、MP22ZD、N4002(one of them)",
+                required: false
+        getConfigParamInput(nightLightParam)
+        input "disclaimer", "paragraph",
+                title: "WARNING",
+                description: "Configuring for 'createButton'、'Maximum Brightness' and 'Paddle Control' are only valid for the devices with product number of MS11ZS、MS13ZS、ZW31S、ZW31TS(one of them)",
+                required: false
+        getConfigParamInput(maximumBrightnessParam)
+        getConfigParamInput(paddleControlParam)
+        input(type: "enum", name: "createButton", required: false, title: "Create Button for Paddles?", options: ["No", "Yes"], defaultValue:"Yes")
+    }
+}
+
+private getConfigParamInput(param) {
+    if (param.range) {
+        input "configParam${param.num}", "number", title: "${param.name}:", required: false, defaultValue: "${param.value}", range: param.range
+    } else {
+        input "configParam${param.num}", "enum", title: "${param.name}:", required: false, defaultValue: "${param.value}", options: param.options
+    }
+}
+
+private initialize() {
+    if (state.createButtonEnabled && !childDevices) {
+        try {
+            def child = addChildButton()
+            child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+        } catch (ex) {
+            log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
+        }
+    } else if (!state.createButtonEnabled && childDevices) {
+        removeChildButton(childDevices[0])
+    }
+}
+
+private addChildButton() {
+    log.warn "Creating Button Device"
+    def child = addChildDevice(
+            "smartthings",
+            "Child Button",
+            "${device.deviceNetworkId}-2",
+            device.getHub().getId(),
+            [
+                completedSetup: true,
+                isComponent: false,
+                label: "plugButton",
+                componentLabel: "${device.displayName[0..-8]} Button"
+            ]
+    )
+    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down", "down_2x", "up", "up_2x"]), displayed:false)
+    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
+    sendButtonEvent("pushed")
+    return child
+}
+
+private removeChildButton(child) {
+    try {
+        log.warn "Removing ${child.displayName}} "
+        deleteChildDevice(child.deviceNetworkId)
+    } catch (ex) {
+        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.",ex)
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
+    if (state.lastSequenceNumber != cmd.sequenceNumber) {
+        state.lastSequenceNumber = cmd.sequenceNumber
+        logTrace "${cmd}"
+        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
+        def btnVal
+        switch (cmd.keyAttributes){
+            case 0:
+                btnVal = paddle
+                break
+            case 1:
+                logDebug "Button released not supported"
+                break
+            case 2:
+                logDebug "Button held not supported"
+                break
+            case 3:
+                btnVal = paddle + "_2x"
+                break
+        }
+
+        if (btnVal) {
+            sendButtonEvent(btnVal)
         }
     }
+    return []
+}
+
+private sendButtonEvent(value) {
+    if (childDevices) {
+        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
+    }
+}
+
+def ping() {
+    logDebug "ping()..."
+    return [ switchMultilevelGetCmd() ]
+}
+
+def refresh() {
+    logDebug "refresh()..."
+    refreshSyncStatus()
+    return [ switchMultilevelGetCmd() ]
+}
+
+private switchMultilevelGetCmd() {
+    return secureCmd(zwave.switchMultilevelV3.switchMultilevelGet())
 }
 
 def installed() {
     logDebug "installed()..."
+    if (isButtonAvailable()) {
+        state.createButtonEnabled = true
+    }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     state.refreshConfig = true
 }
@@ -113,6 +239,10 @@ def updated() {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
 
+        if (isButtonAvailable()) {
+            state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
+            initialize()
+        }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
 
@@ -142,6 +272,11 @@ def executeConfigureCmds() {
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
+        if (isButtonAvailable()) {
+            if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == 2)) {
+                log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
+            }
+        }
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
@@ -225,22 +360,24 @@ private secureCmd(cmd) {
 
 private static getCommandClassVersions() {
     [
-            0x20: 1,	// Basic
-            0x26: 3,	// Switch Multilevel
-            0x55: 1,	// Transport Service
-            0x59: 1,	// AssociationGrpInfo
-            0x5A: 1,	// DeviceResetLocally
-            0x71: 3,	// Notification
-            0x6C: 1,	// Supervision
-            0x70: 1,	// Configuration
-            0x7A: 2,	// FirmwareUpdateMd
-            0x72: 2,	// ManufacturerSpecific
-            0x73: 1,	// Powerlevel
-            0x85: 2,	// Association
-            0x86: 1,	// Version (2)
-            0x8E: 2,	// Multi Channel Association
-            0x98: 1,	// Security S0
-            0x9F: 1 	// Security S2
+        0x20: 1,	// Basic
+        0x26: 3,	// Switch Multilevel
+        0x5B: 1,	// CentralScene (3)
+        0x55: 1,	// Transport Service
+        0x59: 1,	// AssociationGrpInfo
+        0x5A: 1,	// DeviceResetLocally
+        0x5E: 2,	// ZwaveplusInfo
+        0x71: 3,	// Notification
+        0x6C: 1,	// Supervision
+        0x70: 1,	// Configuration
+        0x7A: 2,	// FirmwareUpdateMd
+        0x72: 2,	// ManufacturerSpecific
+        0x73: 1,	// Powerlevel
+        0x85: 2,	// Association
+        0x86: 1,	// Version (2)
+        0x8E: 2,	// Multi Channel Association
+        0x98: 1,	// Security S0
+        0x9F: 1		// Security S2
     ]
 }
 
@@ -263,8 +400,21 @@ private getConfigParams() {
         pushDimmingDurationParam,
         holdDimmingDurationParam,
         minimumBrightnessParam,
-        maximumBrightnessParam
+        maximumBrightnessParam,
+        paddleControlParam
     ]
+}
+
+private static getPaddleControlOptions() {
+    return [
+        "0":"Normal",
+        "1":"Reverse",
+        "2":"Toggle"
+    ]
+}
+
+private getPaddleControlParam() {
+    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
 }
 
 private getLedModeParam() {
@@ -284,11 +434,13 @@ private getNightLightParam() {
 }
 
 private getPowerFailureRecoveryParam() {
-    return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
+    def defaultVal = isButtonAvailable()? 0:2
+    return getParam(8, "Power Failure Recovery", 1, defaultVal, powerFailureRecoveryOptions)
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, 2, null, "0..10")
+    def defaultVal = isButtonAvailable()? 1:2
+    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, defaultVal, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
@@ -382,13 +534,11 @@ private logTrace(msg) {
 
 def on() {
     logDebug "on()..."
-
     return [ basicSetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
-
     return [ basicSetCmd(0x00) ]
 }
 
@@ -411,18 +561,14 @@ private basicSetCmd(val) {
 
 private switchMultilevelSetCmd(level, duration) {
     def levelVal = validateRange(level, 99, 0, 99)
-
     def durationVal = validateRange(duration, 1, 0, 100)
-
     return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     logTrace "VersionReport: ${cmd}"
-
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
-
     sendEvent(name: "firmwareVersion",  value:fullVersion, displayed: true, type:  null)
     return []
 }
@@ -441,10 +587,39 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 
 private sendSwitchEvents(rawVal, type) {
     def switchVal = rawVal ? "on" : "off"
-
     sendEvent(name: "switch",  value:switchVal, displayed: true, type: type)
-
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
+    }
+    if(isButtonAvailable()) {
+        def paddlesReversed = (paddleControlParam.value == 1)
+        if (state.createButtonEnabled && (type == "physical") && childDevices) {
+            if (paddleControlParam.value == 2) {
+                sendButtonEvent("pushed")
+            } else {
+                def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
+                def oldSwitch = device.currentValue("switch")
+                def oldLevel = device.currentValue("level")
+                if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
+                    btnVal = "down"
+                }
+                sendButtonEvent(btnVal)
+            }
+        }
+    }
+}
+
+private isButtonAvailable() {
+    if(device == null){
+        log.error "isButtonAvailable device = null"
+        return true
+    }else{
+        log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
+        def v20 = "${device.rawDescription}".contains("model:EE02")
+        def v21 = "${device.rawDescription}".contains("model:EE04")
+        def v22 = "${device.rawDescription}".contains("model:BB02")
+        def v23 = "${device.rawDescription}".contains("model:BB04")
+        def v2 = v20||v21||v22||v23
+        return v2
     }
 }
