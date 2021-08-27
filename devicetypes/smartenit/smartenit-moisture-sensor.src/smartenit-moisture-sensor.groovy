@@ -18,7 +18,8 @@ import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition(name: "Smartenit Moisture Sensor", namespace: "Smartenit", author: "Luis Contreras") {
-		capability "Configuration"
+		capability "Battery"
+        capability "Configuration"
 		capability "Refresh"
 		capability "Water Sensor"
 		capability "Health Check"
@@ -29,7 +30,6 @@ metadata {
 }
 
 def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
-def getBATTERY_PERCENT_ATTR() { 0x0021 }
 
 def installed() {
 	log.debug "Installed"
@@ -59,11 +59,11 @@ def parse(String description) {
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 
-			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
+            	map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+            } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
-			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
-				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
 		}
 	}
@@ -113,28 +113,48 @@ private Map getMoistureResult(value) {
 	else
 		descriptionText = '{{ device.displayName }} is dry'
 	return [
-			name           : 'water',
-			value          : value,
-			descriptionText: descriptionText,
-			translatable   : true
+		name           : 'water',
+		value          : value,
+		descriptionText: descriptionText,
+		translatable   : true
 	]
+}
+
+private Map getBatteryResult(rawValue) {
+	log.debug "Battery ${rawValue}"
+	def linkText = getLinkText(device)
+
+	def result = [:]
+
+	def volts = rawValue / 10
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def minVolts = 2.1
+		def maxVolts = 3.0
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct <= 0)
+			roundedPct = 1
+		result.value = Math.min(100, roundedPct)
+		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
+	}
+
+	return result
 }
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refresh()
 }
 
 def refresh() {
 	log.debug "Refreshing Values"
-	def refreshCmds = []
 
-	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+    	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
 		zigbee.enrollResponse()
-
-	return refreshCmds
 }
 
 def configure() {
@@ -143,7 +163,7 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
-	return refresh() // send refresh cmds as part of config
+	return refresh() + zigbee.batteryConfig()
 }
 
 private void createChildDevices() {
