@@ -21,6 +21,7 @@ metadata {
 
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70", deviceJoinName: "FortrezZ Valve"
 		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Valve" //FortrezZ Water Valve
+		fingerprint mfr:"027A", prod:"0101", model:"0036", deviceJoinName: "Zooz Valve" //Zooz ZAC36 Titan Valve Actuator
 	}
 
 	// simulator metadata
