@@ -103,7 +103,7 @@ def parse(String description) {
         map.unit = "%"
         map.translatable = true
     }
-	
+
     def result = map ? createEvent(map) : [:]
 
     if (description?.startsWith('enroll request')) {
