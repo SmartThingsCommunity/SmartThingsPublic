@@ -142,8 +142,7 @@ private removeChildButton(child) {
 
 def installed() {
     logDebug "installed()..."
-    if (isButtonAvailable() && state.debugLoggingEnabled == null) {
-        state.debugLoggingEnabled = true
+    if (isButtonAvailable()) {
         state.createButtonEnabled = true
     }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -209,9 +208,7 @@ def executeConfigureCmds() {
                 log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
             }
         }
-
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
-            logDebug "Changing ${param.name}(#${param.num}) from ${storedVal} to ${paramVal}"
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
         }
@@ -242,7 +239,7 @@ def off() {
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    sendCommands([switchBinaryGetCmd()])
+    return [ switchBinaryGetCmd() ]
 }
 
 private sendCommands(cmds) {
