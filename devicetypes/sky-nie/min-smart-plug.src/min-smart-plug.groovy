@@ -55,6 +55,7 @@ metadata {
 
         fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
         fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
+        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet"  // N4001 New One  Mini Smart Plug
     }
 
     preferences {
@@ -63,7 +64,7 @@ metadata {
                 if (it.range) {
                     input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
                 } else {
-                    input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options:it.options
+                    input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
                 }
             }
         }
@@ -143,27 +144,22 @@ def executeConfigureCmds() {
 
 def ping() {
     logDebug "ping()..."
-
     return [ switchBinaryGetCmd() ]
 }
 
 def on() {
     logDebug "on()..."
-
     return [ switchBinarySetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
-
     return [ switchBinarySetCmd(0x00) ]
 }
 
 def refresh() {
     logDebug "refresh()..."
-
     refreshSyncStatus()
-
     sendCommands([switchBinaryGetCmd()])
 }
 
@@ -322,11 +318,11 @@ private getLedModeParam() {
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1--60480 minutes)", 4, 0, null, "0..60480")
+    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getPowerFailureRecoveryParam() {

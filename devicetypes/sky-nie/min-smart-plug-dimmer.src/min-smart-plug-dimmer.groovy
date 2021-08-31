@@ -78,7 +78,7 @@ metadata {
 
         fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
-        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "Minoston Dimmer Switch" //N4002
+        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Dimmer Switch" //N4002
     }
 
     preferences {
@@ -193,7 +193,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
     def param = configParams.find { it.num == cmd.parameterNumber }
     if (param) {
         def val = cmd.scaledConfigurationValue
-
         logDebug "${param.name}(#${param.num}) = ${val}"
         state["configParam${param.num}"] = val
     } else {
