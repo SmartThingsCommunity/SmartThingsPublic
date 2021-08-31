@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2021-08-30
+ *      - Requested changes
  *    2021-08-28
  *      - Publication Release
  *
@@ -105,7 +107,7 @@ metadata {
 		capability "platemusic11009.firmware"
 		capability "platemusic11009.syncStatus"
 
-		fingerprint mfr: "027A", prod: "A000", model: "A008", deviceJoinName: "Zooz Double Switch ZEN30" // zw:Ls2 type:1101 mfr:027A prod:A000 model:A008 ver:2.00 zwv:5.03 lib:03 cc:5E,6C,55,9F sec:86,26,25,85,8E,59,72,5A,73,5B,60,70,7A epc:1
+		fingerprint mfr: "027A", prod: "A000", model: "A008", deviceJoinName: "Zooz Switch" //Zooz Double Switch ZEN30, raw description: zw:Ls2 type:1101 mfr:027A prod:A000 model:A008 ver:2.00 zwv:5.03 lib:03 cc:5E,6C,55,9F sec:86,26,25,85,8E,59,72,5A,73,5B,60,70,7A epc:1
 	}
 
 	preferences {
@@ -344,12 +346,12 @@ void zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, endpoint=0
 
 void zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, endpoint=0) {
 	logDebug "${cmd} (${endpoint})"
-	sendSwitchEvents(cmd.value, endpoints.relay)
+	sendSwitchEvents(cmd.value, endpoint)
 }
 
 void zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, endpoint=0) {
 	logDebug "${cmd} (${endpoint})"
-	sendSwitchEvents(cmd.value, endpoints.dimmer)
+	sendSwitchEvents(cmd.value, endpoint)
 }
 
 void sendSwitchEvents(rawVal, Integer endpoint) {
