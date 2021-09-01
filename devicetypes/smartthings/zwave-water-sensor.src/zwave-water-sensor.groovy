@@ -33,6 +33,8 @@ metadata {
 		fingerprint mfr: "000C", prod: "0201", model: "000A", deviceJoinName: "HomeSeer Water Leak Sensor" //HomeSeer LS100+ Water Sensor
 		//zw:Ss2 type:0701 mfr:0173 prod:4C47 model:4C44 ver:1.10 zwv:4.61 lib:03 cc:5E,55,98,9F sec:86,71,85,59,72,5A,6C,7A,84,80
 		fingerprint mfr: "0173", prod: "4C47", model: "4C44", deviceJoinName: "Leak Gopher Water Leak Sensor" //Leak Intelligence Leak Gopher Z-Wave Leak Detector
+		//zw:Ss2a type:0701 mfr:027A prod:7000 model:E002 ver:1.05 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,71,30,70,84,7A
+		fingerprint mfr: "027A", prod: "7000", model: "E002", deviceJoinName: "Zooz Water Leak Sensor" //Zooz ZSE42 XS Water Leak Sensor
 	}
 
 	simulator {
@@ -60,8 +62,8 @@ metadata {
 }
 
 def initialize() {
-	if (isAeotec() || isNeoCoolcam() || isDome() || isLeakGopher()) {
-		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome, Leak Gopher
+	if (isAeotec() || isNeoCoolcam() || isDome() || isLeakGopher() || isZooz()) {
+		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome, Leak Gopher, Zooz
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	} else {
 		// 12 hours (+ 2 minutes) for other devices
@@ -92,8 +94,8 @@ def configure() {
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
-	} else if (isNeoCoolcam() || isDome() || isLeakGopher()) {
-		// wakeUpInterval set to 4 h for NEO Coolcam, Dome, Leak Gopher
+	} else if (isNeoCoolcam() || isDome() || isLeakGopher() || isZooz()) {
+		// wakeUpInterval set to 4 h for NEO Coolcam, Dome, Leak Gopher, Zooz
 		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
@@ -332,4 +334,8 @@ private isAeotec() {
 
 private isLeakGopher() {
 	zwaveInfo.mfr == "0173" && zwaveInfo.model == "4C44"
+}
+
+private isZooz() {
+	zwaveInfo.mfr == "027A" && zwaveInfo.model == "E002"
 }
