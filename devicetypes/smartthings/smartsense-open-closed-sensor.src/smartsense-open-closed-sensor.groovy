@@ -46,7 +46,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"WISZB-120", deviceJoinName: "frient Open/Closed Sensor"
 		fingerprint manufacturer: "frient A/S", model :"WISZB-121", deviceJoinName: "frient Open/Closed Sensor", mnmn: "SmartThingsCommunity", vid: "aaca16c3-fade-3cb3-b742-e2237f4ffd76" // Raw description: 23 0104 0402 00 06 0000 0001 0003 000F 0020 0500 02 000A 0019
 		//Smartenit
-		fingerprint manufacturer: "Compacta", model :"ZBWDS", deviceJoinName: "Smartenit Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" //Smartenit Contact Sensor
+		fingerprint manufacturer: "Compacta", model :"ZBWDS", deviceJoinName: "Smartenit Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" // Raw description: 01 0104 0000 00 04 0000 0001 0003 0007 01 0006
 	}
 
 	simulator {
