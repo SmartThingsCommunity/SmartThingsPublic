@@ -19,7 +19,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition(name: "Smartenit Moisture Sensor", namespace: "Smartenit", author: "Luis Contreras") {
 		capability "Battery"
-        capability "Configuration"
+		capability "Configuration"
 		capability "Refresh"
 		capability "Water Sensor"
 		capability "Health Check"
@@ -60,8 +60,8 @@ def parse(String description) {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 
 			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
-            	map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-            } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
+				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
 			}
@@ -113,10 +113,10 @@ private Map getMoistureResult(value) {
 	else
 		descriptionText = '{{ device.displayName }} is dry'
 	return [
-		name           : 'water',
-		value          : value,
-		descriptionText: descriptionText,
-		translatable   : true
+			name           : 'water',
+			value          : value,
+			descriptionText: descriptionText,
+			translatable   : true
 	]
 }
 
@@ -153,7 +153,7 @@ def refresh() {
 	log.debug "Refreshing Values"
 
 	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-    	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
+    zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
 		zigbee.enrollResponse()
 }
 
