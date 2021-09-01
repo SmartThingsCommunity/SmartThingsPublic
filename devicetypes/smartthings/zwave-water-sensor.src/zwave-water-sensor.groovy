@@ -33,7 +33,8 @@ metadata {
 		fingerprint mfr: "000C", prod: "0201", model: "000A", deviceJoinName: "HomeSeer Water Leak Sensor" //HomeSeer LS100+ Water Sensor
 		//zw:Ss2 type:0701 mfr:0173 prod:4C47 model:4C44 ver:1.10 zwv:4.61 lib:03 cc:5E,55,98,9F sec:86,71,85,59,72,5A,6C,7A,84,80
 		fingerprint mfr: "0173", prod: "4C47", model: "4C44", deviceJoinName: "Leak Gopher Water Leak Sensor" //Leak Intelligence Leak Gopher Z-Wave Leak Detector
-		fingerprint mfr: "027A", prod: "7000", model: "E002", deviceJoinName: "Zooz Water Leak Sensor" //Zooz ZSE42 XS Water Leak Sensor, raw description: zw:Ss2a type:0701 mfr:027A prod:7000 model:E002 ver:1.05 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,71,30,70,84,7A
+		//zw:Ss2a type:0701 mfr:027A prod:7000 model:E002 ver:1.05 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,71,30,70,84,7A
+		fingerprint mfr: "027A", prod: "7000", model: "E002", deviceJoinName: "Zooz Water Leak Sensor" //Zooz ZSE42 XS Water Leak Sensor
 	}
 
 	simulator {
