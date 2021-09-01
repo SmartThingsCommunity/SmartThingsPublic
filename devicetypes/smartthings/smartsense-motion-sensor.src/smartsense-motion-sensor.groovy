@@ -47,7 +47,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
 		fingerprint manufacturer: "frient A/S", model :"MOSZB-141", deviceJoinName: "frient Motion Sensor", mnmn: "SmartThingsCommunity", vid: "87753fce-8cd6-3b91-8bde-2483e564252d" // Raw description: 22 0104 0107 00 03 0000 0003 0406 00
 		//Smartenit
-		fingerprint manufacturer: "Compacta", model: "ZBMS3-1", deviceJoinName: "Smartenit Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
+		fingerprint manufacturer: "Compacta", model: "ZBMS3-1", deviceJoinName: "Smartenit Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor" // Raw description: 01 0104 0402 00 07 0000 0001 0003 0015 0500 0020 0B05 00
 	}
 
 	simulator {
