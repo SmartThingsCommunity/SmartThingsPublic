@@ -106,8 +106,9 @@ metadata {
 		capability "Button"
 		capability "platemusic11009.firmware"
 		capability "platemusic11009.syncStatus"
-
-		fingerprint mfr: "027A", prod: "A000", model: "A008", deviceJoinName: "Zooz Switch" //Zooz Double Switch ZEN30, raw description: zw:Ls2 type:1101 mfr:027A prod:A000 model:A008 ver:2.00 zwv:5.03 lib:03 cc:5E,6C,55,9F sec:86,26,25,85,8E,59,72,5A,73,5B,60,70,7A epc:1
+		
+		//zw:Ls2 type:1101 mfr:027A prod:A000 model:A008 ver:2.00 zwv:5.03 lib:03 cc:5E,6C,55,9F sec:86,26,25,85,8E,59,72,5A,73,5B,60,70,7A epc:1
+		fingerprint mfr: "027A", prod: "A000", model: "A008", deviceJoinName: "Zooz Switch" //Zooz Double Switch ZEN30
 	}
 
 	preferences {
