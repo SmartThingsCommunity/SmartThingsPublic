@@ -84,7 +84,7 @@ def parse(String description) {
             } else if (descMap?.clusterInt == OCCUPANCY_SENSING_CLUSTER && descMap.attrInt == OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE && descMap?.value) {
                 map = getMotionResult(descMap.value == "01" ? "active" : "inactive")
             } else if (descMap?.clusterInt == ANALOG_INPUT_BASIC_CLUSTER && descMap.attrInt == ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE && descMap?.value) {
-                map = getAnalogInputResult(Long.parseLong(descMap.value, 16))                
+                map = getAnalogInputResult(Integer.parseInt(descMap.value,16))
             }
         } else if (description?.startsWith('illuminance:')) { //parse illuminance
             map = parseCustomMessage(description)
