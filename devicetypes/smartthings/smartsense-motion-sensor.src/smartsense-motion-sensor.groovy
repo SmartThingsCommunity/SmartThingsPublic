@@ -46,6 +46,8 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.1
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
 		fingerprint manufacturer: "frient A/S", model :"MOSZB-141", deviceJoinName: "frient Motion Sensor", mnmn: "SmartThingsCommunity", vid: "87753fce-8cd6-3b91-8bde-2483e564252d" // Raw description: 22 0104 0107 00 03 0000 0003 0406 00
+		//Smartenit
+		fingerprint manufacturer: "Compacta", model: "ZBMS3-1", deviceJoinName: "Smartenit Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor" // Raw description: 01 0104 0402 00 07 0000 0001 0003 0015 0500 0020 0B05 00
 	}
 
 	simulator {
@@ -324,6 +326,8 @@ def configure() {
     
 	if (isFrientSensor()) {
 		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, [destEndpoint: 0x26])
+	} else if (isCompactaSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, [destEndpoint: 0x0003])
 	} else {
 		configCmds += zigbee.temperatureConfig(30, 300)
 	}
@@ -354,4 +358,8 @@ private shouldUseOldBatteryReporting() {
 
 private Boolean isFrientSensor() {
 	device.getDataValue("manufacturer") == "frient A/S"
+}
+
+private Boolean isCompactaSensor() {
+	device.getDataValue("manufacturer") == "Compacta"
 }
