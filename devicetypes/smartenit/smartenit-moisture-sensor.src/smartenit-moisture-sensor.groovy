@@ -108,10 +108,11 @@ private setChildMoistureState(value) {
 private Map getMoistureResult(value) {
 	log.debug "water"
 	def descriptionText
-	if (value == "wet")
+	if (value == "wet") {
 		descriptionText = '{{ device.displayName }} is wet'
-	else
+	} else {
 		descriptionText = '{{ device.displayName }} is dry'
+	}
 	return [
 			name           : 'water',
 			value          : value,
@@ -153,7 +154,7 @@ def refresh() {
 	log.debug "Refreshing Values"
 
 	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-    zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
 		zigbee.enrollResponse()
 }
 
