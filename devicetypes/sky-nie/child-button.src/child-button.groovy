@@ -28,16 +28,6 @@ metadata {
 		capability "Button"
 		capability "Sensor"
 	}
-
-	tiles(scale: 2) {
-		multiAttributeTile(name: "button", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
-				attributeState "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-			}
-		}
-		main "button"
-		details(["button"])
-	}
 }
 
 def installed() {
