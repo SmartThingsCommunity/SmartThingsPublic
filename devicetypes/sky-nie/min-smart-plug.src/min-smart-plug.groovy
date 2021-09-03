@@ -504,6 +504,6 @@ private isButtonAvailable() {
         return true
     } else {
         log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
-        return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03")|| "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
+        return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03") || "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
     }
 }
