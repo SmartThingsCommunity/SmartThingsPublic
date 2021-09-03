@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v2.0.1
+ *      Min Smart Plug Dimmer v2.0.2
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -10,6 +10,7 @@
  *
  *  Changelog:
  *
+ *    2.0.2 (09/02/2021)
  *    2.0.1 (08/27/2021)
  *      - Syntax format compliance adjustment
  *      - fix some bugs
@@ -74,6 +75,7 @@ import groovy.json.JsonOutput
 metadata {
     definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
+        capability "Sensor"
         capability "Switch"
         capability "Switch Level"
         capability "Configuration"
@@ -87,8 +89,8 @@ metadata {
         fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
         fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Dimmer Switch" //N4002
-        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS11ZS Minoston Smart Dimmer Switch   
-        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS13ZS Minoston Smart Toggle Dimmer Switch  
+        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS11ZS Minoston Smart Dimmer Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS13ZS Minoston Smart Toggle Dimmer Switch
         fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31S Evalogik Smart Dimmer Switch
         fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31TS Evalogik Smart Toggle Dimmer Switch
     }
@@ -132,15 +134,13 @@ private initialize() {
         } catch (ex) {
             log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
         }
-    } else if (!state.createButtonEnabled && childDevices) {
-        removeChildButton(childDevices[0])
     }
 }
 
 private addChildButton() {
     log.warn "Creating Button Device"
     def child = addChildDevice(
-            "smartthings",
+            "sky-nie",
             "Child Button",
             "${device.deviceNetworkId}-2",
             device.getHub().getId(),
@@ -157,30 +157,15 @@ private addChildButton() {
     return child
 }
 
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    } catch (ex) {
-        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.",ex)
-    }
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd){
+def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     if (state.lastSequenceNumber != cmd.sequenceNumber) {
         state.lastSequenceNumber = cmd.sequenceNumber
         logTrace "${cmd}"
         def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
         def btnVal
-        switch (cmd.keyAttributes){
+        switch (cmd.keyAttributes) {
             case 0:
                 btnVal = paddle
-                break
-            case 1:
-                logDebug "Button released not supported"
-                break
-            case 2:
-                logDebug "Button held not supported"
                 break
             case 3:
                 btnVal = paddle + "_2x"
@@ -233,7 +218,6 @@ private static def getCheckInterval() {
 def updated() {
     if (!isDuplicateCommand(state.lastUpdated, 5000)) {
         state.lastUpdated = new Date().time
-
         logDebug "updated()..."
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
@@ -245,7 +229,6 @@ def updated() {
         }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
-
     return []
 }
 
@@ -331,7 +314,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
         logDebug "${param.name}(#${param.num}) = ${val}"
         state["configParam${param.num}"] = val
     } else {
-        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
+        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
     return []
 }
@@ -457,7 +440,6 @@ private getMaximumBrightnessParam() {
 
 private getParam(num, name, size, defaultVal, options=null, range=null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
-
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
         map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
@@ -466,7 +448,6 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
     if (range) {
         map.range = range
     }
-
     return map
 }
 
@@ -591,7 +572,7 @@ private sendSwitchEvents(rawVal, type) {
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
     }
-    if(isButtonAvailable()) {
+    if (isButtonAvailable()) {
         def paddlesReversed = (paddleControlParam.value == 1)
         if (state.createButtonEnabled && (type == "physical") && childDevices) {
             if (paddleControlParam.value == 2) {
@@ -610,16 +591,11 @@ private sendSwitchEvents(rawVal, type) {
 }
 
 private isButtonAvailable() {
-    if(device == null){
+    if (device == null) {
         log.error "isButtonAvailable device = null"
         return true
-    }else{
+    } else {
         log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
-        def v20 = "${device.rawDescription}".contains("model:EE02")
-        def v21 = "${device.rawDescription}".contains("model:EE04")
-        def v22 = "${device.rawDescription}".contains("model:BB02")
-        def v23 = "${device.rawDescription}".contains("model:BB04")
-        def v2 = v20||v21||v22||v23
-        return v2
+        return "${device.rawDescription}".contains("model:EE02") || "${device.rawDescription}".contains("model:EE04") ||"${device.rawDescription}".contains("model:BB02") || "${device.rawDescription}".contains("model:BB04")
     }
 }
