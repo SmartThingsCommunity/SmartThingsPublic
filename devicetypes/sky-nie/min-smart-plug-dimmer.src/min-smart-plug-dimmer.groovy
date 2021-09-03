@@ -127,12 +127,24 @@ private getConfigParamInput(param) {
 }
 
 private initialize() {
-    if (state.createButtonEnabled && !childDevices) {
-        try {
-            def child = addChildButton()
-            child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-        } catch (ex) {
-            log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
+    if (device.latestValue("checkInterval") != checkInterval) {
+        sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    }
+    if (isButtonAvailable()) {
+        state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
+        if (state.createButtonEnabled && !childDevices) {
+            try {
+                def child = addChildButton()
+                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+            } catch (ex) {
+                log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
+            }
+        } else if (!state.createButtonEnabled && childDevices) {
+            removeChildButton(childDevices[0])
+        }
+    } else {
+        if (childDevices) {
+            removeChildButton(childDevices[0])
         }
     }
 }
@@ -206,7 +218,22 @@ def installed() {
         state.createButtonEnabled = true
     }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    state.refreshConfig = true
+}
+
+def uninstalled() {
+    logger("debug", "uninstalled()")
+    if (childDevices) {
+        removeChildButton(childDevices[0])
+    }
+}
+
+private removeChildButton(child) {
+    try {
+        log.warn "Removing ${child.displayName}} "
+        deleteChildDevice(child.deviceNetworkId)
+    } catch (ex) {
+        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
+    }
 }
 
 private static def getCheckInterval() {
@@ -219,14 +246,7 @@ def updated() {
     if (!isDuplicateCommand(state.lastUpdated, 5000)) {
         state.lastUpdated = new Date().time
         logDebug "updated()..."
-        if (device.latestValue("checkInterval") != checkInterval) {
-            sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
-        }
-
-        if (isButtonAvailable()) {
-            state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
-            initialize()
-        }
+        initialize()
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
     return []
