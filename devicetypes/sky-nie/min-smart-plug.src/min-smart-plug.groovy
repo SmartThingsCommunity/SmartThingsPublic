@@ -9,7 +9,7 @@
  *	Documentation:
  *
  *  Changelog:
- *  
+ *
  *    2.0.2 (09/02/2021)
  *    2.0.1 (08/27/2021)
  *      - Syntax format compliance adjustment
@@ -113,6 +113,7 @@ private initialize() {
 private addChildButton() {
     log.warn "Creating Button Device"
     def child = addChildDevice(
+            "sky-nie",
             "Child Button",
             "${device.deviceNetworkId}-2",
             device.getHub().getId(),
@@ -503,7 +504,6 @@ private isButtonAvailable() {
         return true
     } else {
         log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
-        return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03")\
-                || "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
+        return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03")|| "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
     }
 }
