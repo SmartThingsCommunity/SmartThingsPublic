@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v2.0.2
+ *      Min Smart Plug Dimmer v2.1.0
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,11 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.1.0 (09/04/2021)
+ *      - remove the preferences item "createButton", Fixedly create a child button
+ *        Restrict its use based on fingerprints-because the child buttons are not visible to the user .
+ *      - Simplify the code, Syntax format compliance adjustment
  *
  *    2.0.2 (09/02/2021)
  *    2.0.1 (08/27/2021)
@@ -110,11 +115,10 @@ metadata {
         getConfigParamInput(nightLightParam)
         input "disclaimer", "paragraph",
                 title: "WARNING",
-                description: "Configuring for 'createButton'、'Maximum Brightness' and 'Paddle Control' are only valid for the devices with product number of MS11ZS、MS13ZS、ZW31S、ZW31TS(one of them)",
+                description: "Configuring for 'Maximum Brightness' and 'Paddle Control' are only valid for the devices with product number of MS11ZS、MS13ZS、ZW31S、ZW31TS(one of them)",
                 required: false
         getConfigParamInput(maximumBrightnessParam)
         getConfigParamInput(paddleControlParam)
-        input(type: "enum", name: "createButton", required: false, title: "Create Button for Paddles?", options: ["No", "Yes"], defaultValue:"Yes")
     }
 }
 
@@ -123,29 +127,6 @@ private getConfigParamInput(param) {
         input "configParam${param.num}", "number", title: "${param.name}:", required: false, defaultValue: "${param.value}", range: param.range
     } else {
         input "configParam${param.num}", "enum", title: "${param.name}:", required: false, defaultValue: "${param.value}", options: param.options
-    }
-}
-
-private initialize() {
-    if (device.latestValue("checkInterval") != checkInterval) {
-        sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
-    }
-    if (isButtonAvailable()) {
-        state.createButtonEnabled = (safeToInt(settings?.createButton) != 0)
-        if (state.createButtonEnabled && !childDevices) {
-            try {
-                def child = addChildButton()
-                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-            } catch (ex) {
-                log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
-            }
-        } else if (!state.createButtonEnabled && childDevices) {
-            removeChildButton(childDevices[0])
-        }
-    } else {
-        if (childDevices) {
-            removeChildButton(childDevices[0])
-        }
     }
 }
 
@@ -170,6 +151,7 @@ private addChildButton() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+    logTrace "CentralSceneNotification: ${cmd}"
     if (state.lastSequenceNumber != cmd.sequenceNumber) {
         state.lastSequenceNumber = cmd.sequenceNumber
         logTrace "${cmd}"
@@ -192,9 +174,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 private sendButtonEvent(value) {
-    if (childDevices) {
-        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
-    }
+    childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
 }
 
 def ping() {
@@ -214,17 +194,18 @@ private switchMultilevelGetCmd() {
 
 def installed() {
     logDebug "installed()..."
-    if (isButtonAvailable()) {
-        state.createButtonEnabled = true
+    try {
+        def child = addChildButton()
+        child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    } catch (ex) {
+        log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
     }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def uninstalled() {
     logger("debug", "uninstalled()")
-    if (childDevices) {
-        removeChildButton(childDevices[0])
-    }
+    removeChildButton(childDevices[0])
 }
 
 private removeChildButton(child) {
@@ -246,7 +227,9 @@ def updated() {
     if (!isDuplicateCommand(state.lastUpdated, 5000)) {
         state.lastUpdated = new Date().time
         logDebug "updated()..."
-        initialize()
+        if (device.latestValue("checkInterval") != checkInterval) {
+            sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+        }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
     return []
@@ -254,7 +237,6 @@ def updated() {
 
 def configure() {
     logDebug "configure()..."
-
     if (state.resyncAll == null) {
         state.resyncAll = true
         runIn(8, executeConfigureCmds, [overwrite: true])
@@ -275,11 +257,6 @@ def executeConfigureCmds() {
     configParams.each { param ->
         def storedVal = getParamStoredValue(param.num)
         def paramVal = param.value
-        if (isButtonAvailable()) {
-            if ((param == paddleControlParam) && state.createButtonEnabled && (param.value == 2)) {
-                log.warn "Only 'pushed', 'up_2x', and 'down_2x' button events are supported when Paddle Control is set to Toggle."
-            }
-        }
         if (state.resyncAll || ("${storedVal}" != "${paramVal}")) {
             cmds << secureCmd(zwave.configurationV1.configurationSet(parameterNumber: param.num, size: param.size, scaledConfigurationValue: paramVal))
             cmds << secureCmd(zwave.configurationV1.configurationGet(parameterNumber: param.num))
@@ -302,7 +279,6 @@ def parse(String description) {
         } else {
             logDebug "Unable to parse description: $description"
         }
-
         sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
     } catch (e) {
         log.error "$e"
@@ -311,8 +287,8 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    logTrace "SecurityMessageEncapsulation: ${cmd}"
     def encapCmd = cmd.encapsulatedCommand(commandClassVersions)
-
     def result = []
     if (encapCmd) {
         result += zwaveEvent(encapCmd)
@@ -323,11 +299,9 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-    logTrace "ConfigurationReport ${cmd}"
-
+    logTrace "ConfigurationReport: ${cmd}"
     sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
-
     def param = configParams.find { it.num == cmd.parameterNumber }
     if (param) {
         def val = cmd.scaledConfigurationValue
@@ -345,7 +319,7 @@ def refreshSyncStatus() {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    logDebug "Ignored Command: $cmd"
+    logDebug "Unhandled zwaveEvent: $cmd"
     return []
 }
 
@@ -357,7 +331,8 @@ private secureCmd(cmd) {
             return cmd.format()
         }
     } catch (ex) {
-        log.error("caught exception", ex)
+        log.error("secureCmd exception", ex)
+        return cmd.format()
     }
 }
 
@@ -458,7 +433,7 @@ private getMaximumBrightnessParam() {
     return getParam(12, "Maximum Brightness(0, Disabled; 1 - 99:1% - 99%)", 1, 99, null,"0..99")
 }
 
-private getParam(num, name, size, defaultVal, options=null, range=null) {
+private getParam(num, name, size, defaultVal, options = null, range = null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
@@ -508,7 +483,7 @@ private static validateRange(val, defaultVal, lowVal, highVal) {
     }
 }
 
-private static safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal = 0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
@@ -575,13 +550,13 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    logTrace "${cmd}"
+    logTrace "BasicReport: ${cmd}"
     sendSwitchEvents(cmd.value, "physical")
     return []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    logTrace "${cmd}"
+    logTrace "SwitchMultilevelReport: ${cmd}"
     sendSwitchEvents(cmd.value, "digital")
     return []
 }
@@ -592,20 +567,18 @@ private sendSwitchEvents(rawVal, type) {
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
     }
-    if (isButtonAvailable()) {
-        def paddlesReversed = (paddleControlParam.value == 1)
-        if (state.createButtonEnabled && (type == "physical") && childDevices) {
-            if (paddleControlParam.value == 2) {
-                sendButtonEvent("pushed")
-            } else {
-                def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-                def oldSwitch = device.currentValue("switch")
-                def oldLevel = device.currentValue("level")
-                if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
-                    btnVal = "down"
-                }
-                sendButtonEvent(btnVal)
+    if (isButtonAvailable() && type == "physical") {
+        if (paddleControlParam.value == 2) {
+            sendButtonEvent("pushed")
+        } else {
+            def paddlesReversed = (paddleControlParam.value == 1)
+            def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
+            def oldSwitch = device.currentValue("switch")
+            def oldLevel = device.currentValue("level")
+            if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
+                btnVal = "down"
             }
+            sendButtonEvent(btnVal)
         }
     }
 }
