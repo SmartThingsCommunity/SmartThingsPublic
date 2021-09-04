@@ -402,7 +402,7 @@ private sendButtonEvent(value) {
 }
 
 private getPaddleControlParam() {
-    def num = isButtonAvailable()? 1 : 1000//set as a dummy number to avoid conflict with getLedModeParam
+    def num = isButtonAvailable()? 1 : 1000
     return getParam(num, "Paddle Control", 1, 0, paddleControlOptions)
 }
 
