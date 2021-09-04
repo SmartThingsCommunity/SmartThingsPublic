@@ -12,7 +12,7 @@
  *
  *    2.1.0 (09/04/2021)
  *      - remove the preferences item "createButton", Fixedly create a child button
- *        Restrict its use based on fingerprints-because the child buttons are not visible to the user .
+ *        Restrict its use based on fingerprints-because the child buttons is not visible to the user .
  *      - Simplify the code, Syntax format compliance adjustment
  *
  *    2.0.2 (09/02/2021)
