@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v2.1.0
+ *      Min Smart Plug Dimmer v2.1.1
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.1.1 (09/07/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
  *
  *    2.1.0 (09/04/2021)
  *      - remove the preferences item "createButton", Fixedly create a child button
@@ -86,6 +90,7 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
+        capability "Button"
 
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
@@ -179,13 +184,15 @@ private sendButtonEvent(value) {
 
 def ping() {
     logDebug "ping()..."
-    return [ switchMultilevelGetCmd() ]
+    sendHubCommand(switchMultilevelGetCmd())
+    return []
 }
 
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    return [ switchMultilevelGetCmd() ]
+    sendHubCommand(switchMultilevelGetCmd())
+    return []
 }
 
 private switchMultilevelGetCmd() {
@@ -201,20 +208,6 @@ def installed() {
         log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
     }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-}
-
-def uninstalled() {
-    logger("debug", "uninstalled()")
-    removeChildButton(childDevices[0])
-}
-
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    } catch (ex) {
-        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
-    }
 }
 
 private static def getCheckInterval() {
@@ -510,12 +503,14 @@ private logTrace(msg) {
 
 def on() {
     logDebug "on()..."
-    return [ basicSetCmd(0xFF) ]
+    sendHubCommand(basicSetCmd(0xFF))
+    return []
 }
 
 def off() {
     logDebug "off()..."
-    return [ basicSetCmd(0x00) ]
+    sendHubCommand(basicSetCmd(0x00))
+    return []
 }
 
 def setLevel(level) {
@@ -528,7 +523,8 @@ def setLevel(level, duration) {
     if (duration > 30) {
         duration = 30
     }
-    return [ switchMultilevelSetCmd(level, duration) ]
+    sendHubCommand(switchMultilevelSetCmd(level, duration))
+    return []
 }
 
 private basicSetCmd(val) {
