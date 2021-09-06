@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v2.1.0
+ *      Min Smart Plug v2.1.1
  *
  *  	Models: MINOSTON (MP21Z) And Eva Logik (ZW30) / MINOSTON (MS10Z)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.1.1 (09/07/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
  *
  *    2.1.0 (09/04/2021)
  *      - remove the preferences item "createButton", Fixedly create a child button
@@ -64,6 +68,7 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
+        capability "Button"
 
         attribute "firmwareVersion", "string"
         attribute "syncStatus", "string"
@@ -130,20 +135,6 @@ def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
-def uninstalled() {
-    logger("debug", "uninstalled()")
-    removeChildButton(childDevices[0])
-}
-
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    } catch (ex) {
-        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
-    }
-}
-
 private static def getCheckInterval() {
     // These are battery-powered devices, and it's not very critical
     // to know whether they're online or not – 12 hrs
@@ -199,23 +190,27 @@ def executeConfigureCmds() {
 
 def ping() {
     logDebug "ping()..."
-    return [ switchBinaryGetCmd() ]
+    sendHubCommand(switchBinaryGetCmd())
+    return []
 }
 
 def on() {
     logDebug "on()..."
-    return [ switchBinarySetCmd(0xFF) ]
+    sendHubCommand(switchBinarySetCmd(0xFF))
+    return []
 }
 
 def off() {
     logDebug "off()..."
-    return [ switchBinarySetCmd(0x00) ]
+    sendHubCommand(switchBinarySetCmd(0x00))
+    return []
 }
 
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    return [ switchBinaryGetCmd() ]
+    sendHubCommand(switchBinaryGetCmd())
+    return []
 }
 
 private switchBinaryGetCmd() {
@@ -498,3 +493,4 @@ private isButtonAvailable() {
         return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03") || "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
     }
 }
+
