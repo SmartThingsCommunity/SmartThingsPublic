@@ -36,6 +36,9 @@ metadata {
 		// Yookee yooksmart
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
+        
+		// SMARTWINGS
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
 	}
 
 	preferences {
@@ -280,7 +283,7 @@ def configure() {
 }
 
 def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 private def parseBindingTableMessage(description) {
@@ -311,15 +314,15 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 def isIkeaKadrilj() {
@@ -332,4 +335,8 @@ def isIkeaFyrtur() {
 
 def isYooksmartOrYookee() {
 	device.getDataValue("model") == "D10110"
+}
+
+def isSmartwings() {
+	device.getDataValue("model") == "WM25/L-Z"
 }
