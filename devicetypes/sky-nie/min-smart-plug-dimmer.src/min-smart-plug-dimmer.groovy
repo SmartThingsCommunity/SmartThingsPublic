@@ -186,15 +186,13 @@ private sendButtonEvent(value) {
 
 def ping() {
     logDebug "ping()..."
-    sendHubCommand(switchMultilevelGetCmd())
-    return []
+    return [ switchMultilevelGetCmd() ]
 }
 
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    sendHubCommand(switchMultilevelGetCmd())
-    return []
+    return [ switchMultilevelGetCmd() ]
 }
 
 private switchMultilevelGetCmd() {
@@ -219,11 +217,9 @@ def updated() {
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
-
-        if (isButtonAvailable() &&  !childDevices) {
+        if (isButtonAvailable() && !childDevices) {
             try {
-                def child = addChildButton()
-                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+                addChildButton()
             } catch (ex) {
                 log.error("Unable to create button device because the 'Child Button' DTH is not installed", ex)
             }
@@ -508,14 +504,12 @@ private logTrace(msg) {
 
 def on() {
     logDebug "on()..."
-    sendHubCommand(basicSetCmd(0xFF))
-    return []
+    return [ basicSetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
-    sendHubCommand(basicSetCmd(0x00))
-    return []
+    return [ basicSetCmd(0x00) ]
 }
 
 def setLevel(level) {
@@ -528,8 +522,7 @@ def setLevel(level, duration) {
     if (duration > 30) {
         duration = 30
     }
-    sendHubCommand(switchMultilevelSetCmd(level, duration))
-    return []
+    return [ switchMultilevelSetCmd(level, duration) ]
 }
 
 private basicSetCmd(val) {
