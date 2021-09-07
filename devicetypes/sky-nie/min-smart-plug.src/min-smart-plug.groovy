@@ -126,22 +126,7 @@ private addChildButton() {
 
 def installed() {
     logDebug "installed()..."
-    try {
-        def child = addChildButton()
-        child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    } catch (ex) {
-        log.error("Unable to create button device because the 'Child Button' DTH is not installed",ex)
-    }
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-}
-
-private removeChildButton(child) {
-    try {
-        log.warn "Removing ${child.displayName}} "
-        deleteChildDevice(child.deviceNetworkId)
-    } catch (ex) {
-        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
-    }
 }
 
 private static def getCheckInterval() {
@@ -157,8 +142,13 @@ def updated() {
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
-        if(!isButtonAvailable() && childDevices){
-            removeChildButton(childDevices[0])
+        if (isButtonAvailable() &&  !childDevices) {
+            try {
+                def child = addChildButton()
+                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+            } catch (ex) {
+                log.error("Unable to create button device because the 'Child Button' DTH is not installed", ex)
+            }
         }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
@@ -405,7 +395,9 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 private sendButtonEvent(value) {
-    childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
+    if (childDevices) {
+        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
+    }
 }
 
 private getPaddleControlParam() {
