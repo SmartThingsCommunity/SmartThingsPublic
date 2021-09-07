@@ -142,10 +142,9 @@ def updated() {
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
-        if (isButtonAvailable() &&  !childDevices) {
+        if (isButtonAvailable() && !childDevices) {
             try {
-                def child = addChildButton()
-                child?.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+                addChildButton()
             } catch (ex) {
                 log.error("Unable to create button device because the 'Child Button' DTH is not installed", ex)
             }
@@ -192,27 +191,23 @@ def executeConfigureCmds() {
 
 def ping() {
     logDebug "ping()..."
-    sendHubCommand(switchBinaryGetCmd())
-    return []
+    return [ switchBinaryGetCmd() ]
 }
 
 def on() {
     logDebug "on()..."
-    sendHubCommand(switchBinarySetCmd(0xFF))
-    return []
+    return [ switchBinarySetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
-    sendHubCommand(switchBinarySetCmd(0x00))
-    return []
+    return [ switchBinarySetCmd(0x00) ]
 }
 
 def refresh() {
     logDebug "refresh()..."
     refreshSyncStatus()
-    sendHubCommand(switchBinaryGetCmd())
-    return []
+    return [ switchBinaryGetCmd() ]
 }
 
 private switchBinaryGetCmd() {
