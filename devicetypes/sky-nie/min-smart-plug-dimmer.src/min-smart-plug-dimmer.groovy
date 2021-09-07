@@ -210,6 +210,15 @@ def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
+private removeChildButton(child) {
+    try {
+        log.warn "Removing ${child.displayName}} "
+        deleteChildDevice(child.deviceNetworkId)
+    } catch (ex) {
+        log.error("Unable to remove ${child.displayName}!  Make sure that the device is not being used by any SmartApps.", ex)
+    }
+}
+
 private static def getCheckInterval() {
     // These are battery-powered devices, and it's not very critical
     // to know whether they're online or not – 12 hrs
@@ -222,6 +231,9 @@ def updated() {
         logDebug "updated()..."
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+        }
+        if(!isButtonAvailable() && childDevices){
+            removeChildButton(childDevices[0])
         }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
