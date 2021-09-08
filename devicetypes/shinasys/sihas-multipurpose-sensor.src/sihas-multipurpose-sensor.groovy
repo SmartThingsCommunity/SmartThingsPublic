@@ -211,7 +211,7 @@ private Map getAnalogInputResult(value) {
 
 def setPeopleCounter(peoplecounter) {
     int pc =  Float.floatToIntBits(peoplecounter);
-    log.debug "SetPeopleCounter = $pc"
+    log.debug "SetPeopleCounter = $peoplecounter"
     zigbee.writeAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, pc)
 }
 
