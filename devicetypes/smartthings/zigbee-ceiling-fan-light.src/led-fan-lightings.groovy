@@ -141,6 +141,8 @@ def installed() {
 
 def addChildFan() {
 	def componentLabel
+	def childDevice
+	
 	if (device.displayName.endsWith(' Light') ||
 	    device.displayName.endsWith(' light')) {
 		componentLabel = "${device.displayName[0..-6]} Fan"
@@ -150,14 +152,11 @@ def addChildFan() {
 	}	
 	try {
 		String dni = "${device.deviceNetworkId}:1"
-		addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
+		childDevice = addChildDevice("ITM Fan Child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 	} catch(e) {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
-    	def childDevice = getChildDevices()?.find {
-		//find light child device
-        	it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
-    	}
+    	
 	if (childDevice != null) {
 		childDevice.sendEvent(name: "switch", value: "off")
 	}
