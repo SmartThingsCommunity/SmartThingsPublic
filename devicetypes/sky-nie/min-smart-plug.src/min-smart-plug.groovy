@@ -61,26 +61,25 @@
 import groovy.json.JsonOutput
 
 metadata {
-    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch", ocfDeviceType: "oic.d.smartplug") {
+    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
-        capability "Button"
 
         attribute "firmwareVersion", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet" // old MP21Z
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet" //MP21Z Minoston Mini Smart Plug
-        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet"  // N4001 New One  Mini Smart Plug
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Switch" //MS10ZS Minoston Smart Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Switch" //MS12ZS Minoston Smart on/off Toggle Switch
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik Switch" //ZW30
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Switch" //ZW30S Evalogik Smart on/off Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Switch" //ZW30TS Evalogik Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" // old MP21Z
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug
+        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet",  ocfDeviceType: "oic.d.smartplug" // N4001 New One  Mini Smart Plug
+        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS10ZS Minoston Smart Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS12ZS Minoston Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30S Evalogik Smart on/off Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30TS Evalogik Smart on/off Toggle Switch
     }
 
     preferences {
@@ -109,7 +108,7 @@ private addChildButton() {
     def child = addChildDevice(
             "sky-nie",
             "Child Button",
-            "${device.deviceNetworkId}-2",
+            "${device.deviceNetworkId}:2",
             device.getHub().getId(),
             [
                 completedSetup: true,
@@ -492,4 +491,3 @@ private isButtonAvailable() {
         return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03") || "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
     }
 }
-
