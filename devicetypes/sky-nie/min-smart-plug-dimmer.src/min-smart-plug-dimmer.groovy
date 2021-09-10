@@ -82,7 +82,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-    definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
+    definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-dimmer") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
@@ -90,19 +90,18 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
-        capability "Button"
 
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
-        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
-        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Dimmer Switch" //N4002
-        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS11ZS Minoston Smart Dimmer Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //MS13ZS Minoston Smart Toggle Dimmer Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31S Evalogik Smart Dimmer Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", mnmn: "SmartThings", vid:"generic-dimmer" //ZW31TS Evalogik Smart Toggle Dimmer Switch
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Smart Plug Dimmer", ocfDeviceType: "oic.d.smartplug" //MP21ZD
+        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Outdoor Dimmer", ocfDeviceType: "oic.d.smartplug" //MP22ZD
+        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Smart Plug Dimmer",  ocfDeviceType: "oic.d.smartplug" //N4002
+        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.switch"    //MS11ZS Minoston Smart Dimmer Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.switch"    //MS13ZS Minoston Smart Toggle Dimmer Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.switch"    //ZW31S Evalogik Smart Dimmer Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.switch"    //ZW31TS Evalogik Smart Toggle Dimmer Switch
     }
 
     preferences {
@@ -140,7 +139,7 @@ private addChildButton() {
     def child = addChildDevice(
             "sky-nie",
             "Child Button",
-            "${device.deviceNetworkId}-2",
+            "${device.deviceNetworkId}:2",
             device.getHub().getId(),
             [
                 completedSetup: true,
