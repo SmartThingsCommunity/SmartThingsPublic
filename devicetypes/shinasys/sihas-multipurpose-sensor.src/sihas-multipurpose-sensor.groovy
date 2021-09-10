@@ -246,7 +246,11 @@ def refresh() {
         refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
         refreshCmds += zigbee.enrollResponse()
     }
-
+    
+    if (isCSM300()) {
+        refreshCmds += zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)
+    }
+    
     return refreshCmds
 }
 
@@ -288,7 +292,7 @@ def configure() {
         configCmds += zigbee.configureReporting(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, 1, 600, 1)
     }
 
-    return refresh() + configCmds
+    return configCmds + refresh()
 }
 
 private Boolean isUSM300() {
