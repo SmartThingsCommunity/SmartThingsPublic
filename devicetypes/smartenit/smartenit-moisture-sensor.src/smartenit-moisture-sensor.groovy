@@ -171,7 +171,7 @@ private void createChildDevices() {
 	try {
 		addChildDevice("Smartenit", "Moisture Sensor Child", "${device.deviceNetworkId}:02", device.hubId,
 			[completedSetup: true,
-			label: "${device.displayName} ${2}",
+			label: "${device.displayName} 2",
 			isComponent: false
 			])
 	} catch (Exception e) {
