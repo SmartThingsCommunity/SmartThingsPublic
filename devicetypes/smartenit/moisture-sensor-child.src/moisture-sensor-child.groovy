@@ -21,3 +21,11 @@ metadata {
 		capability "Sensor"
 	}
 }
+
+ping() {
+	refresh()
+}
+
+refresh() {
+	parent.refresh()
+}
