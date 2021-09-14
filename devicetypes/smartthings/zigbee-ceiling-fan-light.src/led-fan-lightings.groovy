@@ -161,6 +161,3 @@ def addChildFan() {
 		childDevice.sendEvent(name: "switch", value: "off")
 	}
 }
-
-def delete() {
-}
