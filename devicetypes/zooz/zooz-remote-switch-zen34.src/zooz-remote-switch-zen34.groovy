@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2021-09-15
+ *      - requested change
  *    2021-08-31
  *      - Publication Release
  *
@@ -79,8 +81,7 @@ metadata {
 		capability "platemusic11009.firmware"
 		capability "platemusic11009.syncStatus"
 
-		//zw:Ss2a type:1800 mfr:027A prod:7000 model:F001 ver:1.01 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,73,80,5B,70,84,7A
-		fingerprint mfr: "027A", prod: "7000", model: "F001", deviceJoinName: "Zooz Remote" //Zooz Remote Switch ZEN34
+		fingerprint mfr: "027A", prod: "7000", model: "F001", deviceJoinName: "Zooz Remote" //Zooz Remote Switch ZEN34, raw description: zw:Ss2a type:1800 mfr:027A prod:7000 model:F001 ver:1.01 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,73,80,5B,70,84,7A
 	}
 
 	preferences {
@@ -211,6 +212,7 @@ void zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	logDebug "Device Woke Up..."
 	runIn(4, refreshSyncStatus)
 	configure()
+	sendHubCommand([secureCmd(zwave.wakeUpV2.wakeUpNoMoreInformation())])
 }
 
 void zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
