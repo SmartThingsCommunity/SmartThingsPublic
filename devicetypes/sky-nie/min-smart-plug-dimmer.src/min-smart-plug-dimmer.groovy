@@ -137,7 +137,7 @@ private getConfigParamInput(param) {
 private addChildButton() {
     log.warn "Creating Button Device"
     def child = addChildDevice(
-            "sky-nie",
+            "smartthings",
             "Child Button",
             "${device.deviceNetworkId}:2",
             device.getHub().getId(),
