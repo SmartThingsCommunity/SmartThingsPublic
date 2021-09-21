@@ -34,7 +34,7 @@ metadata {
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
         fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
-        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "b4e6d6e1-65e2-3f2e-8167-8ddd820f578e", ocfDeviceType: "x.com.st.d.sensor.motion"
+        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "15962fd0-22b8-352e-9641-de640d672bb6", ocfDeviceType: "x.com.st.d.sensor.motion"
     }
     preferences {
         section {
@@ -209,6 +209,12 @@ private Map getAnalogInputResult(value) {
     ]
 }
 
+def setPeopleCounter(peoplecounter) {
+    int pc =  Float.floatToIntBits(peoplecounter);
+    log.debug "SetPeopleCounter = $peoplecounter"
+    zigbee.writeAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, pc)
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -240,7 +246,11 @@ def refresh() {
         refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
         refreshCmds += zigbee.enrollResponse()
     }
-
+    
+    if (isCSM300()) {
+        refreshCmds += zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)
+    }
+    
     return refreshCmds
 }
 
@@ -282,7 +292,7 @@ def configure() {
         configCmds += zigbee.configureReporting(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, 1, 600, 1)
     }
 
-    return refresh() + configCmds
+    return configCmds + refresh()
 }
 
 private Boolean isUSM300() {
