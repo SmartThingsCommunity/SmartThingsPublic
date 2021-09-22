@@ -20,6 +20,7 @@
  @Field final Current = 0x0508
  @Field final Voltage = 0x0505
  @Field final EnergyDivisor = 100000
+ @Field final CurrentDivisor = 1000
  @Field final SmartenitMfrCode = 0x1075
  @Field final ElectricalMeasurement = 0x0b04
  @Field final ACVoltageMultiplier = 0x0600
@@ -29,6 +30,7 @@
  @Field final ActivePower = 0x050b
  @Field final PowerMultiplier = 0x0604
  @Field final PowerDivisor = 0x0605
+ @Field final ReportingResponse = 0x07
 
 metadata {
 	// Automatically generated. Make future change here.
@@ -43,9 +45,8 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
-		capability "Outlet"
 
-		fingerprint manufacturer: "Compacta", model: "ZBMSKT1 (4035A)", deviceJoinName: "Smartenit Outlet"
+		fingerprint manufacturer: "Compacta", model: "ZBMSKT1 (4035A)", deviceJoinName: "Smartenit Outlet" // rawDescription 01 0104 0009 00 09 0000 0003 0004 0005 0006 0015 0702 0B04 0B05 00
 	}
 }
 
@@ -73,7 +74,7 @@ def parse(String description) {
 		log.debug "cluster def: ${cluster}"
 		def mapDescription = zigbee.parseDescriptionAsMap(description)
 
-		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+		if (cluster && cluster.clusterId == zigbee.ONOFF_CLUSTER && cluster.command == ReportingResponse) {
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
 				event = createEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
@@ -93,7 +94,7 @@ def parse(String description) {
 			if (mapDescription.attrInt == Voltage) {
 				event = createEvent(name: "voltage", value: getFPoint(mapDescription.value))
 			} else if (mapDescription.attrInt == Current) {
-				event = createEvent(name: "current", value: getFPoint(mapDescription.value)/1000, unit: "A")
+				event = createEvent(name: "current", value: getFPoint(mapDescription.value)/CurrentDivisor, unit: "A")
 			}
 		} else {
 			log.warn "DID NOT PARSE MESSAGE for description : $description"
@@ -120,19 +121,14 @@ def ping() {
 def refresh() {
 	zigbee.onOffRefresh() +
 	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation) + 
-	zigbee.readAttribute(ElectricalMeasurement, Voltage) + 
-	zigbee.readAttribute(ElectricalMeasurement, Current) +
-	zigbee.readAttribute(ElectricalMeasurement, PowerMultiplier) +
-	zigbee.readAttribute(ElectricalMeasurement, PowerDivisor) + 
-	zigbee.readAttribute(ElectricalMeasurement, ActivePower)
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , Voltage) + 
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , Current) +
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , PowerMultiplier) +
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , PowerDivisor) + 
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , ActivePower)
 }
 
 def configure() {
-	// Setting proper divisor for Aurora AOne 13A Smart Plug
-	def deviceModel = device.getDataValue("model")
-	def divisorValue = deviceModel == "SingleSocket50AU" ? "1" : "10"
-	device.updateDataValue("divisor", divisorValue)
-
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
