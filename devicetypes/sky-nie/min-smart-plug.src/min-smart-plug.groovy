@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug v2.1.1
+ *      Min Smart Plug v2.2.0
  *
  *  	Models: MINOSTON (MP21Z) And Eva Logik (ZW30) / MINOSTON (MS10Z)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.2.0 (09/22/2021)
+ *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
+ *      and it can be replaced by the Automation function in the SmartThings APP
  *
  *    2.1.1 (09/07/2021)
  *      - Syntax format compliance adjustment
@@ -103,26 +107,6 @@ private getConfigParamInput(param) {
     }
 }
 
-private addChildButton() {
-    log.warn "Creating Button Device"
-    def child = addChildDevice(
-            "smartthings",
-            "Child Button",
-            "${device.deviceNetworkId}:2",
-            device.getHub().getId(),
-            [
-                completedSetup: true,
-                isComponent: false,
-                label: "plugButton",
-                componentLabel: "${device.displayName[0..-8]} Button"
-            ]
-    )
-    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down", "down_2x", "up", "up_2x"]), displayed:false)
-    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
-    sendButtonEvent("pushed")
-    return child
-}
-
 def installed() {
     logDebug "installed()..."
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -140,13 +124,6 @@ def updated() {
         logDebug "updated()..."
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
-        }
-        if (isButtonAvailable() && !childDevices) {
-            try {
-                addChildButton()
-            } catch (ex) {
-                log.error("Unable to create button device because the 'Child Button' DTH is not installed", ex)
-            }
         }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
@@ -295,15 +272,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 private sendSwitchEvents(rawVal, type) {
     def switchVal = (rawVal == 0xFF) ? "on" : "off"
     sendEvent(name:  "switch", value: switchVal, displayed:  true, type:  type)
-    if (isButtonAvailable() && type == "physical") {
-        if (paddleControlParam.value == 2) {
-            sendButtonEvent("pushed")
-        } else {
-            def paddlesReversed = (paddleControlParam.value == 1)
-            def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-            sendButtonEvent(btnVal)
-        }
-    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -320,7 +288,6 @@ private static getCommandClassVersions() {
     [
         0x20: 1,	// Basic
         0x25: 1,	// Switch Binary
-        0x5B: 1,	// CentralScene (3)
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
@@ -363,35 +330,6 @@ private static getPaddleControlOptions() {
         "1":"Reverse",
         "2":"Toggle"
     ]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-    logTrace "CentralSceneNotification: ${cmd}"
-    if (state.lastSequenceNumber != cmd.sequenceNumber) {
-        state.lastSequenceNumber = cmd.sequenceNumber
-        logTrace "${cmd}"
-        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
-        def btnVal
-        switch (cmd.keyAttributes) {
-            case 0:
-                btnVal = paddle
-                break
-            case 3:
-                btnVal = paddle + "_2x"
-                break
-        }
-
-        if (btnVal) {
-            sendButtonEvent(btnVal)
-        }
-    }
-    return []
-}
-
-private sendButtonEvent(value) {
-    if (childDevices) {
-        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
-    }
 }
 
 private getPaddleControlParam() {
