@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v2.1.1
+ *      Min Smart Plug Dimmer v2.2.0
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    2.2.0 (09/22/2021)
+ *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
+ *      and it can be replaced by the Automation function in the SmartThings APP
  *
  *    2.1.1 (09/07/2021)
  *      - Syntax format compliance adjustment
@@ -134,55 +138,6 @@ private getConfigParamInput(param) {
     }
 }
 
-private addChildButton() {
-    log.warn "Creating Button Device"
-    def child = addChildDevice(
-            "smartthings",
-            "Child Button",
-            "${device.deviceNetworkId}:2",
-            device.getHub().getId(),
-            [
-                completedSetup: true,
-                isComponent: false,
-                label: "plugButton",
-                componentLabel: "${device.displayName[0..-8]} Button"
-            ]
-    )
-    child?.sendEvent(name:"supportedButtonValues", value:JsonOutput.toJson(["pushed", "down", "down_2x", "up", "up_2x"]), displayed:false)
-    child?.sendEvent(name:"numberOfButtons", value:1, displayed:false)
-    sendButtonEvent("pushed")
-    return child
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
-    logTrace "CentralSceneNotification: ${cmd}"
-    if (state.lastSequenceNumber != cmd.sequenceNumber) {
-        state.lastSequenceNumber = cmd.sequenceNumber
-        logTrace "${cmd}"
-        def paddle = (cmd.sceneNumber == 1) ? "down" : "up"
-        def btnVal
-        switch (cmd.keyAttributes) {
-            case 0:
-                btnVal = paddle
-                break
-            case 3:
-                btnVal = paddle + "_2x"
-                break
-        }
-
-        if (btnVal) {
-            sendButtonEvent(btnVal)
-        }
-    }
-    return []
-}
-
-private sendButtonEvent(value) {
-    if (childDevices) {
-        childDevices[0].sendEvent(name: "button", value: value, data:[buttonNumber: 1], isStateChange: true)
-    }
-}
-
 def ping() {
     logDebug "ping()..."
     return [ switchMultilevelGetCmd() ]
@@ -215,13 +170,6 @@ def updated() {
         logDebug "updated()..."
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
-        }
-        if (isButtonAvailable() && !childDevices) {
-            try {
-                addChildButton()
-            } catch (ex) {
-                log.error("Unable to create button device because the 'Child Button' DTH is not installed", ex)
-            }
         }
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
@@ -333,7 +281,6 @@ private static getCommandClassVersions() {
     [
         0x20: 1,	// Basic
         0x26: 3,	// Switch Multilevel
-        0x5B: 1,	// CentralScene (3)
         0x55: 1,	// Transport Service
         0x59: 1,	// AssociationGrpInfo
         0x5A: 1,	// DeviceResetLocally
@@ -559,20 +506,6 @@ private sendSwitchEvents(rawVal, type) {
     sendEvent(name: "switch",  value:switchVal, displayed: true, type: type)
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
-    }
-    if (isButtonAvailable() && type == "physical") {
-        if (paddleControlParam.value == 2) {
-            sendButtonEvent("pushed")
-        } else {
-            def paddlesReversed = (paddleControlParam.value == 1)
-            def btnVal = ((rawVal && !paddlesReversed) || (!rawVal && paddlesReversed)) ? "up" : "down"
-            def oldSwitch = device.currentValue("switch")
-            def oldLevel = device.currentValue("level")
-            if ((oldSwitch == "on") && (btnVal == "up") && (oldLevel > rawVal)) {
-                btnVal = "down"
-            }
-            sendButtonEvent(btnVal)
-        }
     }
 }
 
