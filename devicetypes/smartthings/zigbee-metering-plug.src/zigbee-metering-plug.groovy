@@ -39,6 +39,7 @@ metadata {
         fingerprint manufacturer: "Jasco Products", model: "43095", deviceJoinName: "Enbrighten Outlet" //Enbrighten Plug-in Smart Switch With Energy Monitoring 43095, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
         fingerprint manufacturer: "Jasco Products", model: "43132", deviceJoinName: "Jasco Outlet" //Enbrighten In-Wall Smart Outlet With Energy Monitoring 43132, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
         fingerprint manufacturer: "Jasco Products", model: "43078", deviceJoinName: "Enbrighten Switch", ocfDeviceType: "oic.d.switch" //Enbrighten In-Wall Smart Switch With Energy Monitoring 43078, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
+        fingerprint inClusters: "0000,0001,0003,0006,0020,0B04,0702", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CCM-300Z", deviceJoinName: "SiHAS Outlet" // SiHAS Smart Plug
 	}
 
     tiles(scale: 2){
