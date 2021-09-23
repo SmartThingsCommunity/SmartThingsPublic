@@ -187,4 +187,3 @@ private boolean isFrientOutlet() {
 private Boolean isCCM300() {
     device.getDataValue("model") == "CCM-300Z"
 }
-
