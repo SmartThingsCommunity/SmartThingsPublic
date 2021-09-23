@@ -39,8 +39,7 @@ metadata {
         fingerprint manufacturer: "Jasco Products", model: "43095", deviceJoinName: "Enbrighten Outlet" //Enbrighten Plug-in Smart Switch With Energy Monitoring 43095, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
         fingerprint manufacturer: "Jasco Products", model: "43132", deviceJoinName: "Jasco Outlet" //Enbrighten In-Wall Smart Outlet With Energy Monitoring 43132, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
         fingerprint manufacturer: "Jasco Products", model: "43078", deviceJoinName: "Enbrighten Switch", ocfDeviceType: "oic.d.switch" //Enbrighten In-Wall Smart Switch With Energy Monitoring 43078, Raw Description: 01 0104 0100 00 07 0000 0003 0004 0005 0006 0702 0B05 02 000A 0019
-        fingerprint inClusters: "0000,0001,0003,0006,0020,0B04,0702", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CCM-300Z", deviceJoinName: "SiHAS Outlet" // SIHAS Smart Plug with on/off button
-    }
+	}
 
     tiles(scale: 2){
         multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
@@ -140,8 +139,8 @@ def on() {
 }
 
 /**
-* PING is used by Device-Watch in attempt to reach the Device
-* */
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
 def ping() {
     return refresh()
 }
@@ -158,7 +157,7 @@ def configure() {
     sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting"
     return refresh() +
-           zigbee.onOffConfig() +
+    	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
            zigbee.electricMeasurementPowerConfig(1, 600, 1) +
            zigbee.simpleMeteringPowerConfig()
@@ -169,7 +168,7 @@ private int getPowerDiv() {
 }
 
 private int getEnergyDiv() {
-    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : (isFrientOutlet() || isCCM300()) ? 1000 : 100
+    (isSengledOutlet() || isJascoProductsOutlet()) ? 10000 : isFrientOutlet() ? 1000 : 100
 }
 
 private boolean isSengledOutlet() {
@@ -182,8 +181,4 @@ private boolean isJascoProductsOutlet() {
 
 private boolean isFrientOutlet() {
     device.getDataValue("manufacturer") == "frient A/S"
-}
-
-private Boolean isCCM300() {
-    device.getDataValue("model") == "CCM-300Z"
 }
