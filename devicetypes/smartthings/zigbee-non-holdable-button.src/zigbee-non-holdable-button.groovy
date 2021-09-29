@@ -27,6 +27,7 @@ metadata {
 
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0500", outClusters: "0019", manufacturer: "HEIMAN", model: "SOS-EM", deviceJoinName: "HEIMAN Button" //HEIMAN Emergency Button
         fingerprint manufacturer: "frient A/S", model: "MBTZB-110", deviceJoinName: "frient Button" // Frient Smart Button, 20 0104 0007 00 05 0000 0001 0003 000F 0020 04 0003 0006 000A 0019
+        fingerprint manufacturer: "frient A/S", model: "SBTZB-110", deviceJoinName: "frient Button" // Frient Smart Button, 20 0104 0007 00 05 0000 0001 0003 000F 0020 04 0003 0006 000A 0019
         fingerprint manufacturer: "eWeLink", model: "KF01", deviceJoinName: "eWeLink Button" // 01 0104 0402 00 04 0000 0003 0500 0001 01 0003
     }
 
