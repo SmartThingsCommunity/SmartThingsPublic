@@ -27,10 +27,6 @@ metadata {
 		capability "Sensor"
 
 		command "reset"
-
-		fingerprint inClusters: "0x26,0x33,0x98"
-		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
-		fingerprint deviceId: "0x1102", inClusters: "0x98"
 	}
 
 	simulator {
@@ -201,6 +197,11 @@ def setColorTemperature(temp) {
 	def cmds = [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
 	cmds += queryAllColors()
 	commands(cmds)
+}
+
+private queryAllColors() {
+	def colors = ["red", "green", "blue", "warmWhite", "coldWhite"]
+	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
 }
 
 def reset() {

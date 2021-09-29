@@ -27,9 +27,6 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
-
-		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeon LED Bulb 6 Multi-Color" //US
-		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeon LED Bulb 6 Multi-Color" //EU
 	}
 
 	simulator {
@@ -281,7 +278,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 private command(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		cmd.format()

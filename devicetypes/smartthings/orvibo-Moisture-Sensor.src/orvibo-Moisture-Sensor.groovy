@@ -31,8 +31,10 @@ metadata {
 		capability "Health Check"
 		capability "Battery"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe", deviceJoinName: "Orvibo Water Leak Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029", deviceJoinName: "Orvibo Water Leak Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001", manufacturer: "HEIMAN", model: "WaterSensor-N", deviceJoinName: "HEIMAN Water Leak Sensor" //HEIMAN Water Leakage Sensor (HS3WL-E)
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
 	}
 
 	simulator {
@@ -102,26 +104,41 @@ def ping() {
 
 def refresh() {
 	log.debug "Refreshing Values"
-	def refreshCmds = []
-	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
-	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-		zigbee.enrollResponse()
+	def manufacturer = getDataValue("manufacturer")
+	if (manufacturer == "Third Reality, Inc") {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	} else {
+		def refreshCmds = []
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+		refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+			zigbee.enrollResponse()
 
-	refreshCmds
+		refreshCmds
+    }
 }
 
 def installed(){
 	log.debug "call installed()"
-	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def manufacturer = getDataValue("manufacturer")
+	if (manufacturer != "Third Reality, Inc") {
+		sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	}
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def manufacturer = getDataValue("manufacturer")
 
-	log.debug "Configuring Reporting"
-	def configCmds = []
-	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
-	refresh() + configCmds
+	if (manufacturer == "Third Reality, Inc") {
+		def enrollCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+		return zigbee.addBinding(zigbee.IAS_ZONE_CLUSTER) + enrollCmds
+	} else {
+		sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+		log.debug "Configuring Reporting"
+		def configCmds = []
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+		refresh() + configCmds
+	}
 }
 
 def getMoistureResult(description) {
@@ -138,11 +155,16 @@ def getMoistureResult(description) {
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage"
 	def result = [:]
+	def manufacturer = getDataValue("manufacturer")
 
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		result.value = Math.round(rawValue / 2)
+		if (manufacturer == "Third Reality, Inc") {
+			result.value = Math.round(rawValue)
+		} else {
+			result.value = Math.round(rawValue / 2)
+		}
 		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 

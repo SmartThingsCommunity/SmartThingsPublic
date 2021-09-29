@@ -96,7 +96,7 @@ mappings {
 }
 
 def installed() {
-	log.debug settings
+	//log.debug settings
 }
 
 def updated() {
@@ -109,11 +109,11 @@ def updated() {
 		state.remove(device.id)
 		unsubscribe(device)
 	}
-	log.debug settings
+	//log.debug settings
 }
 
 def list() {
-	log.debug "[PROD] list, params: ${params}"
+	//log.debug "[PROD] list, params: ${params}"
 	def type = params.deviceType
 	settings[type]?.collect{deviceItem(it)} ?: []
 }
@@ -136,7 +136,7 @@ def update() {
 	def device = settings[type]?.find { it.id == params.id }
 	def command = data.command
 
-	log.debug "[PROD] update, params: ${params}, request: ${data}, devices: ${devices*.id}"
+	//log.debug "[PROD] update, params: ${params}, request: ${data}, devices: ${devices*.id}"
 	
 	if (!device) {
 		httpError(404, "Device not found")
@@ -201,7 +201,7 @@ def show() {
 	def devices = settings[type]
 	def device = devices.find { it.id == params.id }
 
-	log.debug "[PROD] show, params: ${params}, devices: ${devices*.id}"
+	//log.debug "[PROD] show, params: ${params}, devices: ${devices*.id}"
 	if (!device) {
 		httpError(404, "Device not found")
 	}
@@ -222,13 +222,13 @@ def addSubscription() {
 	def callbackUrl = data.callbackUrl
 	def device = devices.find { it.id == deviceId }
 
-	log.debug "[PROD] addSubscription, params: ${params}, request: ${data}, device: ${device}"
+	//log.debug "[PROD] addSubscription, params: ${params}, request: ${data}, device: ${device}"
 	if (device) {
 		log.debug "Adding switch subscription " + callbackUrl
 		state[deviceId] = [callbackUrl: callbackUrl]
 		subscribe(device, attribute, deviceHandler)
 	}
-	log.info state
+	//log.info state
 
 }
 
@@ -238,13 +238,13 @@ def removeSubscription() {
 	def deviceId = params.id
 	def device = devices.find { it.id == deviceId }
 
-	log.debug "[PROD] removeSubscription, params: ${params}, request: ${data}, device: ${device}"
+	//log.debug "[PROD] removeSubscription, params: ${params}, request: ${data}, device: ${device}"
 	if (device) {
 		log.debug "Removing $device.displayName subscription"
 		state.remove(device.id)
 		unsubscribe(device)
 	}
-	log.info state
+	//log.info state
 }
 
 def deviceHandler(evt) {
@@ -255,7 +255,7 @@ def deviceHandler(evt) {
 				log.debug "[PROD IFTTT] Event data successfully posted"
 			}
 		} catch (groovyx.net.http.ResponseParseException e) {
-			log.debug("Error parsing ifttt payload ${e}")
+			log.error("Error parsing ifttt payload ${e}")
 		}
 	} else {
 		log.debug "[PROD] No subscribed device found"

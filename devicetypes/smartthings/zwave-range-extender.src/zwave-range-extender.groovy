@@ -15,10 +15,13 @@ metadata {
 	definition (name: "Z-Wave Range Extender", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.networking") {
 		capability "Health Check"
 
-		fingerprint mfr: "0086", prod: "0104", model: "0075", deviceJoinName: "Aeotec Range Extender 6" //US
-		fingerprint mfr: "0086", prod: "0204", model: "0075", deviceJoinName: "Aeotec Range Extender 6" //UK
-		fingerprint mfr: "0086", prod: "0004", model: "0075", deviceJoinName: "Aeotec Range Extender 6" //EU
-		fingerprint mfr: "0246", prod: "0001", model: "0001", deviceJoinName: "Iris Z-Wave Range Extender (Smart Plug)"
+		fingerprint mfr: "0086", prod: "0104", model: "0075", deviceJoinName: "Aeotec Repeater/Extender" //US //Aeotec Range Extender 6
+		fingerprint mfr: "0086", prod: "0204", model: "0075", deviceJoinName: "Aeotec Repeater/Extender" //UK, AU //Aeotec Range Extender 6
+		fingerprint mfr: "0086", prod: "0004", model: "0075", deviceJoinName: "Aeotec Repeater/Extender" //EU //Aeotec Range Extender 6
+		fingerprint mfr: "0246", prod: "0001", model: "0001", deviceJoinName: "Iris Repeater/Extender" //Iris Z-Wave Range Extender (Smart Plug)
+		fingerprint mfr: "021F", prod: "0003", model: "0108", deviceJoinName: "Dome Repeater/Extender" //US //Dome Range Extender DMEX1
+		fingerprint mfr: "0371", prod: "0104", model: "00BD", deviceJoinName: "Aeotec Repeater/Extender" //US //Aeotec Range Extender 7
+		fingerprint mfr: "0371", prod: "0004", model: "00BD", deviceJoinName: "Aeotec Repeater/Extender" //EU //Aeotec Range Extender 7
 	}
 
 	tiles(scale: 2) {

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "eZEX smart electric switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
+    definition (name: "eZEX smart electric switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.energymeter", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Actuator"
@@ -22,7 +22,7 @@ metadata {
         capability "Sensor"
         capability "Configuration"
 
-        fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR116Z-HA", deviceJoinName: "Smart Electric Switch"
+        fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR116Z-HA", deviceJoinName: "eZEX Switch" //Smart Electric Switch
     }
 
     tiles(scale: 2){

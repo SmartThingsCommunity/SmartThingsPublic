@@ -99,8 +99,7 @@ def installed() {
 				try {
 					String dni = "${device.deviceNetworkId}-ep${num}"
 					addChildDevice(typeName, dni, device.hub.id,
-							[completedSetup: true, label: "${device.displayName} ${componentLabel}",
-							 isComponent: true, componentName: "ch${num}", componentLabel: "${componentLabel}"])
+							[completedSetup: true, label: "${device.displayName} ${componentLabel}", isComponent: false])
 					// enabledEndpoints << num.toString()
 					log.debug "Endpoint $num ($desc) added as $componentLabel"
 				} catch (e) {
@@ -275,6 +274,14 @@ def zwaveEvent(physicalgraph.zwave.commands.associationgrpinfov1.AssociationGrou
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		def formatCmd = ([cmd.commandClass, cmd.command] + cmd.parameter).collect{ String.format("%02X", it) }.join()
@@ -426,4 +433,10 @@ private encap(cmd, endpoint) {
 
 private encapWithDelay(commands, endpoint, delay=200) {
 	delayBetween(commands.collect{ encap(it, endpoint) }, delay)
+}
+
+def updated() {
+    childDevices.each {
+        if (it.device.isComponent) { it.save([isComponent: false, componentLabel: null, componentName: null]) }
+    }
 }

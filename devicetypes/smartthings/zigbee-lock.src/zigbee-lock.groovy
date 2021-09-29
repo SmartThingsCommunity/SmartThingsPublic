@@ -27,22 +27,28 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Touch Screen Lever Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Push Button Deadbolt Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL210 PB LL", deviceJoinName: "Yale Push Button Lever Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD226/246 TSDB", deviceJoinName: "Yale Assure Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD446 BLE TSDB", deviceJoinName: "Yale Assure Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD216 PBDB", deviceJoinName: "Yale Push Button Deadbolt Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL226 TSLL", deviceJoinName: "Yale Assure Touch Screen Lever Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL216 PB", deviceJoinName: "Yale Assure Keypad Lever Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_5", deviceJoinName: "Kwikset 5-Button Deadbolt"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_LEVER_5", deviceJoinName: "Kwikset 5-Button Lever"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10", deviceJoinName: "Kwikset 10-Button Deadbolt"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10T", deviceJoinName: "Kwikset 10-Button Touch Deadbolt"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0101", manufacturer:"Kwikset", model:"Smartcode", deviceJoinName: "Kwikset Smartcode Lock"
-		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0009, 0020, 0101, 0B05, FC00", outClusters: "000A, 0019", manufacturer: "Schlage", model: "BE468", deviceJoinName: "Schlage Connect Smart Deadbolt"
+		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Deadbolt Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Lever Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Door Lock" //Yale Push Button Deadbolt Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Deadbolt Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL210 PB LL", deviceJoinName: "Yale Door Lock" //Yale Push Button Lever Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD226/246 TSDB", deviceJoinName: "Yale Door Lock" //Yale Assure Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD226 TSDB", deviceJoinName: "Yale Door Lock" //Yale Assure Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD446 BLE TSDB", deviceJoinName: "Yale Door Lock" //Yale Assure Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD216 PBDB", deviceJoinName: "Yale Door Lock" //Yale Push Button Deadbolt Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL226 TSLL", deviceJoinName: "Yale Door Lock" //Yale Assure Touch Screen Lever Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL216 PB", deviceJoinName: "Yale Door Lock" //Yale Assure Keypad Lever Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_5", deviceJoinName: "Kwikset Door Lock" //Kwikset 5-Button Deadbolt
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_LEVER_5", deviceJoinName: "Kwikset Door Lock" //Kwikset 5-Button Lever
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10", deviceJoinName: "Kwikset Door Lock" //Kwikset 10-Button Deadbolt
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10T", deviceJoinName: "Kwikset Door Lock" //Kwikset 10-Button Touch Deadbolt
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0101", manufacturer:"Kwikset", model:"Smartcode", deviceJoinName: "Kwikset Door Lock" //Kwikset Smartcode Lock
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0009, 0020, 0101, 0B05, FC00", outClusters: "000A, 0019", manufacturer: "Schlage", model: "BE468", deviceJoinName: "Schlage Door Lock" //Schlage Connect Smart Deadbolt
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020,0B05", outClusters: "000A,0019", manufacturer: "Yale", model: "YDD-D4F0 TSDB", deviceJoinName: "Lockwood Door Lock" //Lockwood Smart Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "iZBModule01", deviceJoinName: "Yale Door Lock" //Yale Locks (YDF30/40, YMF30/40) with old firmware (v.9.0)
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "c700000202", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YDF40
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "0700000001", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YMF40
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0101", outClusters: "0000,0001,0003,0101", manufacturer: "Datek", model: "ID Lock 150", deviceJoinName: "ID Lock Door Lock" //ID Lock 150 Zigbee Module by Datek
 	}
 
 	tiles(scale: 2) {
@@ -94,6 +100,8 @@ private getDOORLOCK_ATTR_MIN_PIN_LENGTH() { 0x0018 }
 private getDOORLOCK_ATTR_SEND_PIN_OTA() { 0x0032 }
 private getALARM_ATTR_ALARM_COUNT() { 0x0000 }
 private getALARM_CMD_ALARM() { 0x00 }
+
+private getYALE_FINGERPRINT_MAX_CODES() { 0x1E }
 
 /**
  * Called on app installed
@@ -469,10 +477,11 @@ private def parseAttributeResponse(String description) {
 	def deviceName = device.displayName
 	if (clusterInt == CLUSTER_POWER && attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
 		responseMap.name = "battery"
-		responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		// Handling Yale locks incorrect battery reporting issue
 		if (reportsBatteryIncorrectly()) {
 			responseMap.value = Integer.parseInt(descMap.value, 16)
+		} else {
+			responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		}
 		responseMap.descriptionText = "Battery is at ${responseMap.value}%"
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_LOCKSTATE) {
@@ -491,6 +500,15 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = "unknown"
 			responseMap.descriptionText = "Unknown state"
 		}
+		if (responseMap.value) {
+			/*  delay this event for a second in the hopes that we get the operation event (which has more info).
+				If we don't get one, then it's okay to send. If we send the event with more info first, the event
+				with less info will be marked as not displayed
+			 */
+			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
+			runIn(1, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: responseMap]])
+			return [:]
+		}
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_MIN_PIN_LENGTH && descMap.value) {
 		def minCodeLength = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "minCodeLength", value: minCodeLength, descriptionText: "Minimum PIN length is ${minCodeLength}", displayed: false]
@@ -498,7 +516,7 @@ private def parseAttributeResponse(String description) {
 		def maxCodeLength = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodeLength", value: maxCodeLength, descriptionText: "Maximum PIN length is ${maxCodeLength}", displayed: false]
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
-		def maxCodes = Integer.parseInt(descMap.value, 16)
+		def maxCodes = isYaleFingerprintLock() ? YALE_FINGERPRINT_MAX_CODES : Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
@@ -513,6 +531,11 @@ private def parseAttributeResponse(String description) {
 	result << createEvent(responseMap)
 	log.info "ZigBee DTH - parseAttributeResponse() returning with result:- $result"
 	return result
+}
+
+def delayLockEvent(data) {
+	log.debug "Sending cached lock operation: ${data.map}"
+	sendEvent(data.map)
 }
 
 /**
@@ -1120,6 +1143,10 @@ def isYaleLock() {
 	return "Yale" == device.getDataValue("manufacturer")
 }
 
+def isYaleFingerprintLock() {
+	return "ASSA ABLOY iRevo" == device.getDataValue("manufacturer") && ("iZBModule01" || "c700000202" || "0700000001" == device.getDataValue("model"))
+}
+
 /**
  * Utility function to check for specific models of Yale Lock that don't report battery correctly
  *
@@ -1132,8 +1159,9 @@ def reportsBatteryIncorrectly() {
 			"YRD210 PB DB",
 			"YRD220/240 TSDB",
 			"YRL210 PB LL",
+			"c700000202" //YDF40
 	]
-	return (isYaleLock() && device.getDataValue("model") in badModels)
+	return device.getDataValue("model") in badModels
 }
 
 /**

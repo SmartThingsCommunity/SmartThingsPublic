@@ -201,7 +201,7 @@ def callback() {
 			redirect_uri: callbackUrl
 		]
 
-		def tokenUrl = "https://www.ecobee.com/home/token?${toQueryString(tokenParams)}"
+		def tokenUrl = "${apiEndpoint}/token?${toQueryString(tokenParams)}"
 
 		httpPost(uri: tokenUrl) { resp ->
 			state.refreshToken = resp.data.refresh_token
@@ -599,7 +599,7 @@ def poll() {
 	// No need to keep trying to poll if authToken is null
 	if (!state.authToken) {
 		log.info "poll failed due to authToken=null"
-		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+		def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) Linked Service and re-enter your account login credentials."
 		sendPushAndFeeds(notificationMessage)
 		markChildrenOffline(true)
 		unschedule()
@@ -958,7 +958,7 @@ def toQueryString(Map m) {
 
 boolean refreshAuthToken() {
 	log.debug "refreshing auth token"
-	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) Linked Service and re-enter your account login credentials."
 	def isSuccess = false
 
 	if(!state.refreshToken) {

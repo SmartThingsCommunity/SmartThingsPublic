@@ -31,8 +31,8 @@ metadata {
 		command "open"
 		command "close"
 
-		fingerprint deviceId: "0x1100", inClusters: "0x26,0x72,0x86,0x77,0x80,0x20"
-		fingerprint mfr:"0157", prod:"0100", model:"0100", deviceJoinName: "EcoNet Controls Z-Wave Vent"
+		fingerprint deviceId: "0x1100", inClusters: "0x26,0x72,0x86,0x77,0x80,0x20", deviceJoinName: "EcoNet Vent"
+		fingerprint mfr:"0157", prod:"0100", model:"0100", deviceJoinName: "EcoNet Vent" //EcoNet Controls Z-Wave Vent
 	}
 
 	simulator {

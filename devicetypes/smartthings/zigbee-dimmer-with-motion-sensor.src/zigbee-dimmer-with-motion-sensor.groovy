@@ -24,7 +24,7 @@ metadata {
 		capability "Motion Sensor"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0500, 0702, 0B05, FC01", outClusters: "0019", manufacturer: "sengled", model: "E13-N11", deviceJoinName: "Sengled Element Classic PAR38 Motion Sensor"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0500, 0702, 0B05, FC01", outClusters: "0019", manufacturer: "sengled", model: "E13-N11", deviceJoinName: "Sengled Light" //Sengled Smart LED with Motion Sensor PAR38 Bulb
 	}
 
 	tiles(scale: 2) {

@@ -25,7 +25,7 @@ metadata {
         capability "Health Check"
         capability "Light"
 
-        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0000,0019"
+        fingerprint manufacturer: "CREE", model: "Connected A-19 60W Equivalent" , deviceJoinName: "Cree Light"// 0A C05E 0100 02 07 0000 1000 0004 0003 0005 0006 0008 02 0000 0019
     }
 
     // simulator metadata

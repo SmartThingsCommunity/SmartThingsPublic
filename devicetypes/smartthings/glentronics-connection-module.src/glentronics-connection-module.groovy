@@ -13,14 +13,14 @@
  */
 
 metadata {
-	definition (name: "Glentronics Connection Module", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Glentronics Connection Module", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-leak-4") {
 		capability "Sensor"
 		capability "Water Sensor"
 		capability "Battery"
 		capability "Power Source"
 		capability "Health Check"
 
-		fingerprint mfr:"0084", prod:"0093", model:"0114", deviceJoinName: "Glentronics Connection Module"
+		fingerprint mfr:"0084", prod:"0093", model:"0114", deviceJoinName: "Glentronics Water Leak Sensor" //Glentronics Connection Module
 	}
 
 	tiles (scale: 2){

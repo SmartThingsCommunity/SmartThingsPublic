@@ -42,7 +42,7 @@ metadata {
 		command "eco" // Command does not exist in "Thermostat Mode"
 		command "updateWeather"
 
-		fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42", mfr: "0239", prod: "0001", model: "0001", deviceJoinName: "Stelpro Ki Thermostat"
+		fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42", mfr: "0239", prod: "0001", model: "0001", deviceJoinName: "Stelpro Thermostat" //Stelpro Ki Thermostat
 	}
 
 	// simulator metadata
@@ -50,11 +50,12 @@ metadata {
 
 	preferences {
 		section {
-			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: true, displayDuringSetup: true)
+			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+			input(title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing). Do not use space. If you don't want a forecast, leave it blank.",
+					displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
 
@@ -290,7 +291,7 @@ def zwaveEvent(thermostatsetpointv2.ThermostatSetpointReport cmd) {
 	def map = [:]
 
 	if (cmd.scaledValue >= 327 ||
-		cmd.setpointType != thermostatsetpointv2.ThermostatSetpointReport.SETPOINT_TYPE_HEATING_1) {
+			cmd.setpointType != thermostatsetpointv2.ThermostatSetpointReport.SETPOINT_TYPE_HEATING_1) {
 		return [:]
 	}
 	temp = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
@@ -366,7 +367,10 @@ def zwaveEvent(thermostatoperatingstatev1.ThermostatOperatingStateReport cmd) {
 		map.name = "thermostatOperatingState"
 		map.value = operatingState
 
-		if (settings.heatdetails == "No") {
+		// If the user does not want to see the Idle and Heating events in the event history,
+		// don't show them. Otherwise, don't show them more frequently than 5 minutes.
+		if (settings.heatdetails == "No" ||
+				!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
 			map.displayed = false
 		}
 	} else {
@@ -555,4 +559,26 @@ def fanCirculate() {
 
 def setThermostatFanMode() {
 	log.trace "${device.displayName} does not support fan mode"
+}
+
+/**
+ * Checks if the time elapsed from the provided timestamp is greater than the number of senconds provided
+ *
+ * @param timestamp: The timestamp
+ *
+ * @param seconds: The number of seconds
+ *
+ * @returns true if elapsed time is greater than number of seconds provided, else false
+ */
+private Boolean secondsPast(timestamp, seconds) {
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (now() - timestamp) > (seconds * 1000)
 }

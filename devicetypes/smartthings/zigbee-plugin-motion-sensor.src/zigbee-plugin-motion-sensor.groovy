@@ -16,14 +16,14 @@
  *  Date : 2019-02-12
  */
 metadata {
-    definition(name: "Zigbee Plugin Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-ZigBee_Dimmer_with_Motion_Sensor") {
+    definition(name: "Zigbee Plugin Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-LAN_Wemo_Motion") {
         capability "Motion Sensor"
         capability "Configuration"
         capability "Refresh"
         capability "Health Check"
         capability "Sensor"
        
-        fingerprint profileId: "0104", deviceId: "0107", inClusters: "0000, 0003, 0004, 0406", outClusters: "0006, 0019", model: "E280-KR0A0Z0-HA", deviceJoinName: "Smart Occupancy Sensor (AC Type)"
+        fingerprint profileId: "0104", deviceId: "0107", inClusters: "0000, 0003, 0004, 0406", outClusters: "0006, 0019", model: "E280-KR0A0Z0-HA", deviceJoinName: "eZEX Motion Sensor" //Smart Occupancy Sensor (AC Type)
     }
     tiles(scale: 2) {
         multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
@@ -41,9 +41,8 @@ metadata {
     }
 }
 
-def installed(){
+def installed() {
     log.debug "installed"
-    response(refresh())
 }
 
 def parse(String description) {

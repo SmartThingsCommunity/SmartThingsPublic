@@ -18,11 +18,13 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
-		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
+		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86", deviceJoinName: "Smoke Detector"
+		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector" //First Alert Smoke Detector
 		//zw:S type:0701 mfr:026F prod:0001 model:0001 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
-		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek Smoke Alarm"
-		fingerprint mfr: "013C", prod: "0002", model: "001E", deviceJoinName: "Philio Smoke Alarm PSG01"
+		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Smoke Detector" //FireAngel Thermoptek Smoke Alarm
+		fingerprint mfr: "013C", prod: "0002", model: "001E", deviceJoinName: "Philio Smoke Detector" //Philio Smoke Alarm PSG01
+		fingerprint mfr: "0154", prod: "0004", model: "0010", deviceJoinName: "POPP Smoke Detector" //POPP 10Year Smoke Sensor
+		fingerprint mfr: "0154", prod: "0100", model: "0201", deviceJoinName: "POPP Smoke Detector" //POPP Smoke Detector with Siren
 	}
 
 	simulator {
@@ -189,13 +191,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response([
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
 				zwave.batteryV1.batteryGet().format(),
-				"delay 2000",
 				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-			])
+		], 2000))
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(delayBetween([
+				zwave.notificationV3.notificationGet(notificationType: 0x01).format(),
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		], 2000))
 	}
 }
 
@@ -231,7 +236,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.endsWith("s")) {
+	if (zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -247,5 +252,6 @@ def initialPoll() {
 	// check initial battery and smoke sensor state
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_SMOKE)
+	if (zwaveInfo.mfr != "0138") request << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4*60*60, nodeid: zwaveHubNodeId)
 	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }

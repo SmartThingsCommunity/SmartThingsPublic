@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Motion/Light Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Motion/Light Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Illuminance Measurement"
 		capability "Battery"
@@ -26,11 +26,12 @@ metadata {
 		capability "Configuration"
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0083 ver:3.92 zwv:4.05 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
-		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion/Light Sensor"
+		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Dome_Motion_Light_Sensor_DMMS1"
 		//zw:S type:0701 mfr:0258 prod:0003 model:008D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
-		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion/Light Sensor"
+		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-NEO_Coolcam_Motion_Light_Sensor"
 		//zw:S type:0701 mfr:0258 prod:0003 model:108D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07 EU version
-		fingerprint mfr: "0258", prod: "0003", model: "108D", deviceJoinName: "NEO Coolcam Motion/Light Sensor"
+		fingerprint mfr: "0258", prod: "0003", model: "108D", deviceJoinName: "NEO Coolcam Motion/Light Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-NEO_Coolcam_Motion_Light_Sensor"
+		fingerprint mfr: "017F", prod: "0101", model: "0001", deviceJoinName: "Wink Motion Sensor"
 	}
 
 	simulator {
@@ -87,23 +88,12 @@ def updated() {
 }
 
 def configure() {
-	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * deviceWakeUpInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-}
-
-def getDeviceWakeUpInterval() {
-	def deviceWakeIntervalValue = 4
-	switch (zwaveInfo?.mfr) {
-		case "021F":
-			deviceWakeIntervalValue = 12 // Dome reports once in 12h
-			break
-		case "0258":
-			deviceWakeIntervalValue = 12 // NEO Coolcam reports once in 12h
-			break
-		default:
-			deviceWakeIntervalValue = 4 // Default Z-Wave battery device reports once in 4h
+	// Device wakes up every 8 hours (+ 2 minutes), this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Setting wakeUpNotification interval for NEO Coolcam and Dome devices
+	if (isNeoCoolcam() || isDome()) {
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
-	return deviceWakeIntervalValue
 }
 
 private getCommandClassVersions() {
@@ -197,6 +187,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	return results
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def sensorMotionEvent(value) {
 	def result = []
 	if (value) {
@@ -205,4 +201,11 @@ def sensorMotionEvent(value) {
 		result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 	}
 	return result
+}
+
+private isDome() {
+	zwaveInfo.mfr == "021F" && zwaveInfo.model == "0083"
+}
+private isNeoCoolcam() {
+	zwaveInfo.mfr == "0258" && (zwaveInfo.model == "108D" || zwaveInfo.model == "008D")
 }

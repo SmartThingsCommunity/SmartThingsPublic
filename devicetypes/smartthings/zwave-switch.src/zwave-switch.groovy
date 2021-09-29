@@ -21,10 +21,10 @@ metadata {
 		capability "Health Check"
 		capability "Light"
 
-		fingerprint mfr:"0063", prod:"4952", deviceJoinName: "GE Wall Switch"
-		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "GE Wall Switch"
-		fingerprint mfr:"0063", prod:"5052", deviceJoinName: "GE Plug-In Switch"
-		fingerprint mfr:"0113", prod:"5257", deviceJoinName: "Z-Wave Wall Switch"
+		fingerprint mfr:"0063", prod:"4952", deviceJoinName: "GE Switch" //GE Wall Switch
+		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "GE Switch" //GE Wall Switch
+		fingerprint mfr:"0063", prod:"5052", deviceJoinName: "GE Switch" //GE Plug-In Switch
+		fingerprint mfr:"0113", prod:"5257", deviceJoinName: "Evolve Switch" //Z-Wave Wall Switch
 	}
 
 	// simulator metadata
