@@ -23,10 +23,6 @@
  @Field final CurrentDivisor = 1000
  @Field final SmartenitMfrCode = 0x1075
  @Field final ElectricalMeasurement = 0x0b04
- @Field final ACVoltageMultiplier = 0x0600
- @Field final ACVoltageDivisor = 0x0601
- @Field final ACCurrentMultiplier = 0x0602
- @Field final ACCurrentDivisor = 0x0603
  @Field final ActivePower = 0x050b
  @Field final PowerMultiplier = 0x0604
  @Field final PowerDivisor = 0x0605
