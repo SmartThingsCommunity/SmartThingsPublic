@@ -256,7 +256,7 @@ def refresh() {
 }
 
 def poll() {
-  logDebug "poll()"
+  log.debug "poll()"
   def status = parent.refresh(this)
 }
 
