@@ -225,15 +225,15 @@ def getDelay() {
 
 def on() {
 	encapSequence([
-			zwave.basicV1.basicSet(value: 0xFF),
-			zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.switchBinaryV1.switchBinaryGet()
 	], getDelay())
 }
 
 def off() {
 	encapSequence([
-			zwave.basicV1.basicSet(value: 0x00),
-			zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.switchBinaryV1.switchBinaryGet()
 	], getDelay())
 }
 
