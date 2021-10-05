@@ -211,18 +211,30 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
+def isEverspringOutlet() {
+	return zwaveInfo.mfr == "0060" && zwaveInfo.prod == "0004" && zwaveInfo.model == "000B"
+}
+
+def getDelay() {
+	if(isEverspringOutlet()){
+		return 1000
+	} else {
+		return 3000
+	}
+}
+
 def on() {
 	encapSequence([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet()
-	], 3000)
+			zwave.basicV1.basicSet(value: 0xFF),
+			zwave.switchBinaryV1.switchBinaryGet()
+	], getDelay())
 }
 
 def off() {
 	encapSequence([
-		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet()
-	], 3000)
+			zwave.basicV1.basicSet(value: 0x00),
+			zwave.switchBinaryV1.switchBinaryGet()
+	], getDelay())
 }
 
 /**
