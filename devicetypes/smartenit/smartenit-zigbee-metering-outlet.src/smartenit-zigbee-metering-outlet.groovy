@@ -28,8 +28,6 @@
  @Field final ACCurrentMultiplier = 0x0602
  @Field final ACCurrentDivisor = 0x0603
  @Field final ActivePower = 0x050b
- @Field final PowerMultiplier = 0x0604
- @Field final PowerDivisor = 0x0605
  @Field final ReportingResponse = 0x07
 
 metadata {
@@ -122,9 +120,7 @@ def refresh() {
 	zigbee.onOffRefresh() +
 	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation) + 
 	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , Voltage) + 
-	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , Current) +
-	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , PowerMultiplier) +
-	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , PowerDivisor) + 
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , Current) + 
 	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER , ActivePower)
 }
 
