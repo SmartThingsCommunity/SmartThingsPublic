@@ -423,7 +423,7 @@ def nameSlot(codeSlot, codeName) {
 		def newCodeName = codeName ?: "Code $codeSlot"
 		lockCodes[codeSlot] = newCodeName
 		sendEvent(lockCodesEvent(lockCodes))
-		sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ lockName: deviceName, notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
+		sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
 			descriptionText: "Renamed \"$oldCodeName\" to \"$newCodeName\"", displayed: true, isStateChange: true)
 	}
 }
@@ -523,11 +523,6 @@ private def parseAttributeResponse(String description) {
 		return null
 	}
 
-	if (responseMap.data) {
-		responseMap.data.lockName = deviceName
-	} else {
-		responseMap.data = [ lockName: deviceName ]
-	}
 	result << createEvent(responseMap)
 	log.info "ZigBee DTH - parseAttributeResponse() returning with result:- $result"
 	return result
@@ -585,7 +580,7 @@ private def parseCommandResponse(String description) {
 				return null
 			}
 			codeName = getCodeName(lockCodes, codeID)
-			responseMap.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
+			responseMap.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
@@ -858,11 +853,6 @@ private def parseCommandResponse(String description) {
 	}
 
 	if(responseMap["value"]) {
-		if (responseMap.data) {
-			responseMap.data.lockName = deviceName
-		} else {
-			responseMap.data = [ lockName: deviceName ]
-		}
 		result << createEvent(responseMap)
 	}
 	if (result) {
@@ -931,8 +921,7 @@ private def allCodesDeletedEvent() {
 
 		def codeName = code
 		result << createEvent(name: "codeChanged", value: "$id deleted",
-		data: [ codeName: codeName, lockName: deviceName, notify: true,
-			notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
+		data: [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
 		descriptionText: "Deleted \"$codeName\"",
 		displayed: true, isStateChange: true)
 		clearStateForSlot(id)
