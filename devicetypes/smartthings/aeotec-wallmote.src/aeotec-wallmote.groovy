@@ -27,7 +27,7 @@ metadata {
         fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
         fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
         fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec illumino Wallmote 7
-        fingerprint mfr: "0312", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
+        fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
     }
 
     tiles(scale: 2) {
