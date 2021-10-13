@@ -41,6 +41,9 @@ metadata {
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-001", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001" //ITM CCT
 		
+		// Samsung Korea B2B Marketing
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "HAN-LIGHT-Z-001", deviceJoinName: "SamsungB2B Light", mnmn: "Samsung Electronics", vid: "HAN-LIGHT-Z-001" //Samsung Korea B2B Marketing CCT
+		
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria Light" //Eria ZigBee Color Temperature Bulb
 
