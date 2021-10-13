@@ -142,12 +142,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	}
 	if (state.cachedSetpoint) {
 		cmds += zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: state.cachedSetpoint, setpointType: 1, size: 2])
+		state.cachedSetpoint = null
 	}
 	cmds += [
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1),
 			zwave.wakeUpV2.wakeUpNoMoreInformation()
 	]
-	state.cachedSetpoint = null
 	[response(multiEncap(cmds))]
 }
 
