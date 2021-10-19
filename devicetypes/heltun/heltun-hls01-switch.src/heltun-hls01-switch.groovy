@@ -40,7 +40,7 @@ metadata {
 				range: "0..65536",
 				required: false
 			)
-            
+
 			input (
 				name: "ParamValue",
 				title: "Parameter Value:",
@@ -74,7 +74,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	]
 	if (state.confSet.parameterNumber == state.confReport.parameterNumber && state.confSet.configurationValue != state.confReport.configurationValue[0]) {
 	sendHubCommand(zwave.configurationV2.configurationSet(parameterNumber: state.confSet.parameterNumber, size: state.confReport.size, scaledConfigurationValue: state.confSet.configurationValue))
-    }
+	}
 }
 
 def parse(String description) {
@@ -134,26 +134,24 @@ def refresh() {
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())								// get kWh
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())								// get Watts
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())								// get Voltage    
-    sendHubCommand(cmds, 1200)
+	sendHubCommand(cmds, 1200)
 }
 
 def ping() {
-	log.info "Ping Called"
 	refresh()
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.clockv1.ClockReport cmd) {
 	def currDate = Calendar.getInstance(location.timeZone)
 	def time = [hour: currDate.get(Calendar.HOUR_OF_DAY), minute: currDate.get(Calendar.MINUTE), weekday: currDate.get(Calendar.DAY_OF_WEEK)]
 	if ((time.hour != cmd.hour) || (time.minute != cmd.minute) || (time.weekday != cmd.weekday)){
-		sendHubCommand(new physicalgraph.device.HubAction(zwave.clockV1.clockSet(time).format()))
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.clockV1.clockSet(time).format()))
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	def state = cmd.value ? "on" : "off"
-    sendEvent(name: "switch", value: state)
+	sendEvent(name: "switch", value: state)
 }
 
 def resetEnergyMeter() {
@@ -178,6 +176,6 @@ def configure() {
 	delayBetween([
 		zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format(),
 		zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format(),
-        ping()
+		ping()
 	], 3000)
 }
