@@ -407,15 +407,6 @@ def configure() {
 	//1. set association groups for hub - 2 groups are used to set battery refresh interval different than sensor report interval
 	request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
 
-	//2. automatic report flags
-	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
-	// set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
-	//association group 1
-	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 1, scaledConfigurationValue: 240)
-
-	//association group 2
-	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 1)
-
 	// Expedite this if we know this info so that we can execute the code below
 	if (!state.MSR && zwaveInfo?.mfr && zwaveInfo.prod && zwaveInfo.model) {
 		state.MSR = "${zwaveInfo.mfr}-${zwaveInfo.prod}-${zwaveInfo.model}"
@@ -425,6 +416,15 @@ def configure() {
 		case "0086-0002-0064":  // MultiSensor 6 EU
 		case "0086-0102-0064":  // MultiSensor 6 US
 		case "0086-0202-0064":  // MultiSensor 6 AU
+					//2. automatic report flags
+					// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
+					// set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
+					//association group 1
+					request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 240)
+
+					//association group 2
+					request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
+		
 					//3. no-motion report x seconds after motion stops (default 20 secs)
 					request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
 
@@ -445,6 +445,15 @@ def configure() {
 		case "0371-0002-0018":  // MultiSensor 7 EU
 		case "0371-0102-0018":  // MultiSensor 7 US
 		case "0371-0202-0018":  // MultiSensor 7 AU
+					//2. automatic report flags
+					// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
+					// set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
+					//association group 1
+					request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 1, scaledConfigurationValue: 240)
+
+					//association group 2
+					request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 1, scaledConfigurationValue: 1)
+		
 					//3. no-motion report x seconds after motion stops (default 30 secs)
 					request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 30)
 
