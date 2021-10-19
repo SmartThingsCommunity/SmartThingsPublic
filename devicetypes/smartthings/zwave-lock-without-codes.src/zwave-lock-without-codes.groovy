@@ -278,7 +278,6 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 
 	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
 	def map = [name: "lock"]
-	map.data = [lockName: device.displayName]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
 		map.descriptionText = "Locked"
@@ -383,11 +382,6 @@ private def handleAccessAlarmReport(cmd) {
 	}
 
 	if (map) {
-		if (map.data) {
-			map.data.lockName = deviceName
-		} else {
-			map.data = [lockName: deviceName]
-		}
 		result << createEvent(map)
 	}
 	result = result.flatten()
@@ -414,10 +408,10 @@ private def handleBatteryAlarmReport(cmd) {
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
-			map = [name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [lockName: deviceName]]
+			map = [name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true]
 			break
 		case 0x0B:
-			map = [name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true, data: [lockName: deviceName]]
+			map = [name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true]
 			break
 		default:
 			map = [displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}"]
@@ -512,11 +506,6 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 	}
 
 	if (map) {
-		if (map.data) {
-			map.data.lockName = deviceName
-		} else {
-			map.data = [ lockName: deviceName ]
-		}
 		result << createEvent(map)
 	}
 	result = result.flatten()

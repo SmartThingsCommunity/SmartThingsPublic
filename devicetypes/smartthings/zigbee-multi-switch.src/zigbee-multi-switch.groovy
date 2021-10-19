@@ -134,7 +134,7 @@ def parse(String description) {
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
 	if (eventMap) {
-		if (eventDescMap && eventDescMap?.attrId == "0000") {//0x0000 : OnOff attributeId
+		if (eventDescMap && (eventDescMap?.attrId == "0000" || eventDescMap?.command == "0B")) {//0x0000 : OnOff attributeId, 0x0B : default response command
 			if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
 				sendEvent(eventMap)
 			} else {
