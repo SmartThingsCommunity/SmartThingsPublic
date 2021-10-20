@@ -214,11 +214,9 @@ def configure() {
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
 	} else if (isEWeLink()) {
 		return refresh() +
-			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
-			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
-			zigbee.batteryConfig() +
-			zigbee.temperatureConfig(3600, 7200) +
-			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 3600, 7200, null)
+			zigbee.batteryConfig(3600, 7200, 0x4) +
+			zigbee.temperatureConfig(10, 7200, 50) +
+			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 10, 7200, 300)
 	} else {
 		return refresh() +
 			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
