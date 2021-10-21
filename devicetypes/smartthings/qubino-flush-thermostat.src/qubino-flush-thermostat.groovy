@@ -209,12 +209,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	state.supportedModes = ["off"]
+	def resp = []
 	//this device doesn't act like normal thermostat, it can support either 'cool' or 'heat' after configuration
 	if (cmd.parameterNumber == 59 && !state.isThermostatModeSet) {
 		state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
+		resp += cmd.scaledConfigurationValue ? setHeatingSetpoint(0) : setCoolingSetpoint(0)
 		state.isThermostatModeSet = true
 	}
-	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
+	[createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false), response(resp)]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
