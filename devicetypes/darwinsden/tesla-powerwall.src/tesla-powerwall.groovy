@@ -12,7 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	25-May-2020 >>> v0.2.0e.20210525 - Updated reserve +/- adjust for Hubitat
+ *	24-Oct-2021 >>> v0.2.10.20211024 - Added argument for setBackupReservePercent
+ *	25-May-2020 >>> v0.2.0e.20200525 - Updated reserve +/- adjust for Hubitat
  *	02-Jul-2020 >>> v0.1.5e.20200702 - Added attribute Tile 
  *	22-Jan-2020 >>> v0.1.4e.20200122 - Added stormwatch enable/disable commands
  *	12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
@@ -47,8 +48,8 @@ metadata {
         attribute "pwVersion", "string"
         attribute "gridStatus", "enum", ["offGrid", "onGrid"]
         attribute "pwTile", "string"
-        
-        command "setBackupReservePercent"
+
+        command "setBackupReservePercent", ["number"]
         command "raiseBackupReserve"
         command "lowerBackupReserve"
         command "setBackupOnlyMode"
@@ -256,7 +257,7 @@ def refresh() {
 }
 
 def poll() {
-  log.debug "poll()"
+  //log.debug "poll()"
   def status = parent.refresh(this)
 }
 

@@ -53,9 +53,35 @@
  *   Single-Tap Down   8        pressed
  *
  */
+import groovy.transform.Field
  
+@Field static Map commandClassVersions = [
+	0x20: 1,	// Basic
+	0x27: 1,	// Switch All
+	0x26: 3,	// Switch Multilevel (4)
+	0x2B: 1,	// Scene Activation
+	0x2C: 1,	// Scene Actuator Conf
+	0x55: 1,	// Transport Service (2)
+	0x59: 1,	// AssociationGrpInfo
+	0x5A: 1,	// DeviceResetLocally
+	0x5B: 1,	// CentralScene (3)
+	0x5E: 2,	// ZwaveplusInfo
+	0x6C: 1,	// Supervision
+	0x70: 1,	// Configuration (3)
+	0x7A: 2,	// FirmwareUpdateMd
+	0x72: 2,	// ManufacturerSpecific
+	0x73: 1,	// Powerlevel
+	0x85: 2,	// Association
+	0x86: 1,	// Version (2)
+	0x98: 1,	// Security S0
+	0x9F: 1		// Security S2
+]
 metadata {
-	definition (name: "WD100+ Dimmer", namespace: "darwinsden", author: "darwin@darwinsden.com") {
+	definition (name: "WD100 Dimmer", namespace: "darwinsden", author: "darwin@darwinsden.com",
+    	ocfDeviceType: "oic.d.switch",
+		mnmn: "SmartThingsCommunity",
+		vid: "e01f6333-d277-37a4-876a-309df1c09070"
+        ) {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
@@ -72,8 +98,9 @@ metadata {
         command "tapDown3"
         command "holdUp"
         command "holdDown"
+       // fingerprint mfr: "000C", prod: "4447", model: "3036", deviceJoinName: "HomeSeer Wall Dimmer"
         
-        fingerprint deviceId: "0x1101", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x26, 0x27, 0x70, 0x2C, 0x2B, 0x5B, 0x7A", outClusters: "0x5B"
+        fingerprint mfr: "000C", prod: "4447", model: "3036", deviceJoinName: "HomeSeer Wall Dimmer", deviceId: "0x1101", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x26, 0x27, 0x70, 0x2C, 0x2B, 0x5B, 0x7A", outClusters: "0x5B"
 }
 
 	simulator {
@@ -321,7 +348,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                    // Press Once
-                  result += createEvent(tapUp1Response("physical"))  
+                  result += createEvent(btnResponse("up", "physical"))
                   result += createEvent([name: "switch", value: "on", type: "physical"])
        
                   if (singleTapToFullBright)
@@ -336,12 +363,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent(holdUpResponse("physical"))  
+                  result += createEvent(btnResponse("up_hold", "physical")) 
                   result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
-                  result +=createEvent(tapUp2Response("physical"))
+                  result += createEvent(btnResponse("up_2x", "physical"))
                   if (doubleTapToFullBright)
                   {
                      result += setLevel(99)
@@ -351,7 +378,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 4:
                   // 3 Three times
-                  result=createEvent(tapUp3Response("physical"))
+                  result = createEvent(btnResponse("up_3x", "physical"))
                   break
               default:
                   log.debug ("unexpected up press keyAttribute: $cmd.keyAttributes")
@@ -363,7 +390,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                   // Press Once
-                  result += createEvent(tapDown1Response("physical"))
+                  result += createEvent(btnResponse("down", "physical"))
                   result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 1:
@@ -371,12 +398,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent(holdDownResponse("physical"))
+                  result += createEvent(btnResponse("down_hold", "physical"))
                   result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
-                  result+=createEvent(tapDown2Response("physical"))
+                  result += createEvent(btnResponse("down_2x", "physical"))
                   if (doubleTapDownToDim)
                   {
                      result += setLevel(25)
@@ -386,7 +413,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 4:
                   // 3 Times
-                  result=createEvent(tapDown3Response("physical"))
+                  result = createEvent(btnResponse("down_3x", "physical"))
                   break
               default:
                   log.debug ("unexpected down press keyAttribute: $cmd.keyAttributes")
@@ -400,77 +427,44 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
    return result
 }
 
-def tapUp1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲")
-	[name: "button", value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
-       isStateChange: true, type: "$buttonType"]
+def btnResponse(action, buttonType) {
+    sendEvent(name: "status", value: action)
+    def eventBtn = 1 
+    def eventAction = action
+    [name: "button", value: eventAction, data: [buttonNumber: eventBtn], descriptionText: action, displayed: false, isStateChange: true, type: buttonType]
 }
 
-def tapDown1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼")
-	[name: "button", value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
-      isStateChange: true, type: "$buttonType"]
+def tapUp1() {
+    sendEvent(btnResponse("up", "digital"))
 }
 
-def tapUp2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲")
-	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
-       isStateChange: true, type: "$buttonType"]
-}
-
-def tapDown2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼")
-	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
-      isStateChange: true, type: "$buttonType"]
-}
-
-def tapUp3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▲▲▲")
-	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
-    isStateChange: true, type: "$buttonType"]
-}
-
-def tapDown3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap ▼▼▼")
-	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
-    isStateChange: true, type: "$buttonType"]
-}
-
-def holdUpResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▲")
-	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
-    isStateChange: true, type: "$buttonType"]
-}
-
-def holdDownResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold ▼")
-	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
-    isStateChange: true, type: "$buttonType"]
+def tapDown1() {
+    sendEvent(btnResponse("down", "digital"))
 }
 
 def tapUp2() {
-	sendEvent(tapUp2Response("digital"))
+    sendEvent(btnResponse("up_2x", "digital"))
 }
 
 def tapDown2() {
-	sendEvent(tapDown2Response("digital"))
+    sendEvent(btnResponse("down_2x", "digital"))
 }
 
 def tapUp3() {
-	sendEvent(tapUp3Response("digital"))
+    sendEvent(btnResponse("up_3x", "digital"))
 }
 
 def tapDown3() {
-	sendEvent(tapDown3Response("digital"))
+    sendEvent(btnResponse("down_3x", "digital"))
 }
 
 def holdUp() {
-	sendEvent(holdUpResponse("digital"))
+    sendEvent(btnResponse("up_hold", "digital"))
 }
 
 def holdDown() {
-	sendEvent(holdDownResponse("digital"))
-} 
+    sendEvent(btnResponse("down_hold", "digital"))
+}
 
 def setFirmwareVersion() {
    def versionInfo = ''
@@ -491,7 +485,10 @@ def setFirmwareVersion() {
 
 def configure() {
    log.debug ("configure() called")
- 
+   btnValues = ["down", "down_hold", "down_2x", "down_3x", "up", "up_hold", "up_2x", "up_3x"].encodeAsJSON()
+   sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+   sendEvent(name: "supportedButtonValues", value: btnValues, displayed: false)
+
    sendEvent(name: "numberOfButtons", value: 8, displayed: false)
    def commands = []
    commands << setDimRatePrefs()
@@ -499,6 +496,8 @@ def configure() {
    commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
    commands << zwave.versionV1.versionGet().format()
    delayBetween(commands,500)
+    
+    
 }
 
 def setDimRatePrefs() 
