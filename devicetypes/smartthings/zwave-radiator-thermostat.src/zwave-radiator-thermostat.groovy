@@ -95,7 +95,6 @@ def initialize() {
 }
 
 def installed() {
-	state.isSetpointChangeRequestedByController = false
 	initialize()
 }
 
@@ -136,21 +135,16 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
-	cmd.encapsulatedCommands().collect { encapsulatedCommand ->
-		isPoppRadiatorThermostat() ? zwaveEvent(encapsulatedCommand, true) : zwaveEvent(encapsulatedCommand) 	
-		//in case any future device would support MultiCmdEncap
-		//and won't need any special handler, like POPP does
-	}.flatten()
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def cmds = []
 	if (!isPoppRadiatorThermostat()) {
 		cmds += zwave.batteryV1.batteryGet() // POPP sends battery report automatically every wake up by itself, there's no need to duplicate it
 	}
+	if (state.cachedSetpoint) {
+		cmds += zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: state.cachedSetpoint, setpointType: 1, size: 2])
+		state.cachedSetpoint = null
+	}
 	cmds += [
-			zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: state.cachedSetpoint, setpointType: 1, size: 2]),
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1),
 			zwave.wakeUpV2.wakeUpNoMoreInformation()
 	]
@@ -185,19 +179,17 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 def updateSetpoint(cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
 	def setpoint = Float.parseFloat(convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision))
-	state.cachedSetpoint = setpoint
+	state.expectedSetpoint = setpoint
 	createEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, isResponseOfWakeUp = false) {
-	if (!state.isSetpointChangeRequestedByController) {
-		updateSetpoint(cmd)
-	} else if (isResponseOfWakeUp) {
-		state.isSetpointChangeRequestedByController = false
-		updateSetpoint(cmd)
-	} else {
-		[:]
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+	def reportedSetpoint = Float.parseFloat(convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision))
+	// User manually adjusted setpoint on device, after changing it in the app
+	if (reportedSetpoint != state.expectedSetpoint && reportedSetpoint != state.cachedSetpoint) {
+		state.cachedSetpoint = null
 	}
+	updateSetpoint(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -258,7 +250,6 @@ def off() {
 
 def setHeatingSetpoint(setpoint) {
 	if (isPoppRadiatorThermostat() && device.status == "ONLINE") {
-		state.isSetpointChangeRequestedByController = true
 		sendEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 	}
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
