@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Mold Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-mold", ocfDeviceType: "oic.d.thermostat") {
+	definition(name: "Z-Wave Mold Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-mold", ocfDeviceType: "x.com.st.d.sensor.multifunction") {
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Dew Point"
