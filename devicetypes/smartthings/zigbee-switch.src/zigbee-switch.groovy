@@ -46,6 +46,7 @@ metadata {
 		// HEIMAN
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "HS6ESK-W-EF-3.0", deviceJoinName: "HEIMAN Outlet", ocfDeviceType: "oic.d.smartplug"  //HEIMAN Smart Outlet
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW1A-W-EF-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
 		
 		// HONYAR
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Switch" //HONYAR Smart Switch
