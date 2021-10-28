@@ -24,7 +24,7 @@ metadata {
 		capability "Health Check" 
 		capability "Refresh"
 
-		fingerprint mfr: "0344", prod: "0004", model: "000A", inClusters: "0x5E,0x85,0x59,0x8E,0x55,0x86,0x72,0x5A,0x73,0x87,0x98,0x9F,0x6C,0x32,0x70,0x42,0x40,0x43,0x31,0x81,0x71,0x22,0x7A", deviceJoinName: "HELTUN HLS01 Thermostat"
+		fingerprint mfr: "0344", prod: "0004", inClusters: "0x5E,0x85,0x59,0x8E,0x55,0x86,0x72,0x5A,0x73,0x87,0x98,0x9F,0x6C,0x32,0x70,0x42,0x40,0x43,0x31,0x81,0x71,0x22,0x7A", deviceJoinName: "HELTUN Thermostat" //model: "000A"
 	}
     preferences {
 		section { 
@@ -55,10 +55,7 @@ metadata {
 }
 
 def updated() {
-	state.confSet = [
-		parameterNumber: null,
-		configurationValue: null
-	]    
+	state.confSet = [parameterNumber,configurationValue]    
 	if ((settings.ParamId != null) & (settings.ParamValue != null) & (settings.ParamValue != state.confSet.configurationValue) ) {         
 		state.confSet = [
 			parameterNumber: settings.ParamId.toInteger(),
