@@ -11,6 +11,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
+
 metadata {
     definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", ocfDeviceType: "x.com.st.d.energymeter", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
         capability "Energy Meter"
@@ -48,6 +50,10 @@ metadata {
     }
 }
 
+def getATTRIBUTE_READING_INFO_SET() { 0x0000 }
+def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
+def getATTRIBUTE_ACTIVE_POWER() { 0x050B }
+
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
@@ -56,7 +62,7 @@ def parse(String description) {
         if (event.name == "power") {
             def descMap = zigbee.parseDescriptionAsMap(description)
             log.debug "event : Desc Map: $descMap"
-            if (descMap.clusterInt == 0x0B04 && descMap.attrInt == 0x050b) {
+            if (descMap.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && descMap.attrInt == ATTRIBUTE_ACTIVE_POWER) {
                 event.value = event.value/activePowerDivisor
                 event.unit = "W"
             } else {
@@ -81,19 +87,19 @@ def parse(String description) {
         attrData.each {
                 def map = [:]
                 if (it.isValidForDataType && (it.value != null)) {
-                    if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
+                    if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "meter"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/powerDivisor
                         map.unit = "W"
                     }
-                    if (it.clusterInt == 0x0B04 && it.attrInt == 0x050b) {
+                    if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_ACTIVE_POWER) {
                         log.debug "meter"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/activePowerDivisor
                         map.unit = "W"
                     }
-                    if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
+                    if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                         log.debug "energy"
                         map.name = "energy"
                         map.value = zigbee.convertHexToInt(it.value)/(energyDivisor * 1000)
@@ -121,6 +127,7 @@ def ping() {
 def refresh() {
     log.debug "refresh "
     zigbee.electricMeasurementPowerRefresh() +
+           zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET) + 
            zigbee.simpleMeteringPowerRefresh()
 }
 
@@ -131,6 +138,7 @@ def configure() {
     log.debug "Configuring Reporting"
     return refresh() +
            zigbee.simpleMeteringPowerConfig() +
+           zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) + 
            zigbee.electricMeasurementPowerConfig()
 }
 
