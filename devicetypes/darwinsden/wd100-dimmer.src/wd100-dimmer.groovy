@@ -290,7 +290,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	sendEvent(tapUp1Response("digital"))
+	tapUp1()
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0xFF).format(),
 			zwave.switchMultilevelV1.switchMultilevelGet().format()
@@ -298,7 +298,7 @@ def on() {
 }
 
 def off() {
-	sendEvent(tapDown1Response("digital"))
+	tapDown1()
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0x00).format(),
 			zwave.switchMultilevelV1.switchMultilevelGet().format()
