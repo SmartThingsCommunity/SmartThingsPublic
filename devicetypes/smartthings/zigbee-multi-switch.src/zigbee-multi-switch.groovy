@@ -42,6 +42,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR Switch 1" //HONYAR 2 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW2A-W-EF-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW3A-W-EF-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
 
 		// Dawon
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240-ZB
@@ -272,6 +274,7 @@ private getChildCount() {
 		case "PM-S350-ZB":
 		case "ST-S350-ZB":
 		case "SBM300Z3":
+		case "HS6SW3A-W-EF-3.0":
 			return 3
 		case "E220-KR4N0Z0-HA":
 		case "ZB-SW04":
