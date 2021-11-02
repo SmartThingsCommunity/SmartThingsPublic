@@ -127,10 +127,10 @@ def roundC (tempInC) {
 
 def refresh() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())		// get Temperature
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())								// get kWh
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())								// get Watts
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())								// get Voltage    
+	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())// get Temperature
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())// get kWh
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())// get Watts
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())// get Voltage    
 	sendHubCommand(cmds, 1200)
 }
 
