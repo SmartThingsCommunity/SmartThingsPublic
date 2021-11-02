@@ -72,30 +72,33 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		configurationValue: cmd.configurationValue
 	]
 	if (state.confSet.parameterNumber == state.confReport.parameterNumber && state.confSet.configurationValue != state.confReport.configurationValue[0]) {
-	sendHubCommand(zwave.configurationV2.configurationSet(parameterNumber: state.confSet.parameterNumber, size: state.confReport.size, scaledConfigurationValue: state.confSet.configurationValue))
+		sendHubCommand(zwave.configurationV2.configurationSet(parameterNumber: state.confSet.parameterNumber, size: state.confReport.size, scaledConfigurationValue: state.confSet.configurationValue))
 	}
 }
 
 def parse(String description) {
-	def result = null
 	def cmd = zwave.parse(description)
-	if (cmd) {result = zwaveEvent(cmd)}
-	return result
-
+	if (cmd) {
+		return zwaveEvent(cmd)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale   
 	def deviceMode = modeMap[cmd.mode.toInteger()]
-	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)      
-	if (cmd.mode == 0) {sendEvent(name: "heatingSetpoint", value: 0, unit: locaScale)} 
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format())) //getSetpoint       
+	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)
+    //if mode is off -> change stepoint value to 0
+	if (cmd.mode == 0) {
+		sendEvent(name: "heatingSetpoint", value: 0, unit: locaScale)
+	} 
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format()))//getSetpoint       
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale
+    def typeTemperature = 1
 	def map = [:]
-	if (1 == cmd.sensorType) {
+	if (typeTemperature == cmd.sensorType) {
 		def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 		def deviceTemp = cmd.scaledSensorValue
 		def scaledTemp = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
@@ -129,17 +132,17 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev2.ThermostatOperatingStateReport cmd) {
-	def state = (cmd.operatingState == 1) ? "heating" : "idle" //DeviceScale
+	def state = (cmd.operatingState == 1) ? "heating" : "idle"//DeviceScale
 	sendEvent(name: "thermostatOperatingState", value: state)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {   
-	def locaScale = getTemperatureScale() //HubScale
-	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
+	def locaScale = getTemperatureScale()//HubScale
+	def deviceScale = (cmd.scale == 1) ? "F" : "C"//DeviceScale
 	def deviceTemp = cmd.scaledValue
 	def setPoint = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
 	def mode = modeMap[device.currentValue("thermostatMode")]
-    if (mode == 0) {setPoint = 0}    
+	if (mode == 0) {setPoint = 0}    
 	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)   
 }
 
@@ -163,7 +166,7 @@ def setHeatingSetpoint(tValue) {
 	def tempInC = (getTemperatureScale() == "F" ? roundC(fahrenheitToCelsius(temp)) : temp) //If not C, Convert to C     
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: currentMode, scale: 0, precision: 1, scaledValue: tempInC).format())
 	
-    // Sync temp, opState, setPoint
+	// Sync temp, opState, setPoint
 	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: currentMode).format())
@@ -182,17 +185,16 @@ def getModeMap() {
 [
 	"off": 0,
 	"heat": 1,
-    "autochangeover": 10,
-    "away": 13,
-    "energysaveheat": 11,
-    "dryair": 8,
-    
-    0 : "off",
-    1 : "heat",
-    10 : "autochangeover",
-    13 : "away",
-    11 : "energysaveheat",
-    8 : "dryair"
+	"autochangeover": 10,
+	"away": 13,
+	"energysaveheat": 11,
+	"dryair": 8,    
+	0 : "off",
+	1 : "heat",
+	10 : "autochangeover",
+	13 : "away",
+	11 : "energysaveheat",
+	8 : "dryair"
     
 ]}
 
@@ -202,15 +204,15 @@ def roundC (tempInC) {
 
 def refresh() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())						// get thermostatmode
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())		// Temperature
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3).format())		// Humidity
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5).format())		// Illuminance
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())								// get kWh
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())								// get Watts
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())								// get Voltage    
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format())	// get Thermostat Operating State
-	cmds << new physicalgraph.device.HubAction(zwave.clockV1.clockGet().format())										// get clock
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())// get thermostatmode
+	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())// Temperature
+	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3).format())// Humidity
+	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5).format())// Illuminance
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())// get kWh
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())// get Watts
+	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())// get Voltage    
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format())// get Thermostat Operating State
+	cmds << new physicalgraph.device.HubAction(zwave.clockV1.clockGet().format())// get clock
 	sendHubCommand(cmds, 1200)
 }
 
@@ -222,7 +224,7 @@ def configure() {
 	delayBetween([
 		zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format(),
 		zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format(),
-        zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
+		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
 		ping()
 	], 3000)
 }
