@@ -143,7 +143,7 @@ def configure() {
 }
 
 private getActivePowerDivisor() { isPMM300Z1() ? 1 : 10 }
-private getPowerDivisor() {  (isFrientSensor() || isPMM300Z1()) ? 1 : 1000 }
+private getPowerDivisor() { (isFrientSensor() || isPMM300Z1()) ? 1 : 1000 }
 private getEnergyDivisor() { (isFrientSensor() || isPMM300Z1()) ? 1 : 1000 }
 
 private Boolean isFrientSensor() {
