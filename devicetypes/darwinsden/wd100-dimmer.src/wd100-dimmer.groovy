@@ -77,7 +77,7 @@ import groovy.transform.Field
 	0x9F: 1		// Security S2
 ]
 metadata {
-	definition (name: "WD100 Dimmer", namespace: "darwinsden", author: "darwin@darwinsden.com",
+	definition (name: "WD100+ Dimmer", namespace: "darwinsden", author: "darwin@darwinsden.com",
     	ocfDeviceType: "oic.d.switch",
 		mnmn: "SmartThingsCommunity",
 		vid: "e01f6333-d277-37a4-876a-309df1c09070"
@@ -348,7 +348,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                    // Press Once
-                  result += createEvent(btnResponse("up", "physical"))
+                  result += createEvent(btnResponse("7", "pushed", "up", "physical"))
                   result += createEvent([name: "switch", value: "on", type: "physical"])
        
                   if (singleTapToFullBright)
@@ -363,12 +363,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent(btnResponse("up_hold", "physical")) 
+                  result += createEvent(btnResponse("5", "held", "up_hold", "physical")) 
                   result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
-                  result += createEvent(btnResponse("up_2x", "physical"))
+                  result += createEvent(btnResponse("1", "pushed", "up_2x", "physical"))
                   if (doubleTapToFullBright)
                   {
                      result += setLevel(99)
@@ -378,7 +378,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 4:
                   // 3 Three times
-                  result = createEvent(btnResponse("up_3x", "physical"))
+                  result = createEvent(btnResponse("3", "pushed", "up_3x", "physical"))
                   break
               default:
                   log.debug ("unexpected up press keyAttribute: $cmd.keyAttributes")
@@ -390,7 +390,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
           switch (cmd.keyAttributes) {
               case 0:
                   // Press Once
-                  result += createEvent(btnResponse("down", "physical"))
+                  result += createEvent(btnResponse("8", "pushed", "down", "physical"))
                   result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 1:
@@ -398,12 +398,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 2:
                   // Hold
-                  result += createEvent(btnResponse("down_hold", "physical"))
+                  result += createEvent(btnResponse("6", "held", "down_hold", "physical"))
                   result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
-                  result += createEvent(btnResponse("down_2x", "physical"))
+                  result += createEvent(btnResponse("2", "pushed", "down_2x", "physical"))
                   if (doubleTapDownToDim)
                   {
                      result += setLevel(25)
@@ -413,7 +413,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   break
               case 4:
                   // 3 Times
-                  result = createEvent(btnResponse("down_3x", "physical"))
+                  result = createEvent(btnResponse("4", "pushed", "down_3x", "physical"))
                   break
               default:
                   log.debug ("unexpected down press keyAttribute: $cmd.keyAttributes")
@@ -427,43 +427,41 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
    return result
 }
 
-def btnResponse(action, buttonType) {
+def btnResponse(eventBtn, eventAction, action, buttonType) {
     sendEvent(name: "status", value: action)
-    def eventBtn = 1 
-    def eventAction = action
     [name: "button", value: eventAction, data: [buttonNumber: eventBtn], descriptionText: action, displayed: false, isStateChange: true, type: buttonType]
 }
 
 def tapUp1() {
-    sendEvent(btnResponse("up", "digital"))
+    sendEvent(btnResponse("7", "pushed", "up", "digital"))
 }
 
 def tapDown1() {
-    sendEvent(btnResponse("down", "digital"))
+    sendEvent(btnResponse("8", "pushed", "down", "digital"))
 }
 
 def tapUp2() {
-    sendEvent(btnResponse("up_2x", "digital"))
+    sendEvent(btnResponse("1", "pushed", "up_2x", "digital"))
 }
 
 def tapDown2() {
-    sendEvent(btnResponse("down_2x", "digital"))
+    sendEvent(btnResponse("2", "pushed", "down_2x", "digital"))
 }
 
 def tapUp3() {
-    sendEvent(btnResponse("up_3x", "digital"))
+    sendEvent(btnResponse("3", "pushed", "up_3x", "digital"))
 }
 
 def tapDown3() {
-    sendEvent(btnResponse("down_3x", "digital"))
+    sendEvent(btnResponse("4", "pushed", "down_3x", "digital"))
 }
 
 def holdUp() {
-    sendEvent(btnResponse("up_hold", "digital"))
+    sendEvent(btnResponse("5", "pushed", "up_hold", "digital"))
 }
 
 def holdDown() {
-    sendEvent(btnResponse("down_hold", "digital"))
+    sendEvent(btnResponse("6", "pushed", "down_hold", "digital"))
 }
 
 def setFirmwareVersion() {
