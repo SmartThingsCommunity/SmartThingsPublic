@@ -157,15 +157,15 @@ private getSupportedButtonValues() {
 private getChildCount() {
 	def modelName = device.getDataValue("model")
 	switch(modelName) {
-		case "0106-G":
-			return 6
+		case "cef8701bb8664a67a83033c071ef05f2":
+		case "HS6SSB-W-EF-3.0":
+			return 3
 		case "HY0048":
 		case "E-SceneSwitch-EM-3.0":
-		case  "HS6SSA-W-EF-3.0":
+		case "HS6SSA-W-EF-3.0":
 			return 4
-		case  "cef8701bb8664a67a83033c071ef05f2":
-		case  "HS6SSB-W-EF-3.0":
-			return 3
+		case "0106-G":
+			return 6
 	}
 }
 
