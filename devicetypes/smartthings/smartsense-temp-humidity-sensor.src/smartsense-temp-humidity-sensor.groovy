@@ -171,8 +171,8 @@ def refresh() {
 
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
-			zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
-			zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, [destEndpoint: 0x01])+
+			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, [destEndpoint: 0x02])
 	} else if (isFrientSensor()) {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
@@ -181,7 +181,7 @@ def refresh() {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
 			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(0x0405, 0x0000) +
+			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 	} else {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
@@ -205,7 +205,7 @@ def configure() {
 		return refresh() +
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
-			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
+			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
 	} else if (isFrientSensor()) {
 		return refresh() + 
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
@@ -213,11 +213,9 @@ def configure() {
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
 	} else if (isEWeLinkTh01()) {
 		return refresh() +
-			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
-			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
 			zigbee.batteryConfig() +
-			zigbee.temperatureConfig(3600, 7200) +
-			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 3600, 7200, null)
+			zigbee.temperatureConfig(30, 300) +
+			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 30, 3600, 100)
 	} else {
 		return refresh() +
 			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
