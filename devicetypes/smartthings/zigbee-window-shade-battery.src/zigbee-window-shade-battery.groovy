@@ -11,7 +11,7 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  */
- 
+
 import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
@@ -22,7 +22,7 @@ metadata {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Window Shade"
-        capability "Window Shade Level"
+		capability "Window Shade Level"
 		capability "Window Shade Preset"
 		capability "Health Check"
 		capability "Switch Level"
@@ -37,7 +37,7 @@ metadata {
 		fingerprint manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
 		fingerprint manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
 
-		// SMARTWINGS	
+		// SMARTWINGS
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
 	}
 
@@ -113,9 +113,11 @@ def installed() {
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description:- ${description}"
+
 	if (device.currentValue("shadeLevel") == null && device.currentValue("level") != null) {
 		sendEvent(name: "shadeLevel", value: device.currentValue("level"), unit: "%")
 	}
+
 	if (description?.startsWith("read attr -")) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 
@@ -266,6 +268,7 @@ def refresh() {
 
 def configure() {
 	def cmds
+
 	log.info "configure()"
 
 	// Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
@@ -284,7 +287,6 @@ def configure() {
 	}
 
 	if (reportsBatteryPercentage()) {
-
 		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
 	}
 
@@ -306,7 +308,6 @@ private def parseBindingTableMessage(description) {
 
 private Integer getGroupAddrFromBindingTable(description) {
 	log.info "Parsing binding table - '$description'"
-    
 	def btr = zigbee.parseBindingTableResponse(description)
 	def groupEntry = btr?.table_entries?.find { it.dstAddrMode == 1 }
 
