@@ -306,6 +306,7 @@ private def parseBindingTableMessage(description) {
 
 private Integer getGroupAddrFromBindingTable(description) {
 	log.info "Parsing binding table - '$description'"
+    
 	def btr = zigbee.parseBindingTableResponse(description)
 	def groupEntry = btr?.table_entries?.find { it.dstAddrMode == 1 }
 
