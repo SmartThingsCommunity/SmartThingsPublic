@@ -155,19 +155,25 @@ private getSupportedButtonValues() {
 }
 
 private getChildCount() {
-	if (device.getDataValue("model") == "0106-G") {
-		return 6
-	} else if (device.getDataValue("model") == "HY0048" || device.getDataValue("model") == "E-SceneSwitch-EM-3.0" || device.getDataValue("model") == "HS6SSA-W-EF-3.0") {
-		return 4
-	} else if (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2" || device.getDataValue("model") == "HS6SSB-W-EF-3.0") {
-		return 3
+	def modelName = device.getDataValue("model")
+	switch(modelName) {
+		case "0106-G":
+			return 6
+		case "HY0048":
+		case "E-SceneSwitch-EM-3.0":
+		case  "HS6SSA-W-EF-3.0":
+			return 4
+		case  "cef8701bb8664a67a83033c071ef05f2":
+		case  "HS6SSB-W-EF-3.0":
+			return 3
 	}
 }
 
 private getCLUSTER_GROUPS() { 0x0004 }
 
 private boolean isHeimanButton() {
-	device.getDataValue("model") == "E-SceneSwitch-EM-3.0" || device.getDataValue("model") == "HS6SSA-W-EF-3.0" || device.getDataValue("model") == "HS6SSB-W-EF-3.0"
+	def modelName = device.getDataValue("model")
+	modelName == "E-SceneSwitch-EM-3.0" || modelName == "HS6SSA-W-EF-3.0" || modelName == "HS6SSB-W-EF-3.0"
 }
 
 private List addHubToGroup(Integer groupAddr) {
@@ -189,8 +195,8 @@ private getButtonNum() {[
 				"04" : 1
 		],
 		"HS6SSB-W-EF-3.0" : [
-				"04" : 2,
 				"02" : 1,
+				"04" : 2,
 				"03" : 3
 		]
 ]}
