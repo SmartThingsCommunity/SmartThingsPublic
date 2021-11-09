@@ -30,6 +30,8 @@ metadata {
                 fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "0106-G", deviceJoinName: "GDKES Remote Control", vid: "generic-6-button-alt" //GDKES Scene Keypad
                 fingerprint profileId: "0104", inClusters: "0000, 0005", outClusters: "0000, 0005, 0017", manufacturer: "ORVIBO", model: "cef8701bb8664a67a83033c071ef05f2", deviceJoinName: "ORVIBO Remote Control", vid: "generic-3-button-alt" //ORVIBO Scene Keypad
                 fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "E-SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Remote Control", vid: "generic-4-button-alt" //HEIMAN Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "HS6SSA-W-EF-3.0", deviceJoinName: "HEIMAN Scene Panel", vid: "generic-4-button-alt" //HEIMAN Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "HS6SSB-W-EF-3.0", deviceJoinName: "HEIMAN Scene Panel", vid: "generic-3-button-alt" //HEIMAN Scene Keypad
 
     }
 
@@ -97,7 +99,7 @@ def configure() {
 	def cmds = zigbee.enrollResponse()
 	if (isHeimanButton())
 		cmds += zigbee.writeAttribute(0x0000, 0x0012, DataType.BOOLEAN, 0x01) +
-		addHubToGroup(0x000F) + addHubToGroup(0x0010) + addHubToGroup(0x0011) + addHubToGroup(0x0013)
+		addHubToGroup(0x000F) + addHubToGroup(0x0010) + addHubToGroup(0x0011) + addHubToGroup(0x0012) + addHubToGroup(0x0013)
 	return cmds
 }
 
@@ -153,19 +155,25 @@ private getSupportedButtonValues() {
 }
 
 private getChildCount() {
-	if (device.getDataValue("model") == "0106-G") {
-		return 6
-	} else if (device.getDataValue("model") == "HY0048" || device.getDataValue("model") == "E-SceneSwitch-EM-3.0") {
-		return 4
-	} else if (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2") {
-		return 3
+	def modelName = device.getDataValue("model")
+	switch(modelName) {
+		case "cef8701bb8664a67a83033c071ef05f2":
+		case "HS6SSB-W-EF-3.0":
+			return 3
+		case "E-SceneSwitch-EM-3.0":
+		case "HS6SSA-W-EF-3.0":
+		case "HY0048":
+			return 4
+		case "0106-G":
+			return 6
 	}
 }
 
 private getCLUSTER_GROUPS() { 0x0004 }
 
 private boolean isHeimanButton() {
-	device.getDataValue("model") == "E-SceneSwitch-EM-3.0"
+	def modelName = device.getDataValue("model")
+	modelName == "E-SceneSwitch-EM-3.0" || modelName == "HS6SSA-W-EF-3.0" || modelName == "HS6SSB-W-EF-3.0"
 }
 
 private List addHubToGroup(Integer groupAddr) {
@@ -179,5 +187,16 @@ private getButtonNum() {[
 				"02" : 1,
 				"03" : 3,
 				"05" : 4
+		],
+		"HS6SSA-W-EF-3.0" : [
+				"01" : 3,
+				"02" : 2,
+				"03" : 4,
+				"04" : 1
+		],
+		"HS6SSB-W-EF-3.0" : [
+				"02" : 1,
+				"03" : 3,
+				"04" : 2
 		]
 ]}
