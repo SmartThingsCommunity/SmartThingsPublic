@@ -109,6 +109,9 @@ def parse(String description) {
     }
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
