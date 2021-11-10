@@ -394,6 +394,10 @@ def childReset(deviceNetworkId = null) {
 	}
 }
 
+def resetEnergyMeter() {
+	reset(1)
+}
+
 def reset(endpoint = 1) {
 	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
