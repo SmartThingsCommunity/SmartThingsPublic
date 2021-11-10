@@ -67,14 +67,8 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		valueTile("shadeLevel", "device.level", width: 4, height: 1) {
-			state "level", label: 'Shade is ${currentValue}% up', defaultState: true
-		}
 		valueTile("batteryLevel", "device.battery", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
-		}
-		controlTile("levelSliderControl", "device.level", "slider", width:2, height: 1, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
 		}
 
 		main "windowShade"
