@@ -189,9 +189,9 @@ def refresh() {
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())// get kWh
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())// get Watts
 	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())// get Voltage
-    cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format())// get channel association
+	cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format())// get channel association
 	sendHubCommand(cmds, 1200)
-    runIn(10, "checkParam")
+	runIn(10, "checkParam")
 }
 
 def ping() {
