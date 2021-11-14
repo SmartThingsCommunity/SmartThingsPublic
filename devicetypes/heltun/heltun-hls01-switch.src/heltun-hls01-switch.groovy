@@ -108,6 +108,9 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (state."$parameter".value == cmd.scaledConfigurationValue){
 		state."$parameter".state = "configured"
 	}
+	else {
+		state."$parameter".state = "error"
+	}
 	configParam()
 }
 
