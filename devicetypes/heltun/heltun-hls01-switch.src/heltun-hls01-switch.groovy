@@ -21,9 +21,10 @@ metadata {
 		capability "Configuration"      
 		capability "Health Check" 
 		capability "Refresh"
-
+		//zw:Ls2a type:1000 mfr:0344 prod:0004 model:000A ver:1.05 zwv:7.11 lib:03 cc:5E,55,98,9F,6C,22 sec:85,59,8E,86,72,5A,73,87,32,70,25,31,81,71,7A
+        //cc:"0x5E, 0x55, 0x98, 0x9F, 0x6C, 0x22", sec:"0x85, 0x59, 0x8E, 0x86, 0x72, 0x5A, 0x73, 0x87, 0x32, 0x70, 0x25, 0x31, 0x81, 0x71, 0x7A" (NOT WORKING)
 		fingerprint mfr: "0344", prod: "0004", inClusters:"0x5E,0x85,0x59,0x8E,0x55,0x86,0x72,0x5A,0x73,0x81,0x87,0x98,0x9F,0x6C,0x70,0x25,0x31,0x32,0x71,0x22,0x7A", deviceJoinName: "HELTUN Switch" //model: "000A"
-	}															
+	}
 	preferences {
 		input (
 			title: "HE-HLS01 | HELTUN High Load Switch",
@@ -92,8 +93,8 @@ private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
 	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
-			cmds << new physicalgraph.device.HubAction(zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format())
-			cmds << new physicalgraph.device.HubAction(zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format())
+			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
+			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
 			break
 		}
 	}
@@ -120,8 +121,9 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale
+    def externalTemp = 1
 	def map = [:]
-	if (1 == cmd.sensorType) {
+	if (externalTemp == cmd.sensorType) {
 		def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 		def deviceTemp = cmd.scaledSensorValue
 		def scaledTemp = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
@@ -162,7 +164,7 @@ def zwaveEvent(physicalgraph.zwave.commands.clockv1.ClockReport cmd) {
 	def currDate = Calendar.getInstance(location.timeZone)
 	def time = [hour: currDate.get(Calendar.HOUR_OF_DAY), minute: currDate.get(Calendar.MINUTE), weekday: currDate.get(Calendar.DAY_OF_WEEK)]
 	if ((time.hour != cmd.hour) || (time.minute != cmd.minute) || (time.weekday != cmd.weekday)){
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.clockV1.clockSet(time).format()))
+		sendHubCommand(zwave.clockV1.clockSet(time).format())
 	}
 }
 
@@ -175,8 +177,8 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 	def cmds = []
 	if (cmd.groupingIdentifier == 1) {
 		if (cmd.nodeId != [1]) {
-			cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format())
-			cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format())
+			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format()
+			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format()
 		}
 	}
 	if (cmds) sendHubCommand(cmds, 1200)
@@ -188,11 +190,11 @@ def roundC (tempInC) {
 
 def refresh() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())// get Temperature
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())// get kWh
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())// get Watts
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())// get Voltage
-	cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format())// get channel association
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format() //get Temperature
+	cmds << zwave.meterV3.meterGet(scale: 0).format() //get kWh
+	cmds << zwave.meterV3.meterGet(scale: 2).format() //get Watts
+	cmds << zwave.meterV3.meterGet(scale: 4).format() //get Voltage
+	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format() //get channel association
 	sendHubCommand(cmds, 1200)
 	runIn(10, "checkParam")
 }
@@ -202,7 +204,7 @@ def ping() {
 }
 
 def resetEnergyMeter() {
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.meterV3.meterReset().format()))
+	sendHubCommand(zwave.meterV3.meterReset().format())
 }
 
 def on() {
@@ -250,10 +252,10 @@ private parameterMap() {[
  
 [title: "External Input: Hold Control Mode", description: "This Parameter defines how the relay should react while holding the button connected to the external input. The options are: Hold is disabled, Operate like click, Momentary Switch: When the button is held, the relay output state is ON, as soon as the button is released the relay output state changes to OFF, Reversed Momentary: When the button is held, the relay output state is OFF, as soon as the button is released the relay output state changes to ON.",
  name: "Selected Hold Control Mode", options: [
- 			0: "Hold is disabled",
-    		1: "Operate like click",
+			0: "Hold is disabled",
+			1: "Operate like click",
 			2: "Momentary Switch",
-            3: "Reversed Momentary"
+			3: "Reversed Momentary"
     ], paramNum: 41, size: 1, default: "2", type: "enum"],
 
 [title: "Hold Mode Duration for External Input S1", description: "This parameter specifies the time the device needs to recognize a hold mode when the button connected to an external input is held (key closed). This parameter is available on firmware V1.3 or higher",
@@ -261,12 +263,12 @@ private parameterMap() {[
 
 [title: "External Input: Click Control Mode", description: "This Parameter defines how the relay should react when clicking the button connected to the external input. The options are: Click is disabled, Toggle switch: relay inverts state (ON to OFF, OFF to ON), Only On: Relay switches to ON state only, Only Off: Relay switches to OFF state only, Timer: On > Off: Relay output switches to ON state (contacts are closed) then after a specified time switches back to OFF state (contacts are open). The time is specified in 'Relay Timer Mode Duration' below, Timer: Off > On: Relay output switches to OFF state (contacts are open) then after a specified time switches back to On state (contacts are closed). The time is specified in 'Relay Timer Mode Duration' below ",
  name: "Selected Hold Control Mode", options: [
- 			0: "Click is disabled",
-    		1: "Toggle Switch",
+			0: "Click is disabled",
+			1: "Toggle Switch",
 			2: "Only On",
-            3: "Only Off",
-            4: "Timer: On > Off",
-            5: "Timer: Off > On"
+			3: "Only Off",
+			4: "Timer: On > Off",
+			5: "Timer: Off > On"
     ], paramNum: 51, size: 1, default: "1", type: "enum"],
 
 [title: "Relay Timer Mode Duration", description: "This parameters specify the duration in seconds for the Timer modes for Click Control Mode above. Press the button and the relay output goes to ON/OFF for the specified time then changes back to OFF/ON. If the value is set to “0” the relay output will operate as a short contact (duration is about 0.5 sec)",
