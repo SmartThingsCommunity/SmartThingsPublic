@@ -26,7 +26,7 @@ metadata {
 		capability "Health Check" 
 		capability "Refresh"
 
-		//zw:L type:0806 mfr:0344 prod:0004 model:0001 ver:2.05 zwv:7.11 lib:03 cc:5E,85,59,8E,55,86,72,5A,73,87,98,9F,6C,32,70,42,40,43,31,81,71,22,7A
+
 		fingerprint mfr: "0344", prod: "0004", model: "0001", deviceJoinName: "HELTUN Thermostat"
 	}
 	preferences {
@@ -105,10 +105,10 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
-			cmds << new physicalgraph.device.HubAction(zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format())
-			cmds << new physicalgraph.device.HubAction(zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format())
-			break
+		if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
+				cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
+				cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
+				break
 		}
 	}
 	if (cmds) {
@@ -134,13 +134,13 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale   
-	def deviceMode = modeMap[cmd.mode.toInteger()]
+	def deviceMode = numtomodeMap[cmd.mode.toInteger()]
 	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)
 	//if mode is off -> change stepoint value to 0
 	if (cmd.mode == 0) {
 		sendEvent(name: "heatingSetpoint", value: 0, unit: locaScale)
 	}
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format()))//getSetpoint       
+	sendHubCommand(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format()) //getSetpoint       
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -208,7 +208,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def deviceTemp = cmd.scaledValue
 	def setPoint = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
-	def mode = modeMap[device.currentValue("thermostatMode")]
+	def mode = modetonumMap[device.currentValue("thermostatMode")]
 	if (mode == 0) {setPoint = 0}
 	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)
 }
@@ -228,39 +228,43 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 def setHeatingSetpoint(tValue) {
 	def cmds = []
 	def mode = device.currentValue("thermostatMode")
-	def currentMode = modeMap[mode]
+	def currentMode = modetonumMap[mode]
 	def temp = state.heatingSetpoint = tValue.toDouble() //temp got fromm the app
 	def tempInC = (getTemperatureScale() == "F" ? roundC(fahrenheitToCelsius(temp)) : temp) //If not C, Convert to C     
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: currentMode, scale: 0, precision: 1, scaledValue: tempInC).format())
+	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: currentMode, scale: 0, precision: 1, scaledValue: tempInC).format()
 	// Sync temp, opState, setPoint
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: currentMode).format())
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format()
+	cmds << zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format()
+	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: currentMode).format()
 	sendHubCommand(cmds)
 }
 
 def setThermostatMode(String value) {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: modeMap[value]).format())
+	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: modetonumMap[value]).format()
+	cmds << zwave.thermostatModeV2.thermostatModeGet().format()
+	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: modetonumMap[value]).format()
 	sendHubCommand(cmds)
 }
 
-def getModeMap() {
+def getNumtomodeMap() {
+[   
+	0 : "off",
+	1 : "heat",
+	10 : "autochangeover",
+	13 : "away",
+	11 : "energysaveheat",
+	8 : "dryair"   
+]}
+
+def getModetonumMap() {
 [
 	"off": 0,
 	"heat": 1,
 	"autochangeover": 10,
 	"away": 13,
 	"energysaveheat": 11,
-	"dryair": 8,
-	0 : "off",
-	1 : "heat",
-	10 : "autochangeover",
-	13 : "away",
-	11 : "energysaveheat",
-	8 : "dryair"
+	"dryair": 8 
 ]}
 
 def roundC (tempInC) {
@@ -286,18 +290,18 @@ def ping() {
 
 def refresh() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())// get thermostatmode
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format())// roomTemperature
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:24).format())// floorTemperature
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3).format())// Humidity
-	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5).format())// Illuminance
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 0).format())// get kWh
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 2).format())// get Watts
-	cmds << new physicalgraph.device.HubAction(zwave.meterV3.meterGet(scale: 4).format())// get Voltage    
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format())// get Thermostat Operating State
-	cmds << new physicalgraph.device.HubAction(zwave.clockV1.clockGet().format())// get Clock
-	cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format())// get channel association
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())// get supported modes
+	cmds << zwave.thermostatModeV2.thermostatModeGet().format() //get thermostatmode
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format() //roomTemperature
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:24).format() //floorTemperature
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3).format() //Humidity
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5).format() //Illuminance
+	cmds << zwave.meterV3.meterGet(scale: 0).format() //get kWh
+	cmds << zwave.meterV3.meterGet(scale: 2).format() //get Watts
+	cmds << zwave.meterV3.meterGet(scale: 4).format() //get Voltage    
+	cmds << zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format() //get Thermostat Operating State
+	cmds << zwave.clockV1.clockGet().format() //get Clock
+	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format() //get channel association
+	cmds << zwave.thermostatModeV2.thermostatModeSupportedGet().format() //get supported modes
 	sendHubCommand(cmds, 1200)
 	runIn(15, "checkParam")
 }
@@ -306,8 +310,8 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 	def cmds = []
 	if (cmd.groupingIdentifier == 1) {
 		if (cmd.nodeId != [1]) {
-			cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format())
-			cmds << new physicalgraph.device.HubAction(zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format())
+			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format()
+			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format()
 		}
 	}
 	if (cmds) sendHubCommand(cmds, 1200)
@@ -321,12 +325,12 @@ def zwaveEvent(physicalgraph.zwave.commands.clockv1.ClockReport cmd) {
 	def currDate = Calendar.getInstance(location.timeZone)
 	def time = [hour: currDate.get(Calendar.HOUR_OF_DAY), minute: currDate.get(Calendar.MINUTE), weekday: currDate.get(Calendar.DAY_OF_WEEK)]
 	if ((time.hour != cmd.hour) || (time.minute != cmd.minute) || (time.weekday != cmd.weekday)){
-		sendHubCommand(new physicalgraph.device.HubAction(zwave.clockV1.clockSet(time).format()))
+		sendHubCommand(zwave.clockV1.clockSet(time).format())
 	}
 }
 
 def resetEnergyMeter() {
-	sendHubCommand(new physicalgraph.device.HubAction(zwave.meterV3.meterReset().format()))
+	sendHubCommand(zwave.meterV3.meterReset().format())
 }
 
 def off() {
@@ -345,31 +349,31 @@ private parameterMap() {[
 
 [title: "Display Brightness Control", description: "The HE-HT01 can adjust its display brightness automatically depending on the illumination of the ambient environment and also allows to control it manually.",
  name: "Selected Brightness Level", options: [
- 			0: "Auto",
-    		1: "Level 1 (Lowest)",
+			0: "Auto",
+			1: "Level 1 (Lowest)",
 			2: "Level 2",
-            3: "Level 3",
-            4: "Level 4",
-            5: "Level 5",
-            6: "Level 6",
-            7: "Level 7",
-            8: "Level 8",
-            9: "Level 9",
-            10: "Level 10 (Highest)"
+			3: "Level 3",
+			4: "Level 4",
+			5: "Level 5",
+			6: "Level 6",
+			7: "Level 7",
+			8: "Level 8",
+			9: "Level 9",
+			10: "Level 10 (Highest)"
     ], paramNum: 5, size: 1, default: "0", type: "enum"], 
     
 [title: "Touch Sensor Sensitivity Threshold", description: "This Parameter allows to adjust the Touch Buttons Sensitivity. Note: Setting the sensitivity too high can lead to false touch detection. We recommend not changing this Parameter unless there is a special need to do so.",
  name: "Selected Touch Sensitivity", options: [
-    		1: "Level 1 (Low sensitivity)",
+			1: "Level 1 (Low sensitivity)",
 			2: "Level 2",
-            3: "Level 3",
-            4: "Level 4",
-            5: "Level 5",
-            6: "Level 6",
-            7: "Level 7",
-            8: "Level 8",
-            9: "Level 9",
-            10: "Level 10 (High sensitivity)"
+			3: "Level 3",
+			4: "Level 4",
+			5: "Level 5",
+			6: "Level 6",
+			7: "Level 7",
+			8: "Level 8",
+			9: "Level 9",
+			10: "Level 10 (High sensitivity)"
     ], paramNum: 6, size: 1, default: "6", type: "enum"], 
     
 [title: "Relay Output Mode", description: "This Parameter determines the type of load connected to the device relay output. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
@@ -377,31 +381,31 @@ private parameterMap() {[
  
 [title: "External Input Mode", description: "This parameter defines how the thermostat should react when pressing the button connected to the external input. The options are: Disabled, Toggle Switch: if the external input is shorted (with Sx or Line) the Thermostat switches to the operating mode selected in the External Input Action bellow and switches to OFF mode when the external input is open, Toggle Switch Reverse: Toggle Switch Reverse” mode: if the external input is shorted the Thermostat switches to OFF mode and switches to the operating mode selected in the External Input Action bellow when the input is open, Momentary Switch: each press of button (shorten of input) will consistently change the mode to the operating mode selected in External Input Action bellow",
  name: "Selected External Input Mode", options: [
- 			0: "Disabled",
-    		1: "Toggle Switch",
+			0: "Disabled",
+			1: "Toggle Switch",
 			2: "Toggle Switch Reverse",
-            3: "Momentary Switch"
+			3: "Momentary Switch"
     ], paramNum: 8, size: 1, default: "0", type: "enum"], 
 
 [title: "External Input Action", description: "This parameter allows selection of which Operating Mode the HE-HT01 should revert to when the external input is shorted.",
  name: "Selected External Input Action", options: [
- 			1: "Heat",
-    		2: "Auto Cangeover",
+			1: "Heat",
+			2: "Auto Cangeover",
 			3: "Dry Air",
-            4: "Energy Save Heat",
-            5: "Away",
-            6: "Off"
+			4: "Energy Save Heat",
+			5: "Away",
+			6: "Off"
     ], paramNum: 9, size: 1, default: "6", type: "enum"], 
     
 [title: "Source Sensor", description: "1) A – Air sensor: Regulation (heating control) is based on the SET POINT applied to the internal room air temperature sensor. 2) AF – Air sensor plus floor sensor: Regulation is based on SET POINT applied to the internal room temperature sensor but also controlled by the floor temperature sensor ensuring that the floor temperature remains within the floor temperature limits specified bellow. 3) F – Floor sensor: Regulation is based on the SET POINT applied to the external floor temperature sensor. 4) FA – Floor sensor plus air sensor: Regulation is based on SET POINT applied to the external floor sensor but is also controlled by the internal air temperature sensor ensuring that the air temperature remains within the air temperature limits specified bellow. 5) t – Time regulator: Regulation is based on the time settings for heating which will be ON during the (ON time) and OFF during the (OFF Time) specified in the configurations bellow. This cycle will be repeated constantly. 6) tA – Time regulator + Air sensor: Regulation is based on the ON & OFF times specified in the configurations bellow but also controlled by the internal air temperature sensor ensuring that the room temperature remains within the air temperature limits specified bellow. 7) tF – Time regulator + Floor sensor Parameters: Regulation is based on the ON & OFF times specified in the configurations bellow but also controlled by the floor temperature sensor ensuring that the floor temperature remains within the floor temperature limits specified bellow.",
  name: "Selected Source Sensor", options: [
- 			1: "Air Sensor",
-    		2: "Air + Floor Sensors",
+			1: "Air Sensor",
+			2: "Air + Floor Sensors",
 			3: "Floor Sensor",
-            4: "Floor + Air Sensors",
-            5: "Time Regulator",
-            6: "Time + Air Sensor",
-            7: "Time + Floor Sensor"
+			4: "Floor + Air Sensors",
+			5: "Time Regulator",
+			6: "Time + Air Sensor",
+			7: "Time + Floor Sensor"
     ], paramNum: 11, size: 1, default: "3", type: "enum"], 
     
 [name: "Air Temperature Minimum in °Cx10", paramNum: 12, size: 2, default: 210, type: "number", min: 10, max: 360, unit: " °Cx10"],
@@ -433,18 +437,18 @@ private parameterMap() {[
 
 [title: "Mode to Switch After Dry Mode Operation Complete", description: "This Parameter indicates the mode that will be set after Dry Time.",
  name: "Selected Mode to Switch", options: [
- 			1: "Heat",
-    		2: "Auto Cangeover",
-            4: "Energy Save Heat",
-            5: "Away",
-            6: "Off"
+			1: "Heat",
+			2: "Auto Cangeover",
+			4: "Energy Save Heat",
+			5: "Away",
+			6: "Off"
     ], paramNum: 26, size: 1, default: "1", type: "enum"], 
 
 [title: "Child Lock Restriction Level", description: "This parameter specifies the restriction level of Child Lock feature where it allows you to choose which touch buttons/features of HE-HT01 should be disabled temporarily while the device is locked. Choosing level 1 will lock all the buttons, choosing level 2 will let you change the setpoint and lock the remaining buttons, choosing level 3 will let you change the setpoint and the operating mode, and lock the remaining buttons",
  name: "Selected Restriction Level", options: [
- 			1: "level 1 (Strictest)",
-    		2: "level 2",
-            3: "level 3 (least strict)"
+			1: "level 1 (Strictest)",
+			2: "level 2",
+			3: "level 3 (least strict)"
     ], paramNum: 40, size: 1, default: "1", type: "enum"], 
 
 [title: "Schedule Time", description: "Use these Parameters to set the Morning, Day, Evening and Night start times manually for the Temperature Schedule. The value of these Parameters has format HHMM, e.g. for 08:00 use value 0800 (time without a colon). From 00:00 to 23:59 can be selected.",
@@ -529,6 +533,6 @@ private parameterMap() {[
  name: "Selected Humidity Threshold in %", paramNum: 145, size: 1, default: 2, type: "number", min: 0 , max: 25, unit: "%"],
 
 [title: "Light Sensor Report Threshold", description: "This Parameter determines the change in the ambient environment illuminance level resulting in a light sensors report being sent to the gateway. From 10% to 99% can be selected. Use the value 0 if there is a need to stop sending the reports.",
- name: "Selected Light Sensor Threshold in %", paramNum: 145, size: 1, default: 50, type: "number", min: 0 , max: 99, unit: "%"],
+ name: "Selected Light Sensor Threshold in %", paramNum: 146, size: 1, default: 50, type: "number", min: 0 , max: 99, unit: "%"],
  
 ]}
