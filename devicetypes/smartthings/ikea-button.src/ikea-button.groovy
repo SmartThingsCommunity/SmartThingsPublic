@@ -384,17 +384,14 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
-	} 
-	else if (isEWeLink()) {
+	} else if (isEWeLink()) {
 		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
 			buttonNumber = 1
 			if (descMap.commandInt == 0x00) {
 				buttonState = "held"
-			} 
-			else if (descMap.commandInt == 0x01) {
+			} else if (descMap.commandInt == 0x01) {
 				buttonState = "double"
-			}
-			else {
+			} else {
 				buttonState = "pushed"
 			}
 		}
