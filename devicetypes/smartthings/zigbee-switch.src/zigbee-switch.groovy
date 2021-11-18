@@ -117,10 +117,11 @@ metadata {
 		fingerprint manufacturer: "Jasco Products", model: "43102", deviceJoinName: "Enbrighten Outlet", ocfDeviceType: "oic.d.smartplug" //Enbrighten, In-Wall Smart Outlet 43102, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		fingerprint manufacturer: "Jasco Products", model: "43076", deviceJoinName: "Enbrighten Switch" //Enbrighten, In-Wall Smart Switch 43076, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		
-		// Focalcrest
+		// Focalcrest/Evvr
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Focalcrest", model: "SRB01", deviceJoinName: "Focalcrest Switch" // In-Wall Relay Switch
+      	fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB01A", deviceJoinName: "Evvr Switch" // In-Wall Relay Switch
 		
-		// SiHAS Switch
+        // SiHAS Switch
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch"
 	}
 
