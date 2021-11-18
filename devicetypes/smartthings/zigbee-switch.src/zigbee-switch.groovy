@@ -31,10 +31,7 @@ metadata {
 		// eWeLink
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "eWeLink", model: "ZB-SW01", deviceJoinName: "eWeLink Switch"
-		
-		// LELLKI
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "LELLKI", model: "JZ-ZB-001", deviceJoinName: "LELLKI Switch"
-		
+         
 		// EZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
 
@@ -45,8 +42,6 @@ metadata {
 
 		// HEIMAN
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "HS6ESK-W-EF-3.0", deviceJoinName: "HEIMAN Outlet", ocfDeviceType: "oic.d.smartplug"  //HEIMAN Smart Outlet
-		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW1A-W-EF-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
 		
 		// HONYAR
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Switch" //HONYAR Smart Switch
@@ -92,17 +87,14 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Outlet", ocfDeviceType: "oic.d.smartplug" //SONOFF Basic (R3 Zigbee)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Outlet", ocfDeviceType: "oic.d.smartplug" //S31 Lite zb
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "1000", manufacturer: "SONOFF", model: "01MINIZB", deviceJoinName: "SONOFF 01MINIZB" //01MINIZB
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S26R2ZB", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S26R2 Plug
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S40LITE", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S40Lite Plug
-
+        
 		// Terncy
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
 
 		// Third Reality
-		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch-Gen3 Zigbee Mode
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch Plus
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch
-		fingerprint profileId: "0104", deviceId: "0051", inClusters: "0000, 0003, 0004, 0005, 0006",outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSP019BZ", deviceJoinName: "ThirdReality Plug", ocfDeviceType: "oic.d.smartplug" //RealityPlug
+		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch-Gen3 Zigbee Mode
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch Plus
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch
 
 		// Dawon
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140-ZB
@@ -116,13 +108,10 @@ metadata {
 		fingerprint manufacturer: "Jasco Products", model: "43094", deviceJoinName: "Enbrighten Switch" //Enbrighten, Plug-in Smart Switch 43094, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		fingerprint manufacturer: "Jasco Products", model: "43102", deviceJoinName: "Enbrighten Outlet", ocfDeviceType: "oic.d.smartplug" //Enbrighten, In-Wall Smart Outlet 43102, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		fingerprint manufacturer: "Jasco Products", model: "43076", deviceJoinName: "Enbrighten Switch" //Enbrighten, In-Wall Smart Switch 43076, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
-		
 		// Focalcrest
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Focalcrest", model: "SRB01", deviceJoinName: "Focalcrest Switch" // In-Wall Relay Switch
-		
-		// SiHAS Switch
-		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch"
-	}
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB01A", deviceJoinName: "EVVR Switch" // In-Wall Relay Switch
+    }
 
 	// simulator metadata
 	simulator {
