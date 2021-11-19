@@ -80,6 +80,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()
 	cmds << zwave.meterV3.meterGet(scale: 0)

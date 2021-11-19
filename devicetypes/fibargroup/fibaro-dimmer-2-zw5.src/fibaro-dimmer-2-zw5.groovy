@@ -111,6 +111,10 @@ def setLevel(level, rate = null ) {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	logging("${device.displayName} - Executing reset()","info")
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()

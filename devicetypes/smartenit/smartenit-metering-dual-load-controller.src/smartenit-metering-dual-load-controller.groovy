@@ -141,6 +141,10 @@ def setLoadtwo(val) {
 	}
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def refresh() {
 	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringCurrentSummation) +
 	zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, MeteringInstantDemand) +
