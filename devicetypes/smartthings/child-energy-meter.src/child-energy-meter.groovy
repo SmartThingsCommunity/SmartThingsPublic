@@ -37,6 +37,10 @@ metadata {
 	}
 }
 
+def resetEnergyMeter() {
+	parent.childReset(device.deviceNetworkId)
+}
+
 def refresh() {
 	parent.childRefresh(device.deviceNetworkId)
 }

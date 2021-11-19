@@ -473,6 +473,10 @@ def setLevel(value, duration = null) {
 	encapCommands(commands, getStatusDelay)
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */

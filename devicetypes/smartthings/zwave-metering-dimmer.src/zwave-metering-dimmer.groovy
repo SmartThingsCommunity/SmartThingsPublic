@@ -281,6 +281,10 @@ def configure() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	encapSequence([
 		meterReset(),
 		meterGet(scale: 0)
