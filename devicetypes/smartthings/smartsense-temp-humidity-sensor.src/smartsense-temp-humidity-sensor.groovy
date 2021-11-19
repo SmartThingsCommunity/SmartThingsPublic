@@ -91,7 +91,7 @@ def parse(String description) {
 	if (!map) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-			if (descMap.attrInt == 0x0021) {
+			if (descMap.attrInt == POWER_BATTERY_PCT_REMAINING_ATTR) {
 				map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
 			} else {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
@@ -162,31 +162,34 @@ private Map getBatteryResult(rawValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x0001, 0x0020) // Read the Battery Level
+	// Read the Battery Level
+	if (isHeiman() || isEWeLink()) {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_PCT_REMAINING_ATTR)
+	} else {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_VOLTAGE_ATTR)
+	}
 }
 
 def refresh() {
 	log.debug "refresh temperature, humidity, and battery"
 
-	def manufacturer = device.getDataValue("manufacturer")
-
-	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
-		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
+	if (isHeiman()) {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_PCT_REMAINING_ATTR, [destEndpoint: 0x01])+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, [destEndpoint: 0x01])+
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, [destEndpoint: 0x02])
 	} else if (isFrientSensor()) {
-		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_VOLTAGE_ATTR)+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
 	} else if (isEWeLink()) {
 		return zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_PCT_REMAINING_ATTR)
 	} else {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
 			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_VOLTAGE_ATTR)
 	}
 }
 
@@ -199,20 +202,19 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	def manufacturer = device.getDataValue("manufacturer")
-	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
+	if (isHeiman()) {
 		return refresh() +
 			zigbee.temperatureConfig(30, 300) +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_PCT_REMAINING_ATTR, DataType.UINT8, 30, 21600, 0x10) +
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
 	} else if (isFrientSensor()) {
 		return refresh() + 
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
 			zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_VOLTAGE_ATTR, DataType.UINT8, 30, 21600, 0x1)
 	} else if (isEWeLink()) {
 		return refresh() +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x01) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_BATTERY_PCT_REMAINING_ATTR, DataType.UINT8, 30, 21600, 0x01) +
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 30, 3600, 100)
 	} else {
@@ -222,6 +224,14 @@ def configure() {
 			zigbee.batteryConfig() +
 			zigbee.temperatureConfig(30, 300)
 	}
+}
+
+
+private def getPOWER_BATTERY_VOLTAGE_ATTR() { 0x0020 }
+private def getPOWER_BATTERY_PCT_REMAINING_ATTR() { 0x0021 }
+
+private Boolean isHeiman() {
+	device.getDataValue("manufacturer") == "Heiman"|| device.getDataValue("manufacturer") == "HEIMAN"
 }
 
 private Boolean isFrientSensor() {
