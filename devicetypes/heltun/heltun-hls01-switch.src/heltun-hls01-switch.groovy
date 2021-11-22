@@ -115,13 +115,9 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	configParam()
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	sendEvent(name: "firmwareVersion", value: (cmd.applicationVersion + (cmd.applicationSubVersion/100)))
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale
-    def externalTemp = 1
+	def externalTemp = 1
 	def map = [:]
 	if (externalTemp == cmd.sensorType) {
 		def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
@@ -147,12 +143,12 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 			map.value = Math.round(cmd.scaledMeterValue)
 			map.unit = "W"
 			sendEvent(map)
-		}else if (cmd.scale == 4) {
+		} else if (cmd.scale == 4) {
 			map.name = "voltage"
 			map.value = Math.round(cmd.scaledMeterValue)
 			map.unit = "V"
 			sendEvent(map)
-		}else if (cmd.scale == 5) {
+		} else if (cmd.scale == 5) {
 			map.name = "current"
 			map.value = Math.round(cmd.scaledMeterValue)
 			map.unit = "A"
@@ -176,9 +172,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChannelAssociationReport cmd) {
 	def cmds = []
 	if (cmd.groupingIdentifier == 1) {
-		if (cmd.nodeId != [1]) {
+		if (cmd.nodeId != [zwaveHubNodeId]) {
 			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1).format()
-			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format()
+			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
 		}
 	}
 	if (cmds) sendHubCommand(cmds, 1200)
@@ -227,7 +223,10 @@ def configure() {
 
 private parameterMap() {[
 [title: "Relay Output Mode", description: "This Parameter determines the type of load connected to the device relay output. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
- name: "Selected Mode", options: [0: "NO - Normal Open", 1: "NC - Normal Close"], paramNum: 7, size: 1, default: "0", type: "enum"],
+ name: "Selected Mode", options: [
+			0: "NO - Normal Open", 
+			1: "NC - Normal Close"
+	], paramNum: 7, size: 1, default: "0", type: "enum"],
  
 [title: "Floor Sensor Resistance", description: "If an external floor NTC temperature sensor is used it is necessary to select the correct resistance value in kiloOhms (kΩ) of the sensor",
  name: "Selected Floor Resistance in kΩ", paramNum: 10, size: 1, default: 10, type: "number", min: 1, max: 100, unit: "kΩ"],
@@ -236,7 +235,10 @@ private parameterMap() {[
  name: "Selected Temperature Offset in °Cx10", paramNum: 17, size: 1, default: 0, type: "number", min: -100, max: 100, unit: " °Cx10"],
 
 [title: "Auto On/Off", description: "If this function is enabled the device will switch Off the relay output when there is no consumption and switch On the output again when the load is reconnected. It is possible to set a delay for Auto Off and Auto On functions in configurations (Auto Off Timeout) & (Auto On Reconnect Timeout) below",
- name: "Selected Mode", options: [0: "Auto On/Off Disabled", 1: "Auto On/Off Enabled"], paramNum: 23, size: 1, default: "0", type: "enum"],
+ name: "Selected Mode", options: [
+			0: "Auto On/Off Disabled",
+			1: "Auto On/Off Enabled"
+	], paramNum: 23, size: 1, default: "0", type: "enum"],
 
 [title: "Auto Off Timeout", description: "If Auto On/Off is enabled, it is possible to delay the Auto Off function. The output will be switched Off when there is no consumption for the interval defined in minutes",
  name: "Seleced Auto Off Timeout in minutes", paramNum: 24, size: 1, default: 0, type: "number", min: 0, max: 120, unit: "min"],
