@@ -26,7 +26,6 @@ metadata {
 		capability "Health Check" 
 		capability "Refresh"
 
-
 		fingerprint mfr: "0344", prod: "0004", model: "0001", deviceJoinName: "HELTUN Thermostat"
 	}
 	preferences {
@@ -70,10 +69,10 @@ def installed() {
 	state.oldLabel = device.label
 	def childName = "${device.displayName} Floor Temperature"
 	def existingChildren = getChildDevices()
-	def FloorTemperatureid = "${device.deviceNetworkId}:${1}"
-	def childExists = (existingChildren.find {child -> child.getDeviceNetworkId() == FloorTemperatureid} != NULL)
+	def floorTemperatureid = "${device.deviceNetworkId}:${1}"
+	def childExists = (existingChildren.find {child -> child.getDeviceNetworkId() == floorTemperatureid} != NULL)
 	if (!childExists) {
-		addChildDevice("HE-TEMPERATURE", FloorTemperatureid, device.hubId,[completedSetup: true, label: childName, isComponent: true, componentName: "FloorTemperature", componentLabel: "FloorTemperature"])
+		addChildDevice("HE-TEMPERATURE", floorTemperatureid, device.hubId,[completedSetup: true, label: childName, isComponent: true, componentName: "FloorTemperature", componentLabel: "FloorTemperature"])
 	}
 }
 
@@ -128,13 +127,9 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	configParam()
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	sendEvent(name: "firmwareVersion", value: (cmd.applicationVersion + (cmd.applicationSubVersion/100)))
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale   
-	def deviceMode = numtomodeMap[cmd.mode.toInteger()]
+	def deviceMode = numToModeMap[cmd.mode.toInteger()]
 	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)
 	//if mode is off -> change stepoint value to 0
 	if (cmd.mode == 0) {
@@ -208,7 +203,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def deviceTemp = cmd.scaledValue
 	def setPoint = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
-	def mode = modetonumMap[device.currentValue("thermostatMode")]
+	def mode = modeToNumMap[device.currentValue("thermostatMode")]
 	if (mode == 0) {setPoint = 0}
 	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)
 }
@@ -228,7 +223,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 def setHeatingSetpoint(tValue) {
 	def cmds = []
 	def mode = device.currentValue("thermostatMode")
-	def currentMode = modetonumMap[mode]
+	def currentMode = modeToNumMap[mode]
 	def temp = state.heatingSetpoint = tValue.toDouble() //temp got fromm the app
 	def tempInC = (getTemperatureScale() == "F" ? roundC(fahrenheitToCelsius(temp)) : temp) //If not C, Convert to C     
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: currentMode, scale: 0, precision: 1, scaledValue: tempInC).format()
@@ -241,13 +236,13 @@ def setHeatingSetpoint(tValue) {
 
 def setThermostatMode(String value) {
 	def cmds = []
-	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: modetonumMap[value]).format()
+	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: modeToNumMap[value]).format()
 	cmds << zwave.thermostatModeV2.thermostatModeGet().format()
-	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: modetonumMap[value]).format()
+	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: modeToNumMap[value]).format()
 	sendHubCommand(cmds)
 }
 
-def getNumtomodeMap() {
+def getNumToModeMap() {
 [   
 	0 : "off",
 	1 : "heat",
@@ -257,7 +252,7 @@ def getNumtomodeMap() {
 	8 : "dryair"   
 ]}
 
-def getModetonumMap() {
+def getModeToNumMap() {
 [
 	"off": 0,
 	"heat": 1,
@@ -314,7 +309,9 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: 1).format()
 		}
 	}
-	if (cmds) sendHubCommand(cmds, 1200)
+	if (cmds) {
+		sendHubCommand(cmds, 1200)
+	}
 }
 
 def configure() {
@@ -377,8 +374,11 @@ private parameterMap() {[
     ], paramNum: 6, size: 1, default: "6", type: "enum"], 
     
 [title: "Relay Output Mode", description: "This Parameter determines the type of load connected to the device relay output. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
- name: "Selected Mode", options: [0: "NO - Normal Open", 1: "NC - Normal Close"], paramNum: 7, size: 1, default: "0", type: "enum"],
- 
+ name: "Selected Mode", options: [
+			0: "NO - Normal Open", 
+			1: "NC - Normal Close"
+	], paramNum: 7, size: 1, default: "0", type: "enum"],
+
 [title: "External Input Mode", description: "This parameter defines how the thermostat should react when pressing the button connected to the external input. The options are: Disabled, Toggle Switch: if the external input is shorted (with Sx or Line) the Thermostat switches to the operating mode selected in the External Input Action bellow and switches to OFF mode when the external input is open, Toggle Switch Reverse: Toggle Switch Reverse” mode: if the external input is shorted the Thermostat switches to OFF mode and switches to the operating mode selected in the External Input Action bellow when the input is open, Momentary Switch: each press of button (shorten of input) will consistently change the mode to the operating mode selected in External Input Action bellow",
  name: "Selected External Input Mode", options: [
 			0: "Disabled",

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "HE-TEMPERATURE", namespace: "HELTUN", author: "Sarkis Kabrailian", cstHandler: true, ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "HE-TEMPERATURE", namespace: "HELTUN", author: "Sarkis Kabrailian", ocfDeviceType: "oic.d.thermostat") {
 		capability "Temperature Measurement"
 	}
 }
