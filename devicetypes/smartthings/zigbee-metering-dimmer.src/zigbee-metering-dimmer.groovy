@@ -102,6 +102,10 @@ def setLevel(value, rate = null) {
 	zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : [])
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */

@@ -276,6 +276,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	log.debug "Executing 'reset'"
 	encap(zwave.meterV2.meterReset())
 }

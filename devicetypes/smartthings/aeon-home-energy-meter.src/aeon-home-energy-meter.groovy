@@ -147,6 +147,10 @@ def refresh() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	log.debug "reset()..."
 	// No V1 available
 	delayBetween([

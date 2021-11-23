@@ -248,6 +248,10 @@ def resetCmd(endpoint = null) {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	delayBetween([resetCmd(null), reset1(), reset2(), reset3(), reset4()])
 }
 

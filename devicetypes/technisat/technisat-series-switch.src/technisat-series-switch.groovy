@@ -268,6 +268,10 @@ def childReset(deviceNetworkId) {
 	log.debug("childReset from endpoint ${endpoint}")
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def configure() {
 	log.debug "configure()"
 	def result = []
