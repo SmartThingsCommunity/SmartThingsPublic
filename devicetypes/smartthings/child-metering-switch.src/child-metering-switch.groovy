@@ -66,6 +66,10 @@ def ping() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	parent.childReset(device.deviceNetworkId)
 }
 

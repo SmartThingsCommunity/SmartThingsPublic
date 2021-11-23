@@ -33,6 +33,8 @@ metadata {
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_Situo4_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint inClusters: "0000, 0001, 0003", outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Button" //eWeLink Button
+		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57", outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Button" //eWeLink Button
 	}
 
 	tiles {
@@ -179,6 +181,7 @@ private void createChildButtonDevices(numberOfButtons) {
 
 def installed() {
 	def numberOfButtons = 1
+	def supportedButtons = []
 
 	if (isIkeaRemoteControl()) {
 		numberOfButtons = 5
@@ -194,7 +197,14 @@ def installed() {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	def supportedButtons = isIkeaOpenCloseRemote() || isSomfy() ? ["pushed"] : ["pushed", "held"]
+	if (isIkeaOpenCloseRemote() || isSomfy()) {
+		supportedButtons = ["pushed"]
+	} else if (isEWeLink()) {
+		supportedButtons = ["pushed", "held", "double"]
+	} else {
+		supportedButtons = ["pushed", "held"]
+	}
+
 	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
@@ -374,6 +384,17 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
 			}
 		}
+	} else if (isEWeLink()) {
+		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+			buttonNumber = 1
+			if (descMap.commandInt == 0x00) {
+				buttonState = "held"
+			} else if (descMap.commandInt == 0x01) {
+				buttonState = "double"
+			} else {
+				buttonState = "pushed"
+			}
+		}
 	}
 
 	if (buttonNumber != 0) {
@@ -413,6 +434,10 @@ private boolean isSomfySituo1() {
 
 private boolean isSomfySituo4() {
 	isSomfy() && device.getDataValue("model") == "Situo 4 Zigbee"
+}
+
+private boolean isEWeLink() {
+	device.getDataValue("manufacturer") == "eWeLink"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {

@@ -260,6 +260,10 @@ def setSlats(level) {
 	])
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def refresh() {
 	[
 			encap(zwave.switchMultilevelV3.switchMultilevelGet()),

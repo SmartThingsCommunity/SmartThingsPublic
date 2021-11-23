@@ -199,6 +199,10 @@ def refresh() {
 	], 1000)
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def configure() {
 	log.debug "configure()"
 	def result = []
