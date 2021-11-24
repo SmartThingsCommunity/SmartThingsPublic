@@ -21,7 +21,7 @@ metadata {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
-
+		capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
@@ -43,6 +43,7 @@ metadata {
         //AduroSmart
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.0
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.1
+        fingerprint profileId: "0104", manufacturer: "aaaaaa", model: "ssssss", deviceJoinName: "bbbbbb"
 	}
 
 	simulator {
@@ -59,7 +60,7 @@ metadata {
 			])
 		}
 		section {
-			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 		}
 	}
 
@@ -153,7 +154,7 @@ def parse(String description) {
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = map.value + tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
