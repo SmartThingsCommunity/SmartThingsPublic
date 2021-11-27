@@ -264,7 +264,7 @@ private parameterMap() {[
  name: "Selected Duration in milliseconds", paramNum: 46, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
 
 [title: "External Input: Click Control Mode", description: "This Parameter defines how the relay should react when clicking the button connected to the external input. The options are: Click is disabled, Toggle switch: relay inverts state (ON to OFF, OFF to ON), Only On: Relay switches to ON state only, Only Off: Relay switches to OFF state only, Timer: On > Off: Relay output switches to ON state (contacts are closed) then after a specified time switches back to OFF state (contacts are open). The time is specified in 'Relay Timer Mode Duration' below, Timer: Off > On: Relay output switches to OFF state (contacts are open) then after a specified time switches back to On state (contacts are closed). The time is specified in 'Relay Timer Mode Duration' below ",
- name: "Selected Hold Control Mode", options: [
+ name: "Selected Click Control Mode", options: [
 			0: "Click is disabled",
 			1: "Toggle Switch",
 			2: "Only On",
