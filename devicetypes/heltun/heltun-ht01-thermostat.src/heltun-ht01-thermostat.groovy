@@ -444,7 +444,7 @@ private parameterMap() {[
 			6: "Off"
     ], paramNum: 26, size: 1, default: "1", type: "enum"], 
 
-[title: "Child Lock Restriction Level", description: "This parameter specifies the restriction level of Child Lock feature where it allows you to choose which touch buttons/features of HE-HT01 should be disabled temporarily while the device is locked. Choosing level 1 will lock all the buttons, choosing level 2 will let you change the setpoint and lock the remaining buttons, choosing level 3 will let you change the setpoint and the operating mode, and lock the remaining buttons",
+[title: "Child Lock Restriction Level", description: "This parameter specifies the restriction level of Child Lock feature where it allows you to choose which touch buttons/features of HE-HT01 should be disabled temporarily while the device is locked. Choosing level 1 will lock all the buttons, choosing level 2 will let you change the setpoint and lock the remaining buttons, choosing level 3 will let you change the setpoint and the operating mode, and lock the remaining buttons. This parameter is available on firmware V2.4 or higher",
  name: "Selected Restriction Level", options: [
 			1: "level 1 (Strictest)",
 			2: "level 2",
