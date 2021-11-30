@@ -126,6 +126,10 @@ def refresh() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	return [
 		zwave.meterV2.meterReset().format(),
 		zwave.meterV2.meterGet().format()

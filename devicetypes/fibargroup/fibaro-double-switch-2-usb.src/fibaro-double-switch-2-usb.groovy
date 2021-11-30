@@ -68,6 +68,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	parent.childReset()
 }
 
