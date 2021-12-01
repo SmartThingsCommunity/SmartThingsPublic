@@ -31,7 +31,7 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-		parameterMap().each { 
+		parameterMap().each {
 			input (
 				title: "${it.title}",
 				description: it.description,
@@ -40,7 +40,7 @@ metadata {
 			)
 			def unit = it.unit ? it.unit : ""
 			def defV = it.default as Integer
-			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value" 
+			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value"
 			input (
 				name: it.name,
 				title: null,
@@ -91,7 +91,7 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
+		if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
 			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
 			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
 			break
@@ -105,7 +105,7 @@ private configParam() {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def parameter = parameterMap().find( {it.paramNum == cmd.parameterNumber } ).name
-	if (state."$parameter".value == cmd.scaledConfigurationValue){
+	if (state."$parameter".value == cmd.scaledConfigurationValue) {
 		state."$parameter".state = "configured"
 	}
 	else {
@@ -176,7 +176,9 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
 		}
 	}
-	if (cmds) sendHubCommand(cmds, 1200)
+	if (cmds) {
+		sendHubCommand(cmds, 1200)
+	}
 }
 
 def roundC (tempInC) {
@@ -223,7 +225,7 @@ def configure() {
 private parameterMap() {[
 [title: "Relay Output Mode", description: "This Parameter determines the type of load connected to the device relay output. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
  name: "Selected Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
 	], paramNum: 7, size: 1, default: "0", type: "enum"],
  
@@ -277,7 +279,7 @@ private parameterMap() {[
 
 [title: "Retore Relay State", description: "This parameter determines if the last relay state should be restored after power failure or not. This parameter is available on firmware V1.5 or higher",
  name: "Selected Mode", options: [
-			0: "Relay Off After Power Failure", 
+			0: "Relay Off After Power Failure",
 			1: "Restore Last State"
 	], paramNum: 66, size: 1, default: "0", type: "enum"],
 
