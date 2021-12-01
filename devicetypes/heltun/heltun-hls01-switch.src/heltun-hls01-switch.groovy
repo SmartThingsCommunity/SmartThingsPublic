@@ -18,8 +18,8 @@ metadata {
 		capability "Switch"
 		capability "Temperature Measurement"
 		capability "Voltage Measurement"
-		capability "Configuration"      
-		capability "Health Check" 
+		capability "Configuration"
+		capability "Health Check"
 		capability "Refresh"
 
 		fingerprint mfr: "0344", prod: "0004", inClusters:"0x25", deviceJoinName: "HELTUN Switch" //model: "000A"
@@ -151,7 +151,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 			map.name = "current"
 			map.value = Math.round(cmd.scaledMeterValue)
 			map.unit = "A"
-		}      
+		}
 	}
 }
 
@@ -257,7 +257,7 @@ private parameterMap() {[
 			1: "Operate like click",
 			2: "Momentary Switch",
 			3: "Reversed Momentary"
-    ], paramNum: 41, size: 1, default: "2", type: "enum"],
+	], paramNum: 41, size: 1, default: "2", type: "enum"],
 
 [title: "Hold Mode Duration for External Input S1", description: "This parameter specifies the time the device needs to recognize a hold mode when the button connected to an external input is held (key closed). This parameter is available on firmware V1.3 or higher",
  name: "Selected Duration in milliseconds", paramNum: 46, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
@@ -270,7 +270,7 @@ private parameterMap() {[
 			3: "Only Off",
 			4: "Timer: On > Off",
 			5: "Timer: Off > On"
-    ], paramNum: 51, size: 1, default: "1", type: "enum"],
+	], paramNum: 51, size: 1, default: "1", type: "enum"],
 
 [title: "Relay Timer Mode Duration", description: "This parameters specify the duration in seconds for the Timer modes for Click Control Mode above. Press the button and the relay output goes to ON/OFF for the specified time then changes back to OFF/ON. If the value is set to “0” the relay output will operate as a short contact (duration is about 0.5 sec)",
  name: "Selected Timer Mode Duration in seconds", paramNum: 71, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
@@ -303,6 +303,6 @@ private parameterMap() {[
  name: "Selected Upper Limit in Volts", paramNum: 156, size: 2, default: 260, type: "number", min: 120 , max: 280, unit: "V"],
 
 [title: "Voltage Drop Protection", description: "You can define the minimum voltage of your electricity network. If the voltage of the network drops bellow the determined level the device will automatically switch off the output. Use the value 0 if there is a need to disable this function.",
- name: "Selected Lower Limit in Volts", paramNum: 157, size: 2, default: 90, type: "number", min: 80 , max: 240, unit: "V"],
+ name: "Selected Lower Limit in Volts", paramNum: 157, size: 2, default: 90, type: "number", min: 80 , max: 240, unit: "V"]
 
 ]}
