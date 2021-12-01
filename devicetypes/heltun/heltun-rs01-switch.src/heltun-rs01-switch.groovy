@@ -30,7 +30,7 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-			parameterMap().each { 
+			parameterMap().each {
 			if (it.title != null) {
 			input (
 					title: "${it.title}",
@@ -41,7 +41,7 @@ metadata {
 			}
 			def unit = it.unit ? it.unit : ""
 			def defV = it.default as Integer
-			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value" 
+			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value"
 			input (
 				name: it.name,
 				title: null,
@@ -77,7 +77,7 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
+	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
 			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
 			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
 			break
@@ -91,7 +91,7 @@ private configParam() {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def parameter = parameterMap().find( {it.paramNum == cmd.parameterNumber } ).name
-	if (state."$parameter".value == cmd.scaledConfigurationValue){
+	if (state."$parameter".value == cmd.scaledConfigurationValue) {
 		state."$parameter".state = "configured"
 	}
 	else {
@@ -102,12 +102,12 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def updated() {
 	if (childDevices && device.label != state.oldLabel) {
-		childDevices.each {           
+		childDevices.each {
 			def newLabel = getChildName(channelNumber(it.deviceNetworkId))
 			it.setLabel(newLabel)
 		}
 		state.oldLabel = device.label
-	} 
+	}
 	initialize()
 }
 
@@ -134,11 +134,11 @@ def installed() {
 	initialize()
 }
 
-private getChildName(channelNumber){
-	if (channelNumber in 1..5){
+private getChildName(channelNumber) {
+	if (channelNumber in 1..5) {
 		return "${device.displayName} " + "${"Switch"} " + "${channelNumber}"
-	} 
-	else if (channelNumber in 11..16){
+	}
+	else if (channelNumber in 11..16) {
 		return "${device.displayName} " + "${"Button"} " + "${channelNumber-10}"
 	}
 }
@@ -214,7 +214,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 			map.name = "power"
 			map.value = Math.round(cmd.scaledMeterValue)
 			map.unit = "W"
-			sendEvent(map)      
+			sendEvent(map)
 		}
 	}
 }
@@ -226,7 +226,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 		case 0: state = "pushed"; buttonN = cmd.sceneNumber; break
 		case 1: state = "up"; buttonN = cmd.sceneNumber; break
 		case 2: state = "held"; buttonN = cmd.sceneNumber; break
-	}   
+	}
 	def buttonId = buttonN + 10
 	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == buttonId }
 	child?.sendEvent([name: "button", value: state, data: [buttonNumber: 1], isStateChange: true])
@@ -243,12 +243,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	def paramState = state."$param"
 	if (paramState){
 		corrRelCons = paramState.value
-	}    
+	}
 	if (childDevice) {
 		childDevice.sendEvent(name: "switch", value: value ? "on" : "off")
 		if (value) {
 			sendEvent(name: "switch", value: "on")
-			childDevice.sendEvent(name: "power", value: corrRelCons, unit: "W") 
+			childDevice.sendEvent(name: "power", value: corrRelCons, unit: "W")
 		} else {
 			childDevice.sendEvent(name: "power", value: 0, unit: "W")
 			if (!childDevices.any { it.currentValue("switch") == "on" }) {
@@ -303,29 +303,29 @@ def resetEnergyMeter() {
 private parameterMap() {[
 [title: "Relays Output Mode", description: "These Parameters determine the type of loads connected to the device relay outputs. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
  name: "Selected Relay 1 Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
 	], paramNum: 7, size: 1, default: "0", type: "enum"],
 
 [name: "Selected Relay 2 Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
 	], paramNum: 8, size: 1, default: "0", type: "enum"],
     
 [name: "Selected Relay 3 Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
-	], paramNum: 9, size: 1, default: "0", type: "enum"],    
+	], paramNum: 9, size: 1, default: "0", type: "enum"],
     
 [name: "Selected Relay 4 Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
-	], paramNum: 10, size: 1, default: "0", type: "enum"],    
+	], paramNum: 10, size: 1, default: "0", type: "enum"],
     
 [name: "Selected Relay 5 Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
-	], paramNum: 11, size: 1, default: "0", type: "enum"],    
+	], paramNum: 11, size: 1, default: "0", type: "enum"],
     
 [title: "Relays Load Power", description: "These parameters are used to specify the loads power that are connected to the device outputs (Relays). Using your connected device’s power consumption specification (see associated owner’s manual), set the load in Watts for the outputs bellow:",
  name: "Selected Relay 1 Load Power in Watts", paramNum: 12, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
@@ -551,7 +551,10 @@ private parameterMap() {[
 [title: "Energy Consumption Meter Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends reports from its energy consumption sensor even if there is no change in the value. This parameter defines the interval between consecutive reports of real time and cumulative energy consumption data to the gateway",
  name: "Selected Energy Report Interval in minutes", paramNum: 141, size: 1, default: 10, type: "number", min: 1 , max: 120, unit: "min"],
 
-[title: "Energy Consumption Meter Report", description: "This Parameter determines the change in the load power resulting in the consumption report being sent to the gateway. Use the value 0 if there is a need to stop sending the reports.",
- name: "Selected Change Percentage", paramNum: 142, size: 1, default: 25, type: "number", min: 0 , max: 50, unit: "%"]
+[title: "Control Energy Meter Report", description: "This Parameter determines if the change in the energy meter will result in a report being sent to the gateway. Note: When the device is turning ON, the consumption data will be sent to the gateway once, even if the report is disabled.",
+ name: "Sending Energy Meter Reports", options: [
+ 			0: "Disabled",
+			1: "Enabled"
+	], paramNum: 142, size: 1, default: "1", type: "enum"]
  
 ]}
