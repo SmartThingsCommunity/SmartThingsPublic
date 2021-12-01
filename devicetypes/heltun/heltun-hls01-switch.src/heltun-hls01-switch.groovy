@@ -21,9 +21,8 @@ metadata {
 		capability "Configuration"      
 		capability "Health Check" 
 		capability "Refresh"
-		//zw:Ls2a type:1000 mfr:0344 prod:0004 model:000A ver:1.05 zwv:7.11 lib:03 cc:5E,55,98,9F,6C,22 sec:85,59,8E,86,72,5A,73,87,32,70,25,31,81,71,7A
-        //cc:"0x5E, 0x55, 0x98, 0x9F, 0x6C, 0x22", sec:"0x85, 0x59, 0x8E, 0x86, 0x72, 0x5A, 0x73, 0x87, 0x32, 0x70, 0x25, 0x31, 0x81, 0x71, 0x7A" (NOT WORKING)
-		fingerprint mfr: "0344", prod: "0004", inClusters:"0x5E,0x85,0x59,0x8E,0x55,0x86,0x72,0x5A,0x73,0x81,0x87,0x98,0x9F,0x6C,0x70,0x25,0x31,0x32,0x71,0x22,0x7A", deviceJoinName: "HELTUN Switch" //model: "000A"
+
+		fingerprint mfr: "0344", prod: "0004", inClusters:"0x25", deviceJoinName: "HELTUN Switch" //model: "000A"
 	}
 	preferences {
 		input (
@@ -277,7 +276,10 @@ private parameterMap() {[
  name: "Selected Timer Mode Duration in seconds", paramNum: 71, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
 
 [title: "Retore Relay State", description: "This parameter determines if the last relay state should be restored after power failure or not. This parameter is available on firmware V1.5 or higher",
- name: "Selected Mode", options: [0: "Relay Off After Power Failure", 1: "Restore Last State"], paramNum: 66, size: 1, default: "0", type: "enum"],
+ name: "Selected Mode", options: [
+			0: "Relay Off After Power Failure", 
+			1: "Restore Last State"
+	], paramNum: 66, size: 1, default: "0", type: "enum"],
 
 [title: "Energy Consumption Meter Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends reports from its energy consumption sensor even if there is no change in the value. This parameter defines the interval between consecutive reports of real time and cumulative energy consumption data to the gateway",
  name: "Selected Energy Report Interval in minutes", paramNum: 141, size: 1, default: 10, type: "number", min: 1 , max: 120, unit: "min"],
