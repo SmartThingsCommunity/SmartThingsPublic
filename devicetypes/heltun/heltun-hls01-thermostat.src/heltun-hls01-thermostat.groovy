@@ -19,9 +19,9 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
-		capability "Voltage Measurement"    
+		capability "Voltage Measurement"
 		capability "Configuration"
-		capability "Health Check" 
+		capability "Health Check"
 		capability "Refresh"
 		
 		fingerprint mfr: "0344", prod: "0004", inClusters: "0x42,0x40,0x43", deviceJoinName: "HELTUN Thermostat" //model: "000A"
@@ -33,7 +33,7 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-		parameterMap().each { 
+		parameterMap().each {
 			if (it.title != null) {
 				input (
 					title: "${it.title}",
@@ -44,7 +44,7 @@ metadata {
 			}
 			def unit = it.unit ? it.unit : ""
 			def defV = it.default as Integer
-			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value" 
+			def defVDescr = it.options ? it.options.get(defV) : "${defV}${unit} - Default Value"
 			input (
 				name: it.name,
 				title: null,
@@ -96,10 +96,10 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) { 
-			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
-			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
-			break
+		if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
+        	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
+        	cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
+        	break
 		}
 	}
 	if (cmds) {
@@ -110,7 +110,7 @@ private configParam() {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def parameter = parameterMap().find( {it.paramNum == cmd.parameterNumber } ).name
-	if (state."$parameter".value == cmd.scaledConfigurationValue){
+	if (state."$parameter".value == cmd.scaledConfigurationValue) {
 		state."$parameter".state = "configured"
 	}
 	else {
@@ -120,14 +120,14 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
-	def locaScale = getTemperatureScale() //HubScale   
+	def locaScale = getTemperatureScale() //HubScale
 	def deviceMode = numToModeMap[cmd.mode.toInteger()]
 	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)
 	//if mode is off -> change stepoint value to 0
 	if (cmd.mode == 0) {
 		sendEvent(name: "heatingSetpoint", value: 0, unit: locaScale)
 	}
-	sendHubCommand(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format()) //getSetpoint       
+	sendHubCommand(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: cmd.mode.toInteger()).format()) //getSetpoint
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -172,14 +172,14 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev2.Thermosta
 	sendEvent(name: "thermostatOperatingState", value: state)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {   
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
 	def locaScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def deviceTemp = cmd.scaledValue
 	def setPoint = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
 	def mode = modeToNumMap[device.currentValue("thermostatMode")]
-	if (mode == 0) {setPoint = 0}    
-	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)   
+	if (mode == 0) {setPoint = 0}
+	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
@@ -189,7 +189,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 	if(cmd.dryAir) { tSupportedModes << "dryair" }
 	if(cmd.energySaveHeat) { tSupportedModes << "energysaveheat" }
 	if(cmd.away) { tSupportedModes << "away" }
-	if(cmd.off) { tSupportedModes << "off" }    
+	if(cmd.off) { tSupportedModes << "off" }
 	state.supportedModes = tSupportedModes
 	sendEvent(name: "supportedThermostatModes", value: tSupportedModes, displayed: false)
 }
@@ -199,7 +199,7 @@ def setHeatingSetpoint(tValue) {
 	def mode = device.currentValue("thermostatMode")
 	def currentMode = modeToNumMap[mode]
 	def temp = state.heatingSetpoint = tValue.toDouble() //temp got fromm the app
-	def tempInC = (getTemperatureScale() == "F" ? roundC(fahrenheitToCelsius(temp)) : temp) //If not C, Convert to C     
+	def tempInC = (getTemperatureScale() == "F" ? roundC(fahrenheitToCelsius(temp)) : temp) //If not C, Convert to C
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: currentMode, scale: 0, precision: 1, scaledValue: tempInC).format()
 
 	// Sync temp, opState, setPoint
@@ -218,24 +218,26 @@ def setThermostatMode(String value) {
 }
 
 def getNumToModeMap() {
-[   
-	0 : "off",
-	1 : "heat",
-	10 : "autochangeover",
-	13 : "away",
-	11 : "energysaveheat",
-	8 : "dryair"   
-]}
+	[
+		0 : "off",
+		1 : "heat",
+		8 : "dryair",
+		10 : "autochangeover",
+		11 : "energysaveheat",
+		13 : "away"
+	]
+}
 
 def getModeToNumMap() {
-[
-	"off": 0,
-	"heat": 1,
-	"autochangeover": 10,
-	"away": 13,
-	"energysaveheat": 11,
-	"dryair": 8 
-]}
+	[
+		"off": 0,
+		"heat": 1,
+		"dryair": 8,
+		"autochangeover": 10,
+		"energysaveheat": 11,
+		"away": 13
+	]
+}
 
 def roundC (tempInC) {
 	return (Math.round(tempInC.toDouble() * 2))/2
@@ -247,7 +249,7 @@ def refresh() {
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format() //Temperature
 	cmds << zwave.meterV3.meterGet(scale: 0).format() //get kWh
 	cmds << zwave.meterV3.meterGet(scale: 2).format() //get Watts
-	cmds << zwave.meterV3.meterGet(scale: 4).format() //get Voltage    
+	cmds << zwave.meterV3.meterGet(scale: 4).format() //get Voltage
 	cmds << zwave.thermostatOperatingStateV2.thermostatOperatingStateGet().format() //get Thermostat Operating State
 	cmds << zwave.clockV1.clockGet().format() //get clock
 	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format() //get channel association
@@ -272,7 +274,9 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
 		}
 	}
-	if (cmds) sendHubCommand(cmds, 1200)
+	if (cmds) {
+		sendHubCommand(cmds, 1200)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.clockv1.ClockReport cmd) {
@@ -302,7 +306,7 @@ def emergencyHeat() {
 private parameterMap() {[
 [title: "Relay Output Mode", description: "This Parameter determines the type of load connected to the device relay output. The output type can be NO – normal open (no contact/voltage switch the load OFF) or NC - normal close (output is contacted / there is a voltage to switch the load OFF)",
  name: "Selected Mode", options: [
-			0: "NO - Normal Open", 
+			0: "NO - Normal Open",
 			1: "NC - Normal Close"
 	], paramNum: 7, size: 1, default: "0", type: "enum"],
  
@@ -312,7 +316,7 @@ private parameterMap() {[
 			1: "Toggle Switch",
 			2: "Toggle Switch Reverse",
 			3: "Momentary Switch"
-    ], paramNum: 8, size: 1, default: "0", type: "enum"], 
+	], paramNum: 8, size: 1, default: "0", type: "enum"],
 
 [title: "External Input Action", description: "This parameter allows selection of which Operating Mode the HE-HLS01 should revert to when the external input is shorted.",
  name: "Selected External Input Action", options: [
@@ -321,7 +325,7 @@ private parameterMap() {[
 			3: "Dry Air",
 			4: "Energy Save Heat",
 			5: "Away"
-    ], paramNum: 9, size: 1, default: "1", type: "enum"], 
+	], paramNum: 9, size: 1, default: "1", type: "enum"],
 
 [title: "Floor Sensor Resistance", description: "If an external floor NTC temperature sensor is used it is necessary to select the correct resistance value in kiloOhms (kΩ) of the sensor",
  name: "Selected Floor Resistance in kΩ", paramNum: 10, size: 1, default: 10, type: "number", min: 1, max: 100, unit: "kΩ"],
@@ -342,12 +346,12 @@ private parameterMap() {[
 			4: "Energy Save Heat",
 			5: "Away",
 			6: "Off"
-    ], paramNum: 26, size: 1, default: "1", type: "enum"], 
+	], paramNum: 26, size: 1, default: "1", type: "enum"],
 
 [title: "Schedule Time", description: "Use these Parameters to set the Morning, Day, Evening and Night start times manually for the Temperature Schedule. The value of these Parameters has format HHMM, e.g. for 08:00 use value 0800 (time without a colon). From 00:00 to 23:59 can be selected.",
  name: "Selected Morning Start Time", paramNum: 41, size: 2, default: 600, type: "number", min: 0, max: 2359, unit: " HHMM"],
 
-[name: "Selected Day Start Time", paramNum: 42, size: 2, default: 900, type: "number", min: 0, max: 2359, unit: " HHMM"], 
+[name: "Selected Day Start Time", paramNum: 42, size: 2, default: 900, type: "number", min: 0, max: 2359, unit: " HHMM"],
 
 [name: "Selected Evening Start Time", paramNum: 43, size: 2, default: 1800, type: "number", min: 0, max: 2359, unit: " HHMM"],
 
