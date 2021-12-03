@@ -33,6 +33,16 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z1-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 2
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z1-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 2
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z1-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 2
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z1-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 2
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z1-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 2
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z2-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 3
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z2-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 3
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z2-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 3
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z2-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 3
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z2-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 3
 
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Switch 1" //Orvibo 2 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo Switch 1" //Orvibo 3 Gang Switch 1
@@ -267,6 +277,8 @@ private getChildCount() {
 		case "HY0097":
 		case "HS2SW3L-EFR-3.0":
 		case "E220-KR3N0Z0-HA":
+		case "E220-KR3N0Z1-HA":
+		case "E220-KR3N0Z2-HA":
 		case "ZB-SW03":
 		case "JZ-ZB-003":
 		case "PM-S340-ZB":
@@ -277,21 +289,29 @@ private getChildCount() {
 		case "HS6SW3A-W-EF-3.0":
 			return 3
 		case "E220-KR4N0Z0-HA":
+		case "E220-KR4N0Z1-HA":
+		case "E220-KR4N0Z2-HA":
 		case "ZB-SW04":
 		case "JZ-ZB-004":
 		case "SBM300Z4":
 			return 4
 		case "E220-KR5N0Z0-HA":
+		case "E220-KR5N0Z1HA":
+		case "E220-KR5N0Z2-HA":
 		case "ZB-SW05":
 		case "JZ-ZB-005":
 		case "SBM300Z5":
 			return 5
 		case "E220-KR6N0Z0-HA":
+		case "E220-KR6N0Z1-HA":
+		case "E220-KR6N0Z2-HA":
 		case "ZB-SW06":
 		case "JZ-ZB-006":
 		case "SBM300Z6":
 			return 6
 		case "E220-KR2N0Z0-HA":
+		case "E220-KR2N0Z1-HA":
+		case "E220-KR2N0Z2-HA":
 		case "SBM300Z2":
 		default:
 			return 2

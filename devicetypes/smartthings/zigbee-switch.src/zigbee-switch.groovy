@@ -37,6 +37,8 @@ metadata {
 		
 		// EZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z1-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z2-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
 
 		// GDKES
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0001", deviceJoinName: "GDKES Switch" //GDKES Smart Switch
