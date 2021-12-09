@@ -203,7 +203,7 @@ private Map getAnalogInputResult(value) {
     def prevInOut = device.currentState('inOutDir')?.value
     int pc = ((int)(fpc*10))/10 //people counter
     int inout = ((int)(fpc*10).round(0))%10; // inout direction : .1 = in, .2 = out, .0 = ready
-    if(inout>2) inout = 2;
+    if(inout>2) inout = 2
     String inoutString = ( (inout==1) ? "in" : (inout==2) ? "out":"ready")
     String descriptionText1 = "${device.displayName} : $pc"
     String descriptionText2 = "${device.displayName} : $inoutString"
@@ -212,9 +212,9 @@ private Map getAnalogInputResult(value) {
     if((inout != "ready") && (prevInOut == inoutString)) {
         sendEvent(name: "inOutDir", value: "ready", displayed: true)
     }
-  
+
     sendEvent(name: "peopleCounter", value: pc, displayed: true, descriptionText: descriptionText1 )
-    
+ 
     return [
         name           : 'inOutDir',
         value          : inoutString,
