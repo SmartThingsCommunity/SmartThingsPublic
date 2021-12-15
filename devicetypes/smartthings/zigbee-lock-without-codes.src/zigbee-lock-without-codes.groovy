@@ -28,6 +28,7 @@ metadata {
 
 		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock Door Lock" //Danalock V3 Smart Lock
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0500, 0101", outClusters: "0019", model: "E261-KR0B0Z0-HA", deviceJoinName: "C2O Door Lock", mnmn: "SmartThings", vid: "C2O-ZigBee-Lock" //C2O Lock
+		fingerprint profileId:"0104", inClusters:"0000, 0001, 0003, 0020,0101", outclusters:"0003,0004, 0019", manufacturer:"ShinaSystem", model:"DLM-300Z", deviceJoinName:"SiHAS Door Lock" //SiHAS Door Lock
 
 	}
 
