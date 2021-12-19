@@ -16,9 +16,9 @@ definition (
     name: "Fan Automation",
     namespace: "baranauskas",
     author: "Jose Augusto Baranauskas",
-    version: "1.1 (2021-05-01)",
+    version: "1.5 (2021-12-18)",
     singleInstance: true,
-    description: "Create fan automation based on temperature sensors",
+    description: "Create fan automation based on temperature and humidity sensors",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -33,7 +33,11 @@ preferences {
 def parentPage() {
 	return dynamicPage(name: "parentPage", title: "", nextPage: "", install: true, uninstall: true) {
         section("Create a new fan automation.") {
-            app(name: "FanAutomationChild", appName: "Fan Automation Child App" , namespace: "baranauskas", title: "Press here for new Fan Automation", multiple: true)
+            app(name: "FanAutomationChild",
+                appName: "Fan Automation Child App" ,
+                namespace: "baranauskas",
+                title: "Press here for new Fan Automation",
+                multiple: true)
         }
         section("About") {
           	paragraph textHelp()
@@ -52,10 +56,16 @@ def aboutPage() {
 private def textHelp() {
 	def text =
 		"This smartapp provides automatic control of ceiling fan speeds using"+
-    " average temperature sensors based on a temperature threshold"+
+    " averaged temperature from sensors based on a temperature threshold,"+
     " changing each speed automatically in differential degree increments.\n\n"+
-    "A (virtual) switch is used to enable/disable fan automation. Notifications"+
-    " can be enable for automation events."
+    "If the heat index computation is enabled and temperature sensors"+
+    " are also humidity sensors then the heat index will be used"+
+    " instead of the actual temperature from sensors. Please refer to"+
+    " https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml"+
+    " for details.\n\n"+
+    "A (virtual) switch is used to enable/disable fan automation.\n\n"+
+    "Notifications can be enabled for automation events or for changes"+
+    " in fan speed."
 }
 
 def installed() {
