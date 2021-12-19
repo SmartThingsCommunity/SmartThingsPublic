@@ -99,8 +99,7 @@ def installed() {
 				try {
 					String dni = "${device.deviceNetworkId}-ep${num}"
 					addChildDevice(typeName, dni, device.hub.id,
-							[completedSetup: true, label: "${device.displayName} ${componentLabel}",
-							 isComponent: true, componentName: "ch${num}", componentLabel: "${componentLabel}"])
+							[completedSetup: true, label: "${device.displayName} ${componentLabel}", isComponent: false])
 					// enabledEndpoints << num.toString()
 					log.debug "Endpoint $num ($desc) added as $componentLabel"
 				} catch (e) {
@@ -434,4 +433,10 @@ private encap(cmd, endpoint) {
 
 private encapWithDelay(commands, endpoint, delay=200) {
 	delayBetween(commands.collect{ encap(it, endpoint) }, delay)
+}
+
+def updated() {
+    childDevices.each {
+        if (it.device.isComponent) { it.save([isComponent: false, componentLabel: null, componentName: null]) }
+    }
 }

@@ -64,7 +64,7 @@ metadata {
 			])
 		}
 		section {
-			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 		}
 		section {
 			input("garageSensor", "enum", title: "Use on garage door", description: "", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)

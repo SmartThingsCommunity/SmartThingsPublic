@@ -34,6 +34,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-3315S-STSWTR"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-IM6001"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-WTD03", deviceJoinName: "Sercomm Water Leak Sensor" //Sercomm Water Leak Detector
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"FLSZB-110", deviceJoinName: "frient Water Leak Sensor" // frient Water Leak Detector
 	}
 
 	simulator {
@@ -84,6 +85,9 @@ metadata {
 	}
 }
 
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
+
 private List<Map> collectAttributes(Map descMap) {
 	List<Map> descMaps = new ArrayList<Map>()
 
@@ -111,13 +115,13 @@ def parse(String description) {
 				List<Map> descMaps = collectAttributes(descMap)
 
 				if (device.getDataValue("manufacturer") == "Samjin") {
-					def battMap = descMaps.find { it.attrInt == 0x0021 }
+					def battMap = descMaps.find { it.attrInt == BATTERY_PERCENT_ATTR }
 
 					if (battMap) {
 						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
 					}
 				} else {
-					def battMap = descMaps.find { it.attrInt == 0x0020 }
+					def battMap = descMaps.find { it.attrInt == BATTERY_VOLTAGE_ATTR }
 
 					if (battMap) {
 						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
@@ -192,7 +196,7 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
-			def minVolts = 2.1
+			def minVolts = isFrientSensor() ? 2.3 : 2.1
 			def maxVolts = 3.0
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
 			def roundedPct = Math.round(pct * 100)
@@ -247,9 +251,9 @@ def refresh() {
 	def refreshCmds = []
 
 	if (device.getDataValue("manufacturer") == "Samjin") {
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR)
 	} else {
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR)
 	}
 	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
@@ -269,11 +273,20 @@ def configure() {
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	if (device.getDataValue("manufacturer") == "Samjin") {
-		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 0x10)
 	} else {
 		configCmds += zigbee.batteryConfig()
 	}
-	configCmds += zigbee.temperatureConfig(30, 300)
+	
+	if (isFrientSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0x64, [destEndpoint: 0x26])
+	} else {
+		configCmds += zigbee.temperatureConfig(30, 300)
+	}
 
 	return refresh() + configCmds + refresh() // send refresh cmds as part of config
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
 }

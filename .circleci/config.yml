@@ -37,7 +37,14 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              only:
+                - master
+                - staging
+                - acceptance
+                - production
       - deploy-dev:
           requires:
             - build

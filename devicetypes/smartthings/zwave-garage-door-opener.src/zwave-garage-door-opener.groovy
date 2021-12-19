@@ -17,7 +17,6 @@ metadata {
 	definition (name: "Z-Wave Garage Door Opener", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "oic.d.garagedoor") {
 		capability "Actuator"
 		capability "Door Control"
-		capability "Garage Door Control"
 		capability "Health Check"
 		capability "Contact Sensor"
 		capability "Refresh"

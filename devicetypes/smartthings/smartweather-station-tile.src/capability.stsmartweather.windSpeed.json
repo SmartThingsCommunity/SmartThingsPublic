@@ -6,18 +6,18 @@
         "type": "object",
         "properties": {
           "value": {
-            "type": "string"
+            "title": "PositiveNumber",
+            "type": "number",
+            "minimum": 0
           },
           "unit": {
             "type": "string",
-            "enum": ["KPH", "MPH"],
-            "default": "KPH"
+            "enum": ["KPH", "MPH"]
           }
         },
         "additionalProperties": false,
         "required": [
-          "value",
-          "unit"
+          "value", "unit"
         ]
       }
     }

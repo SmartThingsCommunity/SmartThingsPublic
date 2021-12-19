@@ -27,6 +27,7 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, 0020, 0B02, FC02", outClusters: "0019", manufacturer: "WAXMAN", model: "leakSMART Water Valve v2.10", deviceJoinName: "leakSMART Valve" //leakSMART Valve
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 000F, 0020, 0B02", outClusters: "0003, 0019", manufacturer: "WAXMAN", model: "House Water Valve - MDL-TBD", deviceJoinName: "Waxman Valve" //Waxman House Water Valve
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0500", outClusters: "0019", manufacturer: "", model: "E253-KR0B0ZX-HA", deviceJoinName: "Valve" //Smart Gas Valve Actuator
+        fingerprint manufacturer: "Compacta", model: "ZBVC1(1023A)", deviceJoinName: "Smartenit Valve" // Raw Description: 01 0104 0002 00 06 0000 0003 0004 0005 0006 0015 00
     }
 
     // simulator metadata

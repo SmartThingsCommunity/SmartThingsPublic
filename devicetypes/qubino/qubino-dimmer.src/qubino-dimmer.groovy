@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"generic-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Qubino Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"qubino-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"
@@ -33,7 +33,11 @@ metadata {
 
 		// Qubino Flush Dimmer 0-10V - ZMNHVD
 		// Raw Description: zw:L type:1100 mfr:0159 prod:0001 model:0053 ver:2.04 zwv:4.34 lib:03 cc:5E,86,5A,72,73,27,25,26,85,8E,59,70 ccOut:20,26 role:05 ff:9C00 ui:9C00
-		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"generic-dimmer"
+		fingerprint mfr: "0159", prod: "0001", model: "0053", deviceJoinName: "Qubino Dimmer", mnmn: "SmartThings", vid:"qubino-dimmer"
+
+		//Qubino Mini Dimmer
+		// Raw Description: zw:Ls type:1101 mfr:0159 prod:0001 model:0055 ver:20.02 zwv:5.03 lib:03 cc:5E,6C,55,98,9F sec:86,25,26,85,59,72,5A,70,32,71,73
+		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Dimmer"
 	}
 
 	tiles(scale: 2) {
@@ -158,6 +162,8 @@ def excludeParameterFromSync(preference){
 		if (isDINDimmer() || isFlushDimmer010V()) {
 			exclude = true
 		}
+	} else if (preference.key == "minimumDimmingValue"){
+		exclude = true
 	}
 
 	if (exclude) {
@@ -224,21 +230,14 @@ def configure() {
 		Group 5: Multilevel sensor report (external temperature sensor report).
 
 	*/
-	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
-	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId])
-	commands << zwave.multiChannelV3.multiChannelEndPointGet()
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId:[])
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+	commands << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+	if (isDINDimmer()) {
+		//parameter 42 - power reporting time threshold
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 2 * 15 * 60 + 2 * 60)
+	}
 	commands += getRefreshCommands()
-
-	// 1% is default Minimum dimming value for dimmers,
-	// when device is set to 1% - it turns off and device does not send any level reports
-	// Minimum dimming value has to be set to 2%, so the device's internal range would be 2-100%
-	// Still, for users it will relatively be 1-100% on the UI and device will report it.
-	// Parameter no. 60 – Minimum dimming value
-	commands << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 60, size: 1)
 	commands += getReadConfigurationFromTheDeviceCommands()
 
 	encapCommands(commands)
@@ -335,26 +334,8 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 	dimmerEvents(cmd)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
-	log.debug "BasicSet: ${cmd}"
-	def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
-
-	if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
-		log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
-		sendHubCommand(encap(zwave.switchMultilevelV3.switchMultilevelGet()))
-	} else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
-		log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
-		dimmerEvents(cmd)
-	}
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
 	log.debug "SwitchMultilevelReport: ${cmd}"
-	dimmerEvents(cmd)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
-	log.debug "SwitchMultilevelSet: ${cmd}"
 	dimmerEvents(cmd)
 }
 
@@ -373,6 +354,9 @@ def handleMeterReport(cmd) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
 			log.debug("createEvent power")
+			if (isDINDimmer()) {
+				sendHubCommand(encap(zwave.meterV3.meterGet(scale: 0x00)))
+			}
 			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 		}
 	}
@@ -385,7 +369,16 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	if (cmdValue && cmdValue <= 100) {
 		result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
 	}
+
 	return result
+}
+
+Integer adjustValueToRange(value){
+	if(value == 0){
+		return 0
+	}
+	def minDimmingLvlPref = settings.minimumDimmingValue ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
+	return Math.max(value, minDimmingLvlPref)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
@@ -445,13 +438,7 @@ def createChildDevice(childDthNamespace, childDthName, childDni, childComponentL
 def on() {
 	def commands = [
 		zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF, dimmingDuration: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
-
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
 
 	encapCommands(commands, 3000)
 }
@@ -459,13 +446,7 @@ def on() {
 def off() {
 	def commands = [
 		zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00, dimmingDuration: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet()
 	]
-
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
 
 	encapCommands(commands, 3000)
 }
@@ -486,15 +467,14 @@ def setLevel(value, duration = null) {
 		getStatusDelay = duration < 128 ? (duration * 1000) + 2000 : (Math.round(duration / 60) * 60 * 1000) + 2000
 	}
 
-	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration)
-	commands << zwave.switchMultilevelV3.switchMultilevelGet()
-
-	if(supportsPowerMeter()){
-		commands << zwave.meterV2.meterGet(scale: 0)
-		commands << zwave.meterV2.meterGet(scale: 2)
-	}
+	def adjustedLevel = adjustValueToRange(level)
+	commands << zwave.switchMultilevelV3.switchMultilevelSet(value: adjustedLevel, dimmingDuration: dimmingDuration)
 
 	encapCommands(commands, getStatusDelay)
+}
+
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
 }
 
 /**
@@ -512,9 +492,17 @@ def refresh() {
 
 def getRefreshCommands() {
 	def commands = []
-	commands << zwave.basicV1.basicGet()
 
-	if(isFlushDimmer() || isDINDimmer()) {
+	commands << zwave.basicV1.basicGet()
+	commands += getPowerMeterCommands()
+
+	commands
+}
+
+def getPowerMeterCommands() {
+	def commands = []
+
+	if(supportsPowerMeter()) {
 		commands << zwave.meterV2.meterGet(scale: 0)
 		commands << zwave.meterV2.meterGet(scale: 2)
 	}
@@ -619,6 +607,16 @@ private getParameterMap() {[
 		optionInactive: 0, inactiveDescription: "Default value - dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
 		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to off position",
 		description: "Set whether the device stores or does not store the last output level in the event of a power outage."
+	],
+	[
+		name           : "Minimum dimming value",
+		key            : "minimumDimmingValue",
+		type           : "range",
+		parameterNumber: 60,
+		size           : 1,
+		defaultValue   : 1,
+		range          : "1..98",
+		description    : "Select minimum dimming value for this device. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
 	],
 	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",

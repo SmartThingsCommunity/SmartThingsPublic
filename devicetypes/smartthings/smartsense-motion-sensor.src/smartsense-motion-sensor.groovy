@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion", genericHandler: "Zigbee") {
+	definition(name: "SmartSense Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion", genericHandler: "Zigbee") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		capability "Firmware Update"
 
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3305-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3325-S", deviceJoinName: "Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor"
@@ -40,9 +41,13 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "Bosch", model: "RFDL-ZB-MS", deviceJoinName: "Bosch Motion Sensor" //Bosch Motion Sensor
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "motion", deviceJoinName: "Motion Sensor" // This is the only ST sensor that shouldn't use SmartThings-smartthings-SmartSense_Motion_Sensor
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "PIRZB1-ECO", deviceJoinName: "Ecolink Motion Sensor" //Ecolink Motion Detector
-        //AduroSmart
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.0
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.1
+		//AduroSmart
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.0
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //ERIA Motion Sensor V2.1
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"MOSZB-140", deviceJoinName: "frient Motion Sensor"
+		fingerprint manufacturer: "frient A/S", model :"MOSZB-141", deviceJoinName: "frient Motion Sensor", mnmn: "SmartThingsCommunity", vid: "87753fce-8cd6-3b91-8bde-2483e564252d" // Raw description: 22 0104 0107 00 03 0000 0003 0406 00
+		//Smartenit
+		fingerprint manufacturer: "Compacta", model: "ZBMS3-1", deviceJoinName: "Smartenit Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion_Sensor" // Raw description: 01 0104 0402 00 07 0000 0001 0003 0015 0500 0020 0B05 00
 	}
 
 	simulator {
@@ -59,7 +64,7 @@ metadata {
 			])
 		}
 		section {
-			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 		}
 	}
 
@@ -133,7 +138,7 @@ def parse(String description) {
 						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
 					}
 				}
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002 && descMap.commandInt != 0x07) {
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002 && descMap.commandInt != 0x07 && descMap.value != null) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
@@ -208,6 +213,12 @@ private Map getBatteryResult(rawValue) {
 			result.value = pct
 		} else if (device.getDataValue("manufacturer") == "Bosch") {
 			def minValue = 21
+			def maxValue = 30
+			def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
+			pct = pct > 0 ? pct : 1
+			result.value = Math.min(100, pct)
+		} else if (isFrientSensor()) {
+			def minValue = 23
 			def maxValue = 30
 			def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
 			pct = pct > 0 ? pct : 1
@@ -307,10 +318,19 @@ def configure() {
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	if (device.getDataValue("manufacturer") == "Samjin") {
 		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+	} else if (isFrientSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1, [destEndpoint: 0x23])
 	} else {
 		configCmds += zigbee.batteryConfig()
 	}
-	configCmds += zigbee.temperatureConfig(30, 300)
+    
+	if (isFrientSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, [destEndpoint: 0x26])
+	} else if (isCompactaSensor()) {
+		configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 300, 0x64, [destEndpoint: 0x0003])
+	} else {
+		configCmds += zigbee.temperatureConfig(30, 300)
+	}
 	configCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
 
@@ -334,4 +354,12 @@ private shouldUseOldBatteryReporting() {
 	}
 
 	return isFwVersionLess // If f/w version is less than 1.15.7 then do NOT smooth battery reports and use the old reporting
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
+}
+
+private Boolean isCompactaSensor() {
+	device.getDataValue("manufacturer") == "Compacta"
 }

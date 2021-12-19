@@ -237,7 +237,9 @@ def installed() {
 
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	createChildDevices()
+	if (!childDevices) {
+		createChildDevices()
+	}
 	response(refresh())
 }
 

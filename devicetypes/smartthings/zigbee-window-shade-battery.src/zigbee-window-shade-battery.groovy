@@ -29,8 +29,16 @@ metadata {
 
 		command "pause"
 
+		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA KADRILJ Blinds
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
+
+		// Yookee yooksmart
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
+        
+		// SMARTWINGS
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
 	}
 
 	preferences {
@@ -90,6 +98,12 @@ private List<Map> collectAttributes(Map descMap) {
 	return descMaps
 }
 
+def installed() {
+	log.debug "installed"
+
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description:- ${description}"
@@ -131,7 +145,7 @@ def parse(String description) {
 }
 
 def levelEventHandler(currentLevel) {
-	def lastLevel = device.currentValue("shadeLevel") ?: device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
+	def lastLevel = device.currentState("shadeLevel") ? device.currentValue("shadeLevel") : device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
 
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
 
@@ -241,12 +255,6 @@ def refresh() {
 	return cmds
 }
 
-def installed() {
-	log.debug "installed"
-
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
-}
-
 def configure() {
 	def cmds
 
@@ -275,7 +283,7 @@ def configure() {
 }
 
 def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 private def parseBindingTableMessage(description) {
@@ -306,15 +314,15 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 def isIkeaKadrilj() {
@@ -323,4 +331,12 @@ def isIkeaKadrilj() {
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isYooksmartOrYookee() {
+	device.getDataValue("model") == "D10110"
+}
+
+def isSmartwings() {
+	device.getDataValue("model") == "WM25/L-Z"
 }

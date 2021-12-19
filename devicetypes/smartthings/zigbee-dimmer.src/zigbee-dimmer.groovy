@@ -126,6 +126,11 @@ metadata {
 
 		// Wemo
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FF00", outClusters: "0019", manufacturer: "MRVL", model: "MZ100", deviceJoinName: "Wemo Light" //Wemo Bulb
+
+		// Enbrighten/Jasco
+		fingerprint manufacturer: "Jasco Products", model: "43096", deviceJoinName: "Enbrighten Dimmer", ocfDeviceType: "oic.d.switch" //Enbrighten, Plug-in Smart Dimmer, 43096, Raw Description: 01 0104 0101 00 07 0000 0003 0004 0005 0006 0008 0B05 02 000A 0019
+		fingerprint manufacturer: "Jasco Products", model: "43090", deviceJoinName: "Enbrighten Dimmer", ocfDeviceType: "oic.d.switch" //Enbrighten, In-Wall Smart Dimmer, Toggle. 43090, Raw Description: 01 0104 0101 00 07 0000 0003 0004 0005 0006 0008 0B05 02 000A 0019
+		fingerprint manufacturer: "Jasco Products", model: "43080", deviceJoinName: "Enbrighten Dimmer", ocfDeviceType: "oic.d.switch" //Enbrighten, In-Wall Smart Dimmer, 43080, Raw Description: 01 0104 0101 00 07 0000 0003 0004 0005 0006 0008 0B05 02 000A 0019
 	}
 
 	tiles(scale: 2) {
@@ -167,7 +172,7 @@ def parse(String description) {
 			} else {
 				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
-		} else if (device.getDataValue("manufacturer") == "sengled" && descMap && descMap.clusterInt == 0x0008 && descMap.attrInt == 0x0000) {
+		} else if (isSengled() && descMap && descMap.clusterInt == 0x0008 && descMap.attrInt == 0x0000) {
 			// This is being done because the sengled element touch/classic incorrectly uses the value 0xFF for the max level.
 			// Per the ZCL spec for the UINT8 data type 0xFF is an invalid value, and 0xFE should be the max.  Here we
 			// manually handle the invalid attribute value since it will be ignored by getEvent as an invalid value.
@@ -197,8 +202,10 @@ def setLevel(value, rate = null) {
 	def additionalCmds = []
 	if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
 		additionalCmds = zigbee.on()
-	} else if (device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
+	} else if (isMRVL()) { // Handle marvel stack not reporting
 		additionalCmds = refresh()
+	} else if (isLeviton()) {
+		additionalCmds = zigbee.levelRefresh()
 	}
 	zigbee.setLevel(value) + additionalCmds
 }
@@ -214,11 +221,31 @@ def refresh() {
 }
 
 def installed() {
-	if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+	if ((isMRVL() && (device.getDataValue("model") == "MZ100")) || isOsram() || isOsramSylvania()) {
 		if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
 			sendEvent(name: "level", value: 100)
 		}
 	}
+}
+
+def isLeviton() {
+	device.getDataValue("manufacturer") == "Leviton"
+}
+
+def isMRVL() {
+	device.getDataValue("manufacturer") == "MRVL"
+}
+
+def isOsram() {
+	device.getDataValue("manufacturer") == "OSRAM"
+}
+
+def isOsramSylvania() {
+	device.getDataValue("manufacturer") == "OSRAM SYLVANIA"
+}
+
+def isSengled() {
+	device.getDataValue("manufacturer") == "sengled"
 }
 
 def configure() {

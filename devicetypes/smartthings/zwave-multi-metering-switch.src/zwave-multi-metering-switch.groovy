@@ -30,6 +30,18 @@ metadata {
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch" //Zooz ZEN Power Strip
 		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch" //Zooz Double Plug
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0201 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:1
+		fingerprint mfr: "015F", prod: "3102", model: "0201", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0202 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:2
+		fingerprint mfr: "015F", prod: "3102", model: "0202", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3102 model:0204 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:4
+		fingerprint mfr: "015F", prod: "3102", model: "0204", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3111 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:1
+		fingerprint mfr: "015F", prod: "3111", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 1-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3121 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:2
+		fingerprint mfr: "015F", prod: "3121", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 2-button Switch
+		// Raw Description zw:L type:1001 mfr:015F prod:3141 model:5102 ver:5.10 zwv:4.62 lib:03 cc:5E,85,59,8E,60,55,86,72,5A,73,25,27,70,2C,2B,5B,20,7A ccOut:5B,20,26 epc:4
+		fingerprint mfr: "015F", prod: "3141", model: "5102", deviceJoinName: "WYFY Switch 1", mnmn: "SmartThings", vid: "generic-switch" //WYFY Touch 4-button Switch
 	}
 
 	tiles(scale: 2){
@@ -137,6 +149,11 @@ private lateConfigure() {
 					encap(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 4, scaledConfigurationValue: 600))	// enabling kWh energy reports every 10 minutes
 			]
 			break
+		case "WYFY Touch":
+			cmds = [ 
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1))	// Remebers state before power failure
+			]
+			break
 		default:
 			cmds = [encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
 			break
@@ -181,7 +198,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 private handleSwitchReport(endpoint, cmd) {
 	def value = cmd.value ? "on" : "off"
-
 	if (isZoozZenStripV2()) {
 		// device also sends reports without any endpoint specified, therefore all endpoints must be queried
 		// sometimes it also reports 0.0 Wattage only until it's queried for it, then it starts reporting real values
@@ -195,7 +211,7 @@ private changeSwitch(endpoint, value) {
 	if (endpoint == 1) {
 		createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else {
-		String childDni = "${device.deviceNetworkId}:$endpoint"
+		String childDni = "${device.deviceNetworkId}:${endpoint}"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	}
@@ -231,8 +247,10 @@ private createMeterEventMap(cmd) {
 	eventMap
 }
 
+// This method handles unexpected commands
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
-	log.warn "Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
+	// Handles all Z-Wave commands we aren't interested in
+	log.warn "${device.displayName} - Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
 }
 
 def on() {
@@ -243,6 +261,9 @@ def off() {
 	onOffCmd(0x00)
 }
 
+// The Health Check capability uses the “checkInterval” attribute to determine the maximum number of seconds the device can go without generating new events.
+// If the device hasn’t created any events within that amount of time, SmartThings executes the “ping()” command.
+// If ping() does not generate any events, SmartThings marks the device as offline. 
 def ping() {
 	refresh()
 }
@@ -252,20 +273,31 @@ def childOnOff(deviceNetworkId, value) {
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
-private onOffCmd(value, endpoint = 1) {
-	delayBetween([
-		encap(zwave.basicV1.basicSet(value: value), endpoint),
-		encap(zwave.basicV1.basicGet(), endpoint),
-		"delay 3000",
-		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-		encap(zwave.meterV3.meterGet(scale: 2), endpoint)
-	])
+def childOn(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0xFF)
 }
 
-private refreshAll(includeMeterGet = true) {
+def childOff(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0x00)
+}
 
+private onOffCmd(value, endpoint = 1) {
+	def cmds = []
+
+	cmds +=	encap(zwave.basicV1.basicSet(value: value), endpoint)
+	cmds += encap(zwave.basicV1.basicGet(), endpoint)
+
+	if (deviceIncludesMeter()) {
+		cmds += "delay 3000"
+		cmds += encap(zwave.meterV3.meterGet(scale: 0), endpoint)
+		cmds += encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+	}
+
+	delayBetween(cmds)
+}
+
+private refreshAll(includeMeterGet = deviceIncludesMeter()) {
 	def endpoints = [1]
-
 	childDevices.each {
 		def switchId = getSwitchId(it.deviceNetworkId)
 		if (switchId != null) {
@@ -275,17 +307,15 @@ private refreshAll(includeMeterGet = true) {
 	sendHubCommand refresh(endpoints,includeMeterGet)
 }
 
-def childRefresh(deviceNetworkId, includeMeterGet = true) {
+def childRefresh(deviceNetworkId, includeMeterGet = deviceIncludesMeter()) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
 		sendHubCommand refresh([switchId],includeMeterGet)
 	}
 }
 
-def refresh(endpoints = [1], includeMeterGet = true) {
-
+def refresh(endpoints = [1], includeMeterGet = deviceIncludesMeter()) {
 	def cmds = []
-
 	endpoints.each {
 		cmds << [encap(zwave.basicV1.basicGet(), it)]
 		if (includeMeterGet) {
@@ -293,7 +323,6 @@ def refresh(endpoints = [1], includeMeterGet = true) {
 			cmds << encap(zwave.meterV3.meterGet(scale: 2), it)
 		}
 	}
-
 	delayBetween(cmds, 200)
 }
 
@@ -308,6 +337,10 @@ def childReset(deviceNetworkId) {
 		log.debug "Child reset switchId: ${switchId}"
 		sendHubCommand reset(switchId)
 	}
+}
+
+def resetEnergyMeter() {
+	reset(1)
 }
 
 def reset(endpoint = 1) {
@@ -339,11 +372,13 @@ private encap(cmd, endpoint = null) {
 }
 
 private addChildSwitches(numberOfSwitches) {
+	log.debug "${device.displayName} - Executing addChildSwitches()"
 	for (def endpoint : 2..numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
-			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
+			def childDthName = deviceIncludesMeter() ? "Child Metering Switch" : "Child Switch"
+			addChildDevice(childDthName, childDni, device.getHub().getId(), [
 					completedSetup	: true,
 					label			: componentLabel,
 					isComponent		: false
@@ -357,11 +392,17 @@ private addChildSwitches(numberOfSwitches) {
 def isAeotec() {
 	getDeviceModel() == "Aeotec Nano Switch"
 }
+
 def isZoozZenStripV2() {
 	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")
 }
+
 def isZoozDoublePlug() {
 	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A003")
+}
+
+def isWYFYTouch() {
+	getDeviceModel() == "WYFY Touch"
 }
 
 private getDeviceModel() {
@@ -369,7 +410,13 @@ private getDeviceModel() {
 		"Aeotec Nano Switch"
 	} else if(zwaveInfo.mfr?.contains("027A")) {
 		"Zooz Switch"
+	} else if(zwaveInfo.mfr?.contains("015F")) {
+		"WYFY Touch"
 	} else {
 		""
 	}
+}
+
+private deviceIncludesMeter() {
+	return !isWYFYTouch()
 }

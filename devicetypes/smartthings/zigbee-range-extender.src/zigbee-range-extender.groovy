@@ -17,6 +17,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000, FC7C", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI signal repeater", deviceJoinName: "IKEA Repeater/Extender" //TRÅDFRI Signal Repeater
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI Signal Repeater", deviceJoinName: "IKEA Repeater/Extender" //TRÅDFRI Signal Repeater
 		fingerprint profileId: "0104", inClusters: "0000, 0003", outClusters: "0019",  manufacturer: "Smartenit, Inc",  model: "ZB3RE", deviceJoinName: "Smartenit Repeater/Extender" //Smartenit Range Extender
 		fingerprint profileId: "0104", inClusters: "0000, 0003, DC00, FC01", manufacturer: "Rooms Beautiful",  model: "R001", deviceJoinName: "Rooms Beautiful Repeater/Extender" //Range Extender
 	}

@@ -20,6 +20,7 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Thermostat Mode"
 		capability "Temperature Measurement"
 
 		command "setThermostatSetpointUp"

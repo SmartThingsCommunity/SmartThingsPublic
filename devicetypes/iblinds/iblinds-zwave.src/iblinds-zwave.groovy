@@ -16,19 +16,19 @@ import groovy.json.JsonOutput
 
 metadata {
 	definition (name: "iblinds Z-Wave", namespace: "iblinds", author: "HABHomeIntel", ocfDeviceType: "oic.d.blind",  mnmn: "SmartThings", vid: "generic-shade-3") {
+		capability "Window Shade"
+		capability "Window Shade Preset"
 		capability "Switch Level"
-		capability "Switch"
 		capability "Battery"
 		capability "Refresh"
 		capability "Actuator"
 		capability "Health Check"
-		capability "Window Shade"
-		capability "Window Shade Preset"
 
 		command "stop"
 
 		fingerprint mfr:"0287", prod:"0003", model:"000D", deviceJoinName: "iBlinds Window Treatment"
 		fingerprint mfr:"0287", prod:"0004", model:"0071", deviceJoinName: "iBlinds Window Treatment"
+		fingerprint mfr:"0287", prod:"0004", model:"0072", deviceJoinName: "iBlinds Window Treatment"
 	}
 
 	simulator {
@@ -75,8 +75,20 @@ metadata {
 		}
 
 		preferences {
+			// V3 configuration
+			input title: "V3 iBlinds Device Config", description: "Configuration options for newer V3 iBlinds devices", type: "paragraph", element: "paragraph", displayDuringSetup: false
+			input name: "NVM_TightLevel", type: "number", title: "Close Interval", defaultValue: 22, description: "Used for Large and Heavy blinds to set the close interval. A smaller value will make the blinds close tighter", required: true, displayDuringSetup: true
+			input name: "NVM_Direction", type: "bool", title: "Reverse", description: "Reverse Blind Direction", defaultValue: false
+			input name: "NVM_Target_Value", type: "number", title: "Default ON Value", defaultValue: 50, range: "1..100", description: "Used to set the default ON level when manual push button is pushed", required: true, displayDuringSetup:false
+			input name: "NVM_Device_Reset_Support", type: "bool", title: "Disable Reset Button", description: "Used for situations where the top motor buttons are being pushed accidentally via a tight installation space, etc.", defaultValue: false
+			input name: "Speed_Parameter", type: "number", title: "Open/Close Speed (seconds)", defaultValue: 0, range:"0..100", description: "To slow down the blinds, increase the value", required: true, displayDuringSetup: false
+
+			input title: "", description: "", type: "paragraph", element: "paragraph", displayDuringSetup: false
+
+			// V2 configuration
+			input title: "V2 iBlinds Device Config", description: "Configuration options for older V2 iBlinds devices", type: "paragraph", element: "paragraph", displayDuringSetup: false
 			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..99", required: false, displayDuringSetup: false
-			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction",defaultValue: false, required: false , displayDuringSetup: false
+			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction", defaultValue: false, required: false , displayDuringSetup: false
 		}
 
 		main(["windowShade"])
@@ -89,10 +101,12 @@ def parse(String description) {
 	//if (description =~ /command: 2603, payload: ([0-9A-Fa-f]{6})/)
 	// TODO: Workaround manual parsing of v4 multilevel report
 	def cmd = zwave.parse(description, [0x20: 1, 0x26: 3])  // TODO: switch to SwitchMultilevel v4 and use target value
+
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
-	log.debug "Parsed '$description' to ${result.inspect()}"
+	log.debug "Parsed '$description' to ${result?.inspect()}"
+
 	return result
 }
 
@@ -105,16 +119,40 @@ def getCheckInterval() {
 def installed() {
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close"]), displayed: false)
-	response(refresh())
+
+	storeParamState()
+
+	response(initialize() + refresh())
 }
 
 def updated() {
+	def cmds = []
+
 	if (device.latestValue("checkInterval") != checkInterval) {
 		sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
 	}
-	if (!device.latestState("battery")) {
-		response(zwave.batteryV1.batteryGet())
+
+	cmds += configureParams()
+	storeParamState()
+	cmds += initialize()
+
+	response(cmds)
+}
+
+def initialize() {
+	def cmds = []
+
+	if (isV3Device()) {
+		// Set up lifeline association
+		cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId).format()
 	}
+
+	// Schedule daily battery check
+	unschedule()
+	runIn(15, getBattery)
+	schedule("2020-01-01T12:01:00.000-0600", getBattery)
+
+	cmds
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -131,6 +169,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 
 private handleLevelReport(physicalgraph.zwave.Command cmd) {
 	def level = cmd.value as Integer
+	def result = []
 
 	log.debug "handleLevelReport($level)"
 
@@ -166,19 +205,22 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
+	Integer level = isV3Device() ? (NVM_Target_Value ?: 50) : 50 // Blinds fully open at 50%, NVM_Target_Value can't be 0%
 	log.debug "open()"
-	// Blinds fully open at 50%
+
 	sendEvent(name: "windowShade", value: "open")
-	sendEvent(name: "level", value: 50, unit: "%", displayed: true)
-	zwave.switchMultilevelV3.switchMultilevelSet(value: 50).format()
+	sendEvent(name: "level", value: level, unit: "%", displayed: true)
+
+	zwave.switchMultilevelV3.switchMultilevelSet(value: level).format()
 }
 
 def close() {
 	log.debug "close()"
-	Integer level = reverse ? 99 : 0
+	Integer level = isV3Device() ? 0 : (reverse ? 99 : 0)
 
 	sendEvent(name: "windowShade", value: "closed")
 	sendEvent(name: "level", value: 0, unit: "%", displayed: true)
+
 	zwave.switchMultilevelV3.switchMultilevelSet(value: level).format()
 }
 
@@ -192,8 +234,8 @@ def setLevel(value, duration = null) {
 	if (level > 99) level = 99
 	Integer tiltLevel = level as Integer // we will use this value to decide what level is sent to device (reverse or not reversed)
 
-	// Check to see if user wants blinds to operate in reverse direction
-	if (reverse) {
+	// For older devices, check to see if user wants blinds to operate in reverse direction
+	if (!isV3Device() && reverse) {
 		tiltLevel = 99 - level
 	}
 
@@ -211,11 +253,10 @@ def setLevel(value, duration = null) {
 	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
 	sendEvent(name: "level", value: level,  descriptionText: descriptionText)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
-
 }
 
 def presetPosition() {
-	setLevel(preset ?: state.preset ?: 50)
+	isV3Device() ? open() : setLevel(preset ?: 50)
 }
 
 def pause() {
@@ -238,4 +279,80 @@ def refresh() {
 		zwave.switchMultilevelV1.switchMultilevelGet().format(),
 		zwave.batteryV1.batteryGet().format()
 	], 1500)
+}
+
+def configureParams() {
+	def cmds = []
+
+	if (isV3Device()) {
+		/*
+		Parameter No.		Size			Parameter Name				Desc.
+		1					1			NVM_TightLevel				Auto Calibration tightness
+		2					1			NVM_Direction				Reverse the direction of iblinds
+		3					1			NVM_Target_Report			Not used ****
+		4					1			NVM_Target_Value				Default on position
+		5					1			NVM_Device_Reset_Support		Turns off the reset button
+		6					1			Speed_Parameter				Speed
+		*/
+
+		log.debug "Configuration Started"
+
+		// If paramater value has changed then add zwave configration command to cmds
+
+		if (NVM_TightLevel != null && state.param1 != NVM_TightLevel) {
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [NVM_TightLevel.toInteger()]).format()
+		}
+		if (NVM_Direction != null && state.param2 != NVM_Direction) {
+			def NVM_Direction_Val = boolToInteger(NVM_Direction)
+
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [NVM_Direction_Val.toInteger()]).format()
+		}
+		if (state.param3 != 0) {
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [0]).format()
+		}
+		if (NVM_Target_Value != null && state.param4 != NVM_Target_Value) {
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [NVM_Target_Value.toInteger()]).format()
+		}
+		if (NVM_Device_Reset_Support != null && state.param5 != NVM_Device_Reset_Support) {
+			def NVM_Device_Reset_Val = boolToInteger(NVM_Device_Reset_Support)
+
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [NVM_Device_Reset_Val.toInteger()]).format()
+		}
+		if (Speed_Parameter != null && state.param6 != Speed_Parameter) {
+			cmds << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1, configurationValue: [Speed_Parameter.toInteger()]).format()
+		}
+
+		log.debug "Configuration Complete"
+	}
+
+	delayBetween(cmds, 500)
+}
+
+private storeParamState() {
+	if (isV3Device()) {
+		log.debug "Storing Paramater Values"
+
+		state.param1 = NVM_TightLevel
+		state.param2 = NVM_Direction
+		state.param3 = 0  // Not used at the moment
+		state.param4 = NVM_Target_Value
+		state.param5 = NVM_Device_Reset_Support
+		state.param6 = Speed_Parameter
+	}
+}
+
+def boolToInteger(boolValue) {
+	boolValue ? 1 : 0
+}
+
+def getBattery() {
+	log.debug  "get battery level"
+	// Use sendHubCommand to get battery level
+	def cmd = []
+	cmd << new physicalgraph.device.HubAction(zwave.batteryV1.batteryGet().format())
+	sendHubCommand(cmd)
+}
+
+def isV3Device() {
+	zwaveInfo.mfr == "0287" && zwaveInfo.prod == "0004" && zwaveInfo.model == "0071"
 }

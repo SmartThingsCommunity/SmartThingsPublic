@@ -47,7 +47,7 @@ metadata {
 	preferences {
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
@@ -80,6 +80,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()
 	cmds << zwave.meterV3.meterGet(scale: 0)
