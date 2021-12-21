@@ -147,7 +147,7 @@ metadata {
 		// reply messages
 		reply "zcl on-off on": "on/off: 1"
 		reply "zcl on-off off": "on/off: 0"
-    }
+	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
