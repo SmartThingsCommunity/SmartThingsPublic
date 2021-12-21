@@ -29,12 +29,13 @@ metadata {
         capability "Sensor"
         capability "Contact Sensor"
         capability "afterguide46998.peopleCounter"
+        capability "afterguide46998.inOutDirection"
         
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
         fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
-        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "15962fd0-22b8-352e-9641-de640d672bb6", ocfDeviceType: "x.com.st.d.sensor.motion"
+        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "23d6139c-b108-3467-9ddb-6a177d6cc1df", ocfDeviceType: "x.com.st.d.sensor.motion"
     }
     preferences {
         section {
@@ -198,13 +199,26 @@ private Map getContactResult(value) {
 }
 
 private Map getAnalogInputResult(value) {
-    Float f = Float.intBitsToFloat(value.intValue())
-    int pc = f.round(0)
-    String descriptionText = "${device.displayName} : $pc" 
+    Float fpc = Float.intBitsToFloat(value.intValue())
+    def prevInOut = device.currentState('inOutDir')?.value
+    int pc = ((int)(fpc*10))/10 //people counter
+    int inout = ((int)(fpc*10).round(0))%10; // inout direction : .1 = in, .2 = out, .0 = ready
+    if(inout>2) inout = 2
+    String inoutString = ( (inout==1) ? "in" : (inout==2) ? "out":"ready")
+    String descriptionText1 = "${device.displayName} : $pc"
+    String descriptionText2 = "${device.displayName} : $inoutString"
+    log.debug "[$fpc] = people: $pc, dir: $inout, $inoutString"
+    
+    if((inout != "ready") && (prevInOut == inoutString)) {
+        sendEvent(name: "inOutDir", value: "ready", displayed: true)
+    }
+
+    sendEvent(name: "peopleCounter", value: pc, displayed: true, descriptionText: descriptionText1 )
+ 
     return [
-        name           : 'peopleCounter',
-        value          : pc,
-        descriptionText: descriptionText,
+        name           : 'inOutDir',
+        value          : inoutString,
+        descriptionText: descriptionText2,
         translatable   : true
     ]
 }
