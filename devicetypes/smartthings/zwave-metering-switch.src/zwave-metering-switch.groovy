@@ -53,6 +53,7 @@ metadata {
 		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
 		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
 		fingerprint mfr: "0312", prod: "FF00", model: "FF0E", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP21ZP
+		fingerprint mfr: "0312", prod: "FF00", model: "FF0F", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP22ZP
 	}
 
 	// simulator metadata
