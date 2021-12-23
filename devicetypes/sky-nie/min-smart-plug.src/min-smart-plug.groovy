@@ -1,7 +1,7 @@
 /**
- *      Min Smart Plug v2.2.0
+ *      Min Smart Plug v3.0.0
  *
- *  	Models: MINOSTON (MP21Z) And Eva Logik (ZW30) / MINOSTON (MS10Z)
+ *  	Models: MINOSTON (MP21Z) And New One  Mini Smart Plug (N4001)
  *
  *  Author:
  *   winnie (sky-nie)
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    3.0.0 (09/07/2021)
+ *      - Remove the support for the products of MS10ZS MS12ZS ZW30 ZW30S and ZW30TS,
+ *      they will be independent in another DTH file
  *
  *    2.2.0 (09/22/2021)
  *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
@@ -79,31 +83,16 @@ metadata {
         fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" // old MP21Z
         fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug
         fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet",  ocfDeviceType: "oic.d.smartplug" // N4001 New One  Mini Smart Plug
-        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS10ZS Minoston Smart Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS12ZS Minoston Smart on/off Toggle Switch
-        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30
-        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30S Evalogik Smart on/off Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30TS Evalogik Smart on/off Toggle Switch
     }
 
     preferences {
-        getConfigParamInput(ledModeParam)
-        getConfigParamInput(autoOffIntervalParam)
-        getConfigParamInput(autoOnIntervalParam)
-        getConfigParamInput(powerFailureRecoveryParam)
-        input "disclaimer", "paragraph",
-                title: "WARNING",
-                description: "Configuring for 'Paddle Control'is only valid for the devices with product number of MS10ZS, MS12ZS, ZW30, ZW30S, ZW30TS(one of them)",
-                required: false
-        getConfigParamInput(paddleControlParam)
-    }
-}
-
-private getConfigParamInput(param) {
-    if (param.range) {
-        input "configParam${param.num}", "number", title: "${param.name}:", required: false, defaultValue: "${param.value}", range: param.range
-    } else {
-        input "configParam${param.num}", "enum", title: "${param.name}:", required: false, defaultValue: "${param.value}", options: param.options
+        configParams.each {
+            if (it.range) {
+                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+            } else {
+                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
+            }
+        }
     }
 }
 
@@ -319,42 +308,24 @@ private getConfigParams() {
         ledModeParam,
         autoOffIntervalParam,
         autoOnIntervalParam,
-        powerFailureRecoveryParam,
-        paddleControlParam
+        powerFailureRecoveryParam
     ]
-}
-
-private static getPaddleControlOptions() {
-    return [
-        "0":"Normal",
-        "1":"Reverse",
-        "2":"Toggle"
-    ]
-}
-
-private getPaddleControlParam() {
-    def num = isButtonAvailable()? 1 : 1000
-    return getParam(num, "Paddle Control", 1, 0, paddleControlOptions)
 }
 
 private getLedModeParam() {
-    def num = isButtonAvailable()? 2 : 1
-    return getParam(num, "LED Indicator Mode", 1, 0,  alternativeLedOptions)
+    return getParam(1, "LED Indicator Mode", 1, 0, alternativeLedOptions)
 }
 
 private getAutoOffIntervalParam() {
-    def num = isButtonAvailable()? 4 : 2
-    return getParam(num, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getAutoOnIntervalParam() {
-    def num = isButtonAvailable()? 6 : 4
-    return getParam(num, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getPowerFailureRecoveryParam() {
-    def num = isButtonAvailable()? 8 : 6
-    return getParam(num, "Power Failure Recovery", 1, 0, powerFailureRecoveryOptions)
+    return getParam(6, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
 }
 
 private getParam(num, name, size, defaultVal, options = null, range = null) {
@@ -380,20 +351,11 @@ private static setDefaultOption(options, defaultVal) {
 }
 
 private getAlternativeLedOptions() {
-    if (isButtonAvailable()) {
-        return [
-                "0":"On When On",
-                "1":"Off When On",
-                "2":"Always Off"
-        ]
-    } else {
-        return [
-                "0":"Off When On",
-                "1":"On When On",
-                "2":"Always Off",
-                "3":"Always On"
-        ]
-    }
+    return [
+            "0":"On When On",
+            "1":"Off When On",
+            "2":"Always Off"
+    ]
 }
 
 private static getPowerFailureRecoveryOptions() {
@@ -418,14 +380,4 @@ private logDebug(msg) {
 
 private logTrace(msg) {
     log.trace "$msg"
-}
-
-private isButtonAvailable() {
-    if (device == null) {
-        log.error "isButtonAvailable device = null"
-        return true
-    } else {
-        log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
-        return "${device.rawDescription}".contains("model:EE01") || "${device.rawDescription}".contains("model:EE03") || "${device.rawDescription}".contains("model:A005") || "${device.rawDescription}".contains("model:BB01") || "${device.rawDescription}".contains("model:BB03")
-    }
 }
