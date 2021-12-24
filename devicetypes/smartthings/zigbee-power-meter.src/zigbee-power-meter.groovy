@@ -21,6 +21,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
         capability "Configuration"
+		capability "Power Consumption Report"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Energy Monitor" //Smart Sub-meter(CT Type)
         fingerprint profileId: "0104", deviceId:"0007", inClusters: "0000,0003,0702", outClusters: "000A", manufacturer: "Develco", model: "ZHEMI101", deviceJoinName: "frient Energy Monitor" // frient External Meter Interface (develco) 02 0104 0007 00 03 0000 0003 0702 01 000A
@@ -104,6 +105,36 @@ def parse(String description) {
                         map.name = "energy"
                         map.value = zigbee.convertHexToInt(it.value)/(energyDivisor * 1000)
                         map.unit = "kWh"
+
+						if (isEZEX()) {
+							def currentEnergy = zigbee.convertHexToInt(it.value) / 1000
+							def prevPowerConsumption = device.currentState("powerConsumption")?.value
+							Map previousMap = prevPowerConsumption ? new groovy.json.JsonSlurper().parseText(prevPowerConsumption) : [:]
+							def deltaEnergy = calculateDelta(currentEnergy, previousMap)
+							def currentTimestamp = Calendar.getInstance().timeInMillis
+							def prevTimestamp = device.currentState("powerConsumption")?.date?.time
+							if (prevTimestamp == null) prevTimestamp = 0L
+							def timeDiff = currentTimestamp - prevTimestamp
+							log.debug "currentTimestamp= $currentTimestamp, prevTimestamp= $prevTimestamp, timeDiff= $timeDiff"
+							log.debug "deltaEnergy= $deltaEnergy"
+							if (deltaEnergy < 0) {
+								Map reportMap = [:]
+								reportMap["energy"] = currentEnergy
+								reportMap["deltaEnergy"] = 0
+								sendEvent("name": "powerConsumption", "value": reportMap.encodeAsJSON(), displayed: false)
+							} else {
+								if (timeDiff >= 15 * 60 * 1000) {
+									Map reportMap = [:]
+									reportMap["energy"] = currentEnergy
+									if (timeDiff < 24 * 60 * 60 * 1000) {
+										reportMap["deltaEnergy"] = deltaEnergy
+									} else {
+										reportMap["deltaEnergy"] = 0
+									}
+									sendEvent("name": "powerConsumption", "value": reportMap.encodeAsJSON(), displayed: false)
+								}
+							}
+						}
                     }
                 }
                 
@@ -156,4 +187,18 @@ private Boolean isFrientSensor() {
 
 private Boolean isPMM300Z1() {
     device.getDataValue("model") == "PMM-300Z1"
+}
+
+private Boolean isEZEX() {
+	device.getDataValue("model") == "E240-KR080Z0-HA"
+}
+
+BigDecimal calculateDelta(BigDecimal currentEnergy, Map previousMap) {
+	if (previousMap?.'energy' == null) {
+		log.debug "prevEnergy is null"
+		return 0
+	}
+	BigDecimal lastAccumulated = BigDecimal.valueOf(previousMap['energy'])
+	log.debug "currentEnergy= $currentEnergy, prevEnergy= $lastAccumulated"
+	return currentEnergy.subtract(lastAccumulated)
 }
