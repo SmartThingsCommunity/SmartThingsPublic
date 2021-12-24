@@ -134,7 +134,7 @@ def parse(String description) {
                                     sendEvent("name": "powerConsumption", "value": reportMap.encodeAsJSON(), displayed: false)
                                 }
                             }
-						}
+                        }
                     }
                 }
                 
