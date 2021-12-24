@@ -107,7 +107,7 @@ def parse(String description) {
                         map.unit = "kWh"
                         
                         if (isEZEX()) {
-                        	def currentEnergy = zigbee.convertHexToInt(it.value) / 1000
+                            def currentEnergy = zigbee.convertHexToInt(it.value) / 1000
                             def prevPowerConsumption = device.currentState("powerConsumption")?.value
                             Map previousMap = prevPowerConsumption ? new groovy.json.JsonSlurper().parseText(prevPowerConsumption) : [:]
                             def deltaEnergy = calculateDelta(currentEnergy, previousMap)
