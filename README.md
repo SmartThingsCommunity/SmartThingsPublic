@@ -1,15 +1,15 @@
-# SmartThings Public GitHub Repo
+Hi,
 
-An official list of SmartApps and Device Types from SmartThings.
+Sorry but this is the only way I could attempt to contact you (GitHub removed messaging, can't find you anywhere else).
 
-Here are some links to help you get started coding right away:
+What happened to your Tile API repo? The one that you referenced here:
 
-* [GitHub-specific Documentation](http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html)
-* [Full Documentation](http://docs.smartthings.com)
-* [IDE & Simulator](http://ide.smartthings.com)
-* [Community Forums](http://community.smartthings.com)
+https://github.com/bachya/pytile/issues/49
 
-Follow us on the web:
+But you seem to have removed it? Why is that? Do you still have it? Would you be willing to share it? Or at least give me a description of the API?
 
-* Twitter: http://twitter.com/smartthingsdev
-* Facebook: http://facebook.com/smartthingsdevelopers
+To reply you can contact me via:
+
+Discord: levihb
+reddit: [lost4468](https://www.reddit.com/user/Lost4468/)
+Email: ehily@levihb.com
