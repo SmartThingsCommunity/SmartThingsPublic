@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  29-Dec-2021 >>> v0.2.20.20211229 - Merge from @x10send: Added Off Grid and Refresh Token Support
  *	24-Oct-2021 >>> v0.2.10.20211024 - Added argument for setBackupReservePercent
  *	25-May-2020 >>> v0.2.0e.20200525 - Updated reserve +/- adjust for Hubitat
  *	02-Jul-2020 >>> v0.1.5e.20200702 - Added attribute Tile 
@@ -59,6 +60,9 @@ metadata {
         command "setTbcCostSaving"
         command "enableStormwatch"
         command "disableStormwatch"
+        command "goOffGrid"
+        command "goOnGrid"
+        command "refreshAuth"
     }
 
     preferences {}
@@ -183,6 +187,18 @@ def setTbcBalanced() {
 
 def setTbcCostSaving() {
     parent.setTbcCostSaving(this)
+}
+
+def goOffGrid(){
+     parent.goOffGrid(this)   
+}
+
+def goOnGrid(){
+     parent.goOnGrid(this)   
+}
+
+def refreshAuth(){
+     parent.refreshAccessToken()   
 }
 
 def enableStormwatch() {
