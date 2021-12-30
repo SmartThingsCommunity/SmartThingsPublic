@@ -117,7 +117,7 @@ def refresh() {
 		cmds += zigbee.readAttribute(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS)
 	}
 
-	if(isSiHASLock()) cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE)
+	if (isSiHASLock()) cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE)
 
 	return cmds
 }
@@ -142,7 +142,7 @@ def initialize() {
 		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null) 
 		cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,DataType.UINT8, 600, 21600, 0x01)
 		cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
-		if(isSiHASLock()) cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE,DataType.ENUM8, 0, 3600, null) 
+		if (isSiHASLock()) cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE,DataType.ENUM8, 0, 3600, null) 
 		cmds += refresh()
 	}
 
