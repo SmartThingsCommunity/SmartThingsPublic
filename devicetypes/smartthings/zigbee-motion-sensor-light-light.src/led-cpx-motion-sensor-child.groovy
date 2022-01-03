@@ -26,29 +26,28 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-	}					
-				
-	tiles(scale: 2) {					
-		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {				
-			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {			
-				attributeState "active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC"		
-				attributeState "inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#cccccc"		
-			}			
-		}				
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {				
-			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"			
-		}				
-		main(["motion"])				
+	}
+	
+	tiles(scale: 2) {
+		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState "active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC"
+				attributeState "inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#cccccc"
+			}
+		}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
+		}
+		main(["motion"])
 		details(["motion", "refresh"])
 	}
 }
 
 def configure() {
-	log.debug "Configuring Reporting"						
-    return zigbee.configureReporting(0x406, 0x0000, 0x18, 30, 600, null)
+	return zigbee.configureReporting(0x406, 0x0000, 0x18, 30, 600, null)
 }
 
 // Parse incoming device messages to generate events
-def parse(String description) {							
-	log.debug "child description: $description"						
+def parse(String description) {
+	log.debug "child description: $description"
 }
