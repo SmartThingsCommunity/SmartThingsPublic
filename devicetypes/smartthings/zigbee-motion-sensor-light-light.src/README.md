@@ -20,7 +20,7 @@ Works with:
 * **Refresh** - _refresh()_ command for status updates
 * **Switch** - can detect state (possible values: on/off)
 * **Switch Level** - represents current light level, usually 0-100 in percent
-* **Light** - represents current fan speed, 0 - 4(Off, Low, Mid, High, Max)
+* **Motion Sensor** - can detect motion
 
 ## Device Health
 
