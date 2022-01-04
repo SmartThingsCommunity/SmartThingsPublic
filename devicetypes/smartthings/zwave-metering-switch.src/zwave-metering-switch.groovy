@@ -55,6 +55,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF0E", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP21ZP
 		fingerprint mfr: "0312", prod: "FF00", model: "FF0F", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP22ZP
 		fingerprint mfr: "0312", prod: "FF00", model: "FF11", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Power Meter Plug, ZW38M
+		fingerprint mfr: "0312", prod: "AC01", model: "4003", deviceJoinName: "New One Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Power Meter Plug, N4003
 	}
 
 	// simulator metadata
