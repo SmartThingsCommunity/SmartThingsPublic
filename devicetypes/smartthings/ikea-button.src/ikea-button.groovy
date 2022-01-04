@@ -33,7 +33,7 @@ metadata {
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_Situo4_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
 		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
-		fingerprint inClusters: "0000, 0001, 0003", outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Button" //eWeLink Button
+		fingerprint inClusters: "0000, 0001, 0003", outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Button" //eWeLink Button WB01
 		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57", outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Button" //eWeLink Button
 	}
 
