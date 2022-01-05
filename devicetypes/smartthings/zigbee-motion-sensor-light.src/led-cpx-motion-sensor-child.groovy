@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 SmartThings
+ *  Copyright 2022 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,7 +13,7 @@
  *  ITM CPX Motion sensor child
  *
  *  Author: SAMSUMG LED
- *  Date: 2021-12-08
+ *  Date: 2022-01-05
  */		
  						
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus						
@@ -22,9 +22,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition (name: "ITM CPX Motion sensor child", namespace: "SAMSUNG LED", author: "SAMSUNG LED", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
-		capability "Configuration"
 		capability "Refresh"
-		capability "Health Check"
 		capability "Sensor"
 	}
 	
@@ -41,10 +39,6 @@ metadata {
 		main(["motion"])
 		details(["motion", "refresh"])
 	}
-}
-
-def configure() {
-	return zigbee.configureReporting(0x406, 0x0000, 0x18, 30, 600, null)
 }
 
 // Parse incoming device messages to generate events
