@@ -70,8 +70,7 @@ def parse(String description) {
 	def event = zigbee.getEvent(description)
 	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	if (event) {
-		if (event.name == "level" && event.value == 0) {
-		} else {
+		if (!(event.name == "level" && event.value == 0)) {
 			if (event.name == "colorTemperature") {
 				setGenericName(event.value)
 			}
