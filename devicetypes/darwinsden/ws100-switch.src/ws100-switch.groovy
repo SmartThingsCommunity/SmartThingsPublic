@@ -20,8 +20,10 @@
  *	Author: Darwin@DarwinsDen.com
  *	Date: 2016-04-08
  *
+ *
  *	Changelog:
  *
+ *  1.05 (03/29/2021) - Update to support new button values (Tim Grimley)
  *  1.04 (08/13/2020) - Merge pull request from mikerossman for updates to better support new SmartThings app
  *  1.03 (11/14/2017) - Turn off firmware event log, correct physical button setting for some presses, remove 100ms delay in instant status
  *  1.02 (06/25/2017) - Pulled in @stephack's changes to include button 7/8 events when triggered remotely
@@ -32,22 +34,25 @@
  *	0.10 (04/08/2016) -	Initial 0.1 Beta
  *
  *
- *  Button Mappings:
+ *   Button Mappings  NOTE - THIS IS A BREAKING CHANGE from any other DTH and uses a single button.  
+ *                    ALL prior automations will need to be re-programmed or updated when updating this DTH from other versions:
  *
- *   ACTION          BUTTON#    BUTTON ACTION
- *   Double-Tap Up     1        pressed
- *   Double-Tap Down   2        pressed
- *   Triple-Tap Up     3        pressed
- *   Triple-Tap Down   4        pressed
- *   Hold Up           5 	    pressed
- *   Hold Down         6 	    pressed
- *   Single-Tap Up     7        pressed
- *   Single-Tap Down   8        pressed
- *
+ *   ACTION             BUTTON#    BUTTON ACTION
+ *   Single-Tap Up        1        up
+ *   Single-Tap Down      1        down  
+ *   Double-Tap Up        1        up_2x
+ *   Double-Tap Down      1        down_2x  
+ *   Triple-Tap Up        1        up_3x
+ *   Triple-Tap Down      1        down_3x
+ *   Hold Up              1        up_hold
+ *   Hold Down            1        down_hold
  */
- 
+
+import groovy.transform.Field
+import groovy.json.JsonOutput
+
 metadata {
-	definition (name: "WS100+ Switch", namespace: "darwinsden", author: "darwin@darwinsden.com") {
+	definition (name: "WS100 Switch", namespace: "darwinsden", author: "darwin@darwinsden.com") {
 		capability "Actuator"
 		capability "Indicator"
 		capability "Switch"
@@ -56,6 +61,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
         capability "Configuration"
+        capability "Health Check"
         
         command "tapUp2"
         command "tapDown2"
@@ -77,6 +83,9 @@ metadata {
 		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
+preferences {      
+       input "forceupdate", "bool", title: "Force Settings Update/Refresh?", description: "Toggle to force settings update", requied: false
+    }
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -241,10 +250,6 @@ def setFirmwareVersion() {
    sendEvent(name: "firmwareVersion",  value: versionInfo, isStateChange: true, displayed: false)
 }
 
-def refresh() {
-    configure()
-}
-
 def indicatorWhenOn() {
 	sendEvent(name: "indicatorStatus", value: "when on", display: false)
 	zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
@@ -342,50 +347,50 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def tapUp1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Up")
-	[name: "button", value: "pushed", data: [buttonNumber: "7"], descriptionText: "$device.displayName Tap-Up-1 (button 7) pressed", 
+    sendEvent(name: "status" , value: "Tap ▲")
+	[name: "button", value: "up", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-1 pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown1Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Down")
-	[name: "button", value: "pushed", data: [buttonNumber: "8"], descriptionText: "$device.displayName Tap-Down-1 (button 8) pressed", 
+    sendEvent(name: "status" , value: "Tap ▼")
+	[name: "button", value: "down", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Down-1 pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Up x2")
-	[name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 (button 1) pressed", 
+    sendEvent(name: "status" , value: "Tap ▲▲")
+	[name: "button", value: "up_2x", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-2 pressed", 
        isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown2Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Down x2")
-	[name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "$device.displayName Tap-Down-2 (button 2) pressed", 
+    sendEvent(name: "status" , value: "Tap ▼▼")
+	[name: "button", value: "down_2x", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Down-2 pressed", 
       isStateChange: true, type: "$buttonType"]
 }
 
 def tapUp3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Up x3")
-	[name: "button", value: "pushed", data: [buttonNumber: "3"], descriptionText: "$device.displayName Tap-Up-3 (button 3) pressed", 
+    sendEvent(name: "status" , value: "Tap ▲▲▲")
+	[name: "button", value: "up_3x", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Up-3 pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def tapDown3Response(String buttonType) {
-    sendEvent(name: "status" , value: "Tap Down x3")
-	[name: "button", value: "pushed", data: [buttonNumber: "4"], descriptionText: "$device.displayName Tap-Down-3 (button 4) pressed", 
+    sendEvent(name: "status" , value: "Tap ▼▼▼")
+	[name: "button", value: "down_3x", data: [buttonNumber: "1"], descriptionText: "$device.displayName Tap-Down-3 pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdUpResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold Up")
-	[name: "button", value: "pushed", data: [buttonNumber: "5"], descriptionText: "$device.displayName Hold-Up (button 5) pressed", 
+    sendEvent(name: "status" , value: "Hold ▲")
+	[name: "button", value: "up_hold", data: [buttonNumber: "1"], descriptionText: "$device.displayName Hold-Up pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
 def holdDownResponse(String buttonType) {
-    sendEvent(name: "status" , value: "Hold Down")
-	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
+    sendEvent(name: "status" , value: "Hold ▼")
+	[name: "button", value: "down_hold", data: [buttonNumber: "1"], descriptionText: "$device.displayName Hold-Down pressed", 
     isStateChange: true, type: "$buttonType"]
 }
 
@@ -413,19 +418,28 @@ def holdDown() {
 	sendEvent(holdDownResponse("digital"))
 } 
 
-private getSupportedButtonValues() {
-	def values = ["pushed", "held"]
-	log.debug ("getSupportedButtonValues() called")
-	return values
-}
-
-
 def configure() {
-    sendEvent(name: "numberOfButtons", value: 8, displayed: false)
-    sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
+   sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+   sendEvent(name: "supportedButtonValues", value:JsonOutput.toJson(["up","down","up_hold","down_hold","up_2x","down_2x","up_3x","down_3x"]), displayed:false)
+  
     def commands = []
     commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     commands << zwave.versionV1.versionGet().format()
     commands << zwave.switchBinaryV1.switchBinaryGet().format()
     delayBetween(commands,500)
+    
+    log.debug "---Configure Called--- ${device.displayName} sent ${commands}"
+}
+
+
+def refresh() {
+    configure()
+}
+
+def updated() {
+	configure()
+}
+
+def initialize() {
+	configure()
 }
