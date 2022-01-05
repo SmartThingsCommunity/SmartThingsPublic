@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 SmartThings
+ *  Copyright 2022 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,24 +13,18 @@
  *  LED CPX light
  *
  *  Author: SAMSUMG LED
- *  Date: 2021-12-08
+ *  Date: 2022-01-05
  */
 
 import physicalgraph.zigbee.zcl.DataType
 import groovy.json.JsonOutput
 
 metadata {
-	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
+	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED") {
 		capability "Actuator"
 		capability "Color Temperature"
 		capability "Configuration"
 		capability "Health Check"
-		capability "Refresh"
-		capability "Switch"
-		capability "Switch Level"
-		capability "Light"
-		
-		attribute "colorName", "string"
 		
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHTSENSOR-Z-001", deviceJoinName: "ABL CPX Light"
@@ -67,6 +61,10 @@ metadata {
 	}
 }
 
+private getMOTION_CLUSTER_VALUE() { 0x0406 }
+private getMOTION_STATUS_VALUE() { 0x0000 }
+private getON_OFF_CLUSTER_VALUE() { 0x0006 }
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	def event = zigbee.getEvent(description)
@@ -79,7 +77,8 @@ def parse(String description) {
 			}
 			sendEvent(event)
 		}
-	} else if (zigbeeMap.cluster == "0406" && zigbeeMap.attrId == "0000") {
+	} else if (zigbeeMap.cluster == MOTION_CLUSTER_VALUE 
+		   && zigbeeMap.attrId == MOTION_STATUS_VALUE) {
 		def childDevice = getChildDevices()?.find {
 			it.device.deviceNetworkId == "${device.deviceNetworkId}:1"
 		}
@@ -88,7 +87,8 @@ def parse(String description) {
 		childDevice.sendEvent(zigbeeMap)
 	} else {
 		def cluster = zigbee.parse(description)
-		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE
+		    && cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
@@ -109,7 +109,7 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.configureReporting(0x406, 0x0000, 0x18, 30, 600, null) +
+	zigbee.configureReporting(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE, 0x18, 30, 600, null) +
 		zigbee.onOffRefresh() +
 		zigbee.levelRefresh() +
 		zigbee.colorTemperatureRefresh() +
@@ -120,7 +120,7 @@ def refresh() {
 def configure() {
 	def cmds = delayBetween([
 		sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]),
-		zigbee.configureReporting(0x406, 0x0000, 0x18, 30, 600, null),
+		zigbee.configureReporting(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE, 0x18, 30, 600, null),
 		zigbee.onOffRefresh(),
 		zigbee.levelRefresh(),
 		zigbee.colorTemperatureRefresh(),
@@ -164,7 +164,7 @@ def installed() {
 	return
 }
 
-def addChildSensor(){
+def addChildSensor() {
 	def componentLabel
 	if (device.displayName.endsWith(' Light') || device.displayName.endsWith(' light')) {
 		componentLabel = "${device.displayName[0..-6]} Motion sensor"
@@ -181,7 +181,7 @@ def addChildSensor(){
 		it.device.deviceNetworkId == "${device.deviceNetworkId}:1"
 	}
 	
-	if(childDevice != null) {
+	if (childDevice != null) {
 		childDevice.sendEvent(name: "motion", value: "inactive")
 	}
 }
