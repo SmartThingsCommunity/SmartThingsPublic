@@ -25,6 +25,9 @@ metadata {
 		capability "Color Temperature"
 		capability "Configuration"
 		capability "Health Check"
+		capability "Refresh"
+		capability "Switch"
+		capability "Switch Level"
 		
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHTSENSOR-Z-001", deviceJoinName: "ABL CPX Light"
@@ -71,13 +74,9 @@ def parse(String description) {
 	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	if (event) {
 		if (!(event.name == "level" && event.value == 0)) {
-			if (event.name == "colorTemperature") {
-				setGenericName(event.value)
-			}
 			sendEvent(event)
 		}
-	} else if (zigbeeMap.cluster == MOTION_CLUSTER_VALUE 
-		   && zigbeeMap.attrId == MOTION_STATUS_VALUE) {
+	} else if (zigbeeMap.cluster == MOTION_CLUSTER_VALUE && zigbeeMap.attrId == MOTION_STATUS_VALUE) {
 		def childDevice = getChildDevices()?.find {
 			it.device.deviceNetworkId == "${device.deviceNetworkId}:1"
 		}
@@ -86,8 +85,7 @@ def parse(String description) {
 		childDevice.sendEvent(zigbeeMap)
 	} else {
 		def cluster = zigbee.parse(description)
-		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE
-		    && cluster.command == 0x07) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE && cluster.command == 0x07) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
