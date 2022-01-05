@@ -109,8 +109,7 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.configureReporting(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE, 0x18, 30, 600, null) +
-		zigbee.onOffRefresh() +
+	zigbee.onOffRefresh() +
 		zigbee.levelRefresh() +
 		zigbee.colorTemperatureRefresh() +
 		zigbee.onOffConfig(0, 300) +
@@ -139,24 +138,6 @@ def setColorTemperature(value) {
 	cmds << zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000")
 	cmds << zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 	cmds
-}
-
-//Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
-def setGenericName(value) {
-	if (value != null) {
-		def genericName = "White"
-		if (value < 3300) {
-			genericName = "Soft White"
-		} else if (value < 4150) {
-			genericName = "Moonlight"
-		} else if (value <= 5000) {
-			genericName = "Cool White"
-		} else if (value >= 5000) {
-			genericName = "Daylight"
-		}
-		
-	sendEvent(name: "colorName", value: genericName)
-	}
 }
 
 def installed() {
