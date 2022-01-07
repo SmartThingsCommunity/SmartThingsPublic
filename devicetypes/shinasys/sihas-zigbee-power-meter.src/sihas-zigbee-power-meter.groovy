@@ -67,51 +67,51 @@ def parse(String description) {
 			attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value, isValidForDataType: it.isValidForDataType]
 		}
 		attrData.each {
-				def map = [:]
-				if (it.isValidForDataType && (it.value != null)) {
-					if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
-						log.debug "meter"
-                        map.name = "power"
-                        map.value = convertHexToInt24Bit(it.value)/powerDivisor
-						map.unit = "W"
-					} else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
-						log.debug "energy"
-						map.name = "energy"
-						map.value = zigbee.convertHexToInt(it.value)/energyDivisor
-						map.unit = "kWh"						
-					} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_FREQUENCY) {
-						log.debug "frequency"
-						map.name = "frequency"
-						map.value = zigbee.convertHexToInt(it.value)/frequencyDivisor
-						map.unit = "Hz"
-					} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_VOLTAGE) {
-						log.debug "voltage"
-						map.name = "voltage"
-						map.value = zigbee.convertHexToInt(it.value)/voltageDivisor
-						map.unit = "V"
-					} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_CURRENT) {
-						log.debug "current"
-						map.name = "current"
-						map.value = zigbee.convertHexToInt(it.value)/currentDivisor
-						map.unit = "A"
-					} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_POWERFACTOR) {
-						log.debug "power factor $it.value"
-						map.name = "powerFactor"
-						map.value = (byte) zigbee.convertHexToInt(it.value)/powerFactorDivisor
-						map.unit = "%"
-					} else if (it.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && it.attrInt == TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE) {
-						log.debug "temperature"
-						map.name = "temperature"
-						map.unit = getTemperatureScale()
-						map.value = zigbee.parseHATemperatureValue("temperature: " + (zigbee.convertHexToInt(it.value)), "temperature: ", tempScale)
-						log.debug "${device.displayName}: Reported temperature is ${map.value}°$map.unit"
-					}
+			def map = [:]
+			if (it.isValidForDataType && (it.value != null)) {
+				if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
+					log.debug "meter"
+					map.name = "power"
+					map.value = convertHexToInt24Bit(it.value)/powerDivisor
+					map.unit = "W"
+				} else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
+					log.debug "energy"
+					map.name = "energy"
+					map.value = zigbee.convertHexToInt(it.value)/energyDivisor
+					map.unit = "kWh"						
+				} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_FREQUENCY) {
+					log.debug "frequency"
+					map.name = "frequency"
+					map.value = zigbee.convertHexToInt(it.value)/frequencyDivisor
+					map.unit = "Hz"
+				} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_VOLTAGE) {
+					log.debug "voltage"
+					map.name = "voltage"
+					map.value = zigbee.convertHexToInt(it.value)/voltageDivisor
+					map.unit = "V"
+				} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_CURRENT) {
+					log.debug "current"
+					map.name = "current"
+					map.value = zigbee.convertHexToInt(it.value)/currentDivisor
+					map.unit = "A"
+				} else if (it.clusterInt == zigbee.ELECTRICAL_MEASUREMENT_CLUSTER && it.attrInt == ATTRIBUTE_POWERFACTOR) {
+					log.debug "power factor $it.value"
+					map.name = "powerFactor"
+					map.value = (byte) zigbee.convertHexToInt(it.value)/powerFactorDivisor
+					map.unit = "%"
+				} else if (it.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && it.attrInt == TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE) {
+					log.debug "temperature"
+					map.name = "temperature"
+					map.unit = getTemperatureScale()
+					map.value = zigbee.parseHATemperatureValue("temperature: " + (zigbee.convertHexToInt(it.value)), "temperature: ", tempScale)
+					log.debug "${device.displayName}: Reported temperature is ${map.value}°$map.unit"
 				}
+			}
 				
-				if (map) {
-						result << createEvent(map)
-				}
-				log.debug "Parse returned $map"
+			if (map) {
+				result << createEvent(map)
+			}
+			log.debug "Parse returned $map"
 		}
 		return result
 	}
