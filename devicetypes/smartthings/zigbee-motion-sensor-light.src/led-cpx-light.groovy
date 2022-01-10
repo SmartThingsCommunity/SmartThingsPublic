@@ -148,7 +148,8 @@ def addChildSensor() {
 		componentLabel = "${device.displayName[0..-6]} Motion sensor"
 	} else {
 		componentLabel = "$device.displayName Motion sensor"
-	} try {
+	} 
+	try {
 		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 	} catch (e) {
