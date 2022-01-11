@@ -43,7 +43,7 @@ def getTEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 
 def convertHexToInt24Bit(value) {
 	int result = zigbee.convertHexToInt(value)
-	if(result & 0x800000) {
+	if (result & 0x800000) {
 		result |= 0xFF000000
 	}	
 	return result
