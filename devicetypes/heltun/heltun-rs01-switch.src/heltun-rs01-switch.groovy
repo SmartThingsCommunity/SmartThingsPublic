@@ -128,7 +128,7 @@ def installed() {
 			addChildDevice("HE-RELAY", relayNetworkId, device.hubId,[completedSetup: true, label: getChildName(i), isComponent: false])
 		}
 		if (!childButtonExists ) {
-			def child = addChildDevice("HE-BUTTON", buttonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+10), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
+			def child = addChildDevice("smartthings", "Child Button", buttonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+10), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
 		}
 	}
 	initialize()
