@@ -49,6 +49,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "c700000202", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YDF40
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0020,0101", outClusters: "000A,0019", manufacturer: "ASSA ABLOY iRevo", model: "0700000001", deviceJoinName: "Yale Door Lock" //Yale Fingerprint Lock YMF40
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0101", outClusters: "0000,0001,0003,0101", manufacturer: "Datek", model: "ID Lock 150", deviceJoinName: "ID Lock Door Lock" //ID Lock 150 Zigbee Module by Datek
+        fingerprint profileId: "0104", deviceId: "000A", manufacturer: "Danalock", model: "V3-BTZBE", deviceJoinName: "Danalock Zigbee 3.0"
 	}
 
 	tiles(scale: 2) {
@@ -423,7 +424,7 @@ def nameSlot(codeSlot, codeName) {
 		def newCodeName = codeName ?: "Code $codeSlot"
 		lockCodes[codeSlot] = newCodeName
 		sendEvent(lockCodesEvent(lockCodes))
-		sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
+		sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ lockName: deviceName, notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
 			descriptionText: "Renamed \"$oldCodeName\" to \"$newCodeName\"", displayed: true, isStateChange: true)
 	}
 }
@@ -477,11 +478,10 @@ private def parseAttributeResponse(String description) {
 	def deviceName = device.displayName
 	if (clusterInt == CLUSTER_POWER && attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
 		responseMap.name = "battery"
+		responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		// Handling Yale locks incorrect battery reporting issue
 		if (reportsBatteryIncorrectly()) {
 			responseMap.value = Integer.parseInt(descMap.value, 16)
-		} else {
-			responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		}
 		responseMap.descriptionText = "Battery is at ${responseMap.value}%"
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_LOCKSTATE) {
@@ -506,7 +506,7 @@ private def parseAttributeResponse(String description) {
 				with less info will be marked as not displayed
 			 */
 			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
-			runIn(1, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: responseMap]])
+			runIn(1, "delayLockEvent", [data : [map : responseMap]])
 			return [:]
 		}
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_MIN_PIN_LENGTH && descMap.value) {
@@ -523,6 +523,11 @@ private def parseAttributeResponse(String description) {
 		return null
 	}
 
+	if (responseMap.data) {
+		responseMap.data.lockName = deviceName
+	} else {
+		responseMap.data = [ lockName: deviceName ]
+	}
 	result << createEvent(responseMap)
 	log.info "ZigBee DTH - parseAttributeResponse() returning with result:- $result"
 	return result
@@ -580,7 +585,7 @@ private def parseCommandResponse(String description) {
 				return null
 			}
 			codeName = getCodeName(lockCodes, codeID)
-			responseMap.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
+			responseMap.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
@@ -853,6 +858,11 @@ private def parseCommandResponse(String description) {
 	}
 
 	if(responseMap["value"]) {
+		if (responseMap.data) {
+			responseMap.data.lockName = deviceName
+		} else {
+			responseMap.data = [ lockName: deviceName ]
+		}
 		result << createEvent(responseMap)
 	}
 	if (result) {
@@ -921,7 +931,8 @@ private def allCodesDeletedEvent() {
 
 		def codeName = code
 		result << createEvent(name: "codeChanged", value: "$id deleted",
-		data: [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
+		data: [ codeName: codeName, lockName: deviceName, notify: true,
+			notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
 		descriptionText: "Deleted \"$codeName\"",
 		displayed: true, isStateChange: true)
 		clearStateForSlot(id)
@@ -1148,9 +1159,8 @@ def reportsBatteryIncorrectly() {
 			"YRD210 PB DB",
 			"YRD220/240 TSDB",
 			"YRL210 PB LL",
-			"c700000202" //YDF40
 	]
-	return device.getDataValue("model") in badModels
+	return (isYaleLock() && device.getDataValue("model") in badModels)
 }
 
 /**
