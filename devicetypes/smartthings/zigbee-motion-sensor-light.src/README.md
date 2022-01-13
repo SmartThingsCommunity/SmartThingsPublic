@@ -1,10 +1,11 @@
-# ZigBee Ceiling Fan Light
+# ZigBee CPX Smart Panel Light
 
 Cloud Execution
 
 Works with: 
 
-* ABL CPX
+* ABL Lithonia
+* Samsung LED
 
 ## Table of contents
 
