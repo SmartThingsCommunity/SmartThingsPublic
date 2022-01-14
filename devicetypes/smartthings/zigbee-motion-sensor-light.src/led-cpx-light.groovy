@@ -31,9 +31,9 @@ metadata {
 		capability "Switch Level"
 
 		// ABL Lithonia
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Lithonia", model: "ABL-LIGHTSENSOR-Z-001", deviceJoinName: "CPX Panel Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Lithonia", model: "ABL-LIGHTSENSOR-Z-001", deviceJoinName: "CPX Smart Panel Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001"
         
-		// Samsung LED
+        // Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-004", deviceJoinName: "ITM CPX Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-001"
 	}
 
@@ -64,30 +64,33 @@ metadata {
 	}
 }
 
+private getMOTION_CLUSTER_VALUE() { 0x0406 }
+private getMOTION_STATUS_VALUE() { 0x0000 }
+private getON_OFF_CLUSTER_VALUE() { 0x0006 }
+private getON_OFF_COMMAND_VALUE() { 0x07 }
+
 def parse(String description) {
 	def event = zigbee.getEvent(description)
-	
 	if (event) {
 		if (!(event.name == "level" && event.value == 0)) {
 			sendEvent(event)
 		}
 	} else {
 		def cluster = zigbee.parse(description)
-		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE && cluster.command == ON_OFF_COMMAND_VALUE) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
 		} else {
-			def zigbeeMap = zigbee.parseDescriptionAsMap(description)
-			
-			if (zigbeeMap.cluster ==  "0406" && zigbeeMap.attrId == "0000") {
-				def childDevice = getChildDevices()?.find {
-					it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
-				}
-				zigbeeMap.value = zigbeeMap.value.endsWith("01") ? "active" : "inactive"
-				zigbeeMap.name = "motion"
-				childDevice.sendEvent(zigbeeMap)
-			}
+        	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
+            if (zigbeeMap.clusterInt ==  MOTION_CLUSTER_VALUE && zigbeeMap.attrInt == MOTION_STATUS_VALUE) {
+                def childDevice = getChildDevices()?.find {
+                    it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
+                }
+                zigbeeMap.value = zigbeeMap.value.endsWith("01") ? "active" : "inactive"			
+                zigbeeMap.name = "motion"
+                childDevice.sendEvent(zigbeeMap)
+            }
 		}
 	}
 }
@@ -105,40 +108,39 @@ def setLevel(value, rate=null) {
 }
 
 def configure() {
-	zigbee.configureReporting(0x0406, 0x0000, 0x18, 30, 600, null) +
-		zigbee.onOffConfig() +
-		zigbee.levelConfig() +
-		refresh()
+    zigbee.configureReporting(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE, 0x18, 30, 600, null) +
+    zigbee.onOffConfig() +
+	zigbee.levelConfig() +
+	refresh()
 }
 
 def updated() {
 	refresh()
 }
-
 def ping() {
 	return zigbee.levelRefresh()
 }
 
 def refresh() {
-	zigbee.readAttribute(0x0406, 0x0000) +
-		zigbee.onOffRefresh() +
-		zigbee.levelRefresh() +
-		zigbee.colorTemperatureRefresh()
+	zigbee.readAttribute(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE) +
+    zigbee.onOffRefresh() +
+    zigbee.levelRefresh() +
+    zigbee.colorTemperatureRefresh()
 }
 
 def setColorTemperature(value) {
 	value = value as Integer
     
-	zigbee.setColorTemperature(value) +
-		zigbee.on() +
-		zigbee.colorTemperatureRefresh()
+	zigbee.setColorTemperature(value) + 
+    zigbee.on() +
+	zigbee.colorTemperatureRefresh()
 }
 
 def installed() {
-	addChildSensor()
+    addChildSensor()
 }
 
-def addChildSensor() {
+def addChildSensor(){
 	def componentLabel
     
 	if (device.displayName.endsWith(' Light') || device.displayName.endsWith(' light')) {
@@ -149,15 +151,16 @@ def addChildSensor() {
     
 	try {
 		String dni = "${device.deviceNetworkId}:1"
-		addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
+		addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id,
+			[completedSetup: true, label: "${componentLabel}", isComponent: false])
 	} catch (e) {
 	}
     
-	def childDevice = getChildDevices()?.find {
-		it.device.deviceNetworkId == "${device.deviceNetworkId}:1"
-	}
+    def childDevice = getChildDevices()?.find {
+        it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
+    }
     
-	if(childDevice != null) {
-		childDevice.sendEvent(name: "motion", value: "inactive")
+    if(childDevice != null) {
+    	childDevice.sendEvent(name: "motion", value: "inactive")
 	}
 }
