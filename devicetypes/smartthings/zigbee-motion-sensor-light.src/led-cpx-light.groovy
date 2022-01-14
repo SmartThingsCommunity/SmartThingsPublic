@@ -157,10 +157,7 @@ def addChildSensor() {
 		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
 	} catch (e) {
-	}
-	
-	def childDevice = getChildDevices()?.find {
-		it.device.deviceNetworkId == "${device.deviceNetworkId}:1"
+		log.warn "Failed to add ITM Fan Controller - $e"
 	}
 	
 	if(childDevice != null) {
