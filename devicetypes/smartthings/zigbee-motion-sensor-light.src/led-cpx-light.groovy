@@ -16,9 +16,6 @@
  *  Date: 2022-01-05
  */
 
-import physicalgraph.zigbee.zcl.DataType
-import groovy.json.JsonOutput
-
 metadata {
 	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
 		
@@ -64,10 +61,10 @@ metadata {
 	}
 }
 
-private getMOTION_CLUSTER_VALUE() { 0x0406 }
-private getMOTION_STATUS_VALUE() { 0x0000 }
+private getMOTION_CLUSTER() { 0x0406 }
+private getMOTION_STATUS_ATTRIBUTE() { 0x0000 }
 private getON_OFF_CLUSTER_VALUE() { 0x0006 }
-private getON_OFF_COMMAND_VALUE() { 0x07 }
+private getCONFIGURE_REPORTING_RESPONSE() { 0x07 }
 
 def parse(String description) {
 	def event = zigbee.getEvent(description)
@@ -79,16 +76,16 @@ def parse(String description) {
 	} else {
 		def cluster = zigbee.parse(description)
 		
-		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE && cluster.command == ON_OFF_COMMAND_VALUE) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER && cluster.command == CONFIGURE_REPORTING_RESPONSE) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
 		} else {
 			def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 			
-			if (zigbeeMap.clusterInt ==  MOTION_CLUSTER_VALUE && zigbeeMap.attrInt == MOTION_STATUS_VALUE) {
+			if (zigbeeMap.clusterInt ==  MOTION_CLUSTER && zigbeeMap.attrInt == MOTION_STATUS_ATTRIBUTE) {
 				def childDevice = getChildDevices()?.find {
-					it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
+					it.device.deviceNetworkId == addChildSensor() 
 				}
 				zigbeeMap.value = zigbeeMap.value.endsWith("01") ? "active" : "inactive"			
 				zigbeeMap.name = "motion"
@@ -111,14 +108,16 @@ def setLevel(value, rate=null) {
 }
 
 def configure() {
-	zigbee.configureReporting(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE, 0x18, 30, 600, null) +
+	zigbee.configureReporting(MOTION_CLUSTER, MOTION_STATUS_ATTRIBUTE, 0x18, 30, 600, null) +
 		zigbee.onOffConfig() +
 		zigbee.levelConfig() +
 		refresh()
 }
 
 def updated() {
-	refresh()
+	if (!childDevices) {
+		addChildSensor()
+	}
 }
 
 def ping() {
@@ -126,7 +125,7 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.readAttribute(MOTION_CLUSTER_VALUE, MOTION_STATUS_VALUE) +
+	zigbee.readAttribute(MOTION_CLUSTER, MOTION_STATUS_ATTRIBUTE) +
 		zigbee.onOffRefresh() +
 		zigbee.levelRefresh() +
 		zigbee.colorTemperatureRefresh()
@@ -153,6 +152,10 @@ def addChildSensor() {
 		componentLabel = "$device.displayName Motion sensor"
 	}
 	
+	if (childDevice != null) {
+		childDevice.sendEvent(name: "motion", value: "inactive")
+	}
+	
 	try {
 		String dni = "${device.deviceNetworkId}:1"
 		addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
@@ -160,7 +163,5 @@ def addChildSensor() {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
 	
-	if(childDevice != null) {
-		childDevice.sendEvent(name: "motion", value: "inactive")
-	}
+	return "${device.deviceNetworkId}:1"
 }
