@@ -1,7 +1,7 @@
 /**
  *  Tesla Powerwall Manager 
  * 
- *  Copyright 2019, 2020, 2021 DarwinsDen.com
+ *  Copyright 2019-2022 DarwinsDen.com
  *  
  *  ****** WARNING ****** USE AT YOUR OWN RISK!
  *  This software was developed in the hopes that it will be useful to others, however, 
@@ -18,10 +18,11 @@
  * 
  */
 String version() {
-    return "v0.3.30.20211229"
+    return "v0.3.40.20220118"
 }
 
 /* 
+ *	18-Jan-2022 >>> v0.3.40.20220118 - Add option to choose between multiple powerwall sites. Fix on-grid actions.
  *	29-Dec-2021 >>> v0.3.30.20211229 - Merge and update of changes from @x10send: Added support for going off grid via local gateway (Hubitat Only). 
  *                                     Added ability to specify refresh token in lieu of access token.
  *	24-Oct-2021 >>> v0.3.20.20211024 - UI updates. Added Token expiration notification. Fixes: False off-grid notifications, 
@@ -151,8 +152,8 @@ def pageSchedules() {
     state.editingScheduleIndex = -1
     dynamicPage(name: "pageSchedules", title: "Powerwall Schedules", install: false, uninstall: false) {
         section("") {
+            state.scheduleCount = 0
             if (state.scheduleList && state.scheduleList.size() > 0) {
-               state.scheduleCount = 0
                state.scheduleList.eachWithIndex {item, index ->
                    String actionsStr = getActionsString(schedVal(item,"Mode"), schedVal(item,"Reserve"),schedVal(item,"Stormwatch"), schedVal(item,"Strategy"), null, schedVal(item,"GridStatus"))
                    String whenStr = getWhenString(schedVal(item,"Time"), schedVal(item,"Days"),schedVal(item,"Months"))
@@ -353,14 +354,33 @@ def pageDeleteSchedule() {
      }
 }
 
+String validatedAppender(Boolean valid) {
+    String appender 
+    if (valid) {
+        if (hubIsSt()) {
+            appender = " (validated)"
+        } else {
+            appender = "<span style='color : blue'> (validated)</span>"
+        }
+    } else {
+        if (hubIsSt()) {
+            appender = " (not validated)"
+        } else {
+            appender = "<span style='color : red'> (not validated)</span>"
+        }
+    }
+}
+    
 private teslaAccountInfo() {
+    state.serverVerified = false
     refreshAccessToken()
+    getTeslaServerStatus()
     return dynamicPage(name: "teslaAccountInfo", title: "", install: false) {
         state.lastServerCheckTime = 0 // New data is being entered. Last server check is no longer valid
         if (hubIsSt() && accessTokenIp) {
             validateLocalUrl()
         } 
-        state.serverVerified = false
+        
         String pString
         if (hubIsSt()) {
               pString = "This app currently requires a Tesla token generated using another app, such as the Tesla Auth App for " +
@@ -371,19 +391,18 @@ private teslaAccountInfo() {
                    "Android, " +
                    "a web-based Tesla token generator, or from a <a href='https://github.com/enode-engineering/tesla-oauth2'>script</a> running on a local server. "
         }
-        //if (!hubIsSt()) {
-        //    pString = pString + "<br>Example token: qts-a5876db1cd65cd271c27c536d35c60afb0eb1f849d4739bef60f1dc6567e5662" 
-        //}
         section ("Tesla Token Information") {
             paragraph pString
-            input "inputRefreshToken", "text", title: "Refresh Token", autoCorrect: false, required: false, submitOnChange : true
-           
+            input "inputRefreshToken", "text", title: "Refresh Token" + validatedAppender(state.refreshTokenSuccess), autoCorrect: false, required: false, submitOnChange : true
+            if (state.siteSelector?.size() > 0 || settings.inputSite) {
+                input(name: "inputSite", title: "Powerwall Site", type: "enum", required:false, multiple:false, options:state.siteSelector,submitOnChange : true)
+            }
         }
         section(hideable: true, hidden: true, "OPTIONAL: You may alternatively supply an Access Token directly or serve one via a local server...") {
             
             paragraph ("If an Access Token is entered here, it must be updated periodically depending on the expiration date of the token provided (nominally every 45 days). " +
                        "If a valid Refresh Token is entered above, the Access Token will be periodically overridden.") 
-            input "inputAccessToken", "text", title: "Access Token", autoCorrect: false, required: false, submitOnChange : true
+            input "inputAccessToken", "text", title: "Access Token" + validatedAppender(validateInputToken()), autoCorrect: false, required: false, submitOnChange : true
        
             paragraph "You may configure a local server to generate and serve an Access Token. " + 
                 "If local server information is provided below, this app will query the local server as needed " +
@@ -398,7 +417,11 @@ private teslaAccountInfo() {
                }
                href "pageTokenFromUrl", title: "Enter local URL information..", description: tokenFromUrlStatus, required: false
            } else {
-               input "accessTokenUrl", "text", title: "URL on your local server to obtain access token (eg: http://192.168.1.100/tesla.html)", autoCorrect: false, required: false
+                String tokenFromUrlStatus = ""
+                if (accessTokenUrl) {
+                    tokenFromUrlStatus = " - " + state.accessTokenFromUrlStatus
+                }
+                input "accessTokenUrl", "text", title: "URL on your local server to obtain access token (eg: http://192.168.1.100/tesla.html) ${tokenFromUrlStatus}", submitOnChange : true, autoCorrect: false, required: false
            }
         }
     }                        
@@ -504,6 +527,7 @@ def refreshAccessToken(){
     if (inputRefreshToken && inputRefreshToken != ""){
         String currentRefreshToken = inputRefreshToken
         String ssoAccessToken = ""
+        state.refreshTokenSuccess = false
         Map payload = ["grant_type":teslaBearerTokenGrantType,"refresh_token":currentRefreshToken, "client_id":teslaBearerTokenClientId, "scope":teslaBearerTokenScope]
         try{
             logger ("Getting updated refresh token and bearer token for access token", "trace")
@@ -515,8 +539,8 @@ def refreshAccessToken(){
                     logger("Bearer access request data: ${resp.data}","trace")
                     app.updateSetting("inputRefreshToken",[type:"text",value:resp.data["refresh_token"]])
                     ssoAccessToken = resp.data["access_token"]
-                    state.lastInputRefreshToken = resp.data["refresh_token"]
-                    state.lastBearerSsoAccessToken = resp.data["access_token"]
+                    //state.lastInputRefreshToken = resp.data["refresh_token"]
+                    //state.lastBearerSsoAccessToken = resp.data["access_token"]
                     logger ("Successfully updated refresh token and bearer token for access token","debug")
                 } 
                 else {
@@ -525,7 +549,7 @@ def refreshAccessToken(){
             }
         }
         catch (Exception e){
-            logger ("Error getting Tesla server status: ${e}","warn")
+            logger ("Error getting Tesla server bearer token from refresh token: ${e}","warn")
         }
     
         logger ("Getting updated access token and expiry", "debug")
@@ -539,7 +563,8 @@ def refreshAccessToken(){
                 if (statusCode == 200){
                     logger("Access Token access request data: ${resp.data}","trace")
                     app.updateSetting("inputAccessToken",[type:"text",value:resp.data["access_token"]])
-                    state.lastBearerOwnerAccessToken = resp.data["access_token"]
+                    settings.inputAccessToken = resp.data["access_token"] //ST workaround for immediate setting within dynamic page
+                    //state.lastBearerOwnerAccessToken = resp.data["access_token"]
                     //state.lastBearerOwnerAccessTokenCreatedAt = resp.data["created_at"]
                     //state.lastBearerOwnerAccessTokenExpiresIn = resp.data["expires_in"]
                 
@@ -547,6 +572,7 @@ def refreshAccessToken(){
                     def refreshDate = new Date(state.tokenExpiration)
                     logger ("Token expires on ${refreshDate}.","debug")
                     state.scheduleRefreshToken = true  
+                    state.refreshTokenSuccess = true
                     getTokenDateString() //Reset acccess token date status
                 }
                 else {
@@ -555,7 +581,7 @@ def refreshAccessToken(){
             }
         }
         catch (Exception e){
-            logger ("Error getting Tesla server status: ${e}","warn")
+            logger ("Error getting Tesla server access token from bearer refresh token: ${e}","warn")
         }
     }
 }
@@ -563,10 +589,10 @@ def refreshAccessToken(){
 String getTeslaServerStatus() {
     state.lastServerCheckTime = now()
     //refreshAccessToken()
-    try {connectedToTeslaServer()
+    try {
+        //connectedToTeslaServer()
         String messageStr = ""
         String tokenStatusStr = ""
-        
         if (!hubIsSt()) {
             //Hubitat - local call is synchronous so can be done on this main page. For SmartThings
             //it is asynchronous, so needs to be done on the subpage and result will be available when on the main page
@@ -578,7 +604,6 @@ String getTeslaServerStatus() {
        
         Boolean tokenFromUrlEntered = (!hubIsSt() && accessTokenUrl) || (hubIsSt() && accessTokenIp)
         Boolean inputTokenEntered = inputAccessToken
- 
         if (!inputTokenEntered && !tokenFromUrlEntered) {
             messageStr = "You are not connected to the Tesla server.\nEnter your Tesla account token.."
         } else {
@@ -975,7 +1000,7 @@ def setSchedules() {
                     }
                     //schedule(schedVal(schedNum,"Time"), processSchedule, [data: [schedNum: schedNum], overwrite: false])  //[data: [message: msg], overwrite: false]
                 } else {
-                    String msg = "Powerwall Manager Schedule index {i + 1} num: ${schedNum} actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
+                    String msg = "Powerwall Manager Schedule index: ${i + 1} num: ${schedNum} actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
                     logger (msg,"warn")
                     //sendNotificationMessage(msg, "anomaly")
                 }
@@ -1292,9 +1317,10 @@ private sendNotificationMessage(message, msgType = null) {
       }
     }
 }
-
+    
 private getPowerwalls() {
     state.serverVerified = false
+    state.siteSelector = [:]
     Boolean foundPowerwall = false
     try {
        httpAuthGet("/api/1/products", {
@@ -1303,9 +1329,12 @@ private getPowerwalls() {
         resp.data.response.each {
             product ->
                 if (product.resource_type == "battery") {
+                    state.siteSelector[product.energy_site_id] = "${product.energy_site_id} - ${product.id} - ${product.site_name}"
                     //do not consider battery site if its site_name is null and a battery has previously been found (possibly a bad second site in the database)
-                    if (product.site_name != null || !foundPowerwall) {
+                    if (settings.inputSite.toString() == product.energy_site_id.toString() || (!settings.inputSite && (product.site_name != null || !foundPowerwall))) {
                         foundPowerwall = true
+                        app.updateSetting("inputSite",[type:"enum",value:product.energy_site_id.toString()])
+                        settings.inputSite = product.energy_site_id.toString() //ST workaround for immediate setting within dynamic page
                         logger ("battery found: ${product.id} site_name: ${product.site_name} energy_site_id: ${product.energy_site_id}","debug")
                         state.energySiteId = product.energy_site_id
                         state.pwId = product.id
@@ -1728,32 +1757,27 @@ void updateGridStatus(String gridStatus) {
 }
 
 void updateOpModeAndReserve(String opMode, def reservePercent) {
-    //Integer reserve
-    //if (opMode == "backup") { 
-    //     reserve = 100
-    //} else {
-    //     reserve = reservePercent
-    //}
     def pwDevice = getPwDevice()
     if (reservePercent || reservePercent == 0) { //protect against null/bad data
         updateIfChanged(pwDevice, "reservePercent", reservePercent)
         updateIfChanged(pwDevice, "reserve_pending", reservePercent)
     }
-     
-    String opModePretty
-    if (opMode == "autonomous") {
-        opModePretty = "Time-Based Control"
-    } else if (opMode == "self_consumption") {
-        opModePretty = "Self-Powered"
-    } else if (opMode == "backup") {
-        opModePretty = "Backup-Only" //deprecated
-    } else {
-        opModePretty = opMode
-        logger ("Unrecognized Op Mode: ${opMode}","info")
-    } 
-    Boolean changed = updateIfChanged(pwDevice, "currentOpState", opModePretty)
-    if (changed && notifyWhenModesChange?.toBoolean()) {
-          sendNotificationMessage("Powerwall op mode changed to ${opModePretty}")
+    if (opMode) {
+        String opModePretty
+        if (opMode == "autonomous") {
+            opModePretty = "Time-Based Control"
+        } else if (opMode == "self_consumption") {
+            opModePretty = "Self-Powered"
+        } else if (opMode == "backup") {
+            opModePretty = "Backup-Only" //deprecated
+        } else {
+            opModePretty = opMode
+            logger ("Unrecognized Op Mode: ${opMode}","info")
+        } 
+        Boolean changed = updateIfChanged(pwDevice, "currentOpState", opModePretty)
+        if (changed && notifyWhenModesChange?.toBoolean()) {
+            sendNotificationMessage("Powerwall op mode changed to ${opModePretty}")
+        }
     }
 }
 
@@ -1871,7 +1895,7 @@ def processOffGridActions() {
 
 def processOnGridActions() {
     logger ("processing on grid actions","debug")
-    child = getPwDevice()
+    def child = getPwDevice()
     updateIfChanged(child, "switch", "on")
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: On Grid")
@@ -2202,7 +2226,6 @@ def processServerMain() {
         lastStateProcessTime = state.lastStateRunTime
     }
     def secondsSinceLastRun = (now() - lastStateProcessTime) / 1000
-
     if (secondsSinceLastRun > 60) {
         state.lastStateRunTime = now()
         runIn(1, requestPwData)
@@ -2489,8 +2512,8 @@ def hrefMenuPage (String page, String titleStr, String descStr, String image, pa
 @Field static final String notifyIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification40.png"
 @Field static final String batteryIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/battery40.png"
 @Field static final String outageIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/outage40.png"
-@Field static final String ddLogoHubitat = "https://darwinsden.com/download/ddlogo-for-hubitat-pwManagerV3-png"
-@Field static final String ddLogoSt = "https://darwinsden.com/download/ddlogo-for-st-pwManagerV3-png"
+@Field static final String ddLogoHubitat = "https://darwinsden.com/download/ddlogo-for-hubitat-pwManagerv4-png"
+@Field static final String ddLogoSt = "https://darwinsden.com/download/ddlogo-for-st-pwManagerV4-png"
 @Field static final String cogIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cogD40.png"
 @Field static final String dashIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/dashboard40.png"
 @Field static final String schedIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/schedClock40.png"
