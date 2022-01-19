@@ -35,8 +35,12 @@ metadata {
 		// LELLKI
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "LELLKI", model: "JZ-ZB-001", deviceJoinName: "LELLKI Switch"
 		
-		// EZEX
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
+		// eZEX 1st Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch"
+		// eZEX 2nd Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z1-HA", deviceJoinName: "eZEX Switch"
+		// eZEX 3rd Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z2-HA", deviceJoinName: "eZEX Switch"
 
 		// GDKES
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0001", deviceJoinName: "GDKES Switch" //GDKES Smart Switch
@@ -74,7 +78,7 @@ metadata {
 		fingerprint manufacturer: "Leviton", model: "DG15A", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Zigbee Plug-In Switch DG15A, Raw Description: 01 0104 010A 00 06 0000 0003 0004 0005 0006 0B05 01 0019
 
 		// NodOn
-        fingerprint profileId: "0104", deviceId: "0002", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-1-20", deviceJoinName: "NodOn multi Switch"
+		fingerprint profileId: "0104", deviceId: "0002", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-1-20", deviceJoinName: "NodOn multi Switch"
         
 		// Orvibo
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "095db3379e414477ba6c2f7e0c6aa026", deviceJoinName: "Orvibo Switch" //Orvibo Smart Switch
