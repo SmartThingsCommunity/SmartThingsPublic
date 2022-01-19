@@ -18,10 +18,11 @@
  * 
  */
 String version() {
-    return "v0.3.40.20220118"
+    return "v0.3.41.20220119"
 }
 
 /* 
+ *	19-Jan-2022 >>> v0.3.41.20220119 - Cleanup. Ensure refresh token is always scheduled and old SmartThings schedules are cleared.
  *	18-Jan-2022 >>> v0.3.40.20220118 - Add option to choose between multiple powerwall sites. Fix on-grid actions.
  *	29-Dec-2021 >>> v0.3.30.20211229 - Merge and update of changes from @x10send: Added support for going off grid via local gateway (Hubitat Only). 
  *                                     Added ability to specify refresh token in lieu of access token.
@@ -188,7 +189,7 @@ def pageSchedules() {
                 hrefMenuPage ("pageScheduleOptions", "Create a new Powerwall schedule..", "", addIcon, [newSchedule: true], null)
             }
         }
-        if (hubIsSt() && state.scheduleCount < 11) {
+        if (hubIsSt() && state.scheduleCount < maxSmartThingsSchedules) {
             section("") {
                 hrefMenuPage ("pageScheduleOptions", "Create a new Powerwall schedule..", "", addIcon, [newSchedule: true], null)
             }
@@ -588,9 +589,7 @@ def refreshAccessToken(){
     
 String getTeslaServerStatus() {
     state.lastServerCheckTime = now()
-    //refreshAccessToken()
     try {
-        //connectedToTeslaServer()
         String messageStr = ""
         String tokenStatusStr = ""
         if (!hubIsSt()) {
@@ -986,6 +985,11 @@ String getActionsString(modeSetting, reserveSetting, stormwatchSetting, strategy
 def setSchedules() {
     checkAndMigrateFromPreviousVersion()
     unschedule (processSchedule)
+    if (hubIsSt()) {
+        for(int i in 1 .. maxSmartThingsSchedules) {
+            unschedule("processSchedule${i}")
+        }
+    }
     if (state.scheduleList) {
        for(int i in 0 .. state.scheduleList.size() - 1) {
            Integer schedNum = state.scheduleList[i]
@@ -1169,6 +1173,15 @@ void processSchedule11(data) {
     processSchedule (data)
 }
 void processSchedule12(data) {
+    processSchedule (data)
+}
+void processSchedule13(data) {
+    processSchedule (data)
+}
+void processSchedule14(data) {
+    processSchedule (data)
+}
+void processSchedule15(data) {
     processSchedule (data)
 }
 
@@ -1424,10 +1437,9 @@ def initialize() {
     //runEvery3Hours(refreshAccessToken)
     runIn(10, processServerMain)
     runIn(15, processGatewayMain)
-
-    //if (state.refresh_token != null && state.token_expires_on != null) {
-    //    state.schedule_refresh_token = true
-    //}
+    if (state.tokenExpiration) {
+        state.scheduleRefreshToken = true
+    }
 }
 
 private createDeviceForPowerwall() {
@@ -1928,15 +1940,15 @@ def requestGatewayMeterData() {
 }
 
 def requestGatewaySiteData() {
-     String gwUri = "https://${gatewayAddress}"
-     asynchttpGet(processGwSoeResponse, [uri: gwUri, path: "/api/system_status/soe", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
-     asynchttpGet(processGwSiteNameResponse, [uri: gwUri, path: "/api/site_info/site_name", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
-     asynchttpGet(processGwGridStatResponse, [uri: gwUri, path: "/api/system_status/grid_status", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+    String gwUri = "https://${gatewayAddress}"
+    asynchttpGet(processGwSoeResponse, [uri: gwUri, path: "/api/system_status/soe", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+    asynchttpGet(processGwSiteNameResponse, [uri: gwUri, path: "/api/site_info/site_name", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
+    asynchttpGet(processGwGridStatResponse, [uri: gwUri, path: "/api/system_status/grid_status", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
     if (!connectedToTeslaServer()) {   
        //Only process if not connected to the Tesla server to prevent data thrashing
        asynchttpGet(processGwOpResponse, [uri: gwUri, path: "/api/operation", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
        asynchttpGet(processGwStatusResponse, [uri: gwUri, path: "/api/system/update/status", headers: gwHeader(), contentType: 'application/json', ignoreSSLIssues: true])
-     }   
+    }   
 }
 
 def requestPwData(data) {
@@ -2506,6 +2518,7 @@ def hrefMenuPage (String page, String titleStr, String descStr, String image, pa
 @Field static final String teslaAccessTokenEndpoint = "https://owner-api.teslamotors.com/oauth/token"
 @Field static final String teslaAccessTokenAuthGrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 @Field static final String teslaAccessTokenAuthClientId = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384"
+@Field static final Integer maxSmartThingsSchedules = 15
 // Icons
 @Field static final String teslaIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon40.png"
 @Field static final String gatewayIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/gateway.png"
