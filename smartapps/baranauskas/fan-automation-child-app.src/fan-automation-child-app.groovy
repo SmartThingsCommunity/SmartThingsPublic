@@ -45,7 +45,7 @@ preferences {
               required: true,  defaultValue: 1.5,
               title: "Fan Differential Temperature (°${getTemperatureScale()})"
     }
-    section("Which Outdoor Sensor Temperature? If you select this and Outdoor Temp < Indoor Temp then fan will be off.") {
+    section("Which Outdoor Sensor Temperature? If you select this and Outdoor Temp < Indoor Temp then fan will be turned off.") {
         input "weatherSensors",   "capability.temperatureMeasurement",
               required: false, multiple: true,
               title: "Which Outdoor Temperature Sensor?"
@@ -62,7 +62,7 @@ preferences {
               title: "Enable heat index computation from temperature and humidity sensors?"
         input "enableNotificationOnOff", "bool",
               required: false, defaultValue: false,
-              title: "Send notification when automation on/off by the switch?"
+              title: "Send notification when automation is turned on/off by the switch?"
         input "enableNotificationChange", "bool",
               required: false, defaultValue: false,
               title: "Send notification when fan speed changes?"
