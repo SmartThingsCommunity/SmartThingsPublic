@@ -17,7 +17,7 @@ definition (
     namespace: "baranauskas",
     parent: "baranauskas:Fan Automation",
     author: "Jose Augusto Baranauskas",
-    version: "1.5 (2021-12-18)",
+    version: "1.6 (2022-01-22)",
     description: "Create fan automation based on temperature and humidity sensors",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
@@ -26,6 +26,14 @@ definition (
 )
 
 preferences {
+    section("Which fan(s)?") {
+        input "fans", "capability.fanSpeed",
+              required: true, multiple: true,
+              title: "Which fans?"
+        input "fansMaxSpeed", "number", range: "1..5",
+              required: true, defaultValue: 3,
+              title: "Number of fan speeds (do not count 'off' speed)"
+    }
     section("Which Indoor Sensor, Threshold, and Differential Temperature?") {
         input "tempSensors",   "capability.temperatureMeasurement",
               required: true, multiple: true,
@@ -41,14 +49,6 @@ preferences {
         input "weatherSensors",   "capability.temperatureMeasurement",
               required: false, multiple: true,
               title: "Which Outdoor Temperature Sensor?"
-    }
-    section("Which fan(s)?") {
-        input "fans", "capability.fanSpeed",
-              required: true, multiple: true,
-              title: "Which fans?"
-        input "fansMaxSpeed", "number", range: "1..5",
-              required: true, defaultValue: 3,
-              title: "Number of fan speeds (do not count off speed)"
     }
     section("General Settings") {
         input "enableAutomation", "bool",
