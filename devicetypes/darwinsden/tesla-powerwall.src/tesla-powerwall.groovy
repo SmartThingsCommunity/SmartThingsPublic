@@ -1,7 +1,7 @@
 /**
  *  Tesla Powerwall 
  *
- *  Copyright 2019, 2020, 2021 DarwinsDen.com
+ *  Copyright 2019-2012 DarwinsDen.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,13 +13,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  29-Dec-2021 >>> v0.2.20.20211229 - Merge from @x10send: Added Off Grid and Refresh Token Support
- *	24-Oct-2021 >>> v0.2.10.20211024 - Added argument for setBackupReservePercent
- *	25-May-2020 >>> v0.2.0e.20200525 - Updated reserve +/- adjust for Hubitat
- *	02-Jul-2020 >>> v0.1.5e.20200702 - Added attribute Tile 
- *	22-Jan-2020 >>> v0.1.4e.20200122 - Added stormwatch enable/disable commands
- *	12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
- *	29-Jul-2019 >>> v0.1.2e.20190729 - Disable reserve percent controls in backup-only mode
- *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
+ *  24-Oct-2021 >>> v0.2.10.20211024 - Added argument for setBackupReservePercent
+ *  25-May-2020 >>> v0.2.0e.20200525 - Updated reserve +/- adjust for Hubitat
+ *  02-Jul-2020 >>> v0.1.5e.20200702 - Added attribute Tile 
+ *  22-Jan-2020 >>> v0.1.4e.20200122 - Added stormwatch enable/disable commands
+ *  12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
+ *  29-Jul-2019 >>> v0.1.2e.20190729 - Disable reserve percent controls in backup-only mode
+ *  23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  *
  */
 
@@ -39,10 +39,10 @@ metadata {
 
         attribute "reservePercent", "number"
         attribute "reserve_pending", "number"
-		attribute "solarPower", "number"
-		attribute "loadPower", "number"
-		attribute "gridPower", "number"
-		attribute "powerwallPower", "number"
+	attribute "solarPower", "number"
+	attribute "loadPower", "number"
+	attribute "gridPower", "number"
+	attribute "powerwallPower", "number"
         attribute "currentOpState", "string"
         attribute "currentStrategy", "string"
         attribute "siteName", "string"
