@@ -15,7 +15,7 @@
 metadata {
 	definition (name: "HE-RELAY", namespace: "HELTUN", author: "Sarkis Kabrailian", cstHandler: true, ocfDeviceType: "oic.d.switch") {
 		capability "Switch"
-        capability "Power Meter"
+		capability "Power Meter"
 		capability "Refresh"
 		capability "Health Check"
 	}
