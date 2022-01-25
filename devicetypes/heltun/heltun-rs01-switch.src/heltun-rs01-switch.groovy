@@ -143,8 +143,8 @@ private getChildName(channelNumber) {
 	}
 }
 
-private channelNumber(String Id) {
-	Id.split(":")[-1] as Integer
+private channelNumber(String deviceNetworkId) {
+	deviceNetworkId.split(":")[-1] as Integer
 }
 
 def parse(String description) {
@@ -354,16 +354,26 @@ private parameterMap() {[
 		], paramNum: 11, size: 1, default: "0", type: "enum"
 	],
 
-	[title: "Relays Load Power", description: "These parameters are used to specify the loads power that are connected to the device outputs (Relays). Using your connected device’s power consumption specification (see associated owner’s manual), set the load in Watts for the outputs bellow:",
-	name: "Selected Relay 1 Load Power in Watts", paramNum: 12, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
+	[
+		title: "Relays Load Power", description: "These parameters are used to specify the loads power that are connected to the device outputs (Relays). Using your connected device’s power consumption specification (see associated owner’s manual), set the load in Watts for the outputs bellow:",
+		name: "Selected Relay 1 Load Power in Watts", paramNum: 12, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"
+	],
 
-	[name: "Selected Relay 2 Load Power in Watts", paramNum: 13, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
+	[
+		name: "Selected Relay 2 Load Power in Watts", paramNum: 13, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"
+	],
 
-	[name: "Selected Relay 3 Load Power in Watts", paramNum: 14, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
+	[
+		name: "Selected Relay 3 Load Power in Watts", paramNum: 14, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"
+	],
 
-	[name: "Selected Relay 4 Load Power in Watts", paramNum: 15, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
+	[
+		name: "Selected Relay 4 Load Power in Watts", paramNum: 15, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"
+	],
 
-	[name: "Selected Relay 5 Load Power in Watts", paramNum: 16, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"],
+	[
+		name: "Selected Relay 5 Load Power in Watts", paramNum: 16, size: 2, default: 0, type: "number", min: 0, max: 1100, unit: "W"
+	],
 
 	[
 		title: "Hold Control Mode for external inputs S1-S5", description: "This Parameter defines how the relay should react while holding the button connected to the corresponding external input. The options are: Hold is disabled, Operate like click, Momentary Switch: When the button is held, the relay output state is ON, as soon as the button is released the relay output state changes to OFF, Reversed Momentary: When the button is held, the relay output state is OFF, as soon as the button is released the relay output state changes to ON, Toggle: When the button is held or released the relay output state will toggle its state (ON to OFF or OFF to ON).", name: "Selected Hold Control Mode for S1",
@@ -420,16 +430,26 @@ private parameterMap() {[
 		], paramNum: 45, size: 1, default: "2", type: "enum"
 	],
 
-	[title: "Hold Mode Duration for External Inputs S1-S5", description: "These Parameters specify the time the device needs to recognize a hold mode when the button connected to an external input is held (key closed). These parameters are available on firmware V1.4 or higher",
-	name: "Selected Duration for S1 in milliseconds", paramNum: 46, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
+	[
+		title: "Hold Mode Duration for External Inputs S1-S5", description: "These Parameters specify the time the device needs to recognize a hold mode when the button connected to an external input is held (key closed). These parameters are available on firmware V1.4 or higher",
+		name: "Selected Duration for S1 in milliseconds", paramNum: 46, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"
+	],
 
-	[name: "Selected Duration for S2 in milliseconds", paramNum: 47, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
+	[
+		name: "Selected Duration for S2 in milliseconds", paramNum: 47, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"
+	],
 
-	[name: "Selected Duration for S3 in milliseconds", paramNum: 48, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
+	[
+		name: "Selected Duration for S3 in milliseconds", paramNum: 48, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"
+	],
 
-	[name: "Selected Duration for S4 in milliseconds", paramNum: 49, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
+	[
+		name: "Selected Duration for S4 in milliseconds", paramNum: 49, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"
+	],
 
-	[name: "Selected Duration for S5 in milliseconds", paramNum: 50, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"],
+	[
+		name: "Selected Duration for S5 in milliseconds", paramNum: 50, size: 2, default: 500, type: "number", min: 200 , max: 5000, unit: "ms"
+	],
 
 	[
 		title: "Click control mode for external inputs S1-S5", description: "These Parameters defines how the relay should react when clicking the button connected to the corresponding external input. The options are: Click is disabled, Toggle switch: relay inverts state (ON to OFF, OFF to ON), Only On: Relay switches to ON state only, Only Off: Relay switches to OFF state only, Timer: On > Off: Relay output switches to ON state (contacts are closed) then after a specified time switches back to OFF state (contacts are open). The time is specified in 'Relay Timer Mode Duration' below, Timer: Off > On: Relay output switches to OFF state (contacts are open) then after a specified time switches back to On state (contacts are closed). The time is specified in 'Relay Timer Mode Duration' below ", name: "Selected Click Control Mode for S1",
@@ -490,16 +510,26 @@ private parameterMap() {[
 		], paramNum: 55, size: 1, default: "1", type: "enum"
 	],
 
-	[title: "Relays Timer Mode Duration", description: "These parameters specify the duration in seconds for the Timer modes for Click Control Mode above. Press the button and the relay output goes to ON/OFF for the specified time then changes back to OFF/ON. If the value is set to “0” the relay output will operate as a short contact (duration is about 0.5 sec)",
-	name: "Selected Relay 1 Timer Mode Duration in seconds", paramNum: 71, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
+	[
+		title: "Relays Timer Mode Duration", description: "These parameters specify the duration in seconds for the Timer modes for Click Control Mode above. Press the button and the relay output goes to ON/OFF for the specified time then changes back to OFF/ON. If the value is set to “0” the relay output will operate as a short contact (duration is about 0.5 sec)",
+		name: "Selected Relay 1 Timer Mode Duration in seconds", paramNum: 71, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"
+	],
 
-	[name: "Selected Relay 2 Timer Mode Duration in seconds", paramNum: 72, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
+	[
+		name: "Selected Relay 2 Timer Mode Duration in seconds", paramNum: 72, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"
+	],
 
-	[name: "Selected Relay 3 Timer Mode Duration in seconds", paramNum: 73, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
+	[
+		name: "Selected Relay 3 Timer Mode Duration in seconds", paramNum: 73, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"
+	],
 
-	[name: "Selected Relay 4 Timer Mode Duration in seconds", paramNum: 74, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
+	[
+		name: "Selected Relay 4 Timer Mode Duration in seconds", paramNum: 74, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"
+	],
 
-	[name: "Selected Relay 5 Timer Mode Duration in seconds", paramNum: 75, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"],
+	[
+		name: "Selected Relay 5 Timer Mode Duration in seconds", paramNum: 75, size: 2, default: 0, type: "number", min: 0 , max: 43200, unit: "s"
+	],
 
 	[
 		title: "External Input Number for Relays Output Control", description: "These Parameters defines the relays control source.", name: "Selected Relay 1 Control Source", 
@@ -547,7 +577,7 @@ private parameterMap() {[
 			4: "Controlled by S4",
 			5: "Controlled by S5"
 		], paramNum: 64, size: 1, default: "4", type: "enum"
-    ],
+	],
 
 	[
 		name: "Selected Relay 5 Control Source", 
@@ -635,8 +665,10 @@ private parameterMap() {[
 		], paramNum: 102, size: 1, default: "0", type: "enum"
 	],
 
-	[title: "Energy Consumption Meter Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends reports from its energy consumption sensor even if there is no change in the value. This parameter defines the interval between consecutive reports of real time and cumulative energy consumption data to the gateway",
-	name: "Selected Energy Report Interval in minutes", paramNum: 141, size: 1, default: 10, type: "number", min: 1 , max: 120, unit: "min"],
+	[
+		title: "Energy Consumption Meter Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends reports from its energy consumption sensor even if there is no change in the value. This parameter defines the interval between consecutive reports of real time and cumulative energy consumption data to the gateway",
+		name: "Selected Energy Report Interval in minutes", paramNum: 141, size: 1, default: 10, type: "number", min: 1 , max: 120, unit: "min"
+	],
 
 	[
 		title: "Control Energy Meter Report", description: "This Parameter determines if the change in the energy meter will result in a report being sent to the gateway. Note: When the device is turning ON, the consumption data will be sent to the gateway once, even if the report is disabled.", name: "Sending Energy Meter Reports", 
