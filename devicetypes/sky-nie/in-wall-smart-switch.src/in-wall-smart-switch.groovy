@@ -1,7 +1,7 @@
 /**
- *      Min Smart Plug v3.0.0
+ *  In-Wall Smart Switch v1.0.0
  *
- *  	Models: MINOSTON (MP21Z) And New One  Mini Smart Plug (N4001)
+ *  	Models: MS10ZS/MS12ZS/ZW30/ZW30S/ZW30TS
  *
  *  Author:
  *   winnie (sky-nie)
@@ -10,44 +10,7 @@
  *
  *  Changelog:
  *
- *    3.0.0 (09/07/2021)
- *      - Remove the support for the products of MS10ZS MS12ZS ZW30 ZW30S and ZW30TS,
- *      they will be independent in another DTH file
- *
- *    2.2.0 (09/22/2021)
- *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
- *      and it can be replaced by the Automation function in the SmartThings APP
- *
- *    2.1.1 (09/07/2021)
- *      - Syntax format compliance adjustment
- *      - delete dummy code
- *
- *    2.1.0 (09/04/2021)
- *      - remove the preferences item "createButton", Fixedly create a child button
- *        Restrict its use based on fingerprints--because the child buttons is not visible to the user .
- *      - fix a bug: when isButtonAvailable() return false,getLedModeParam is conflict with getPaddleControlParam
- *      - Simplify the code, Syntax format compliance adjustment
- *
- *    2.0.2 (09/02/2021)
- *    2.0.1 (08/27/2021)
- *      - Syntax format compliance adjustment
- *      - fix some bugs
- *
- *    2.0.0 (08/26/2021)
- *      - add new products supported
- *
- *    1.0.4 (07/13/2021)
- *      - Syntax format compliance adjustment
- *      - delete dummy code
- *
- *    1.0.3 (07/12/2021)
- *    1.0.2 (07/07/2021)
- *      - delete dummy code
- *
- *    1.0.1 (03/17/2021)
- *      - Simplify the code, delete dummy code
- *
- *    1.0.0 (03/11/2021)
+ *    1.0.0 (12/22/2021)
  *      - Initial Release
  *
  * Reference：
@@ -69,7 +32,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-    definition (name: "Min Smart Plug", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch") {
+    definition (name: "In-Wall Smart Switch", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-switch") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"
@@ -80,9 +43,11 @@ metadata {
         attribute "firmwareVersion", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "C000", model: "C009", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" // old MP21Z
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0C", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //MP21Z Minoston Mini Smart Plug
-        fingerprint mfr: "0312", prod: "AC01", model: "4001", deviceJoinName: "New One Outlet",  ocfDeviceType: "oic.d.smartplug" // N4001 New One  Mini Smart Plug
+        fingerprint mfr: "0312", prod: "EE00", model: "EE01", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS10ZS Minoston Smart Switch
+        fingerprint mfr: "0312", prod: "EE00", model: "EE03", deviceJoinName: "Minoston Switch", ocfDeviceType: "oic.d.switch"    //MS12ZS Minoston Smart on/off Toggle Switch
+        fingerprint mfr: "0312", prod: "A000", model: "A005", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30
+        fingerprint mfr: "0312", prod: "BB00", model: "BB01", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30S Evalogik Smart on/off Switch
+        fingerprint mfr: "0312", prod: "BB00", model: "BB03", deviceJoinName: "Evalogik Switch", ocfDeviceType: "oic.d.switch"    //ZW30TS Evalogik Smart on/off Toggle Switch
     }
 
     preferences {
@@ -308,24 +273,37 @@ private getConfigParams() {
         ledModeParam,
         autoOffIntervalParam,
         autoOnIntervalParam,
-        powerFailureRecoveryParam
+        powerFailureRecoveryParam,
+        paddleControlParam
     ]
 }
 
+private static getPaddleControlOptions() {
+    return [
+        "0":"Normal",
+        "1":"Reverse",
+        "2":"Toggle"
+    ]
+}
+
+private getPaddleControlParam() {
+    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
+}
+
 private getLedModeParam() {
-    return getParam(1, "LED Indicator Mode", 1, 0, alternativeLedOptions)
+    return getParam(2, "LED Indicator Mode", 1, 0,  alternativeLedOptions)
 }
 
 private getAutoOffIntervalParam() {
-    return getParam(2, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    return getParam(4, "Auto Turn-Off Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getAutoOnIntervalParam() {
-    return getParam(4, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
+    return getParam(6, "Auto Turn-On Timer(0, Disabled; 1 - 65535 minutes)", 4, 0, null, "0..65535")
 }
 
 private getPowerFailureRecoveryParam() {
-    return getParam(6, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
+    return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
 }
 
 private getParam(num, name, size, defaultVal, options = null, range = null) {
@@ -352,9 +330,10 @@ private static setDefaultOption(options, defaultVal) {
 
 private getAlternativeLedOptions() {
     return [
-            "0":"On When On",
-            "1":"Off When On",
-            "2":"Always Off"
+            "0":"Off When On",
+            "1":"On When On",
+            "2":"Always Off",
+            "3":"Always On"
     ]
 }
 
