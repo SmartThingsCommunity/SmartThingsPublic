@@ -80,7 +80,7 @@ metadata {
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW06", deviceJoinName: "eWeLink Switch 1" //eWeLink 6 Gang Switch 1
 
 		// NodOn
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, FC57", outClusters: "0021", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, FC57", outClusters: "0021", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
 
 		// LELLKI
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
@@ -168,46 +168,16 @@ def parse(String description) {
 	}
 }
 
-private void createChildDevices() { 
-    if (isNodOn) {
-        if (!state.isCreateChildDone || isAutoCreateChildDevice != false) {
-            def endpointCount = 2
-            def endpointId = device.getDataValue("endpointId")
-            def endpointInt = zigbee.convertHexToInt(endpointId)
-            def deviceLabel = "${device.displayName[0..-2]}"
-            deviceLabel.minus("1")
-
-            for (i in 1..endpointCount - 1) {
-                def endpointHexString = zigbee.convertToHexString(endpointInt + i, 2).toUpperCase()
-                createChildDevice("$deviceLabel${i + 1}", endpointHexString)
-            }
-
-
-            state.isCreateChildDone = true
-        }
-    }else{   
-        if (!childDevices) {
-            def x = getChildCount()
-            for (i in 2..x) {
-                addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-                    [completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
-            }
+private void createChildDevices() {   
+    if (!childDevices) {
+        def x = getChildCount()
+        for (i in 2..x) {
+            addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+                           [completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
         }
     }
 }
 
-private void createChildDevice(String deviceLabel, String endpointHexString) {
-    def childDevice = childDevices.find {
-        it.deviceNetworkId == "$device.deviceNetworkId:$endpointHexString"
-    }
-    if (!childDevice) {
-        log.debug("===========Need to createChildDevice: $device.deviceNetworkId:$endpointHexString")
-        addChildDevice("smartthings", "Child Switch", "$device.deviceNetworkId:$endpointHexString", device.hubId,
-                       [completedSetup: true, label: deviceLabel, isComponent: false])
-    } else {
-        log.debug("createChildDevice: SKIP - $device.deviceNetworkId:${endpointHexString}")
-    }
-}
 
 private getChildEndpoint(String dni) {
 	dni.split(":")[-1] as Integer
