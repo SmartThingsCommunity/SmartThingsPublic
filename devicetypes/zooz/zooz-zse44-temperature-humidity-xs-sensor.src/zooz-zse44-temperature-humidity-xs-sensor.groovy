@@ -3,6 +3,9 @@
  *
  *  Changelog:
  *
+ *    2022-01-26.2
+ *      - Requested changes
+ *
  *    2022-01-26
  *      - Publication Release
  *
@@ -89,7 +92,7 @@ metadata {
 		capability "platemusic11009.syncStatus"
 
 		// zw:Ss2a type:0701 mfr:027A prod:7000 model:E004 ver:1.10 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,31,72,5A,87,73,80,71,70,84,7A
-		fingerprint mfr:"027A", prod:"7000", model:"E004", deviceJoinName: "Zooz Temperature Humidity Sensor" // Zooz ZSE44 Temperature | Humidity XS Sensor
+		fingerprint mfr:"027A", prod:"7000", model:"E004", deviceJoinName: "Zooz Multipurpose Sensor" // Zooz ZSE44 Temperature | Humidity XS Sensor
 	}
 
 	preferences {
@@ -381,9 +384,9 @@ void refreshSyncStatus() {
 }
 
 Integer getPendingChanges() {
-	int configChanges = safeToInt(configParams.count { name, param ->
+	int configChanges = configParams.count { name, param ->
 		(getSettingVal(name) != getStoredVal(name))
-	}, 0)
+	}
 	int pendingWakeUpInterval = (state.wakeUpInterval != wakeUpInterval ? 1 : 0)
 	return (configChanges + pendingWakeUpInterval)
 }
