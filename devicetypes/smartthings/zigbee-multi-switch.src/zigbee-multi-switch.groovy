@@ -79,9 +79,6 @@ metadata {
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "eWeLink", model: "ZB-SW06", deviceJoinName: "eWeLink Switch 1" //eWeLink 6 Gang Switch 1
 
-		// NodOn
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, FC57", outClusters: "0021", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
-
 		// LELLKI
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-002", deviceJoinName: "LELLKI Switch 1" //LELLKI 2 Gang Switch 1
@@ -93,6 +90,10 @@ metadata {
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-005", deviceJoinName: "LELLKI Switch 1" //LELLKI 5 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
+        
+		// NodOn
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, FC57", outClusters: "0021", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
+        
 		// SiHAS Switch (2~6 Gang)
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z2", deviceJoinName: "SiHAS Switch 1"
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z3", deviceJoinName: "SiHAS Switch 1"
@@ -168,16 +169,15 @@ def parse(String description) {
 	}
 }
 
-private void createChildDevices() {   
-    if (!childDevices) {
-        def x = getChildCount()
-        for (i in 2..x) {
-            addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-                           [completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
-        }
-    }
+private void createChildDevices() {    
+	if (!childDevices) {
+		def x = getChildCount()
+		for (i in 2..x) {
+			addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+				[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+		}
+	}
 }
-
 
 private getChildEndpoint(String dni) {
 	dni.split(":")[-1] as Integer
@@ -274,10 +274,6 @@ def configure() {
 
 private Boolean isOrvibo() {
 	device.getDataValue("manufacturer") == "ORVIBO"
-}
-
-private Boolean isNodOn() {
-    device.getDataValue("manufacturer") == "NodOn"
 }
 
 private getChildCount() {
