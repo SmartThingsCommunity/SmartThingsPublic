@@ -20,7 +20,6 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
-		capability "Thermostat Mode"
 		capability "Temperature Measurement"
 
 		command "setThermostatSetpointUp"
@@ -28,6 +27,7 @@ metadata {
 		command "switchMode"
 
 		fingerprint mfr: "010F", prod: "1301", model: "1000", deviceJoinName: "Fibaro Thermostat" //Fibaro Heat Controller
+		fingerprint mfr: "010F", prod: "1301", model: "1001", deviceJoinName: "Fibaro Thermostat" //Fibaro Heat Controller
 	}
 
 	tiles(scale: 2) {

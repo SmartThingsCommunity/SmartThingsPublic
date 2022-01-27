@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v2.2.0
+ *      Min Smart Plug Dimmer v3.0.0
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,10 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    3.0.0 (09/07/2021)
+ *      - Remove the support for the products of MS11ZS MS13ZS ZW31S and ZW31TS,
+ *      they will be independent in another DTH file
  *
  *    2.2.0 (09/22/2021)
  *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
@@ -102,39 +106,16 @@ metadata {
         fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Smart Plug Dimmer", ocfDeviceType: "oic.d.smartplug" //MP21ZD
         fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Outdoor Dimmer", ocfDeviceType: "oic.d.smartplug" //MP22ZD
         fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Smart Plug Dimmer",  ocfDeviceType: "oic.d.smartplug" //N4002
-        fingerprint mfr: "0312", prod: "0004", model: "EE02", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.switch"    //MS11ZS Minoston Smart Dimmer Switch
-        fingerprint mfr: "0312", prod: "EE00", model: "EE04", deviceJoinName: "Minoston Dimmer Switch", ocfDeviceType: "oic.d.switch"    //MS13ZS Minoston Smart Toggle Dimmer Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB02", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.switch"    //ZW31S Evalogik Smart Dimmer Switch
-        fingerprint mfr: "0312", prod: "BB00", model: "BB04", deviceJoinName: "Evalogik Dimmer Switch", ocfDeviceType: "oic.d.switch"    //ZW31TS Evalogik Smart Toggle Dimmer Switch
     }
 
     preferences {
-        getConfigParamInput(ledModeParam)
-        getConfigParamInput(autoOffIntervalParam)
-        getConfigParamInput(autoOnIntervalParam)
-        getConfigParamInput(powerFailureRecoveryParam)
-        getConfigParamInput(pushDimmingDurationParam)
-        getConfigParamInput(holdDimmingDurationParam)
-        getConfigParamInput(minimumBrightnessParam)
-        input "disclaimer", "paragraph",
-                title: "WARNING",
-                description: "Configuring for 'Night Light Settings' is only valid for the devices with product number of MP21ZD、MP22ZD、N4002(one of them)",
-                required: false
-        getConfigParamInput(nightLightParam)
-        input "disclaimer", "paragraph",
-                title: "WARNING",
-                description: "Configuring for 'Maximum Brightness' and 'Paddle Control' are only valid for the devices with product number of MS11ZS、MS13ZS、ZW31S、ZW31TS(one of them)",
-                required: false
-        getConfigParamInput(maximumBrightnessParam)
-        getConfigParamInput(paddleControlParam)
-    }
-}
-
-private getConfigParamInput(param) {
-    if (param.range) {
-        input "configParam${param.num}", "number", title: "${param.name}:", required: false, defaultValue: "${param.value}", range: param.range
-    } else {
-        input "configParam${param.num}", "enum", title: "${param.name}:", required: false, defaultValue: "${param.value}", options: param.options
+        configParams.each {
+            if (it.range) {
+                input "configParam${it.num}", "number", title: "${it.name}:", required: false, defaultValue: "${it.value}", range: it.range
+            } else {
+                input "configParam${it.num}", "enum", title: "${it.name}:", required: false, defaultValue: "${it.value}", options: it.options
+            }
+        }
     }
 }
 
@@ -317,22 +298,9 @@ private getConfigParams() {
         powerFailureRecoveryParam,
         pushDimmingDurationParam,
         holdDimmingDurationParam,
-        minimumBrightnessParam,
-        maximumBrightnessParam,
-        paddleControlParam
-    ]
-}
+        minimumBrightnessParam
 
-private static getPaddleControlOptions() {
-    return [
-        "0":"Normal",
-        "1":"Reverse",
-        "2":"Toggle"
     ]
-}
-
-private getPaddleControlParam() {
-    return getParam(1, "Paddle Control", 1, 0, paddleControlOptions)
 }
 
 private getLedModeParam() {
@@ -352,13 +320,11 @@ private getNightLightParam() {
 }
 
 private getPowerFailureRecoveryParam() {
-    def defaultVal = isButtonAvailable()? 0:2
-    return getParam(8, "Power Failure Recovery", 1, defaultVal, powerFailureRecoveryOptions)
+    return getParam(8, "Power Failure Recovery", 1, 2, powerFailureRecoveryOptions)
 }
 
 private getPushDimmingDurationParam() {
-    def defaultVal = isButtonAvailable()? 1:2
-    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, defaultVal, null, "0..10")
+    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, 2, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
@@ -506,15 +472,5 @@ private sendSwitchEvents(rawVal, type) {
     sendEvent(name: "switch",  value:switchVal, displayed: true, type: type)
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
-    }
-}
-
-private isButtonAvailable() {
-    if (device == null) {
-        log.error "isButtonAvailable device = null"
-        return true
-    } else {
-        log.debug "isButtonAvailable device.rawDescription = ${device.rawDescription}"
-        return "${device.rawDescription}".contains("model:EE02") || "${device.rawDescription}".contains("model:EE04") || "${device.rawDescription}".contains("model:BB02") || "${device.rawDescription}".contains("model:BB04")
     }
 }
