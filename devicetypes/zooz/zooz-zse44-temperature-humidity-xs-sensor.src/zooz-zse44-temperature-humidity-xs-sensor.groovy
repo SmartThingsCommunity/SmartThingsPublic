@@ -3,8 +3,11 @@
  *
  *  Changelog:
  *
+ *    2022-01-27
+ *      - Replaced temperatureAlarm custom capability with built-in capability.
+ *
  *    2022-01-26.2
- *      - Requested changes
+ *      - Requested Changes
  *
  *    2022-01-26
  *      - Publication Release
@@ -65,8 +68,8 @@ import groovy.transform.Field
 
 @Field static Map temperatureSensor = [sensorType:1, scale:1]
 @Field static Map humiditySensor = [sensorType: 5, scale:0]
-@Field static Map temperatureAlarm = [name:"temperatureAlarm", notificationType:4, normalEvent:0, highEvent:2, lowEvent:6]
-@Field static Map humidityAlarm = [name:"humidityAlarm", notificationType:16, normalEvent:0, highEvent:2, lowEvent:6]
+@Field static Map temperatureAlarm = [name:"temperatureAlarm", notificationType:4, normalEvent:0, highEvent:2, lowEvent:6, highValue:"heat", lowValue:"freeze", normalValue:"cleared"]
+@Field static Map humidityAlarm = [name:"humidityAlarm", notificationType:16, normalEvent:0, highEvent:2, lowEvent:6, highValue:"high", lowValue:"low", normalValue:"normal"]
 @Field static int wakeUpInterval = 43200
 
 metadata {
@@ -75,7 +78,7 @@ metadata {
 		namespace: "Zooz",
 		author: "Kevin LaFramboise (@krlaframboise)",
 		ocfDeviceType:"oic.d.thermostat",
-		vid: "064b47e2-afde-3228-89a4-480f0f55b3fd",
+		vid: "b68c78d7-bd01-3717-a2ac-d1d55ce5ef73",
 		mnmn: "SmartThingsCommunity"
 	) {
 		capability "Sensor"
@@ -86,7 +89,7 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 		capability "platemusic11009.temperatureHumiditySensor"
-		capability "platemusic11009.temperatureAlarm"
+		capability "temperatureAlarm"
 		capability "platemusic11009.humidityAlarm"
 		capability "platemusic11009.firmware"
 		capability "platemusic11009.syncStatus"
@@ -152,11 +155,11 @@ void initialize() {
 	}
 
 	if (!device.currentValue("temperatureAlarm")) {
-		sendEvent(name:"temperatureAlarm", value:"normal")
+		sendEvent(name:"temperatureAlarm", value:temperatureAlarm.normal)
 	}
 
 	if (!device.currentValue("humidityAlarm")) {
-		sendEvent(name:"humidityAlarm", value:"normal")
+		sendEvent(name:"humidityAlarm", value:humidityAlarm.normal)
 	}
 
 	if (!device.currentValue("checkInterval")) {
@@ -309,9 +312,9 @@ void zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport c
 void sendAlarmEvent(Map alarm, cmd) {
 	String value
 	if ((cmd.event == alarm.highEvent) || (cmd.event == alarm.lowEvent)) {
-		value = (cmd.event == alarm.highEvent) ? "high" : "low"
+		value = (cmd.event == alarm.highEvent) ? alarm.highValue : alarm.lowValue
 	} else if (cmd.event == alarm.normalEvent) {
-		value = "normal"
+		value = alarm.normalValue
 	}
 
 	if (value) {
