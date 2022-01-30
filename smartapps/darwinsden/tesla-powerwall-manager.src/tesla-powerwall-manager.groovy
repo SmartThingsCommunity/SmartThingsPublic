@@ -1,3 +1,21 @@
+// ****   PLEASE READ  *****
+
+// As of 30-Jan-2022, the repository location for this app has changed to:
+// https://github.com/DarwinsDen/Tesla-Powerwall-Manager
+//
+// If you have hardcoded links, please update them to:
+//
+// App:    https://raw.githubusercontent.com/DarwinsDen/Tesla-Powerwall-Manager/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy
+// Driver: https://raw.githubusercontent.com/DarwinsDen/Tesla-Powerwall-Manager/master/devicetypes/darwinsden/tesla-powerwall.src/tesla-powerwall.groovy
+//
+// All future updates will be performed at the new repository location.
+//
+// If you are using SmartThings Groovy IDE GitHub Repository Integration, 
+// please update your Powerwall Manager DarwinsDen Repository name from SmartThingsPublic to Tesla-Powerwall-Manager in the 
+// Smartthings IDE SmartApp and Device Handler settings tabs.
+//
+//
+
 /**
  *  Tesla Powerwall Manager 
  * 
@@ -10,7 +28,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -18,45 +36,47 @@
  * 
  */
 String version() {
-    return "v0.3.41.20220119"
+    return "v0.3.51.20220130"
 }
 
 /* 
- *	19-Jan-2022 >>> v0.3.41.20220119 - Cleanup. Ensure refresh token is always scheduled and old SmartThings schedules are cleared.
- *	18-Jan-2022 >>> v0.3.40.20220118 - Add option to choose between multiple powerwall sites. Fix on-grid actions.
- *	29-Dec-2021 >>> v0.3.30.20211229 - Merge and update of changes from @x10send: Added support for going off grid via local gateway (Hubitat Only). 
- *                                     Added ability to specify refresh token in lieu of access token.
- *	24-Oct-2021 >>> v0.3.20.20211024 - UI updates. Added Token expiration notification. Fixes: False off-grid notifications, 
- *                                     multiple SmartThings schedules, Gateway dashboard settings on Hubitat.
- *	02-Jun-2021 >>> v0.3.1e.20210603 - Re-add local gateway connection for Hubitat, Scheduling infrastructure mods. 
- *	25-May-2021 >>> v0.3.0e.20210325 - Tesla auth API change workarounds: use tokens directly, disable gateway direct code. 
- *	02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iFrame for Hubitat. 
- *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
- *	02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
- *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
- *	19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % trigger time and day restriction options.
- *	31-Jan-2020 >>> v0.2.3e.20200131 - Added battery charge % triggers & TBC Strategy scheduling.
- *	22-Jan-2020 >>> v0.2.2e.20200122 - Added Stormwatch on/off scheduling.
- *	16-Jan-2020 >>> v0.2.1e.20200116 - Additional command retry/error checking logic. Hubitat battery% compatibility update.
- *	10-Jan-2020 >>> v0.2.0e.20200110 - Push notification support for Hubitat
- *	04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
- *	03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
- *	30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
- *	06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
- *	13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
- *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
- *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
- *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
+ * 30-Jan-2022 >>> v0.3.51.20220130 - Correct update delta check.
+ * 28-Jan-2022 >>> v0.3.50.20220128 - Gateway debug and ping test.
+ * 19-Jan-2022 >>> v0.3.41.20220119 - Cleanup. Ensure refresh token is always scheduled and old SmartThings schedules are cleared.
+ * 18-Jan-2022 >>> v0.3.40.20220118 - Add option to choose between multiple powerwall sites. Fix on-grid actions.
+ * 29-Dec-2021 >>> v0.3.30.20211229 - Merge and update of changes from @x10send: Added support for going off grid via local gateway (Hubitat Only). 
+ *                                    Added ability to specify refresh token in lieu of access token.
+ * 24-Oct-2021 >>> v0.3.20.20211024 - UI updates. Added Token expiration notification. Fixes: False off-grid notifications, 
+ *                                    multiple SmartThings schedules, Gateway dashboard settings on Hubitat.
+ * 02-Jun-2021 >>> v0.3.1e.20210603 - Re-add local gateway connection for Hubitat, Scheduling infrastructure mods. 
+ * 25-May-2021 >>> v0.3.0e.20210325 - Tesla auth API change workarounds: use tokens directly, disable gateway direct code. 
+ * 02-Jul-2020 >>> v0.2.8e.20200702 - Added dashboard tile display from local gateway iFrame for Hubitat. 
+ * 27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
+ * 02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
+ * 29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
+ * 19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % trigger time and day restriction options.
+ * 31-Jan-2020 >>> v0.2.3e.20200131 - Added battery charge % triggers & TBC Strategy scheduling.
+ * 22-Jan-2020 >>> v0.2.2e.20200122 - Added Stormwatch on/off scheduling.
+ * 16-Jan-2020 >>> v0.2.1e.20200116 - Additional command retry/error checking logic. Hubitat battery% compatibility update.
+ * 10-Jan-2020 >>> v0.2.0e.20200110 - Push notification support for Hubitat
+ * 04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
+ * 03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
+ * 30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
+ * 06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
+ * 13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
+ * 09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
+ * 29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
+ * 23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  */
 
 import groovy.transform.Field
 
 definition (
     name: "Tesla Powerwall Manager", namespace: "darwinsden", author: "eedwards", description: "Monitor and control your Tesla Powerwall",
-    importUrl: "https://raw.githubusercontent.com/DarwinsDen/SmartThingsPublic/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy",
+    importUrl: "https://raw.githubusercontent.com/DarwinsDen/Tesla-Powerwall-Manager/master/smartapps/darwinsden/tesla-powerwall-manager.src/tesla-powerwall-manager.groovy",
     category: "My Apps",
-    iconUrl: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png",
-    iconX2Url: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png"
+    iconUrl: pwLogo,
+    iconX2Url: pwLogo
 )
 
 preferences {
@@ -86,7 +106,7 @@ private pageMain() {
             if (hubIsSt()) {
                   paragraph app.versionDetails(), title: "PowerWall Manager", required: false, image: pwLogo
             }  else {
-                paragraph "<img src ='${pwLogo}' align='left' style = 'margin-top: -18px; padding-right: 15px'>Powerwall Manager\n ${app.versionDetails()}"
+                paragraph "<img src ='${pwLogo}' align='left' style = 'padding-right: 15px'>Powerwall Manager\n ${app.versionDetails()}"
            }               
         }
         String connectStr
@@ -103,6 +123,7 @@ private pageMain() {
        if (!state.lastGatewayCheckTime || now() - state.lastGatewayCheckTime > 300000){
            getLocalGwStatus()
        }
+       state.gwPingResults = null
        section(connectStr) {
             hrefMenuPage ("teslaAccountInfo", "Tesla Server Token Information..", state.serverStatusStr, teslaIcon, null, connectedToTeslaServer() ? "complete" : null)
             if (!hubIsSt()) {
@@ -213,6 +234,12 @@ void appButtonHandler(btn) {
    switch (btn) {
        case "deleteSchedule":
           deleteScheduleIndex(state.editingScheduleIndex)
+          break
+       case "gatewayPing":
+          def pingData = hubitat.helper.NetworkUtils.ping("${gatewayAddress}")
+          state.gwPingResults = pingData
+          state.lastGwPingIp = "${gatewayAddress}"
+          logger ("Gateway ping results: ${pingData}","debug") 
           break
        default:
           logger ("Unknown button type: ${btn}","warn")
@@ -443,10 +470,26 @@ private gatewayAccountInfo() {
     return dynamicPage(name: "gatewayAccountInfo", title: "", install: false) {
         state.lastGatewayCheckTime = 0 // New data is being entered. Last server check is no longer valid
         section("Local Gateway Information") {
-               input("gatewayAddress", "text", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
-               input "gatewayPw", "password", title: "Gateway Customer Password", autoCorrect: false, required: false
+            input "gatewayAddress", "text", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false, submitOnChange: true 
+            input "gatewayPw", "password", title: "Gateway Customer Password", autoCorrect: false, required: false, submitOnChange: true
         }
-      }
+        section() {
+            if (gatewayAddress) {
+                paragraph "<span style='color:DarkGray'>${getLocalGwStatus()}</span>"
+                input "gatewayPing", "button", title: "Test ping gateway", submitOnChange: true, width: 3
+                if (state.gwPingResults && gatewayAddress==state.lastGwPingIp ) {
+                    String result
+                    if (state.gwPingResults.packetLoss) {
+                        result = "<p style='margin-top:8px; color:red'>Issue pinging ${state.lastGwPingIp} from Hubitat.</p>"
+                    } else {
+                        result = "<p style='margin-top:8px; color:blue'>Hubitat successfully pinged ${state.lastGwPingIp}.</p>"
+                    }
+                    paragraph result, width: 9
+                    paragraph "<p>${String.format('%tH:%<tM:%<tS', java.time.LocalDateTime.now())} ${state.gwPingResults}</p>"
+                }
+            }
+        }
+    }
 }
 
 def getConnectionMethodStatus() {
@@ -473,7 +516,7 @@ def pageConnectionMethod() {
 }
 
 def pageDashboardTile() {
-    dynamicPage(name: "pageDashboardTile", title:"Powerall Dashboard iFrame Tile", install: false, uninstall: false) {
+    dynamicPage(name: "pageDashboardTile", title:"Powerwall Dashboard iFrame Tile", install: false, uninstall: false) {
         String note = ""
         if (gatewayTileAddress) {
             section {
@@ -652,12 +695,15 @@ String getLocalGwStatus() {
         } else {
             logger ("Connecting to local gateway...","debug")
             messageStr = "Could not log in to local gateway at ${gatewayAddress}" 
-            httpPost([uri: "https://${gatewayAddress}/api/login/Basic",
+            String gwUri = "https://${gatewayAddress}/api/login/Basic"
+            logger("Posting to gateway URI: ${gwUri}","trace")
+            httpPost([uri: gwUri,
                       contentType: 'application/json',
                       ignoreSSLIssues: true,
                       query: [username: "customer", password : "${gatewayPw}"]
-                     ]) { resp ->
+                   ]) { resp ->
                 Integer statusCode = resp.getStatus()
+                logger("Gateway response status code: ${statusCode}","debug")
                 if (statusCode == 200) {
                     resp.headers.each {
                         if (it.name == "Set-Cookie") {
@@ -680,7 +726,7 @@ String getLocalGwStatus() {
                             //"Gateway time zone: ${response.data.timezone.toString()}\n"
                     }
                 } else {
-                    messageStr = "Unable to login to gateway. Status: ${statusCode}"
+                    messageStr = "Unable to login to gateway at: ${gatewayAddress}. Status: ${statusCode}"
                 }                  
             }
         }
@@ -688,7 +734,7 @@ String getLocalGwStatus() {
         return messageStr
     } catch (Exception e) {
         logger ("Error getting local gateway status: ${e}","warn")
-        state.gatewayStatusStr = "Error accessing local gateway.\n" + "Please verify your gateway address and password. ${e}" 
+        state.gatewayStatusStr = "Error accessing local gateway at: ${gatewayAddress}.\n" + "Please verify your gateway address and password. ${e}" 
         return state.gatewayStatusStr
     }
 }
@@ -1530,7 +1576,7 @@ def updateIfChanged(device, attr, value, delta = null) {
     Boolean deltaMet = (currentValue == null || value != null && delta != null && Math.abs((value.toInteger() - currentValue.toInteger()).toInteger()) > delta.toInteger())
     Boolean changed = value != null && value != '' && currentValue != null && currentValue != '' && value.toString() != currentValue.toString() && (!delta || deltaMet)
     logger ("${attr} is: ${value} was: ${currentValue} changed: ${changed}","trace")
-    state.currentAttrValue[attr] = value.toString()
+   
     Boolean heartBeatUpdateDue = false
 
     if (state.lastHeartbeatUpdateTime == null) {
@@ -1539,13 +1585,14 @@ def updateIfChanged(device, attr, value, delta = null) {
     if (state.lastHeartbeatUpdateTime[attr] == null || now() - state.lastHeartbeatUpdateTime[attr] > 3600000) {
         heartBeatUpdateDue = true
     }
-    if (device) {
-        if (changed || heartBeatUpdateDue || (currentValue == null && (value != null && value != ''))) {
+    if (changed || heartBeatUpdateDue || (currentValue == null && (value != null && value != ''))) {
+        state.currentAttrValue[attr] = value.toString()
+        state.lastHeartbeatUpdateTime[attr] = now()
+        if (device) {
             device.sendEvent(name: attr, value: value)
-            state.lastHeartbeatUpdateTime[attr] = now()
+        } else {
+           logger("No Powerwall device to update ${attr} to ${value}","warn")
         }
-    } else {
-        logger("No Powerwall device to update ${attr} to ${value}","warn")
     }
     return changed
 }
@@ -2272,8 +2319,10 @@ void processGatewayMain() {
     //    state.forceGwFailure=true
     //    state.gwAuthCookie = "  "
     //}
+    logger ("Processing processGatewayMain","debug")
     if (gatewayAddress) {
         if (state.gatewayVerified) {
+            logger ("requesting data from gateway","debug")
             if (state.gatewayConnectFailMode) {
                 //was in failure mode, ok now
                 unschedule (reVerifyGateway)
@@ -2283,13 +2332,16 @@ void processGatewayMain() {
             runIn (5, requestGatewaySiteData) 
         } else if (!state.gatewayConnectFailMode) {
             //gateway is not validated, but not yet in failure mode, re-check gateway login
+            logger ("gateway not been verified","debug")
             getLocalGwStatus()
             if (state.gatewayVerified) {
                 //it's good now
+               logger ("gateway now verified","debug")
                runIn (2, requestGatewayMeterData)
                runIn (5, requestGatewaySiteData) 
             } else {
                //Gateway could not be verified. Put in gateway failure mode
+               logger ("entering gateway fail mode","debug")
                state.gatewayConnectFailMode = true
                runEvery1Hour (reVerifyGateway) 
             }
@@ -2534,5 +2586,5 @@ def hrefMenuPage (String page, String titleStr, String descStr, String image, pa
 @Field static final String addIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/add40.png"
 @Field static final String schedIncomplIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/schedIncompl40.png"
 @Field static final String ppBtn = "https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif"
-@Field static final String pwLogo = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogo80.png"
+@Field static final String pwLogo = "https://raw.githubusercontent.com/DarwinsDen/Tesla-Powerwall-Manager/main/images/PWLogo.png"
 @Field static final String trashIcon = "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/trash40.png"
