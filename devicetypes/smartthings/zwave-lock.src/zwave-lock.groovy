@@ -43,7 +43,7 @@ metadata {
 		//zw:Fs type:4003 mfr:0090 prod:0003 model:0742 ver:4.10 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,4E,8B,4C,5D role:07 ff:8300 ui:8300
 		fingerprint mfr:"0090", prod:"0003", model:"0742", deviceJoinName: "Kwikset Door Lock" //Kwikset Obsidian Lock
 		// Schlage
-		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
+		fingerprint mfr:"003B", prod:"6349", model:"5044", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Door Lock" //Schlage Connected Keypad Lever Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0468", deviceJoinName: "Schlage Door Lock" //BE468ZP //Schlage Connect Smart Deadbolt Door Lock
