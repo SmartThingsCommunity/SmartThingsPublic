@@ -3,6 +3,9 @@
  *
  *  Changelog:
  *
+ *    2022-02-01
+ *      - Requested changes
+ *
  *    2022-01-27
  *      - Replaced temperatureAlarm custom capability with built-in capability.
  *
@@ -68,8 +71,8 @@ import groovy.transform.Field
 
 @Field static Map temperatureSensor = [sensorType:1, scale:1]
 @Field static Map humiditySensor = [sensorType: 5, scale:0]
-@Field static Map temperatureAlarm = [name:"temperatureAlarm", notificationType:4, normalEvent:0, highEvent:2, lowEvent:6, highValue:"heat", lowValue:"freeze", normalValue:"cleared"]
-@Field static Map humidityAlarm = [name:"humidityAlarm", notificationType:16, normalEvent:0, highEvent:2, lowEvent:6, highValue:"high", lowValue:"low", normalValue:"normal"]
+@Field static Map temperatureAlarm = [name:"temperatureAlarm", notificationType:4, eventValues:[0:"cleared", 2:"heat", 6:"freeze"]]
+@Field static Map humidityAlarm = [name:"humidityAlarm", notificationType:16, eventValues:[0:"normal", 2:"high", 6:"low"]]
 @Field static int wakeUpInterval = 43200
 
 metadata {
@@ -155,11 +158,11 @@ void initialize() {
 	}
 
 	if (!device.currentValue("temperatureAlarm")) {
-		sendEvent(name:"temperatureAlarm", value:temperatureAlarm.normal)
+		sendEvent(name:"temperatureAlarm", value:"cleared")
 	}
 
 	if (!device.currentValue("humidityAlarm")) {
-		sendEvent(name:"humidityAlarm", value:humidityAlarm.normal)
+		sendEvent(name:"humidityAlarm", value:"normal")
 	}
 
 	if (!device.currentValue("checkInterval")) {
@@ -299,24 +302,18 @@ void zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport c
 	logDebug "${cmd}"
 	switch (cmd.notificationType) {
 		case temperatureAlarm.notificationType:
-			sendAlarmEvent(temperatureAlarm, cmd)
+			sendAlarmEvent(temperatureAlarm, cmd.event)
 			break
 		case humidityAlarm.notificationType:
-			sendAlarmEvent(humidityAlarm, cmd)
+			sendAlarmEvent(humidityAlarm, cmd.event)
 			break
 		default:
 			logDebug "${cmd}"
 	}
 }
 
-void sendAlarmEvent(Map alarm, cmd) {
-	String value
-	if ((cmd.event == alarm.highEvent) || (cmd.event == alarm.lowEvent)) {
-		value = (cmd.event == alarm.highEvent) ? alarm.highValue : alarm.lowValue
-	} else if (cmd.event == alarm.normalEvent) {
-		value = alarm.normalValue
-	}
-
+void sendAlarmEvent(Map alarm, int notificationEvent) {
+	String value = alarm.eventValues[notificationEvent]
 	if (value) {
 		logDebug "${alarm.name} is ${value}"
 		sendEvent(name: alarm.name, value: value)
