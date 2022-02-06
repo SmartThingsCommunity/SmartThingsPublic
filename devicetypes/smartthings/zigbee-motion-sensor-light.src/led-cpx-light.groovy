@@ -87,7 +87,7 @@ def parse(String description) {
 				def childDevice = getChildDevices()?.find {
 					it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
 				}
-				zigbeeMap.value = zigbeeMap.value.endsWith("01") ? "active" : "inactive"			
+				zigbeeMap.value = zigbeeMap.value.endsWith("01") ? "active" : "inactive"
 				zigbeeMap.name = "motion"
 				childDevice.sendEvent(zigbeeMap)
 			}
@@ -153,13 +153,12 @@ def addChildSensor() {
 		componentLabel = "$device.displayName Motion sensor"
 	}
 	
-	if (childDevice != null) {
-		childDevice.sendEvent(name: "motion", value: "inactive")
-	}
-	
 	try {
 		String dni = "${device.deviceNetworkId}:1"
 		childDevice = addChildDevice("ITM CPX Motion sensor child", dni, device.hub.id, [completedSetup: true, label: "${componentLabel}", isComponent: false])
+		if (childDevice != null) {
+			childDevice.sendEvent(name: "motion", value: "inactive")
+		}
 	} catch (e) {
 		log.warn "Failed to add ITM Fan Controller - $e"
 	}
