@@ -67,7 +67,7 @@ def parse(String description) {
 		List result = []
 		log.debug "Desc Map: $descMap"
 
-		List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value, isValidForDataType: descMap.isValidForDataType]]
+		List attrData = [[clusterInt: descMap.clusterInt, attrInt: descMap.attrInt, value: descMap.value, isValidForDataType: descMap.isValidForDataType]]
 		descMap.additionalAttrs.each {
 			attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value, isValidForDataType: it.isValidForDataType]
 		}
