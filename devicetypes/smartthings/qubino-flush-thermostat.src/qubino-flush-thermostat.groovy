@@ -198,7 +198,8 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 2) {
-			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+			def powerValue = device.currentValue("thermostatOperatingState") != "idle" ? Math.round(cmd.scaledMeterValue) : 0
+			createEvent(name: "power", value: powerValue, unit: "W")
 		}
 	}
 }
