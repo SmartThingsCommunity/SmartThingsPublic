@@ -149,7 +149,7 @@ def levelEventHandler(currentLevel) {
 
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
 
-	if (lastLevel == "undefined") { //Ignore invalid reports
+	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
 		sendEvent(name: "shadeLevel", value: currentLevel, unit: "%")
