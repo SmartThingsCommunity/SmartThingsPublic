@@ -63,7 +63,7 @@ metadata {
 
 private getMOTION_CLUSTER() { 0x0406 }
 private getMOTION_STATUS_ATTRIBUTE() { 0x0000 }
-private getON_OFF_CLUSTER_VALUE() { 0x0006 }
+private getON_OFF_CLUSTER() { 0x0006 }
 private getCONFIGURE_REPORTING_RESPONSE() { 0x07 }
 private getON_DATA() { 0x01 }
 private getOFF_DATA() { 0x00 }
@@ -73,7 +73,7 @@ def parse(String description) {
 	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	
 	if (event) {
-		if (zigbeeMap.clusterInt == ON_OFF_CLUSTER_VALUE && (zigbeeMap.data[0] != ON_DATA || zigbeeMap.data[0] != OFF_DATA)) {
+		if (zigbeeMap.clusterInt == ON_OFF_CLUSTER && (zigbeeMap.data[0] != ON_DATA || zigbeeMap.data[0] != OFF_DATA)) {
 			return
 		}
 		
@@ -83,7 +83,7 @@ def parse(String description) {
 	} else {
 		def cluster = zigbee.parse(description)
 		
-		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE && cluster.command == CONFIGURE_REPORTING_RESPONSE) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER && cluster.command == CONFIGURE_REPORTING_RESPONSE) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
