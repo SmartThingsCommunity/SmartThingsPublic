@@ -65,15 +65,15 @@ private getMOTION_CLUSTER() { 0x0406 }
 private getMOTION_STATUS_ATTRIBUTE() { 0x0000 }
 private getON_OFF_CLUSTER_VALUE() { 0x0006 }
 private getCONFIGURE_REPORTING_RESPONSE() { 0x07 }
-private getON_DATA() { [0x01, 0x00] }
-private getOFF_DATA() { [0x00, 0x00] }
+private getON_DATA() { 0x01 }
+private getOFF_DATA() { 0x00 }
 
 def parse(String description) {
 	def event = zigbee.getEvent(description)
 	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	
 	if (event) {
-		if (zigbeeMap.clusterInt == ON_OFF_CLUSTER_VALUE && (zigbeeMap.data != ON_DATA || zigbeeMap.data != OFF_DATA)) {
+		if (zigbeeMap.clusterInt == ON_OFF_CLUSTER_VALUE && (zigbeeMap.data[0] != ON_DATA || zigbeeMap.data[0] != OFF_DATA)) {
 			return
 		}
 		
