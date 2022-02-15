@@ -13,6 +13,7 @@ Works with:
 * Yale Push Button Deadbolt Lock
 * Yale Touch Screen Deadbolt Lock
 * Yale Push Button Lever Lock
+* Danalock Door Lock
 
 ## Table of contents
 
