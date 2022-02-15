@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED", runLocally: true) {
+	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED") {
 		
 		capability "Actuator"
 		capability "Color Temperature"
@@ -65,24 +65,29 @@ private getMOTION_CLUSTER() { 0x0406 }
 private getMOTION_STATUS_ATTRIBUTE() { 0x0000 }
 private getON_OFF_CLUSTER_VALUE() { 0x0006 }
 private getCONFIGURE_REPORTING_RESPONSE() { 0x07 }
+private getON_DATA_VALUE() { [0x01, 0x00] }
+private getOFF_DATA_VALUE() { [0x00, 0x00] }
 
 def parse(String description) {
 	def event = zigbee.getEvent(description)
+	def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 	
 	if (event) {
+		if (zigbeeMap.clusterInt == ON_OFF_CLUSTER_VALUE && (zigbeeMap.data != ON_DATA_VALUE || zigbeeMap.data != OFF_DATA_VALUE)) {
+			return
+		}
+		
 		if (!(event.name == "level" && event.value == 0)) {
 			sendEvent(event)
 		}
 	} else {
 		def cluster = zigbee.parse(description)
 		
-		if (cluster && cluster.clusterId == ON_OFF_CLUSTER && cluster.command == CONFIGURE_REPORTING_RESPONSE) {
+		if (cluster && cluster.clusterId == ON_OFF_CLUSTER_VALUE && cluster.command == CONFIGURE_REPORTING_RESPONSE) {
 			if (cluster.data[0] == 0x00) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
 		} else {
-			def zigbeeMap = zigbee.parseDescriptionAsMap(description)
-			
 			if (zigbeeMap.clusterInt ==  MOTION_CLUSTER && zigbeeMap.attrInt == MOTION_STATUS_ATTRIBUTE) {
 				def childDevice = getChildDevices()?.find {
 					it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
