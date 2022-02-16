@@ -88,14 +88,12 @@ def parse(String description) {
 				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
 		} else {
-			def zigbeeMap_child = zigbee.parseDescriptionAsMap(description)
-			if (zigbeeMap_child.clusterInt ==  MOTION_CLUSTER && zigbeeMap_child.attrInt == MOTION_STATUS_ATTRIBUTE) {
-				def childDevice_child = getChildDevices()?.find {
+			if (zigbeeMap.clusterInt ==  MOTION_CLUSTER && zigbeeMap.attrInt == MOTION_STATUS_ATTRIBUTE) {
+				def childDevice = getChildDevices()?.find {
 					it.device.deviceNetworkId == "${device.deviceNetworkId}:1" 
 				}
-				zigbeeMap_child.value = zigbeeMap_child.value.endsWith("01") ? "active" : "inactive"
-				zigbeeMap_child.name = "motion"
-				childDevice.sendEvent(zigbeeMap_child)
+				def event_child = zigbeeMap.value.endsWith("01") ? createEvent(name: "motion", value: "active") : createEvent(name: "motion", value: "inactive")
+				childDevice.sendEvent(event_child)
 			}
 		}
 	}
