@@ -114,7 +114,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	else {
 		state."$parameter".state = "error"
 	}
-    log.info "Parameter ${parameter} Value ${state."$parameter".value} State ${state."$parameter".state}"
 	configParam()
 }
 
