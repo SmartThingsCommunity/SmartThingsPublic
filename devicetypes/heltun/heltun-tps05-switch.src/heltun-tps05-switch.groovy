@@ -665,7 +665,7 @@ private parameterMap() {[
 			1: "Enabled"
 	], paramNum: 142, size: 1, default: "1", type: "enum"],
 
-[title: "Sensors Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends to the gateway reports from its external NTC temperature sensor even if there are not changes in the values. This Parameter defines the interval between consecutive reports",
+[title: "Sensors Consecutive Report Interval", description: "When the device is connected to the gateway, it periodically sends to the gateway reports from its external NTC temperature sensor even if there are not changes in the values. This Parameter defines the interval between consecutive reports.",
  name: "Selected Energy Report Interval in minutes", paramNum: 143, size: 1, default: 10, type: "number", min: 1 , max: 120, unit: "min"],
 
 [title: "Air & Floor Temperature Sensors Report Threshold", description: "This Parameter determines the change in temperature level (in °C) resulting in temperature sensors report being sent to the gateway. The value of this Parameter should be x10 for °C, e.g. for 0.4°C use value 4. Use the value 0 if there is a need to stop sending the reports.",
