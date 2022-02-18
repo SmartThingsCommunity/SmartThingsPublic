@@ -79,7 +79,7 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-	if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
+		if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
 			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
 			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
 			break
@@ -94,19 +94,19 @@ private configParam() {
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def map = [:]
 	def roomTemperature = 1
-	def himidity = 5
+	def humidity = 5
 	def illuminance = 3
-	def locaScale = getTemperatureScale() //HubScale
+	def localScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == 1 }
 	if (roomTemperature == cmd.sensorType) {
 		def deviceTemp = cmd.scaledSensorValue
-		def scaledTemp = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
+		def scaledTemp = (deviceScale == localScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
 		map.name = "temperature"
 		map.value = scaledTemp
-		map.unit = locaScale
+		map.unit = localScale
 		sendEvent(map)
-	} else if (himidity == cmd.sensorType) {
+	} else if (humidity == cmd.sensorType) {
 		map.name = "humidity"
 		map.value = cmd.scaledSensorValue.toInteger()
 		map.unit = "%"
@@ -150,20 +150,20 @@ def installed() {
 	state.oldLabel = device.label
 	def existingChildren = getChildDevices()
 	for (i in 1..numberOfButtons) {
-		def ButtonNetworkId = "${device.deviceNetworkId}:${i+2*numberOfButtons}"
-		def RelayNetworkId = "${device.deviceNetworkId}:${i+numberOfButtons}"
-		def BacklightNetworkId = "${device.deviceNetworkId}:${i}"
-		def childRelayExists = (existingChildren.find {child -> child.getDeviceNetworkId() == RelayNetworkId} != NULL)
-		def childButtonExists = (existingChildren.find {child -> child.getDeviceNetworkId() == ButtonNetworkId} != NULL)
-		def childBacklightExists = (existingChildren.find {child -> child.getDeviceNetworkId() == BacklightNetworkId} != NULL)
+		def buttonNetworkId = "${device.deviceNetworkId}:${i+2*numberOfButtons}"
+		def relayNetworkId = "${device.deviceNetworkId}:${i+numberOfButtons}"
+		def backlightNetworkId = "${device.deviceNetworkId}:${i}"
+		def childRelayExists = (existingChildren.find {child -> child.getDeviceNetworkId() == relayNetworkId} != NULL)
+		def childButtonExists = (existingChildren.find {child -> child.getDeviceNetworkId() == buttonNetworkId} != NULL)
+		def childBacklightExists = (existingChildren.find {child -> child.getDeviceNetworkId() == backlightNetworkId} != NULL)
 		if (!childBacklightExists ) {
-			def child = addChildDevice("HE-BACKLIGHT", BacklightNetworkId, device.hubId, [completedSetup: true, label: getChildName(i), isComponent: false])
+			def child = addChildDevice("Heltun Child Backlight", backlightNetworkId, device.hubId, [completedSetup: true, label: getChildName(i), isComponent: false])
 		}
 		if (!childRelayExists) {
-			addChildDevice("HE-RELAY", RelayNetworkId, device.hubId,[completedSetup: true, label: getChildName(i+numberOfButtons), isComponent: false])
+			addChildDevice("HELTUN", "Heltun Child Relay", relayNetworkId, device.hubId,[completedSetup: true, label: getChildName(i+numberOfButtons), isComponent: false])
 		}
 		if (!childButtonExists ) {
-			def child = addChildDevice("HE-BUTTON", ButtonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+2*numberOfButtons), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
+			def child = addChildDevice("smartthings", "Child Button", buttonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+2*numberOfButtons), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
 		}
 	}
 	initialize()
@@ -182,21 +182,21 @@ private getChildName(channelNumber) {
 	}
 }
 
-private channelNumber(String N) {
-	N.split(":")[-1] as Integer
+private channelNumber(String deviceNetworkId) {
+	deviceNetworkId.split(":")[-1] as Integer
 }
 
 def parse(String description) {
-	def result = null
 	def cmd = zwave.parse(description)
-	if (cmd) {result = zwaveEvent(cmd)}
-	return result
+	if (cmd) {
+		return zwaveEvent(cmd)
+	}
 }
 
 private void setState(value, endpoint = null) {
 	def map = [
-			encap(zwave.basicV1.basicSet(value: value), endpoint),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint),
+		encap(zwave.basicV1.basicSet(value: value), endpoint),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint),
 	]
 	sendHubCommand(map, 500)
 }
@@ -239,13 +239,24 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	def state
 	def buttonN
 	switch (cmd.keyAttributes as Integer) {
-		case 0: state = "pushed"; buttonN = cmd.sceneNumber; break
-		case 1: state = "up"; buttonN = cmd.sceneNumber; break
-		case 2: state = "held"; buttonN = cmd.sceneNumber; break
+		case 0:
+			state = "pushed"
+			buttonN = cmd.sceneNumber
+			break
+		case 1: 
+			state = "up"
+			buttonN = cmd.sceneNumber
+			break
+		case 2: 
+			state = "held"
+			buttonN = cmd.sceneNumber
+			break
 	}
-	def buttonId = buttonN + numberOfButtons * 2
-	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == buttonId }
-	child?.sendEvent([name: "button", value: state, data: [buttonNumber: 1], isStateChange: true])
+	if (buttonN) {
+		def buttonId = buttonN + numberOfButtons * 2
+		def child = childDevices?.find {channelNumber(it.deviceNetworkId) == buttonId }
+		child?.sendEvent([name: "button", value: state, data: [buttonNumber: 1], isStateChange: true])
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -280,8 +291,8 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 def zwaveEvent(physicalgraph.zwave.commands.clockv1.ClockReport cmd) {
 	def currDate = Calendar.getInstance(location.timeZone)
 	def time = [hour: currDate.get(Calendar.HOUR_OF_DAY), minute: currDate.get(Calendar.MINUTE), weekday: currDate.get(Calendar.DAY_OF_WEEK)]
-	if ((time.hour != cmd.hour) || (time.minute != cmd.minute) || (time.weekday != cmd.weekday)){
-	sendHubCommand(zwave.clockV1.clockSet(time).format())
+	if ((time.hour != cmd.hour) || (time.minute != cmd.minute) || (time.weekday != cmd.weekday)) {
+		sendHubCommand(zwave.clockV1.clockSet(time).format())
 	}
 }
 
@@ -293,7 +304,9 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 			cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,0]).format()
 		}
 	}
-	if (cmds) sendHubCommand(cmds, 1200)
+	if (cmds) {
+		sendHubCommand(cmds, 1200)
+	}
 }
 
 def configure() {
