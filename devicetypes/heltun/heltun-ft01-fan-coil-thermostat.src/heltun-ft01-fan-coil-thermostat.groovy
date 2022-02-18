@@ -118,30 +118,30 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
-	def locaScale = getTemperatureScale() //HubScale
+	def localScale = getTemperatureScale() //HubScale
 	def deviceMode = numToModeMap[cmd.mode.toInteger()]
 	sendEvent(name: "thermostatMode", data:[supportedThermostatModes: state.supportedModes], value: deviceMode)
 	if (cmd.mode == 0 || cmd.mode == 6) {
-		sendEvent(name: "heatingSetpoint", value: 0, unit: locaScale)
+		sendEvent(name: "heatingSetpoint", value: 0, unit: localScale)
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def map = [:]
 	def roomTemperature = 1
-	def himidity = 5
+	def humidity = 5
 	def illuminance = 3
-	def locaScale = getTemperatureScale() //HubScale
+	def localScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == 1 }
 	if (roomTemperature == cmd.sensorType) {
 		def deviceTemp = cmd.scaledSensorValue
-		def scaledTemp = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
+		def scaledTemp = (deviceScale == localScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
 		map.name = "temperature"
 		map.value = scaledTemp
-		map.unit = locaScale
+		map.unit = localScale
 		sendEvent(map)
-	} else if (himidity == cmd.sensorType) {
+	} else if (humidity == cmd.sensorType) {
 		map.name = "humidity"
 		map.value = cmd.scaledSensorValue.toInteger()
 		map.unit = "%"
@@ -191,15 +191,15 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
-	def locaScale = getTemperatureScale() //HubScale
+	def localScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def deviceTemp = cmd.scaledValue
-	def setPoint = (deviceScale == locaScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
+	def setPoint = (deviceScale == localScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
 	def mode = modeToNumMap[device.currentValue("thermostatMode")]
 	if (mode == 0 || mode == 6) {
 		setPoint = 0
 	}
-	sendEvent(name: "heatingSetpoint", value: setPoint, unit: locaScale)
+	sendEvent(name: "heatingSetpoint", value: setPoint, unit: localScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
