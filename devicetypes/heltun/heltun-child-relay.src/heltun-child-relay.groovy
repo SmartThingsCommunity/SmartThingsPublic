@@ -16,7 +16,7 @@ metadata {
 	definition (name: "Heltun Child Relay", namespace: "HELTUN", author: "Sarkis Kabrailian", cstHandler: true, ocfDeviceType: "oic.d.switch") {
 		capability "Switch"
 		capability "Power Meter"
-        capability "Health Check"
+		capability "Health Check"
 		capability "Refresh"
 	}
 }
