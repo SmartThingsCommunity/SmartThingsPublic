@@ -133,7 +133,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	def illuminance = 3
 	def localScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
-	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == 1 }
 	if (roomTemperature == cmd.sensorType) {
 		def deviceTemp = cmd.scaledSensorValue
 		def scaledTemp = (deviceScale == localScale) ? deviceTemp : (deviceScale == "F" ? roundC(fahrenheitToCelsius(deviceTemp)) : celsiusToFahrenheit(deviceTemp).toDouble().round(0).toInteger())
