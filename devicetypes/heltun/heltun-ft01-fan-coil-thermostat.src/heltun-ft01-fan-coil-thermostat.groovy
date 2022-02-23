@@ -29,9 +29,7 @@ metadata {
 		capability "Health Check"
 		capability "Refresh"
 
-		attribute "thermostatFanState", "string"
-
-		fingerprint mfr: "0344", prod: "0004", model: "0002", deviceJoinName: "HELTUN Thermostat"
+		fingerprint mfr: "0344", prod: "0004", model: "0002", deviceJoinName: "HELTUN Thermostat" //Raw Description zw:L type:0806 mfr:0344 prod:0004 model:0002 ver:2.05 zwv:7.11 lib:03 cc:5E,85,59,8E,55,86,72,5A,73,98,9F,6C,81,31,32,70,42,40,43,44,45,87,22,7A
 	}
 	preferences {
 		input (
@@ -40,9 +38,9 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-			parameterMap().each {
+        parameterMap().each {
 			if (it.title != null) {
-			input (
+				input (
 					title: "${it.title}",
 					description: it.description,
 					type: "paragraph",
@@ -110,8 +108,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	def parameter = parameterMap().find( {it.paramNum == cmd.parameterNumber } ).name
 	if (state."$parameter".value == cmd.scaledConfigurationValue){
 		state."$parameter".state = "configured"
-	}
-	else {
+	} else {
 		state."$parameter".state = "error"
 	}
 	configParam()
@@ -257,8 +254,7 @@ def setFanSpeed(speed) {
 	if (speed == 0) {
 		fanState = true
 		cmds << zwave.thermostatFanModeV3.thermostatFanModeSet(off: fanState)
-	}
-	else {
+	} else {
 		def fanSpeed = fanSpeedToModeMap[speed]
 		cmds << zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanSpeed, off: fanState)
 	}
@@ -445,13 +441,13 @@ private parameterMap() {[
     
 [title: "Heating State Fan Control", description: "This parameter determines if fan should be enabled or disabled in heating mode. If fan is enabled (normal operation), one of the outputs OUT-1, OUT-2, OUT-3 will be ON depending on the selected fan speed. If fan is disabled, in heating state, only OUT-4 will be ON and OUT-1, OUT-2, OUT-3 will always remain OFF",
  name: "Selected Mode", options: [
-			0: "FAN Disabled",
+			0: "Fan Disabled",
 			1: "Fan Enabled"
 	], paramNum: 10, size: 1, default: "1", type: "enum"],
     
 [title: "Cooling State Fan Control", description: "This parameter determines if fan should be enabled or disabled in cooling mode. If fan is enabled (normal operation), one of the outputs OUT-1, OUT-2, OUT-3 will be ON depending on the selected fan speed. If fan is disabled, in cooling state, only OUT-4 will be ON and OUT-1, OUT-2, OUT-3 will always remain OFF",
  name: "Selected Mode", options: [
-			0: "FAN Disabled",
+			0: "Fan Disabled",
 			1: "Fan Enabled"
 	], paramNum: 11, size: 1, default: "1", type: "enum"],
     
