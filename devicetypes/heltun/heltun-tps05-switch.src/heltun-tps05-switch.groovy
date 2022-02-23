@@ -12,6 +12,14 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  */
+ 
+import groovy.transform.Field
+
+@Field static int roomTemperature = 1
+@Field static int humidity = 5
+@Field static int illuminance = 3
+
+
 metadata {
 	definition (name: "HELTUN TPS05 Switch", namespace: "HELTUN", author: "Sarkis Kabrailian", cstHandler: true, mcdSync: true ) {
 		capability "Temperature Measurement"
@@ -71,7 +79,7 @@ def checkParam() {
 			needConfig = true
 		}
 	}
-	if ( needConfig ) {
+	if (needConfig) {
 		configParam()
 	}
 }
@@ -79,7 +87,7 @@ def checkParam() {
 private configParam() {
 	def cmds = []
 	for (parameter in parameterMap()) {
-		if ( state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
+		if (state."$parameter.name"?.value != null && state."$parameter.name"?.state in ["notConfigured", "defNotConfigured"] ) {
 			cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$parameter.name".value, parameterNumber: parameter.paramNum, size: parameter.size).format()
 			cmds << zwave.configurationV2.configurationGet(parameterNumber: parameter.paramNum).format()
 			break
@@ -93,9 +101,6 @@ private configParam() {
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
 	def map = [:]
-	def roomTemperature = 1
-	def humidity = 5
-	def illuminance = 3
 	def localScale = getTemperatureScale() //HubScale
 	def deviceScale = (cmd.scale == 1) ? "F" : "C" //DeviceScale
 	def child = childDevices?.find {channelNumber(it.deviceNetworkId) == 1 }
@@ -157,13 +162,13 @@ def installed() {
 		def childButtonExists = (existingChildren.find {child -> child.getDeviceNetworkId() == buttonNetworkId} != NULL)
 		def childBacklightExists = (existingChildren.find {child -> child.getDeviceNetworkId() == backlightNetworkId} != NULL)
 		if (!childBacklightExists ) {
-			def child = addChildDevice("Heltun Child Backlight", backlightNetworkId, device.hubId, [completedSetup: true, label: getChildName(i), isComponent: false])
+			addChildDevice("smartthings","Child Switch", backlightNetworkId, device.hubId, [completedSetup: true, label: getChildName(i), isComponent: false])
 		}
 		if (!childRelayExists) {
 			addChildDevice("HELTUN", "Heltun Child Relay", relayNetworkId, device.hubId,[completedSetup: true, label: getChildName(i+numberOfButtons), isComponent: false])
 		}
 		if (!childButtonExists ) {
-			def child = addChildDevice("smartthings", "Child Button", buttonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+2*numberOfButtons), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
+			addChildDevice("smartthings", "Child Button", buttonNetworkId, device.hubId, [completedSetup: true, label: getChildName(i+2*numberOfButtons), isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
 		}
 	}
 	initialize()
@@ -194,11 +199,11 @@ def parse(String description) {
 }
 
 private void setState(value, endpoint = null) {
-	def map = [
+	def cmds = [
 		encap(zwave.basicV1.basicSet(value: value), endpoint),
 		encap(zwave.switchBinaryV1.switchBinaryGet(), endpoint),
 	]
-	sendHubCommand(map, 500)
+	sendHubCommand(cmds, 500)
 }
 
 private encap(cmd, endpoint) {
@@ -214,7 +219,7 @@ def childOn(childId) {
 }
 
 def childOff(childId) {
-	setState(0, channelNumber(childId))
+	setState(0x00, channelNumber(childId))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
@@ -235,21 +240,19 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+	log.info cmd
 	def numberOfButtons = state.numberOfButtons
 	def state
-	def buttonN
+	def buttonN = cmd.sceneNumber
 	switch (cmd.keyAttributes as Integer) {
 		case 0:
 			state = "pushed"
-			buttonN = cmd.sceneNumber
 			break
 		case 1: 
 			state = "up"
-			buttonN = cmd.sceneNumber
 			break
 		case 2: 
 			state = "held"
-			buttonN = cmd.sceneNumber
 			break
 	}
 	if (buttonN) {
@@ -259,15 +262,18 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
+	def encapsulatedCommand = cmd.encapsulatedCommand()
+	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
 	def numberOfButtons = state.numberOfButtons
-	def endPoint = cmd.sourceEndPoint.toInteger()
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
-	def value = encapsulatedCommand.value
-	def childDevice = childDevices?.find {channelNumber(it.deviceNetworkId) == endPoint }
+	def value = cmd.value
+	def childDevice = childDevices?.find {channelNumber(it.deviceNetworkId) == ep }
 	def corrRelCons = 0
-	def corRelParam = 11 + endPoint - numberOfButtons
-	if (endPoint in numberOfButtons..(2*numberOfButtons)) {
+	def corRelParam = 11 + ep - numberOfButtons
+	if (ep in numberOfButtons..(2*numberOfButtons)) {
 		def param = parameterMap().find( {it.paramNum == corRelParam } ).name
 		def paramState = state."$param"
 		if (paramState) {
@@ -316,9 +322,9 @@ def configure() {
 def refresh() {
 	def numberOfButtons = state.numberOfButtons
 	def cmds = []
-	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1).format() //roomTemperature
-	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3).format() //Humidity
-	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5).format() //Illuminance
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:roomTemperature).format()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:humidity).format()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:illuminance).format()
 	for (i in 1..(2 * numberOfButtons)) {
 		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), i)
 	}
@@ -329,7 +335,15 @@ def refresh() {
 }
 
 def ping() {
-	refresh()
+	def numberOfButtons = state.numberOfButtons
+	def cmds = []
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:roomTemperature).format()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:humidity).format()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:illuminance).format()
+	for (i in 1..(2 * numberOfButtons)) {
+		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), i)
+	}
+	sendHubCommand(cmds, 1200)
 }
 
 def resetEnergyMeter() {
