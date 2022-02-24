@@ -19,7 +19,6 @@ import groovy.transform.Field
 @Field static int humidity = 5
 @Field static int illuminance = 3
 
-
 metadata {
 	definition (name: "HELTUN TPS05 Switch", namespace: "HELTUN", author: "Sarkis Kabrailian", cstHandler: true, mcdSync: true ) {
 		capability "Temperature Measurement"
@@ -152,7 +151,6 @@ def initialize() {
 def installed() {
 	def numberOfButtons = 5
 	state.numberOfButtons = numberOfButtons
-	state.oldLabel = device.label
 	def existingChildren = getChildDevices()
 	for (i in 1..numberOfButtons) {
 		def buttonNetworkId = "${device.deviceNetworkId}:${i+2*numberOfButtons}"
