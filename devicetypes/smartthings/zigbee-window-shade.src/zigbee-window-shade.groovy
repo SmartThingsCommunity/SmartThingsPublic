@@ -39,6 +39,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Ultra Curtain", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 30 WF Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 40 Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 40
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSB015BZ", deviceJoinName: "ThirdReality smart Blind" // ThirdReality
 	}
 
 	preferences {
@@ -147,7 +148,11 @@ def levelEventHandler(currentLevel) {
 		sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
 
 		if (currentLevel == 0 || currentLevel == 100) {
-			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+		    if (device.getDataValue("manufacturer") == "Third Reality, Inc"){
+			    sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
+			} else {
+			    sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+			}
 		} else {
 			if (priorLevel < currentLevel) {
 				sendEvent([name:"windowShade", value: "opening"])
@@ -216,10 +221,14 @@ def pause() {
 	log.info "pause()"
 	def currentShadeStatus = device.currentValue("windowShade")
 
-	if (currentShadeStatus == "open" || currentShadeStatus == "closed") {
-		sendEvent(name: "windowShade", value: currentShadeStatus)
+    if (device.getDataValue("manufacturer") == "Third Reality, Inc") {
+	    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
 	} else {
-		zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+	    if (currentShadeStatus == "open" || currentShadeStatus == "closed") {
+		    sendEvent(name: "windowShade", value: currentShadeStatus)
+	    } else {
+		    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+	    }
 	}
 }
 
