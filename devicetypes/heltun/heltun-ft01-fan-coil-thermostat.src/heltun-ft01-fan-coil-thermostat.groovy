@@ -38,7 +38,7 @@ metadata {
 			type: "paragraph",
 			element: "paragraph"
 		)
-        parameterMap().each {
+		parameterMap().each {
 			if (it.title != null) {
 				input (
 					title: "${it.title}",
@@ -182,7 +182,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 	def fanSpeed = fanModeToSpeedMap[speed]
 	if (cmd.off) {
 		fanSpeed = 0
-	}    
+	}
 	sendEvent(name: "fanSpeed", value: fanSpeed)
 }
 
