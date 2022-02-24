@@ -132,9 +132,7 @@ private Map translateZoneStatus(ZoneStatus zs) {
     // Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
     if (isDSM300()) {
     	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getContactResult('open') : getContactResult('closed')
-    } else {    
-    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
-    } 
+    }
 }
 
 private Map getBatteryResult(rawValue) {
