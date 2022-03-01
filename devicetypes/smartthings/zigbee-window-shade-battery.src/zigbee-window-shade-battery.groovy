@@ -34,9 +34,9 @@ metadata {
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
 
 		// Yookee yooksmart
-		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"
-		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment"
-        
+		fingerprint manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"	// raw description 01 0104 0202 01 07 0000 0001 0003 0004 0005 0020 0102 02 0003 0019
+		fingerprint manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment" // raw description 01 0104 0202 01 07 0000 0001 0003 0004 0005 0020 0102 02 0003 0019
+
 		// SMARTWINGS
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
 	}
@@ -178,7 +178,12 @@ def updateFinalState() {
 }
 
 def batteryPercentageEventHandler(batteryLevel) {
+	log.debug "batteryLevel: ${batteryLevel}"
+
 	if (batteryLevel != null) {
+		if (isYooksmartOrYookee()) {
+			batteryLevel = batteryLevel >> 1
+		}
 		batteryLevel = Math.min(100, Math.max(0, batteryLevel))
 		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%"])
 	}
@@ -322,7 +327,7 @@ def shouldInvertLiftPercentage() {
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
 }
 
 def isIkeaKadrilj() {
