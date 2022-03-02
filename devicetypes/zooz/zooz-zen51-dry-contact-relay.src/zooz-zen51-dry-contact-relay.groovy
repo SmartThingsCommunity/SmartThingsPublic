@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2022-03-02
+ *      - Removed central scene setting
  *    2022-03-01
  *      - Publication Release
  *
@@ -53,7 +55,6 @@ import groovy.transform.Field
 
 @Field static Map configParams = [
 	ledIndicator: [num:1, title:"Led indicator", size:1, defaultVal:1, options:[0:"Disabled", 1:"Enabled"]],
-	sceneControl: [num:5, title:"Scene Control", size:1, defaultVal:0, options:[0:"Disabled", 1:"Enabled"]],
 	autoOff: [num:2, title:"Auto Off Timer", size:2, defaultVal:0, range:"0..65535", desc:"0(disabled), 1..65535(timer unit)"],
 	autoOn: [num:3, title:"Auto On Timer", size:2, defaultVal:0, range:"0..65535", desc:"0(disabled), 1..65535(timer unit)"],
 	timerUnit: [num:10, title:"Timer Unit", size:1, defaultVal:1, options:[1:"Minutes", 2:"Seconds"]],
