@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2022-03-02
+ *      - Requested changes
  *    2022-03-01
  *      - Publication Release
  *
@@ -175,9 +177,9 @@ void initialize() {
 		state.reportedHumidity = device.currentValue("humidity")
 	}
 
-	sendTempEvent(state.reportedTemp, true)
-	sendLightEvent(state.reportedLight, true)
-	sendHumidityEvent(state.reportedHumidity, true)
+	sendTempEvent(state.reportedTemp)
+	sendLightEvent(state.reportedLight)
+	sendHumidityEvent(state.reportedHumidity)
 }
 
 def configure() {
@@ -284,11 +286,7 @@ void zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 
 void zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	int val = (cmd.batteryLevel == 0xFF ? 1 : cmd.batteryLevel)
-	if (val > 100) {
-		val = 100
-	} else if (val < 1) {
-		val = 1
-	}
+	val = Math.min(Math.max(1, val), 100)
 
 	if (device.currentValue("powerSource") != "battery") {
 		log.debug "powerSource is battery"
@@ -316,18 +314,16 @@ void zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevel
 	}
 }
 
-void sendTempEvent(reportedVal, boolean onlyIfNew=false) {
+void sendTempEvent(reportedVal) {
 	reportedVal = safeToDec(reportedVal)
 	state.reportedTemp = reportedVal
 
 	def adjVal = (safeToDec(settings?.tempOffset) + reportedVal)
-	if (!onlyIfNew || (adjVal != device.currentValue("temperature"))) {
-		log.debug "temperature is ${adjVal}°${temperatureScale}"
-		sendEvent(name:"temperature", value:adjVal, unit:temperatureScale)
-	}
+	log.debug "temperature is ${adjVal}°${temperatureScale}"
+	sendEvent(name:"temperature", value:adjVal, unit:temperatureScale)
 }
 
-void sendLightEvent(reportedVal, boolean onlyIfNew=false) {
+void sendLightEvent(reportedVal) {
 	reportedVal = safeToInt(reportedVal)
 	if (reportedVal < 0) {
 		// workaround for bug in original firmware
@@ -337,23 +333,18 @@ void sendLightEvent(reportedVal, boolean onlyIfNew=false) {
 
 	def adjVal = (safeToInt(settings?.lightOffset) + reportedVal)
 	if (adjVal < 0) adjVal = 0
-	if (!onlyIfNew || (adjVal != device.currentValue("illuminance"))) {
-		log.debug "illuminance is ${adjVal}lux"
-		sendEvent(name:"illuminance", value:adjVal, unit:"lux")
-	}
+	log.debug "illuminance is ${adjVal}lux"
+	sendEvent(name:"illuminance", value:adjVal, unit:"lux")
 }
 
-void sendHumidityEvent(reportedVal, boolean onlyIfNew=false) {
+void sendHumidityEvent(reportedVal) {
 	reportedVal = safeToInt(reportedVal)
 	state.reportedHumidity = reportedVal
 
 	def adjVal = (safeToInt(settings?.humidityOffset) + reportedVal)
-	if (adjVal < 0) adjVal = 0
-	if (adjVal > 100) adjVal = 100
-	if (!onlyIfNew || (adjVal != device.currentValue("humidity"))) {
-		log.debug "humidity is ${adjVal}%"
-		sendEvent(name:"humidity", value:adjVal, unit:"%")
-	}
+	adjVal = Math.min(Math.max(0, adjVal), 100)
+	log.debug "humidity is ${adjVal}%"
+	sendEvent(name:"humidity", value:adjVal, unit:"%")
 }
 
 void zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
