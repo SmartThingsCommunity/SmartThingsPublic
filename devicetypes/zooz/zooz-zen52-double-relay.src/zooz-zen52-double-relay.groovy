@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2022-03-02.2
+ *      - Removed central scene setting
  *    2022-03-02
  *      - Publication Release
  *
@@ -57,7 +59,6 @@ import groovy.transform.Field
 
 @Field static Map configParams = [
 	ledIndicator: [num:2, title:"Led indicator", size:1, defaultVal:1, options:[0:"Disabled", 1:"Enabled"]],
-	sceneControl: [num:16, title:"Scene Control", size:1, defaultVal:1, options:[0:"Disabled", 1:"Enabled"]],
 	relay1AutoOff: [num:3, title:"Relay 1 Auto Off Timer", size:2, defaultVal:0, range:"0..65535", desc:"0(disabled), 1..65535(timer unit)"],
 	relay1AutoOn: [num:4, title:"Relay 1 Auto On Timer", size:2, defaultVal:0, range:"0..65535", desc:"0(disabled), 1..65535(timer unit)"],
 	relay1TimerUnit: [num:7, title:"Relay 1 Timer Unit", size:1, defaultVal:1, options:[1:"Minutes", 2:"Seconds"]],
@@ -87,7 +88,7 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Health Check"
-		
+
 		// zw:Ls2a type:1000 mfr:027A prod:0104 model:0202 ver:1.11 zwv:7.15 lib:03 cc:5E,55,9F,6C,22 sec:25,70,85,59,8E,86,72,5A,73,7A,60,5B,87 epc:2
 		fingerprint mfr: "027A", prod: "0104", model: "0202", deviceJoinName: "Zooz Switch" // Zooz ZEN52 Double Relay
 	}
@@ -124,7 +125,7 @@ def installed() {
 def updated() {
 	log.debug "updated()..."
 	initialize()
-	
+
 	if (!state.firstConfig) {
 		configure()
 	} else {
@@ -143,7 +144,6 @@ void initialize() {
 			def child
 			try {
 				child = createChildDevice(endpoint, dni, "Zooz", "Zooz Child Switch Button")
-
 				child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 				child.sendEvent(name:"numberOfButtons", value:1, displayed:false)
 				sendButtonEvent(child, "pushed")
