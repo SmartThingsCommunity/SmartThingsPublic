@@ -18,7 +18,7 @@ preferences {
 }
 
 metadata {
-    definition (name: "DM2500ZB Sinope Dimmer", namespace: "Sinope Technologies", author: "Sinope Technologies",  ocfDeviceType: "oic.d.switch")
+    definition (name: "DM2500ZB-DM2550ZB Sinope Dimmer", namespace: "Sinope Technologies", author: "Sinope Technologies",  ocfDeviceType: "oic.d.switch")
     {
         capability "Actuator"
         capability "Configuration"
@@ -30,6 +30,7 @@ metadata {
         attribute "swBuild","string"// earliers versions of the DM2500ZB does not support the minimal intensity. theses dimmers can be identified by their swBuild under the value 106
         
         fingerprint manufacturer: "Sinope Technologies", model: "DM2500ZB", deviceJoinName: "Sinope Dimmer Switch" //DM2500ZB
+        fingerprint manufacturer: "Sinope Technologies", model: "DM2550ZB", deviceJoinName: "Sinope Dimmer Switch" //DM2550ZB
     }
 
     tiles(scale: 2) 
