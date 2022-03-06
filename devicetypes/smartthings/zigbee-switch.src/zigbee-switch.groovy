@@ -200,3 +200,5 @@ def configure() {
 	log.debug "Configuring Reporting and Bindings."
 	zigbee.onOffRefresh() + zigbee.onOffConfig()
 }
+
+
