@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED") {
+	definition(name: "LED CPX light", namespace: "SAMSUNG LED", author: "SAMSUNG LED", ocfDeviceType: "oic.d.light") {
 		
 		capability "Actuator"
 		capability "Color Temperature"
@@ -144,7 +144,10 @@ def setColorTemperature(value) {
 }
 
 def installed() {
-	addChildSensor()
+	if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
+			sendEvent(name: "level", value: 100)
+	}
+	addChildSensor()	
 }
 
 def addChildSensor() {
