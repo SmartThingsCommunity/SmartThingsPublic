@@ -1135,7 +1135,7 @@ def isYaleLock() {
 }
 
 def isYaleFingerprintLock() {
-	return "ASSA ABLOY iRevo" == device.getDataValue("manufacturer") && ("iZBModule01" || "c700000202" || "0700000001" == device.getDataValue("model"))
+	return "ASSA ABLOY iRevo" == device.getDataValue("manufacturer") && ("iZBModule01" || "c700000202" || "0700000001" || "06ffff2027" == device.getDataValue("model"))
 }
 
 /**
@@ -1150,7 +1150,8 @@ def reportsBatteryIncorrectly() {
 			"YRD210 PB DB",
 			"YRD220/240 TSDB",
 			"YRL210 PB LL",
-			"c700000202" //YDF40
+			"c700000202", //YDF40
+			"06ffff2027"  //YMF40
 	]
 	return device.getDataValue("model") in badModels
 }
