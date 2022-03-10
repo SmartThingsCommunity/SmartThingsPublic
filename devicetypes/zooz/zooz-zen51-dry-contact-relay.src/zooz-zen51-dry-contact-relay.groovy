@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2022-03-09
+ *      - requested change.
  *    2022-03-02
  *      - Removed central scene setting
  *    2022-03-01
@@ -110,6 +112,7 @@ metadata {
 
 def installed() {
 	log.debug "installed()..."
+	initialize()
 	state.firstConfig = true
 }
 
