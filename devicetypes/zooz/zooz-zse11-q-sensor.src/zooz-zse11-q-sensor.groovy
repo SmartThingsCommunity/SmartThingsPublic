@@ -3,6 +3,8 @@
  *
  *  Changelog:
  *
+ *    2022-03-09
+ *      - Requested changes
  *    2022-03-02
  *      - Requested changes
  *    2022-03-01
@@ -163,18 +165,6 @@ void initialize() {
 		if (powerSource == "dc") {
 			sendEvent(name: "battery", value: 100, unit: "%")
 		}
-	}
-
-	if (state.reportedTemp == null) {
-		state.reportedTemp = device.currentValue("temperature")
-	}
-
-	if (state.reportedLight == null) {
-		state.reportedLight = device.currentValue("illuminance")
-	}
-
-	if (state.reportedHumidity == null) {
-		state.reportedHumidity = device.currentValue("humidity")
 	}
 
 	sendTempEvent(state.reportedTemp)
