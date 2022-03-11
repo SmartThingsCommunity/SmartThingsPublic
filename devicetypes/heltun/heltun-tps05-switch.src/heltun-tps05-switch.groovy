@@ -174,9 +174,9 @@ def installed() {
 
 private getChildName(channelNumber) {
 	def prefix = device.displayName
-    if (prefix == "HELTUN Panel") {
-    	prefix = "HELTUN"
-    }
+	if (prefix == "HELTUN Panel") {
+		prefix = "HELTUN"
+	}
 	def numberOfButtons = state.numberOfButtons
 	if (channelNumber in 1..numberOfButtons) {
 		return "${prefix} " + "${"Backlight"} " + "${channelNumber}"
