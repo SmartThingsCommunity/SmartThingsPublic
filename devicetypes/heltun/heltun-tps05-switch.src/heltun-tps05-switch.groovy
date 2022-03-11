@@ -1,7 +1,7 @@
 /**
  *  HELTUN TPS05 Switch
  *
- *  Copyright 2021 Sarkis Kabrailian
+ *  Copyright 2022 Sarkis Kabrailian
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -30,7 +30,7 @@ metadata {
 		capability "Health Check"
 		capability "Refresh"
 
-		fingerprint mfr: "0344", prod: "0004", model: "0003", deviceJoinName: "HELTUN"
+		fingerprint mfr: "0344", prod: "0004", model: "0003", deviceJoinName: "HELTUN Panel"
 	}
 	preferences {
 		input (
@@ -173,15 +173,19 @@ def installed() {
 }
 
 private getChildName(channelNumber) {
+	def prefix = device.displayName
+    if (prefix == "HELTUN Panel") {
+    	prefix = "HELTUN"
+    }
 	def numberOfButtons = state.numberOfButtons
 	if (channelNumber in 1..numberOfButtons) {
-		return "${device.displayName} " + "${"Backlight"} " + "${channelNumber}"
+		return "${prefix} " + "${"Backlight"} " + "${channelNumber}"
 	}
 	else if (channelNumber in (numberOfButtons+1)..(2*numberOfButtons)){
-		return "${device.displayName} " + "${"Switch"} " + "${channelNumber-numberOfButtons}"
+		return "${prefix} " + "${"Switch"} " + "${channelNumber-numberOfButtons}"
 	}
 	else if (channelNumber in (2*numberOfButtons+1)..(3*numberOfButtons)){
-		return "${device.displayName} " + "${"Button"} " + "${channelNumber-numberOfButtons*2}"
+		return "${prefix} " + "${"Button"} " + "${channelNumber-numberOfButtons*2}"
 	}
 }
 
