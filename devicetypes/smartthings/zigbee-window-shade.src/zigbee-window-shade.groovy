@@ -148,10 +148,10 @@ def levelEventHandler(currentLevel) {
 		sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
 
 		if (currentLevel == 0 || currentLevel == 100) {
-		    if (device.getDataValue("manufacturer") == "Third Reality, Inc"){
-			    sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
+		        if (device.getDataValue("manufacturer") == "Third Reality, Inc"){
+			        sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
 			} else {
-			    sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+			        sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 			}
 		} else {
 			if (priorLevel < currentLevel) {
@@ -221,14 +221,14 @@ def pause() {
 	log.info "pause()"
 	def currentShadeStatus = device.currentValue("windowShade")
 
-    if (device.getDataValue("manufacturer") == "Third Reality, Inc") {
-	    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+        if (device.getDataValue("manufacturer") == "Third Reality, Inc") {
+	        zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
 	} else {
-	    if (currentShadeStatus == "open" || currentShadeStatus == "closed") {
-		    sendEvent(name: "windowShade", value: currentShadeStatus)
-	    } else {
-		    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
-	    }
+	        if (currentShadeStatus == "open" || currentShadeStatus == "closed") {
+		        sendEvent(name: "windowShade", value: currentShadeStatus)
+	        } else {
+		        zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+	        }
 	}
 }
 
