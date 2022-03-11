@@ -181,11 +181,11 @@ private Map translateMultiStatus(String description) {
     def descMap = zigbee.parseDescriptionAsMap(description)
 	log.debug "descMap.value is : ${descMap.value}"
     
-    if (descMap.clusterInt == 0x0012 && descMap.value == "0002" ) {
+    if (descMap.value == "0002" ) {
         return getButtonResult('double')
-    } else if (descMap.clusterInt == 0x0012 && descMap.value == "0001" ) {
+    } else if (descMap.value == "0001" ) {
         return getButtonResult('pushed')
-    } else if (descMap.clusterInt == 0x0012 && descMap.value == "0000"){
+    } else if (descMap.value == "0000"){
         return getButtonResult('held')
     } else {}
 }
