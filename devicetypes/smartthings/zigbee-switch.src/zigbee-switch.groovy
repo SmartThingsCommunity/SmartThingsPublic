@@ -32,7 +32,10 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "eWeLink", model: "ZB-SW01", deviceJoinName: "eWeLink Switch"
 		
-		// LELLKI
+        // Minoston
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "Minoston", model: "ZB36S", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston SmartPlug
+		
+        // LELLKI
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "LELLKI", model: "JZ-ZB-001", deviceJoinName: "LELLKI Switch"
 		
 		// eZEX 1st Generation Switch
@@ -200,5 +203,3 @@ def configure() {
 	log.debug "Configuring Reporting and Bindings."
 	zigbee.onOffRefresh() + zigbee.onOffConfig()
 }
-
-
