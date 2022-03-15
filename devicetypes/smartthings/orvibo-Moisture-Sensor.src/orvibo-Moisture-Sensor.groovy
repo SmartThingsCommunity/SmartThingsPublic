@@ -157,13 +157,12 @@ def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage"
 	def result = [:]
 	def manufacturer = getDataValue("manufacturer")
-	def application = getDataValue("application")
-	int application_thirdreality = application.toInteger()
+	def application = getDataValue("application").toInteger()
 
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application_thirdreality <= 17) {
+		if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application <= 17) {
 			result.value = Math.round(rawValue)
 		} else {
 			result.value = Math.round(rawValue / 2)
