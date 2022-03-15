@@ -37,11 +37,11 @@ metadata {
 		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.0
 		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.1
 		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.0
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad"
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad"
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB1", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad"
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB2", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad"
-		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB3", deviceJoinName: "SiHAS Remote Control", mnmn: "0Ar2", vid: "ST_9639674b-8026-4f61-9579-585cd0fe1fad"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "b18d7e4e-3775-3606-85a6-14b63cd8a0e3"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "0b6ace5f-e2d8-3e34-9b2a-5662bc9e20e1"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB1", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "0b6ace5f-e2d8-3e34-9b2a-5662bc9e20e1"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB2", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "57bb4dc5-40ef-335f-8e60-cc63190cc73b"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB3", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "f3f3ab0e-82f5-36dd-839f-a048e1a3f8f9"
 	}
 
 	tiles {
