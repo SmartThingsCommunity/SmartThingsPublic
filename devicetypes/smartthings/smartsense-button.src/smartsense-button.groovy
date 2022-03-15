@@ -138,7 +138,7 @@ def parse(String description) {
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
                 map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
             } else if ( descMap.clusterInt == 0x0012 ) {
-                map = translateMultiStatus(description)
+                map = translateMultiStatus(descMap.value)
             }
         }
     } else if (map.name == "temperature") {
@@ -177,15 +177,12 @@ private Map translateZoneStatus(ZoneStatus zs) {
     } else { }
 }
 
-private Map translateMultiStatus(String description) { 
-    def descMap = zigbee.parseDescriptionAsMap(description)
-	log.debug "descMap.value is : ${descMap.value}"
-    
-    if (descMap.value == "0002" ) {
+private Map translateMultiStatus(String value) {    
+    if (value == "0002" ) {
         return getButtonResult('double')
-    } else if (descMap.value == "0001" ) {
+    } else if (value == "0001" ) {
         return getButtonResult('pushed')
-    } else if (descMap.value == "0000"){
+    } else if (value == "0000"){
         return getButtonResult('held')
     } else {}
 }
