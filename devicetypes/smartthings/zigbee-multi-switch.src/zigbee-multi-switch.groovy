@@ -92,7 +92,8 @@ metadata {
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
         
 		// NodOn
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, FC57", outClusters: "0021", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, 1000, FC57", outClusters: "0003, 0006, 0019", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, 1000, FC57", outClusters: "0003, 0006, 0019", manufacturer: "NodOn", model: "SIN-4-2-20_PRO", deviceJoinName: "NodOn Light 1"
         
 		// SiHAS Switch (2~6 Gang)
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z2", deviceJoinName: "SiHAS Switch 1"
