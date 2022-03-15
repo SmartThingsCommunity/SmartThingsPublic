@@ -156,7 +156,7 @@ def configure() {
 
 	log.debug "Configuring Reporting"
 	configCmds = zigbee.onOffConfig() +
-		zigbee.simpleMeteringPowerConfig() +
+		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_HISTORICAL_CONSUMPTION, DataType.INT24, 5, 600, 1) +
 		zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 5, 600, 1) +
 		zigbee.configureReporting(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, ATTRIBUTE_FREQUENCY, DataType.UINT16, 10, 600, 3) + /* 3 unit : 0.3Hz */
 		zigbee.configureReporting(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, ATTRIBUTE_VOLTAGE, DataType.UINT16, 5, 600, 3) + /* 3 unit : 0.3V */
