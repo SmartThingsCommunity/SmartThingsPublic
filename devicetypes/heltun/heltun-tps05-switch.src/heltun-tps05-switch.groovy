@@ -41,7 +41,7 @@ metadata {
 		)
 			parameterMap().each {
 			if (it.title != null) {
-			input (
+				input (
 					title: "${it.title}",
 					description: it.description,
 					type: "paragraph",
@@ -126,8 +126,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	def parameter = parameterMap().find( {it.paramNum == cmd.parameterNumber } ).name
 	if (state."$parameter".value == cmd.scaledConfigurationValue){
 		state."$parameter".state = "configured"
-	}
-	else {
+	} else {
 		state."$parameter".state = "error"
 	}
 	configParam()
