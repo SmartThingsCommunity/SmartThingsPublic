@@ -102,7 +102,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "1000", manufacturer: "SONOFF", model: "01MINIZB", deviceJoinName: "SONOFF 01MINIZB" //01MINIZB
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S26R2ZB", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S26R2 Plug
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S40LITE", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S40Lite Plug
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0020, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "ZBMINI-L", deviceJoinName: "SONOFF ZBMINI-L" //SONOFF ZBMINI-L
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0020, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "ZBMINI-L", deviceJoinName: "SONOFF Switch" //SONOFF ZBMINI-L
 
 		// Terncy
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
