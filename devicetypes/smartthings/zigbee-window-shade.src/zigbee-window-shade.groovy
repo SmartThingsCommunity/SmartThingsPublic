@@ -27,7 +27,11 @@ metadata {
 		capability "Switch Level"
 
 		command "pause"
-
+        
+ 		// NodOn
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20", deviceJoinName: "NodOn Window Treatment" 
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20_PRO", deviceJoinName: "NodOn Window Treatment"
+        
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "eZEX Window Treatment" // SY-IoT201-BD //SOMFY Blind Controller/eZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
@@ -132,9 +136,10 @@ def getLastLevel() {
 }
 
 def levelEventHandler(currentLevel) {
-	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
+	def priorLevel = lastLevel
+	log.debug "levelEventHandle - currentLevel: ${currentLevel} priorLevel: ${priorLevel}"
 
-	if ((lastLevel == "undefined" || currentLevel == lastLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
+	if ((priorLevel == "undefined" || currentLevel == priorLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
 		state.invalidSameLevelEvent = true
@@ -145,9 +150,9 @@ def levelEventHandler(currentLevel) {
 		if (currentLevel == 0 || currentLevel == 100) {
 			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 		} else {
-			if (lastLevel < currentLevel) {
+			if (priorLevel < currentLevel) {
 				sendEvent([name:"windowShade", value: "opening"])
-			} else if (lastLevel > currentLevel) {
+			} else if (priorLevel > currentLevel) {
 				sendEvent([name:"windowShade", value: "closing"])
 			}
 			runIn(1, "updateFinalState", [overwrite:true])

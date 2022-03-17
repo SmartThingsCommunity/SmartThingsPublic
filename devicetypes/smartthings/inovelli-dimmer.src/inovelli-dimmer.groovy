@@ -354,6 +354,10 @@ def setLevel(level) {
 	], 1000)
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	def map = [:]
 	if (cmd.meterType == 1 && cmd.scale == 0) {

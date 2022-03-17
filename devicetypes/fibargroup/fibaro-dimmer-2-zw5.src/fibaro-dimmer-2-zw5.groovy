@@ -70,7 +70,7 @@ metadata {
 	preferences {
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
@@ -111,6 +111,10 @@ def setLevel(level, rate = null ) {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	logging("${device.displayName} - Executing reset()","info")
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()

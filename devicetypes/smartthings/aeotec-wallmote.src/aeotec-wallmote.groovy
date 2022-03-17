@@ -26,6 +26,8 @@ metadata {
         fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
         fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
         fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
+        fingerprint mfr: "0371", model: "0016", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec illumino Wallmote 7
+        fingerprint mfr: "0312", prod: "0924", model: "D001", deviceJoinName: "Minoston Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Minoston Wallmote
     }
 
     tiles(scale: 2) {
@@ -44,7 +46,7 @@ metadata {
 }
 
 def getNumberOfButtons() {
-    def modelToButtons = ["0082" : 4, "0081": 2, "0003": 2]
+    def modelToButtons = ["D001" : 4, "0082" : 4, "0081": 2, "0003": 2, "0016": 2]
     return modelToButtons[zwaveInfo.model] ?: 1
 }
 
@@ -171,6 +173,10 @@ def getChildDevice(button) {
 private getSupportedButtonValues() {
     if (isEverspring()) {
         return ["pushed", "held", "double"]
+    } else if (isMinoston()) {
+        return ["pushed", "held", "double", "pushed_3x"]
+    } else if (isWallMote7()) {
+        return ["pushed", "held", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
     } else {
         return ["pushed", "held"]
     }
@@ -181,8 +187,19 @@ private getButtonAttributesMap() {
             0: "pushed",
             2: "held",
             3: "double"
-    ]}
-    else {[
+    ]} else if (isMinoston()) {[
+            0: "pushed",
+            2: "held",
+            3: "double",
+            4: "pushed_3x"
+    ]} else if (isWallMote7()) {[
+            0: "pushed",
+            2: "held",
+            3: "double",
+            4: "pushed_3x",
+            5: "pushed_4x",
+            6: "pushed_5x"
+    ]} else {[
             0: "pushed",
             1: "held"
     ]}
@@ -192,4 +209,10 @@ private isEverspring() {
     zwaveInfo.model.equals("0003")
 }
 
+private isMinoston() {
+    zwaveInfo.model.equals("D001")
+}
 
+private isWallMote7() {
+    zwaveInfo.model.equals("0016")
+}
