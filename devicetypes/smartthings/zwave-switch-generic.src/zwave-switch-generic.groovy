@@ -65,7 +65,7 @@ metadata {
 		fingerprint mfr: "0371", prod: "0103", model: "0026", deviceJoinName: "Aeotec Wall Switch" //Aeotec illumino Wall Switch
 		fingerprint mfr: "0371", prod: "0003", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug EU
 		fingerprint mfr: "0371", prod: "0103", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug US
-		fingerprint mfr: "0371", prod: "0203", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug AU
+		fingerprint mfr: "0371", prod: "0203", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug AU 
 	}
 
 	// simulator metadata
