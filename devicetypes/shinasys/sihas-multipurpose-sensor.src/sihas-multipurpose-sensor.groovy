@@ -28,11 +28,14 @@ metadata {
         capability "Health Check"
         capability "Sensor"
         capability "Contact Sensor"
-
+        capability "afterguide46998.peopleCounter"
+        capability "afterguide46998.inOutDirection"
+        
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
         fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
+        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "23d6139c-b108-3467-9ddb-6a177d6cc1df", ocfDeviceType: "x.com.st.d.sensor.motion"
     }
     preferences {
         section {
@@ -44,11 +47,13 @@ metadata {
 
 private getILLUMINANCE_MEASUREMENT_CLUSTER() { 0x0400 }
 private getOCCUPANCY_SENSING_CLUSTER() { 0x0406 }
+private getANALOG_INPUT_BASIC_CLUSTER() { 0x000C }
 private getPOWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE() { 0x0020 }
 private getTEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getRALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getOCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE() { 0x0000 }
+private getANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE() { 0x0055 }
 
 private List<Map> collectAttributes(Map descMap) {
     List<Map> descMaps = new ArrayList<Map>()
@@ -79,6 +84,8 @@ def parse(String description) {
                 map = translateZoneStatus(zs)
             } else if (descMap?.clusterInt == OCCUPANCY_SENSING_CLUSTER && descMap.attrInt == OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE && descMap?.value) {
                 map = getMotionResult(descMap.value == "01" ? "active" : "inactive")
+            } else if (descMap?.clusterInt == ANALOG_INPUT_BASIC_CLUSTER && descMap.attrInt == ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE && descMap?.value) {
+                map = getAnalogInputResult(Integer.parseInt(descMap.value,16))
             }
         } else if (description?.startsWith('illuminance:')) { //parse illuminance
             map = parseCustomMessage(description)
@@ -125,9 +132,7 @@ private Map translateZoneStatus(ZoneStatus zs) {
     // Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
     if (isDSM300()) {
     	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getContactResult('open') : getContactResult('closed')
-    } else {    
-    	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
-    } 
+    }
 }
 
 private Map getBatteryResult(rawValue) {
@@ -191,6 +196,37 @@ private Map getContactResult(value) {
 	]
 }
 
+private Map getAnalogInputResult(value) {
+    Float fpc = Float.intBitsToFloat(value.intValue())
+    def prevInOut = device.currentState('inOutDir')?.value
+    int pc = ((int)(fpc*10))/10 //people counter
+    int inout = ((int)(fpc*10).round(0))%10; // inout direction : .1 = in, .2 = out, .0 = ready
+    if(inout>2) inout = 2
+    String inoutString = ( (inout==1) ? "in" : (inout==2) ? "out":"ready")
+    String descriptionText1 = "${device.displayName} : $pc"
+    String descriptionText2 = "${device.displayName} : $inoutString"
+    log.debug "[$fpc] = people: $pc, dir: $inout, $inoutString"
+    
+    if((inout != "ready") && (prevInOut == inoutString)) {
+        sendEvent(name: "inOutDir", value: "ready", displayed: true)
+    }
+
+    sendEvent(name: "peopleCounter", value: pc, displayed: true, descriptionText: descriptionText1 )
+ 
+    return [
+        name           : 'inOutDir',
+        value          : inoutString,
+        descriptionText: descriptionText2,
+        translatable   : true
+    ]
+}
+
+def setPeopleCounter(peoplecounter) {
+    int pc =  Float.floatToIntBits(peoplecounter);
+    log.debug "SetPeopleCounter = $peoplecounter"
+    zigbee.writeAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, pc)
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -222,7 +258,11 @@ def refresh() {
         refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
         refreshCmds += zigbee.enrollResponse()
     }
-
+    
+    if (isCSM300()) {
+        refreshCmds += zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)
+    }
+    
     return refreshCmds
 }
 
@@ -244,24 +284,27 @@ def configure() {
     configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
 
     if (isUSM300() || isTSM300()) {
-        configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 20, 300, 10/*10/100=0.1도*/)
-        configCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 20, 300, 40/*10/100=0.4%*/)
+        configCmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.INT16, 15, 300, 10/*10/100=0.1도*/)
+        configCmds += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, RALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 15, 300, 40/*10/100=0.4%*/)
     }
 
     if (isUSM300()) {
-        configCmds += zigbee.configureReporting(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 20, 3600, 10/*10 lux*/)
+        configCmds += zigbee.configureReporting(ILLUMINANCE_MEASUREMENT_CLUSTER, ILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE, DataType.UINT16, 15, 3600, 1/*1 lux*/)
     }
 
     if (isUSM300() || isOSM300()) {
         configCmds += zigbee.configureReporting(OCCUPANCY_SENSING_CLUSTER, OCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE, DataType.BITMAP8, 1, 600, 1)
     }
 
-    if (isDSM300()) {
-        configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE, DataType.UINT8, 30, 21600, 0x01/*100mv*1*/)
+    if (isDSM300() || isUSM300() || isOSM300()) {
         configCmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 0xffff, null)
     }
+    
+    if (isCSM300()) {
+        configCmds += zigbee.configureReporting(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, 1, 600, 1)
+    }
 
-    return refresh() + configCmds
+    return configCmds + refresh()
 }
 
 private Boolean isUSM300() {
@@ -278,4 +321,8 @@ private Boolean isOSM300() {
 
 private Boolean isDSM300() {
     device.getDataValue("model") == "DSM-300Z"
+}
+
+private Boolean isCSM300() {
+    device.getDataValue("model") == "CSM-300Z"
 }

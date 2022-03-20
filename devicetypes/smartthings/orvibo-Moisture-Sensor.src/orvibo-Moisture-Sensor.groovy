@@ -35,6 +35,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029", deviceJoinName: "Orvibo Water Leak Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001", manufacturer: "HEIMAN", model: "WaterSensor-N", deviceJoinName: "HEIMAN Water Leak Sensor" //HEIMAN Water Leakage Sensor (HS3WL-E)
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0006,0019", manufacturer:"THIRDREALITY", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
 	}
 
 	simulator {
@@ -156,11 +157,12 @@ def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage"
 	def result = [:]
 	def manufacturer = getDataValue("manufacturer")
+	def application = getDataValue("application")
 
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		if (manufacturer == "Third Reality, Inc") {
+		if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application.toInteger() <= 17) {
 			result.value = Math.round(rawValue)
 		} else {
 			result.value = Math.round(rawValue / 2)

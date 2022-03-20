@@ -1,5 +1,5 @@
 /**
- *      Min Smart Plug Dimmer v1.1.9
+ *      Min Smart Plug Dimmer v3.0.0
  *
  *  	Models: MINOSTON (MP21ZD MP22ZD/ZW39S ZW96SD)
  *
@@ -9,6 +9,31 @@
  *	Documentation:
  *
  *  Changelog:
+ *
+ *    3.0.0 (09/07/2021)
+ *      - Remove the support for the products of MS11ZS MS13ZS ZW31S and ZW31TS,
+ *      they will be independent in another DTH file
+ *
+ *    2.2.0 (09/22/2021)
+ *      - Remove the function related to CentralScene-the function did not achieve the expected effect,
+ *      and it can be replaced by the Automation function in the SmartThings APP
+ *
+ *    2.1.1 (09/07/2021)
+ *      - Syntax format compliance adjustment
+ *      - delete dummy code
+ *
+ *    2.1.0 (09/04/2021)
+ *      - remove the preferences item "createButton", Fixedly create a child button
+ *        Restrict its use based on fingerprints-because the child buttons is not visible to the user .
+ *      - Simplify the code, Syntax format compliance adjustment
+ *
+ *    2.0.2 (09/02/2021)
+ *    2.0.1 (08/27/2021)
+ *      - Syntax format compliance adjustment
+ *      - fix some bugs
+ *
+ *    2.0.0  (07/30/2021)
+ *      - add some fingerprint for new devices
  *
  *    1.1.9 (07/29/2021)
  *      - add a fingerprint for a new device
@@ -48,7 +73,6 @@
  *
  * Reference：
  *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/eva-logik-in-wall-smart-dimmer.src/eva-logik-in-wall-smart-dimmer.groovy
- *    https://github.com/krlaframboise/SmartThings/blob/master/devicetypes/krlaframboise/aeotec-trisensor.src/aeotec-trisensor.groovy
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -63,22 +87,25 @@
  *  limitations under the License.
  *
  */
+import groovy.json.JsonOutput
 
 metadata {
-    definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", ocfDeviceType: "oic.d.smartplug") {
+    definition (name: "Min Smart Plug Dimmer", namespace: "sky-nie", author: "winnie", mnmn: "SmartThings", vid:"generic-dimmer") {
         capability "Actuator"
+        capability "Sensor"
         capability "Switch"
         capability "Switch Level"
         capability "Configuration"
         capability "Refresh"
+        capability "Health Check"
 
         attribute "firmwareVersion", "string"
         attribute "lastCheckIn", "string"
         attribute "syncStatus", "string"
 
-        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Dimmer Switch" //MP21ZD
-        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Dimmer Switch" //MP22ZD
-        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "Minoston Dimmer Switch" //N4002
+        fingerprint mfr: "0312", prod: "FF00", model: "FF0D", deviceJoinName: "Minoston Smart Plug Dimmer", ocfDeviceType: "oic.d.smartplug" //MP21ZD
+        fingerprint mfr: "0312", prod: "FF07", model: "FF03", deviceJoinName: "Minoston Outdoor Dimmer", ocfDeviceType: "oic.d.smartplug" //MP22ZD
+        fingerprint mfr: "0312", prod: "AC01", model: "4002", deviceJoinName: "New One Smart Plug Dimmer",  ocfDeviceType: "oic.d.smartplug" //N4002
     }
 
     preferences {
@@ -92,10 +119,24 @@ metadata {
     }
 }
 
+def ping() {
+    logDebug "ping()..."
+    return [ switchMultilevelGetCmd() ]
+}
+
+def refresh() {
+    logDebug "refresh()..."
+    refreshSyncStatus()
+    return [ switchMultilevelGetCmd() ]
+}
+
+private switchMultilevelGetCmd() {
+    return secureCmd(zwave.switchMultilevelV3.switchMultilevelGet())
+}
+
 def installed() {
     logDebug "installed()..."
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    state.refreshConfig = true
 }
 
 private static def getCheckInterval() {
@@ -107,21 +148,17 @@ private static def getCheckInterval() {
 def updated() {
     if (!isDuplicateCommand(state.lastUpdated, 5000)) {
         state.lastUpdated = new Date().time
-
         logDebug "updated()..."
         if (device.latestValue("checkInterval") != checkInterval) {
             sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
         }
-
         runIn(5, executeConfigureCmds, [overwrite: true])
     }
-
     return []
 }
 
 def configure() {
     logDebug "configure()..."
-
     if (state.resyncAll == null) {
         state.resyncAll = true
         runIn(8, executeConfigureCmds, [overwrite: true])
@@ -164,7 +201,6 @@ def parse(String description) {
         } else {
             logDebug "Unable to parse description: $description"
         }
-
         sendEvent(name: "lastCheckIn", value: convertToLocalTimeString(new Date()), displayed: false)
     } catch (e) {
         log.error "$e"
@@ -173,8 +209,8 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    logTrace "SecurityMessageEncapsulation: ${cmd}"
     def encapCmd = cmd.encapsulatedCommand(commandClassVersions)
-
     def result = []
     if (encapCmd) {
         result += zwaveEvent(encapCmd)
@@ -185,19 +221,16 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-    logTrace "ConfigurationReport ${cmd}"
-
+    logTrace "ConfigurationReport: ${cmd}"
     sendEvent(name:  "syncStatus", value:  "Syncing...", displayed:  false)
     runIn(4, refreshSyncStatus)
-
     def param = configParams.find { it.num == cmd.parameterNumber }
     if (param) {
         def val = cmd.scaledConfigurationValue
-
         logDebug "${param.name}(#${param.num}) = ${val}"
         state["configParam${param.num}"] = val
     } else {
-        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.configurationValue}"
+        logDebug "Parameter #${cmd.parameterNumber} = ${cmd.scaledConfigurationValue}"
     }
     return []
 }
@@ -208,7 +241,7 @@ def refreshSyncStatus() {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    logDebug "Ignored Command: $cmd"
+    logDebug "Unhandled zwaveEvent: $cmd"
     return []
 }
 
@@ -220,28 +253,30 @@ private secureCmd(cmd) {
             return cmd.format()
         }
     } catch (ex) {
-        log.error("caught exception", ex)
+        log.error("secureCmd exception", ex)
+        return cmd.format()
     }
 }
 
 private static getCommandClassVersions() {
     [
-            0x20: 1,	// Basic
-            0x26: 3,	// Switch Multilevel
-            0x55: 1,	// Transport Service
-            0x59: 1,	// AssociationGrpInfo
-            0x5A: 1,	// DeviceResetLocally
-            0x71: 3,	// Notification
-            0x6C: 1,	// Supervision
-            0x70: 1,	// Configuration
-            0x7A: 2,	// FirmwareUpdateMd
-            0x72: 2,	// ManufacturerSpecific
-            0x73: 1,	// Powerlevel
-            0x85: 2,	// Association
-            0x86: 1,	// Version (2)
-            0x8E: 2,	// Multi Channel Association
-            0x98: 1,	// Security S0
-            0x9F: 1 	// Security S2
+        0x20: 1,	// Basic
+        0x26: 3,	// Switch Multilevel
+        0x55: 1,	// Transport Service
+        0x59: 1,	// AssociationGrpInfo
+        0x5A: 1,	// DeviceResetLocally
+        0x5E: 2,	// ZwaveplusInfo
+        0x71: 3,	// Notification
+        0x6C: 1,	// Supervision
+        0x70: 1,	// Configuration
+        0x7A: 2,	// FirmwareUpdateMd
+        0x72: 2,	// ManufacturerSpecific
+        0x73: 1,	// Powerlevel
+        0x85: 2,	// Association
+        0x86: 1,	// Version (2)
+        0x8E: 2,	// Multi Channel Association
+        0x98: 1,	// Security S0
+        0x9F: 1		// Security S2
     ]
 }
 
@@ -263,8 +298,8 @@ private getConfigParams() {
         powerFailureRecoveryParam,
         pushDimmingDurationParam,
         holdDimmingDurationParam,
-        minimumBrightnessParam,
-        maximumBrightnessParam
+        minimumBrightnessParam
+
     ]
 }
 
@@ -304,9 +339,8 @@ private getMaximumBrightnessParam() {
     return getParam(12, "Maximum Brightness(0, Disabled; 1 - 99:1% - 99%)", 1, 99, null,"0..99")
 }
 
-private getParam(num, name, size, defaultVal, options=null, range=null) {
+private getParam(num, name, size, defaultVal, options = null, range = null) {
     def val = safeToInt((settings ? settings["configParam${num}"] : null), defaultVal)
-
     def map = [num: num, name: name, size: size, value: val]
     if (options) {
         map.valueName = options?.find { k, v -> "${k}" == "${val}" }?.value
@@ -315,7 +349,6 @@ private getParam(num, name, size, defaultVal, options=null, range=null) {
     if (range) {
         map.range = range
     }
-
     return map
 }
 
@@ -356,7 +389,7 @@ private static validateRange(val, defaultVal, lowVal, highVal) {
     }
 }
 
-private static safeToInt(val, defaultVal=0) {
+private static safeToInt(val, defaultVal = 0) {
     return "${val}"?.isInteger() ? "${val}".toInteger() : defaultVal
 }
 
@@ -383,13 +416,11 @@ private logTrace(msg) {
 
 def on() {
     logDebug "on()..."
-
     return [ basicSetCmd(0xFF) ]
 }
 
 def off() {
     logDebug "off()..."
-
     return [ basicSetCmd(0x00) ]
 }
 
@@ -412,39 +443,33 @@ private basicSetCmd(val) {
 
 private switchMultilevelSetCmd(level, duration) {
     def levelVal = validateRange(level, 99, 0, 99)
-
     def durationVal = validateRange(duration, 1, 0, 100)
-
     return secureCmd(zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: durationVal, value: levelVal))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     logTrace "VersionReport: ${cmd}"
-
     def subVersion = String.format("%02d", cmd.applicationSubVersion)
     def fullVersion = "${cmd.applicationVersion}.${subVersion}"
-
     sendEvent(name: "firmwareVersion",  value:fullVersion, displayed: true, type:  null)
     return []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    logTrace "${cmd}"
+    logTrace "BasicReport: ${cmd}"
     sendSwitchEvents(cmd.value, "physical")
     return []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    logTrace "${cmd}"
+    logTrace "SwitchMultilevelReport: ${cmd}"
     sendSwitchEvents(cmd.value, "digital")
     return []
 }
 
 private sendSwitchEvents(rawVal, type) {
     def switchVal = rawVal ? "on" : "off"
-
     sendEvent(name: "switch",  value:switchVal, displayed: true, type: type)
-
     if (rawVal) {
         sendEvent(name: "level",  value:rawVal, displayed: true, type: type, unit:"%")
     }

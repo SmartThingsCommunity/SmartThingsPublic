@@ -38,7 +38,10 @@ metadata {
 		
 		// Samsung LED
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "SAMSUNG-ITM-Z-002", deviceJoinName: "Samsung Light", mnmn: "Samsung Electronics", vid: "SAMSUNG-ITM-Z-002" //ITM RGBW
-
+		
+		// ABL
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-201", deviceJoinName: "RetroBasics RGBW", mnmn: "SmartThingsCommunity", vid: "0c0d8ed8-d536-324c-9b80-d4705a55e4df"	//E-series
+		
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010D", manufacturer: "AduroSmart Eria", model: "AD-RGBW3001", deviceJoinName: "Eria Light" //Eria ZigBee RGBW Bulb
 
@@ -100,6 +103,10 @@ metadata {
 		// Ajax Online
 		fingerprint manufacturer: "Ajaxonline", model: "AJ-RGBCCT 5 in 1", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 		fingerprint manufacturer: "Ajax online Ltd", model: "AJ_ZB30_GU10", deviceJoinName: "Ajax Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K" // Raw Description: 0B 0104 010D 01 08 0000 0003 0004 0005 0006 0008 0300 1000 00
+		// Shenzhen C-Lux
+		fingerprint manufacturer: "Shenzhen C-Lux", model: "CL000ZB", deviceJoinName: "C-Lux Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+		// www.easyiot.tech
+		fingerprint manufacturer: "eWeLight", model: "ZB-CL01", deviceJoinName: "easyiot Light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 	}
 
 	// UI tile definitions

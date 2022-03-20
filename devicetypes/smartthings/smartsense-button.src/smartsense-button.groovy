@@ -28,6 +28,7 @@ metadata {
         capability "Sensor"
 
         fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "Button"
+        fingerprint inClusters: "0000,0001,0012", outClusters: "0006,0008,0019", manufacturer: "Third Reality, Inc", model: "3RSB22BZ", deviceJoinName: "ThirdReality Smart Button"
     }
 
     simulator {
@@ -136,6 +137,8 @@ def parse(String description) {
                 }
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
                 map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
+            } else if ( descMap.clusterInt == 0x0012 ) {
+                map = translateMultiStatus(descMap.value)
             }
         }
     } else if (map.name == "temperature") {
@@ -172,6 +175,16 @@ private Map translateZoneStatus(ZoneStatus zs) {
     } else if (zs.isAlarm2Set()) {
         return getButtonResult('double')
     } else { }
+}
+
+private Map translateMultiStatus(String value) {    
+    if (value == "0002" ) {
+        return getButtonResult('double')
+    } else if (value == "0001" ) {
+        return getButtonResult('pushed')
+    } else if (value == "0000"){
+        return getButtonResult('held')
+    } else {}
 }
 
 private Map getBatteryResult(rawValue) {

@@ -66,6 +66,10 @@ def ping() {
 	refresh()
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description)
