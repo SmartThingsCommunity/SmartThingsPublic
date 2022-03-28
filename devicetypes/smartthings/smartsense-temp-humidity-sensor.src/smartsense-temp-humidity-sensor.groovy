@@ -208,12 +208,12 @@ def configure() {
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
 			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
-	} else if (isFrientSensor()) {
+	} else if (isFrientSensor() || isThirdReality()) {
 		return refresh() + 
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
 			zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
-	} else if (isEWeLink() || isThirdReality()) {
+	} else if (isEWeLink()) {
 		return refresh() +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 3600, 7200, 0x10) +
 			zigbee.temperatureConfig(10, 7200, 50) +
