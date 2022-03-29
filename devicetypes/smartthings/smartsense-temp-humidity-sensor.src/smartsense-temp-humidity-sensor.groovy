@@ -38,6 +38,9 @@ metadata {
 		//eWeLink
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0402, 0405",  outClusters: "0003", manufacturer: "eWeLink", model: "TH01", deviceJoinName: "eWeLink Multipurpose Sensor"
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0020, 0402, 0405, FC57",  outClusters: "0003, 0019", manufacturer: "eWeLink", model: "SNZB-02P", deviceJoinName: "eWeLink Multipurpose Sensor"
+		
+		//Third Reality
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0402,0405", outClusters: "0019", manufacturer:"Third Reality, Inc", model:"3RTS20BZ", deviceJoinName: "ThirdReality Thermal & Humidity Sensor"
 	}
 
 	simulator {
@@ -174,7 +177,7 @@ def refresh() {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
 			zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
 			zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
-	} else if (isFrientSensor()) {
+	} else if (isFrientSensor() || isThirdReality()) {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
 			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
 			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
@@ -205,7 +208,7 @@ def configure() {
 			zigbee.temperatureConfig(30, 300) +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
 			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
-	} else if (isFrientSensor()) {
+	} else if (isFrientSensor() || isThirdReality()) {
 		return refresh() + 
 			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
 			zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
@@ -230,4 +233,8 @@ private Boolean isFrientSensor() {
 
 private Boolean isEWeLink() {
 	device.getDataValue("manufacturer") == "eWeLink"
+}
+
+private Boolean isThirdReality() {
+	device.getDataValue("manufacturer") == "Third Reality, Inc"
 }
