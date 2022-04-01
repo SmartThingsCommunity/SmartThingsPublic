@@ -113,6 +113,8 @@ def setLevel(value, rate=null) {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	
 	zigbee.configureReporting(MOTION_CLUSTER, MOTION_STATUS_ATTRIBUTE, 0x18, 30, 600, null) +
 		zigbee.onOffConfig() +
 		zigbee.levelConfig() +
