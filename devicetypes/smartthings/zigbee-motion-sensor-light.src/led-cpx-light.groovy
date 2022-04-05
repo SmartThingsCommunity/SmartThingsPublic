@@ -26,6 +26,7 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
+		capability "Light"
 		
 		// ABL Lithonia
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0406", outClusters: "0019", manufacturer: "Lithonia", model: "ABL-LIGHTSENSOR-Z-001", deviceJoinName: "CPX Smart Panel Light", mnmn: "Samsung Electronics", vid: "ABL-LIGHTSENSOR-Z-001"
@@ -112,6 +113,8 @@ def setLevel(value, rate=null) {
 }
 
 def configure() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	
 	zigbee.configureReporting(MOTION_CLUSTER, MOTION_STATUS_ATTRIBUTE, 0x18, 30, 600, null) +
 		zigbee.onOffConfig() +
 		zigbee.levelConfig() +
