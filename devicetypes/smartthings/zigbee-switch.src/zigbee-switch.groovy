@@ -133,6 +133,11 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Focalcrest", model: "SRB01", deviceJoinName: "Focalcrest Switch" // In-Wall Relay Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB01A", deviceJoinName: "Evvr Switch" // Evvr IRS
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB02A", deviceJoinName: "Evvr Switch" // Evvr IRS Lite
+		
+		// Evvr
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Evvr", model: "SRB01", deviceJoinName: "Evvr Switch" // Evvr IRS
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "Evvr", model: "SRB01A", deviceJoinName: "Evvr Switch" // Evvr IRS
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "Evvr", model: "SRB02A", deviceJoinName: "Evvr Switch" // Evvr IRS Lite
         
 		// SiHAS Switch
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch"

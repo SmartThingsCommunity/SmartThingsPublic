@@ -183,6 +183,8 @@ def configure() {
 	if (isHeimanButton())
 		cmds += zigbee.writeAttribute(0x0000, 0x0012, DataType.BOOLEAN, 0x01) +
 		addHubToGroup(0x000F) + addHubToGroup(0x0010) + addHubToGroup(0x0011) + addHubToGroup(0x0012)
+	if (isShinaButton())
+		cmds += addHubToGroup(0x0000)
 	return cmds
 }
 
