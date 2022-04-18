@@ -298,8 +298,8 @@ private getConfigParams() {
         powerFailureRecoveryParam,
         pushDimmingDurationParam,
         holdDimmingDurationParam,
-        minimumBrightnessParam
-
+        minimumBrightnessParam,
+        maximumBrightnessParam,
     ]
 }
 
@@ -324,7 +324,7 @@ private getPowerFailureRecoveryParam() {
 }
 
 private getPushDimmingDurationParam() {
-    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, 2, null, "0..10")
+    return getParam(9, "Push Dimming Duration(0, Disabled; 1 - 10 Seconds)", 1, 1, null, "0..10")
 }
 
 private getHoldDimmingDurationParam() {
