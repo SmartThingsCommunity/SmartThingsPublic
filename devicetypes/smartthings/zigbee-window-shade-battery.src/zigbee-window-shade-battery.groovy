@@ -32,6 +32,7 @@ metadata {
 		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA KADRILJ Blinds
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
+		fingerprint manufacturer: "IKEA of Sweden", model: "TREDANSEN block-out cellul blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0102 00 09 0000 0003 0004 0005 0006 0008 0300 0B05 FC01 01 0019 //IKEA Tredansen Blinds
 
 		// Yookee yooksmart
 		fingerprint manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"	// raw description 01 0104 0202 01 07 0000 0001 0003 0004 0005 0020 0102 02 0003 0019
@@ -319,15 +320,15 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
+	isIkeaKadrilj() || isIkeaFyrtur() || isIkeaTredansen() || isYooksmartOrYookee() || isSmartwings()
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isIkeaTredansen() || isSmartwings()
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isIkeaTredansen() || isYooksmartOrYookee() || isSmartwings()
 }
 
 def isIkeaKadrilj() {
@@ -336,6 +337,10 @@ def isIkeaKadrilj() {
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isIkeaTredansen() {
+	device.getDataValue("model") == "TREDANSEN block-out cellul blind"
 }
 
 def isYooksmartOrYookee() {
