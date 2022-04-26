@@ -39,6 +39,9 @@ metadata {
 
 		// SMARTWINGS
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
+
+		// SONOFF
+		fingerprint inClusters: "0000,0001,0003,0004,0020,0102,fc57", outClusters: "0019", manufacturer: "SONOFF", model: "ZBCurtain", deviceJoinName: "SONOFF Window Treatment"
 	}
 
 	preferences {
@@ -319,15 +322,15 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings() || isSonoff()
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings() || isSonoff()
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings() || isSonoff()
 }
 
 def isIkeaKadrilj() {
@@ -344,4 +347,8 @@ def isYooksmartOrYookee() {
 
 def isSmartwings() {
 	device.getDataValue("model") == "WM25/L-Z"
+}
+
+def isSonoff() {
+	device.getDataValue("manufacturer") == "SONOFF"
 }
