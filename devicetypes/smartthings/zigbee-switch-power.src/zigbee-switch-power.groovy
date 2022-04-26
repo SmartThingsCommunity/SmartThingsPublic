@@ -54,6 +54,9 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0051", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 1000, 0702", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "AD-SmartPlug3001", deviceJoinName: "Eria Switch" //Eria Zigbee Smart Plug
 		fingerprint profileId: "0104", deviceId: "010A", inClusters: "0000, 0003, 0004, 0005, 0006, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BPU3", deviceJoinName: "Eria Switch" //Eria Zigbee On/Off Plug
 		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BDP3001", deviceJoinName: "Eria Switch" //Eria Zigbee Dimmable Plug
+
+		// VIMAR
+		fingerprint profileId: '0104', manufacturer: 'Vimar', inClusters: '0000, 0003, 0004, 0005, 0006, 0B04', model: 'Mains_Power_Outlet_v1.0', ocfDeviceType: "oic.d.smartplug", deviceJoinName: 'Vimar Smart Actuator with Power Metering' // Vimar IoT Connected Actuator (xx593)
 	}
 
 	tiles(scale: 2) {
@@ -123,6 +126,9 @@ def configure() {
 		device.updateDataValue("divisor", "1")
 	}
 	if (device.getDataValue("manufacturer") == "SALUS") {
+		device.updateDataValue("divisor", "1")
+	}
+	if (device.getDataValue("manufacturer") == "Vimar") {
 		device.updateDataValue("divisor", "1")
 	}
 	return configureHealthCheck()
