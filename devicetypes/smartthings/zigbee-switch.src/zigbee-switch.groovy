@@ -141,6 +141,10 @@ metadata {
         
 		// SiHAS Switch
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch"
+
+		// VIMAR
+		fingerprint profileId: '0104', manufacturer: 'Vimar', inClusters: '0000, 0003, 0004, 0005, 0006', model: 'On_Off_Switch_v1.0', deviceJoinName: 'Vimar 2-way Smart Switch' // Vimar 2-way switch IoT connected mechanism (xx592)
+		fingerprint profileId: '0104', manufacturer: 'Vimar', inClusters: '0000, 0003, 0004, 0005, 0006', model: 'On_Off_Switch_Module_v1.0', deviceJoinName: 'Vimar Smart Actuator Module' // Vimar IoT connected relay module (03981)
 	}
 
 	// simulator metadata
