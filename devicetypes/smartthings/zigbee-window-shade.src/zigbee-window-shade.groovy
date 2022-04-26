@@ -41,6 +41,10 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 30 WF Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 40 Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 40
 		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSB015BZ", deviceJoinName: "ThirdReality smart Blind" // ThirdReality
+
+		// VIMAR
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", manufacturer: "Vimar", model: "Window_Cov_v1.0", deviceJoinName: "Vimar Smart Roller Shutter" // Vimar Rolling shutter IoT connected mechanism (xx594)
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", manufacturer: "Vimar", model: "Window_Cov_Module_v1.0", deviceJoinName: "Vimar Smart Roller Shutter" // Vimar IoT connected roller shutter module (03982)
 	}
 
 	preferences {
@@ -311,11 +315,15 @@ private List readDeviceBindingTable() {
 }
 
 def shouldInvertLiftPercentage() {
-	return isSomfy()
+	return isSomfy() || isVimar()
 }
 
 def isSomfy() {
 	device.getDataValue("manufacturer") == "SOMFY"
+}
+
+def isVimar() {
+	device.getDataValue("manufacturer") == "Vimar"
 }
 
 private getGLYDEA_MOVE_THRESHOLD() { 3 }
