@@ -298,8 +298,8 @@ private getConfigParams() {
         powerFailureRecoveryParam,
         pushDimmingDurationParam,
         holdDimmingDurationParam,
-        minimumBrightnessParam
-
+        minimumBrightnessParam,
+        maximumBrightnessParam,
     ]
 }
 
