@@ -110,29 +110,36 @@ def on() {
 }
 
 def refresh() {
+
+	if(isVimar()) {
+		return zigbee.onOffRefresh() + zigbee.electricMeasurementPowerRefresh()
+	}
 	Integer reportIntervalMinutes = 5
 	def cmds = zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
-	if (device.getDataValue("manufacturer") == "Jasco Products") {
+    if (device.getDataValue("manufacturer") == "Jasco Products") {
 		// Some versions of hub firmware will incorrectly remove this binding causing manual control of switch to stop working
 		// This needs to be the first binding table entry because the device will automatically write this entry each time it restarts
 		cmds += ["zdo bind 0x${device.deviceNetworkId} 2 1 0x0006 {${device.zigbeeId}} {${device.zigbeeId}}", "delay 2000"]
 	}
-	cmds + zigbee.onOffConfig(0, reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+	cmds + zigbee.onOffConfig(0, reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() 
 }
 
 def configure() {
 	log.debug "in configure()"
+	
+	if (isVimar()) {
+		device.updateDataValue("divisor", "1")
+		return zigbee.onOffConfig(0, 5 * 60) + zigbee.electricMeasurementPowerConfig() + configureHealthCheck()
+	}
 	if ((device.getDataValue("manufacturer") == "Develco Products A/S") || (device.getDataValue("manufacturer") == "Aurora"))  {
 		device.updateDataValue("divisor", "1")
 	}
 	if (device.getDataValue("manufacturer") == "SALUS") {
 		device.updateDataValue("divisor", "1")
 	}
-	if (device.getDataValue("manufacturer") == "Vimar") {
-		device.updateDataValue("divisor", "1")
-	}
-	return configureHealthCheck()
+	return configureHealthCheck() 
 }
+
 
 def configureHealthCheck() {
 	Integer hcIntervalMinutes = 12
@@ -145,6 +152,10 @@ def updated() {
 	// updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
 	def cmds = configureHealthCheck()
 	cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
+def isVimar() {
+	device.getDataValue("manufacturer") == "Vimar"
 }
 
 def ping() {
