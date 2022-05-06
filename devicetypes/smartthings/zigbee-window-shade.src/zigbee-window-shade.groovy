@@ -44,7 +44,7 @@ metadata {
 
 		// VIMAR
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", manufacturer: "Vimar", model: "Window_Cov_v1.0", deviceJoinName: "Vimar Smart Roller Shutter" // Vimar Rolling shutter IoT connected mechanism (xx594)
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", manufacturer: "Vimar", model: "Window_Cov_Module_v1.0", deviceJoinName: "Vimar Smart Roller Shutter" // Vimar IoT connected roller shutter module (03982)
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", manufacturer: "Vimar", model: "Window_Cov_Module_v1.0", deviceJoinName: "Vimar Smart Roller Shutter Module" // Vimar IoT connected roller shutter module (03982)
 	}
 
 	preferences {
@@ -143,7 +143,17 @@ def getLastLevel() {
 def levelEventHandler(currentLevel) {
 	def priorLevel = lastLevel
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} priorLevel: ${priorLevel}"
-
+	
+	if (isVimar() && priorLevel != "undefined") {
+		if (priorLevel == currentLevel) {
+			def currentShadeStatus = device.currentValue("windowShade")
+			if (currentShadeStatus == "opening" || currentShadeStatus == "closing") {
+		        sendEvent(name: "windowShade", value: currentShadeStatus)
+				sendEvent(name: "shadeLevel", value: currentLevel, unit: "%")
+				sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
+			}
+		}
+	}
 	if ((priorLevel == "undefined" || currentLevel == priorLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
@@ -184,11 +194,17 @@ def supportsLiftPercentage() {
 
 def close() {
 	log.info "close()"
+	if(isVimar()) {
+		sendEvent([name:"windowShade", value: "closing"]) 
+	}
 	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
 }
 
 def open() {
 	log.info "open()"
+	if(isVimar()) {
+		sendEvent([name:"windowShade", value: "opening"]) 
+	}
 	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_OPEN)
 }
 
@@ -206,6 +222,13 @@ def setShadeLevel(value) {
 
 	if (isSomfy() && Math.abs(level - lastLevel) <= GLYDEA_MOVE_THRESHOLD) {
 		state.invalidSameLevelEvent = false
+	}
+
+	if (isVimar()) {
+		if(getLastLevel() > level)
+			sendEvent([name:"windowShade", value: "closing"]) 
+		else if (getLastLevel() < level)
+			sendEvent([name:"windowShade", value: "opening"]) 
 	}
 
 	if (supportsLiftPercentage()) {
@@ -280,7 +303,11 @@ def configure() {
 	log.debug "Configuring Reporting and Bindings."
 
 	if (supportsLiftPercentage()) {
-		cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
+		if(isVimar()) {
+			cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 12, 0x01)
+		} else  {
+			cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
+		}
 	} else {
 		cmds = zigbee.levelConfig()
 	}
