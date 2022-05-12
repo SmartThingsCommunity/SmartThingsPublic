@@ -147,31 +147,13 @@ private Map getBatteryResult(rawValue) {
         def maxVolts = 3.2
 
         if (isDSM300()) maxVolts = 3.1
-
-        // Get the current battery percentage as a multiplier 0 - 1
-        def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
-        // Find the corresponding voltage from our range
-        curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
-        // Round to the nearest 10th of a volt
-        curValVolts = Math.round(10 * curValVolts) / 10.0
-
-        // Only update the battery reading if we don't have a last reading,
-        // OR we have received the same reading twice in a row
-        // OR we don't currently have a battery reading
-        // OR the value we just received is at least 2 steps off from the last reported value
-        if (state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
-            def pct = (volts - minVolts) / (maxVolts - minVolts)
-            def roundedPct = Math.round(pct * 100)
-            if (roundedPct <= 0)
-                roundedPct = 1
-            result.value = Math.min(100, roundedPct)
-        } else {
-            // Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
-            result.value = device.currentState("battery").value
-        }
-
-        result.descriptionText = "${device.displayName} battery was ${result.value}%"
-        state.lastVolts = volts
+		
+        def pct = (volts - minVolts) / (maxVolts - minVolts)
+        def roundedPct = Math.round(pct * 100)
+        if (roundedPct <= 0)
+            roundedPct = 1
+        result.value = Math.min(100, roundedPct)
+        result.descriptionText = "${device.displayName} battery was ${result.value}%"        
     }
     return result
 }
@@ -254,7 +236,6 @@ def refresh() {
     }
 
     if (isDSM300()) {
-        refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, POWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE)
         refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
         refreshCmds += zigbee.enrollResponse()
     }
