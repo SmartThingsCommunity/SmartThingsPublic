@@ -12,6 +12,7 @@ metadata {
 
 	preferences {
         input("trace", "bool", title: "Trace (Only for debugging)", description: "Set it to true to enable tracing")
+		
 		//input("logFilter", "number", title: "Trace level", range: "1..5",
 		//description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
 	}
@@ -204,7 +205,6 @@ private Map getBatteryResult(rawValue) {
 	def result = [:]
 	result.name = 'battery'
 	result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-    
 	result.value = convertVoltToPercent(rawValue)
 	return result
 }
