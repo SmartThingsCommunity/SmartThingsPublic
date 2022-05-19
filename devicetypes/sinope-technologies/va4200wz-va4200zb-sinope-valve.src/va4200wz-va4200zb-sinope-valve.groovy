@@ -12,9 +12,6 @@ metadata {
 
 	preferences {
         input("trace", "bool", title: "Trace (Only for debugging)", description: "Set it to true to enable tracing")
-		
-		//input("logFilter", "number", title: "Trace level", range: "1..5",
-		//description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
 	}
 	
 	definition (name: "VA4200WZ-VA4200ZB Sinope Valve", namespace: "Sinope Technologies", author: "Sinope Technologies",  ocfDeviceType: "oic.d.watervalve") {
