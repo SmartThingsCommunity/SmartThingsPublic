@@ -11,7 +11,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 
 	preferences {
-        input("trace", "bool", title: "Trace (Only for debugging)", description: "Set it to true to enable tracing")
+        	input("trace", "bool", title: "Trace (Only for debugging)", description: "Set it to true to enable tracing")
 	}
 	
 	definition (name: "VA4200WZ-VA4200ZB Sinope Valve", namespace: "Sinope Technologies", author: "Sinope Technologies",  ocfDeviceType: "oic.d.watervalve") {
