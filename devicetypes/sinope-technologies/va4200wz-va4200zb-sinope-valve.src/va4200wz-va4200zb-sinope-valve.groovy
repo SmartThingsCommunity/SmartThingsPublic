@@ -11,9 +11,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 
 	preferences {
-		input("trace", "bool", title: "Trace", description: "Set it to true to enable tracing")
-		// input("logFilter", "number", title: "Trace level", range: "1..5",
-		// 	description: "1= ERROR only, 2= <1+WARNING>, 3= <2+INFO>, 4= <3+DEBUG>, 5= <4+TRACE>")
+		input("trace", "bool", title: "Trace (Only for debugging)", description: "Set it to true to enable tracing")
 	}
 	
 	definition (name: "VA4200WZ-VA4200ZB Sinope Valve", namespace: "Sinope Technologies", author: "Sinope Technologies",  ocfDeviceType: "oic.d.watervalve") {
@@ -140,7 +138,7 @@ def parse(String description) {
 			}
 		}
 	}
-	
+
 	return result
 }
 
@@ -204,7 +202,6 @@ private Map getBatteryResult(rawValue) {
 	def result = [:]
 	result.name = 'battery'
 	result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-
 	result.value = convertVoltToPercent(rawValue)
 	return result
 }
@@ -308,7 +305,7 @@ private def convertVoltToPercent(value) {
 	}
 }
 
-def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMessage = true) {
+def traceEvent(logFilter, message, displayEvent = true, traceLevel, sendMessage = true) {
 	int LOG_ERROR = get_LOG_ERROR()
 	int LOG_WARN = get_LOG_WARN()
 	int LOG_INFO = get_LOG_INFO()
