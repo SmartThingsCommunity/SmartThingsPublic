@@ -12,12 +12,12 @@
  *	for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 import physicalgraph.zigbee.zcl.DataType
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name:"ZigBee Lock Without Codes", namespace:"smartthings", author:"SmartThings", vid:"generic-lock-2", mnmn:"SmartThings", runLocally:true, minHubCoreVersion:'000.022.00013', executeCommandsLocally:true) {
+	definition (name:"ZigBee Lock Without Codes", namespace:"smartthings", author:"SmartThings", vid:"generic-lock-2", mnmn:"SmartThings", runLocally:true, minHubCoreVersion:'000.022.00013', executeCommandsLocally:true, ocfDeviceType: "oic.d.smartlock") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Refresh"
@@ -139,10 +139,10 @@ def initialize() {
 		cmds += zigbee.enrollResponse()
 		cmds += zigbee.configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
 	} else {
-		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null) 
+		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null)
 		cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,DataType.UINT8, 600, 21600, 0x01)
 		cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
-		if (isSiHASLock()) cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE,DataType.ENUM8, 0, 3600, null) 
+		if (isSiHASLock()) cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE,DataType.ENUM8, 0, 3600, null)
 		cmds += refresh()
 	}
 
@@ -193,7 +193,7 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 			responseMap.descriptionText = "Battery is at ${responseMap.value}%"
 		}
-		
+
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_LOCKSTATE) {
 		def value = Integer.parseInt(descMap.value, 16)
 		responseMap.name = "lock"
