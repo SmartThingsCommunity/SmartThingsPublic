@@ -13,26 +13,24 @@ buildscript {
     }
     repositories {
         mavenLocal()
-        jcenter()
         maven {
             credentials {
                 username smartThingsArtifactoryUserName
                 password smartThingsArtifactoryPassword
             }
-            url "https://smartthings.jfrog.io/smartthings/libs-release-local"
+            url "https://smartthings.jfrog.io/smartthings/libs-release"
         }
     }
 }
 
 repositories {
     mavenLocal()
-    jcenter()
     maven {
         credentials {
             username smartThingsArtifactoryUserName
             password smartThingsArtifactoryPassword
         }
-        url "https://smartthings.jfrog.io/smartthings/libs-release-local"
+        url "https://smartthings.jfrog.io/smartthings/libs-release"
     }
 }
 
