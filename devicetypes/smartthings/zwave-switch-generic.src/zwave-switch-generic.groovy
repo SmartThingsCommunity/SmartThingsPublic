@@ -59,10 +59,13 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF01", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston on/off Toggle Switch
 		fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Outdoor Smart Plug
 		fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston Switch" //Minoston Smart On/Off Switch
-		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
+		fingerprint mfr: "0312", prod: "C000", model: "C005", deviceJoinName: "Evalogik Outlet", ocfDeviceType: "oic.d.smartplug" //Evalogik Mini Outdoor Smart Plug
 		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch" //Inovelli Switch
 		fingerprint mfr: "001D", prod: "0037", model: "0002", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Tamper Resistant Outlet ZW15R
 		fingerprint mfr: "0371", prod: "0103", model: "0026", deviceJoinName: "Aeotec Wall Switch" //Aeotec illumino Wall Switch
+		fingerprint mfr: "0371", prod: "0003", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug EU
+		fingerprint mfr: "0371", prod: "0103", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug US
+		fingerprint mfr: "0371", prod: "0203", model: "002A", deviceJoinName: "Aeotec Switch" //Aeotec Outdoor Smart Plug AU
 	}
 
 	// simulator metadata

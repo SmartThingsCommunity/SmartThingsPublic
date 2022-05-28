@@ -32,11 +32,18 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "eWeLink", model: "ZB-SW01", deviceJoinName: "eWeLink Switch"
 		
+		// Minoston
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "Minoston", model: "ZB36S", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Minoston SmartPlug
+		
 		// LELLKI
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,00005,0006", outClusters: "0000", manufacturer: "LELLKI", model: "JZ-ZB-001", deviceJoinName: "LELLKI Switch"
 		
-		// EZEX
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch" //EZEX Switch
+		// eZEX 1st Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z0-HA", deviceJoinName: "eZEX Switch"
+		// eZEX 2nd Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z1-HA", deviceJoinName: "eZEX Switch"
+		// eZEX 3rd Generation Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR1N0Z2-HA", deviceJoinName: "eZEX Switch"
 
 		// GDKES
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0001", deviceJoinName: "GDKES Switch" //GDKES Smart Switch
@@ -45,6 +52,8 @@ metadata {
 
 		// HEIMAN
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "HS6ESK-W-EF-3.0", deviceJoinName: "HEIMAN Outlet", ocfDeviceType: "oic.d.smartplug"  //HEIMAN Smart Outlet
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW1A-W-EF-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
 		
 		// HONYAR
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Switch" //HONYAR Smart Switch
@@ -71,6 +80,10 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "Leviton", model: "DG15S", deviceJoinName: "Leviton Switch" //Leviton Lumina RF Switch
 		fingerprint manufacturer: "Leviton", model: "DG15A", deviceJoinName: "Leviton Outlet", ocfDeviceType: "oic.d.smartplug" //Leviton Zigbee Plug-In Switch DG15A, Raw Description: 01 0104 010A 00 06 0000 0003 0004 0005 0006 0B05 01 0019
 
+		// NodOn
+		fingerprint profileId: "0104", deviceId: "0002", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 1000, FC57", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-1-20", deviceJoinName: "NodOn Switch"
+		fingerprint profileId: "0104", deviceId: "0002", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 1000, FC57", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-1-20_PRO", deviceJoinName: "NodOn Switch"
+        
 		// Orvibo
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "095db3379e414477ba6c2f7e0c6aa026", deviceJoinName: "Orvibo Switch" //Orvibo Smart Switch
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "fdd5fce51a164c7ab73b2f4d8d84c88e", deviceJoinName: "Orvibo Outlet", ocfDeviceType: "oic.d.smartplug" //Orvibo Smart Outlet
@@ -90,14 +103,18 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Outlet", ocfDeviceType: "oic.d.smartplug" //SONOFF Basic (R3 Zigbee)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Outlet", ocfDeviceType: "oic.d.smartplug" //S31 Lite zb
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "1000", manufacturer: "SONOFF", model: "01MINIZB", deviceJoinName: "SONOFF 01MINIZB" //01MINIZB
-        
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S26R2ZB", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S26R2 Plug
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "S40LITE", deviceJoinName: "SONOFF Plug", ocfDeviceType: "oic.d.smartplug" //SONOFF S40Lite Plug
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0020, FC57", outClusters: "0019", manufacturer: "SONOFF", model: "ZBMINI-L", deviceJoinName: "SONOFF Switch" //SONOFF ZBMINI-L
+
 		// Terncy
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Switch" //Terncy Smart Light Socket
 
 		// Third Reality
-		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch-Gen3 Zigbee Mode
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch Plus
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch Switch" //RealitySwitch
+		fingerprint profileId: "0104", inClusters: "0000, 0006", outClusters: "0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS009Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch-Gen3 Zigbee Mode
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch Plus
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch
+		fingerprint profileId: "0104", deviceId: "0051", inClusters: "0000, 0003, 0004, 0005, 0006",outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSP019BZ", deviceJoinName: "ThirdReality Plug", ocfDeviceType: "oic.d.smartplug" //RealityPlug
 
 		// Dawon
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0019, 0002, 0009", manufacturer: "DAWON_DNS", model: "PM-S140-ZB", deviceJoinName: "Dawon Switch" //DAWOS DNS In-Wall Switch PM-S140-ZB
@@ -112,9 +129,16 @@ metadata {
 		fingerprint manufacturer: "Jasco Products", model: "43102", deviceJoinName: "Enbrighten Outlet", ocfDeviceType: "oic.d.smartplug" //Enbrighten, In-Wall Smart Outlet 43102, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		fingerprint manufacturer: "Jasco Products", model: "43076", deviceJoinName: "Enbrighten Switch" //Enbrighten, In-Wall Smart Switch 43076, Raw Description: 01 0104 0100 00 06 0000 0003 0004 0005 0006 0B05 02 000A 0019
 		
-		// Focalcrest
+		// Focalcrest/Evvr
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Focalcrest", model: "SRB01", deviceJoinName: "Focalcrest Switch" // In-Wall Relay Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB01A", deviceJoinName: "Evvr Switch" // Evvr IRS
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "EVVR", model: "SRB02A", deviceJoinName: "Evvr Switch" // Evvr IRS Lite
 		
+		// Evvr
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", outClusters: "0019", manufacturer: "Evvr", model: "SRB01", deviceJoinName: "Evvr Switch" // Evvr IRS
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "Evvr", model: "SRB01A", deviceJoinName: "Evvr Switch" // Evvr IRS
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0019", manufacturer: "Evvr", model: "SRB02A", deviceJoinName: "Evvr Switch" // Evvr IRS Lite
+        
 		// SiHAS Switch
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z1", deviceJoinName: "SiHAS Switch"
 	}
