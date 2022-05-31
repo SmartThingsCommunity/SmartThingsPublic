@@ -40,7 +40,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0020, 0402, 0405, FC57",  outClusters: "0003, 0019", manufacturer: "eWeLink", model: "SNZB-02P", deviceJoinName: "eWeLink Multipurpose Sensor"
 		
 		//Third Reality
-		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0402,0405", outClusters: "0019", manufacturer:"Third Reality, Inc", model:"3RTS20BZ", deviceJoinName: "ThirdReality Thermal & Humidity Sensor"
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0402,0405", outClusters: "0019", manufacturer:"Third Reality, Inc", model:"3RTHS24BZ", deviceJoinName: "ThirdReality Thermal & Humidity Sensor"
 	}
 
 	simulator {
