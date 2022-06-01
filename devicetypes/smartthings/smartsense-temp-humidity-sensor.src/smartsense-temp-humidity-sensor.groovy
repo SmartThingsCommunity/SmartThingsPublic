@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-    
+
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "Multipurpose Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Multipurpose Sensor" //Centralite Temp & Humidity Sensor
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Multipurpose Sensor"
@@ -33,7 +33,14 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Multipurpose Sensor" //Orvibo Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0009, 0402", manufacturer: "HEIMAN", model: "HT-EM", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
 		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0402, 0B05", manufacturer: "HEIMAN", model: "HT-EF-3.0", deviceJoinName: "HEIMAN Multipurpose Sensor" //HEIMAN Temperature & Humidity Sensor
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0020,0402,0405", outClusters: "0003,000A,0019", manufacturer: "frient A/S", model :"HMSZB-110", deviceJoinName: "frient Multipurpose Sensor" // frient Humidity Sensor
 
+		//eWeLink
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0402, 0405",  outClusters: "0003", manufacturer: "eWeLink", model: "TH01", deviceJoinName: "eWeLink Multipurpose Sensor"
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0020, 0402, 0405, FC57",  outClusters: "0003, 0019", manufacturer: "eWeLink", model: "SNZB-02P", deviceJoinName: "eWeLink Multipurpose Sensor"
+		
+		//Third Reality
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0402,0405", outClusters: "0019", manufacturer:"Third Reality, Inc", model:"3RTHS24BZ", deviceJoinName: "ThirdReality Thermal & Humidity Sensor"
 	}
 
 	simulator {
@@ -45,7 +52,7 @@ metadata {
 	}
 
 	preferences {
-		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 		input "humidityOffset", "number", title: "Humidity offset", description: "Enter a percentage to adjust the humidity.", range: "*..*", displayDuringSetup: false
 	}
 
@@ -88,10 +95,10 @@ def parse(String description) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 			if (descMap.attrInt == 0x0021) {
-            			map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
+				map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
 			} else {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-            		}
+			}
 		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 			if (descMap.data[0] == "00") {
 				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
@@ -135,11 +142,11 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-  def result = [:]
+	def result = [:]
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
-		def minVolts = 2.1
+		def minVolts = isFrientSensor() ? 2.3 : 2.1
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
@@ -168,13 +175,21 @@ def refresh() {
 
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
-		        zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
-		        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+			zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
+			zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+	} else if (isFrientSensor() || isThirdReality()) {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)+
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)+
+			zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000)
+	} else if (isEWeLink()) {
+		return zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(0x0405, 0x0000) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
-		        zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
-		        zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-		        zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 	}
 }
 
@@ -190,14 +205,36 @@ def configure() {
 	def manufacturer = device.getDataValue("manufacturer")
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return refresh() +
-		        zigbee.temperatureConfig(30, 300) +
-		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
-		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
+			zigbee.temperatureConfig(30, 300) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
+			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
+	} else if (isFrientSensor() || isThirdReality()) {
+		return refresh() + 
+			zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 60, 600, 1*100) +
+			zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 60, 600, 0xA) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x1)
+	} else if (isEWeLink()) {
+		return refresh() +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 3600, 7200, 0x10) +
+			zigbee.temperatureConfig(10, 7200, 50) +
+			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 10, 7200, 300)
 	} else {
 		return refresh() +
-		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
-		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
-		        zigbee.batteryConfig() +
-		        zigbee.temperatureConfig(30, 300)
+			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
+			zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
+			zigbee.batteryConfig() +
+			zigbee.temperatureConfig(30, 300)
 	}
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
+}
+
+private Boolean isEWeLink() {
+	device.getDataValue("manufacturer") == "eWeLink"
+}
+
+private Boolean isThirdReality() {
+	device.getDataValue("manufacturer") == "Third Reality, Inc"
 }

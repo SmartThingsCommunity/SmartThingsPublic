@@ -1,10 +1,15 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "CT100 Thermostat", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "CT100 Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-CT100_Thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Operating State"
+		capability "Thermostat Mode"
+		capability "Thermostat Fan Mode"
 		capability "Battery"
 		capability "Refresh"
 		capability "Sensor"

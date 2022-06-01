@@ -18,7 +18,6 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition(name: "ZigBee Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
 		capability "Actuator"
-		capability "Battery"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Window Shade"
@@ -29,12 +28,19 @@ metadata {
 
 		command "pause"
 
+ 		// NodOn
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20", deviceJoinName: "NodOn Window Treatment"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20_PRO", deviceJoinName: "NodOn Window Treatment"
+
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "eZEX Window Treatment" // SY-IoT201-BD //SOMFY Blind Controller/eZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "KG0001", deviceJoinName: "Window Treatment" //Smart Curtain Motor(BCM300D)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Window Treatment" //Smart Curtain Motor(DT82TV)
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Somfy", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Ultra Curtain", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 30 WF Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 40 Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 40
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSB015BZ", deviceJoinName: "ThirdReality smart Blind" // ThirdReality
 	}
 
 	preferences {
@@ -77,7 +83,6 @@ private getCOMMAND_GOTO_LIFT_PERCENTAGE() { 0x05 }
 private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
 private getATTRIBUTE_CURRENT_LEVEL() { 0x0000 }
 private getCOMMAND_MOVE_LEVEL_ONOFF() { 0x04 }
-private getBATTERY_PERCENTAGE_REMAINING() { 0x0021 }
 
 private List<Map> collectAttributes(Map descMap) {
 	List<Map> descMaps = new ArrayList<Map>()
@@ -123,31 +128,36 @@ def parse(String description) {
 			def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
 
 			levelEventHandler(valueInt)
-		} else if (reportsBatteryPercentage() && descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && zigbee.convertHexToInt(descMap?.attrId) == BATTERY_PERCENTAGE_REMAINING && descMap.value) {
-			def batteryLevel = zigbee.convertHexToInt(descMap.value)
-
-			batteryPercentageEventHandler(batteryLevel)
 		}
 	}
 }
 
+def getLastLevel() {
+	device.currentState("shadeLevel") ? device.currentValue("shadeLevel") : device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
+}
+
 def levelEventHandler(currentLevel) {
-	def lastLevel = device.currentValue("shadeLevel") ?: device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
+	def priorLevel = lastLevel
+	log.debug "levelEventHandle - currentLevel: ${currentLevel} priorLevel: ${priorLevel}"
 
-	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
-
-	if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
+	if ((priorLevel == "undefined" || currentLevel == priorLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
+		state.invalidSameLevelEvent = true
+
 		sendEvent(name: "shadeLevel", value: currentLevel, unit: "%")
 		sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
 
 		if (currentLevel == 0 || currentLevel == 100) {
-			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+			if (device.getDataValue("manufacturer") == "Third Reality, Inc"){
+				sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
+			} else {
+				sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+			}
 		} else {
-			if (lastLevel < currentLevel) {
+			if (priorLevel < currentLevel) {
 				sendEvent([name:"windowShade", value: "opening"])
-			} else if (lastLevel > currentLevel) {
+			} else if (priorLevel > currentLevel) {
 				sendEvent([name:"windowShade", value: "closing"])
 			}
 			runIn(1, "updateFinalState", [overwrite:true])
@@ -164,11 +174,8 @@ def updateFinalState() {
 	}
 }
 
-def batteryPercentageEventHandler(batteryLevel) {
-	if (batteryLevel != null) {
-		batteryLevel = Math.min(100, Math.max(0, batteryLevel))
-		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%"])
-	}
+def supportsLiftPercentage() {
+	device.getDataValue("manufacturer") != "Feibit Co.Ltd"
 }
 
 def close() {
@@ -193,6 +200,10 @@ def setShadeLevel(value) {
 	Integer level = Math.max(Math.min(value as Integer, 100), 0)
 	def cmd
 
+	if (isSomfy() && Math.abs(level - lastLevel) <= GLYDEA_MOVE_THRESHOLD) {
+		state.invalidSameLevelEvent = false
+	}
+
 	if (supportsLiftPercentage()) {
 		if (shouldInvertLiftPercentage()) {
 			// some devices keeps % level of being closed (instead of % level of being opened)
@@ -209,7 +220,13 @@ def setShadeLevel(value) {
 
 def pause() {
 	log.info "pause()"
-	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+	def currentShadeStatus = device.currentValue("windowShade")
+
+	if (isSomfy() && (currentShadeStatus == "open" || currentShadeStatus == "closed")) {
+		sendEvent(name: "windowShade", value: currentShadeStatus)
+	} else {
+		zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
+	}
 }
 
 def presetPosition() {
@@ -239,6 +256,8 @@ def refresh() {
 def installed() {
 	log.debug "installed"
 
+	state.invalidSameLevelEvent = true
+
 	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 }
 
@@ -258,24 +277,11 @@ def configure() {
 		cmds = zigbee.levelConfig()
 	}
 
-	if (usesLocalGroupBinding()) {
-		cmds += readDeviceBindingTable()
-	}
-
-	if (reportsBatteryPercentage()) {
-		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
-	}
-
 	return refresh() + cmds
-}
-
-def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()
 }
 
 private def parseBindingTableMessage(description) {
 	Integer groupAddr = getGroupAddrFromBindingTable(description)
-
 	if (groupAddr) {
 		List cmds = addHubToGroup(groupAddr)
 		cmds?.collect { new physicalgraph.device.HubAction(it) }
@@ -300,26 +306,12 @@ private List readDeviceBindingTable() {
 	["zdo mgmt-bind 0x${device.deviceNetworkId} 0", "delay 200"]
 }
 
-def supportsLiftPercentage() {
-	device.getDataValue("manufacturer") != "Feibit Co.Ltd"
-}
-
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur() || isSomfyGlydea()
+	return isSomfy()
 }
 
-def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+def isSomfy() {
+	device.getDataValue("manufacturer") == "SOMFY"
 }
 
-def isIkeaKadrilj() {
-	device.getDataValue("model") == "KADRILJ roller blind"
-}
-
-def isIkeaFyrtur() {
-	device.getDataValue("model") == "FYRTUR block-out roller blind"
-}
-
-def isSomfyGlydea() {
-	device.getDataValue("model") == "Glydea Somfy"
-}
+private getGLYDEA_MOVE_THRESHOLD() { 3 }

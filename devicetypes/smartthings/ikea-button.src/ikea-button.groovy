@@ -31,6 +31,10 @@ metadata {
 		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch" //IKEA TRÅDFRI On/Off switch
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
 		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
+		fingerprint manufacturer: "SOMFY", model: "Situo 4 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_Situo4_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint manufacturer: "SOMFY", model: "Situo 1 Zigbee", deviceJoinName: "SOMFY Remote Control", mnmn: "SmartThings", vid: "SmartThings-smartthings-Somfy_open/close_remote" // raw description 01 0104 0203 00 02 0000 0003 04 0003 0005 0006 0102
+		fingerprint inClusters: "0000, 0001, 0003", outClusters: "0003, 0006", manufacturer: "eWeLink", model: "WB01", deviceJoinName: "eWeLink Button" //eWeLink Button WB01
+		fingerprint inClusters: "0000, 0001, 0003, 0020, FC57", outClusters: "0003, 0006, 0019", manufacturer: "eWeLink", model: "SNZB-01P", deviceJoinName: "eWeLink Button" //eWeLink Button
 	}
 
 	tiles {
@@ -70,6 +74,32 @@ private getOPENCLOSE_BUTTONS() {
 	 DOWN:2]
 }
 
+private getOPENCLOSESTOP_BUTTONS_ENDPOINTS() {
+	[
+		1: [UP:1,
+			STOP:2,
+			DOWN:3],
+		2: [UP:4,
+			STOP:5,
+			DOWN:6],
+		3: [UP:7,
+			STOP:8,
+			DOWN:9],
+		4: [UP:10,
+			STOP:11,
+			DOWN:12]
+	]
+}
+
+private getBUTTON_NUMBER_ENDPOINT() {
+	[
+			1: 1, 2: 1, 3: 1,
+	 		4: 2, 5: 2, 6: 2,
+			7: 3, 8: 3, 9: 3,
+			10:4, 11: 4, 12: 4
+	]
+}
+
 private channelNumber(String dni) {
 	dni.split(":")[-1] as Integer
 }
@@ -90,10 +120,18 @@ private getIkeaOnOffSwitchNames() {
 	]
 }
 
-private getIkeaOpenCloseRemoteNames() {
+private getOpenCloseRemoteNames() {
 	[
 		"Up", // Up button
 		"Down" // Down button
+	]
+}
+
+private getOpenCloseStopRemoteNames() {
+	[
+		"Up",	// Up button
+		"Stop",	// Stop button
+		"Down"	// Down button
 	]
 }
 
@@ -105,7 +143,15 @@ private getButtonLabel(buttonNum) {
 	} else if (isIkeaOnOffSwitch()) {
 		label = ikeaOnOffSwitchNames[buttonNum - 1]
 	} else if (isIkeaOpenCloseRemote()) {
-		label = ikeaOpenCloseRemoteNames[buttonNum - 1]
+		label = openCloseRemoteNames[buttonNum - 1]
+	} else if (isSomfy()) {
+		// UP, STOP, DOWN events in "Somfy Situo 4" come from 4 endpoints, so there are 12 child buttons
+		// endpoint 1: buttons 1-3, enpoint 2: buttons 4-6, endpoint 3: buttons 7-9, endpoint 4: buttons 10-12
+		// Situo 1 reports from endpoint 1 only
+		def endpoint = BUTTON_NUMBER_ENDPOINT[buttonNum]
+		def buttonNameIdx = (buttonNum - 1)%3
+		def buttonName = openCloseStopRemoteNames[buttonNameIdx]
+		label = "endpoint $endpoint $buttonName"
 	}
 
 	return label
@@ -122,7 +168,7 @@ private void createChildButtonDevices(numberOfButtons) {
 
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
-		def supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote()) ? ["pushed"] : ["pushed", "held"]
+		def supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote() || isSomfy()) ? ["pushed"] : ["pushed", "held"]
 		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
 				[completedSetup: true, label: getButtonName(i),
 				 isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
@@ -135,18 +181,30 @@ private void createChildButtonDevices(numberOfButtons) {
 
 def installed() {
 	def numberOfButtons = 1
+	def supportedButtons = []
 
 	if (isIkeaRemoteControl()) {
 		numberOfButtons = 5
 	} else if (isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()) {
 		numberOfButtons = 2
+	} else if (isSomfySituo1()) {
+		numberOfButtons = 3
+	}  else if (isSomfySituo4()) {
+		numberOfButtons = 12
 	}
 
 	if (numberOfButtons > 1) {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	def supportedButtons = isIkeaOpenCloseRemote() ? ["pushed"] : ["pushed", "held"]
+	if (isIkeaOpenCloseRemote() || isSomfy()) {
+		supportedButtons = ["pushed"]
+	} else if (isEWeLink()) {
+		supportedButtons = ["pushed", "held", "double"]
+	} else {
+		supportedButtons = ["pushed", "held"]
+	}
+
 	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
@@ -170,11 +228,26 @@ def updated() {
 def configure() {
 	log.debug "Configuring device ${device.getDataValue("model")}"
 
-	def cmds = zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
-			zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
-			readDeviceBindingTable() // Need to read the binding table to see what group it's using
+	def cmds = []
 
+	if (isSomfy()) {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, ["destEndpoint":0xE8]) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01, ["destEndpoint":0xE8]) +
+				zigbee.removeBinding(zigbee.ONOFF_CLUSTER, device.zigbeeId, 0x01, device.hub.zigbeeEui, 0x01) +
+				zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x01])
+
+		if (isSomfySituo4()) {
+			cmds += zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x02]) +
+					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x03]) +
+					zigbee.addBinding(CLUSTER_WINDOW_COVERING, ["destEndpoint":0x04])
+		}
+	} else {
+		cmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21) +
+				zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x21, DataType.UINT8, 30, 21600, 0x01) +
+				zigbee.addBinding(zigbee.ONOFF_CLUSTER)
+	}
+
+	cmds += readDeviceBindingTable() // Need to read the binding table to see what group it's using
 	cmds
 }
 
@@ -188,7 +261,11 @@ def parse(String description) {
 		if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
-				event = getBatteryEvent(zigbee.convertHexToInt(descMap.value))
+				def batteryValue = zigbee.convertHexToInt(descMap.value)
+				if (!isIkea()) {
+					batteryValue = batteryValue / 2
+				}
+				event = getBatteryEvent(batteryValue)
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
 					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
 					descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER ||
@@ -252,11 +329,11 @@ private Map getButtonEvent(Map descMap) {
 					 0x07: { [state: "", buttonNumber: 0] }],
 			(CLUSTER_SCENES):
 					[0x07: { it == "00"
-								? [state: "pushed", buttonNumber: REMOTE_BUTTONS.RIGHT]
-								: [state: "pushed", buttonNumber: REMOTE_BUTTONS.LEFT] },
+						? [state: "pushed", buttonNumber: REMOTE_BUTTONS.RIGHT]
+						: [state: "pushed", buttonNumber: REMOTE_BUTTONS.LEFT] },
 					 0x08: { it == "00"
-								? [state: "held", buttonNumber: REMOTE_BUTTONS.RIGHT]
-								: [state: "held", buttonNumber: REMOTE_BUTTONS.LEFT] },
+						? [state: "held", buttonNumber: REMOTE_BUTTONS.RIGHT]
+						: [state: "held", buttonNumber: REMOTE_BUTTONS.LEFT] },
 					 0x09: { [state: "", buttonNumber: 0] }]
 	]
 
@@ -293,6 +370,31 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = OPENCLOSE_BUTTONS.DOWN
 			}
 		}
+	} else if (isSomfy() && descMap.data?.size() == 0){
+		// Somfy Situo Remotes query their shades directly after "My"(stop) button  is pressed (that's intended behavior)
+		// descMap contains 'data':['00', '00'] in such cases, so we have to ignore those redundant misinterpreted UP events
+		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
+			buttonState = "pushed"
+			def endpoint = Integer.parseInt(descMap.sourceEndpoint)
+			if (descMap.commandInt == 0x00) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].UP
+			} else if (descMap.commandInt == 0x01) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].DOWN
+			} else if (descMap.commandInt == 0x02) {
+				buttonNumber = OPENCLOSESTOP_BUTTONS_ENDPOINTS[endpoint].STOP
+			}
+		}
+	} else if (isEWeLink()) {
+		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+			buttonNumber = 1
+			if (descMap.commandInt == 0x00) {
+				buttonState = "held"
+			} else if (descMap.commandInt == 0x01) {
+				buttonState = "double"
+			} else {
+				buttonState = "pushed"
+			}
+		}
 	}
 
 	if (buttonNumber != 0) {
@@ -316,6 +418,26 @@ private boolean isIkeaOnOffSwitch() {
 
 private boolean isIkeaOpenCloseRemote() {
 	device.getDataValue("model") == "TRADFRI open/close remote"
+}
+
+private boolean isIkea() {
+	isIkeaRemoteControl() || isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()
+}
+
+private boolean isSomfy() {
+	device.getDataValue("manufacturer") == "SOMFY"
+}
+
+private boolean isSomfySituo1() {
+	isSomfy() && device.getDataValue("model") == "Situo 1 Zigbee"
+}
+
+private boolean isSomfySituo4() {
+	isSomfy() && device.getDataValue("model") == "Situo 4 Zigbee"
+}
+
+private boolean isEWeLink() {
+	device.getDataValue("manufacturer") == "eWeLink"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {

@@ -28,11 +28,15 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "DS01", deviceJoinName: "eWeLink Open/Closed Sensor" //eWeLink Door Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0500,FC57", outClusters: "0003,0019", manufacturer: "eWeLink", model: "SNZB-04P", deviceJoinName: "eWeLink Open/Closed Sensor" //eWeLink Door Sensor
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99", deviceJoinName: "Orvibo Open/Closed Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Open/Closed Sensor" //Aurora Smart Door/Window Sensor
 		fingerprint manufacturer: "Aurora", model: "DoorSensor50AU", deviceJoinName: "Aurora Open/Closed Sensor" // Raw Description: 01 0104 0402 00 06 0000 0001 0003 0020 0500 0B05 01 0019 //Aurora Smart Door/Window Sensor
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "HEIMAN", model: "DoorSensor-N", deviceJoinName: "HEIMAN Open/Closed Sensor" //HEIMAN Door Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RDS17BZ", deviceJoinName: "ThirdReality Door Sensor" //ThirdReality Door Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0019", manufacturer: "THIRDREALITY", model: "3RDS17BZ", deviceJoinName: "ThirdReality Door Sensor" //ThirdReality Door Sensor
 	}
 
 	simulator {
@@ -105,7 +109,13 @@ def parse(String description) {
 
 def installed() {
 	log.debug "call installed()"
-	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def manufacturer = getDataValue("manufacturer")
+	
+	if (manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY" ) {
+		//ThirdReality Door Sensor do not set checkInterval for power-saving.
+	} else {
+		sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	}
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
@@ -119,7 +129,7 @@ def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
 	def manufacturer = getDataValue("manufacturer")
 	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
+	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN" ) {
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
@@ -130,7 +140,9 @@ def refresh() {
 def configure() {
 	def manufacturer = getDataValue("manufacturer")
 	
-	if (manufacturer == "eWeLink") {
+	if (manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") {
+		//ThirdReality Door Sensor do not set checkInterval for power-saving.
+	} else if (manufacturer == "eWeLink") {
 		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	} else {
 		sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
@@ -143,6 +155,8 @@ def configure() {
 		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.batteryConfig()
 	} else if (manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
 		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 600, 1)
+	} else if (manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") {
+		cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	}
 	cmds += refresh()
 	cmds
@@ -151,11 +165,17 @@ def configure() {
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
-
+	def manufacturer = getDataValue("manufacturer")
+	def application = getDataValue("application")
+	
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
+	if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application.toInteger() <= 17) {
+		result.value = Math.round(rawValue)
+	} else {
 		result.value = Math.round(rawValue / 2)
+	}
 		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 

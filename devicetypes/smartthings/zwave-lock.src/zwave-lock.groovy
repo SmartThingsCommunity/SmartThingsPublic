@@ -43,7 +43,7 @@ metadata {
 		//zw:Fs type:4003 mfr:0090 prod:0003 model:0742 ver:4.10 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,4E,8B,4C,5D role:07 ff:8300 ui:8300
 		fingerprint mfr:"0090", prod:"0003", model:"0742", deviceJoinName: "Kwikset Door Lock" //Kwikset Obsidian Lock
 		// Schlage
-		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
+		fingerprint mfr:"003B", prod:"6349", model:"5044", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Door Lock" //Schlage Touchscreen Deadbolt Door Lock
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Door Lock" //Schlage Connected Keypad Lever Door Lock
 		fingerprint mfr:"003B", prod:"0001", model:"0468", deviceJoinName: "Schlage Door Lock" //BE468ZP //Schlage Connect Smart Deadbolt Door Lock
@@ -283,8 +283,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			log.trace "[DTH] Executing 'ConfigurationReport' for device $deviceName - all codes deleted"
 			result = allCodesDeletedEvent()
 			result << createEvent(name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes",
-					isStateChange: true, data: [lockName: deviceName, notify: true,
-												notificationText: "Deleted all user codes in $deviceName at ${location.name}"])
+					isStateChange: true, data: [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"])
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 		}
 		result << createEvent(name:"codeLength", value: length, descriptionText: "Code length is $length", displayed: false)
@@ -356,7 +355,6 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 
 	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
 	def map = [ name: "lock" ]
-	map.data = [ lockName: device.displayName ]
 	if (isKeyweLock()) {
 		map.value = cmd.doorCondition >> 1 ? "unlocked" : "locked"
 		map.descriptionText = cmd.doorCondition >> 1 ? "Unlocked" : "Locked"
@@ -380,7 +378,7 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	}
 	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
 		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
-		runIn(3, "delayLockEvent", [data: [map: map]])
+		runIn(3, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: map]])
 		return [:]
 	} else {
 		return result ? [createEvent(map), *result] : createEvent(map)
@@ -459,7 +457,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
@@ -471,7 +469,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 7:
@@ -569,11 +567,6 @@ private def handleAccessAlarmReport(cmd) {
 	}
 
 	if (map) {
-		if (map.data) {
-			map.data.lockName = deviceName
-		} else {
-			map.data = [ lockName: deviceName ]
-		}
 		result << createEvent(map)
 	}
 	result = result.flatten()
@@ -594,7 +587,6 @@ private def handleBurglarAlarmReport(cmd) {
 	def deviceName = device.displayName
 
 	def map = [ name: "tamper", value: "detected" ]
-	map.data = [ lockName: deviceName ]
 	switch (cmd.zwaveAlarmEvent) {
 		case 0:
 			map.value = "clear"
@@ -639,10 +631,10 @@ private def handleBatteryAlarmReport(cmd) {
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
-			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [ lockName: deviceName ] ]
+			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true]
 			break
 		case 0x0B:
-			map = [ name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true, data: [ lockName: deviceName ] ]
+			map = [ name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true]
 			break
 		default:
 			// delegating it to handleAlarmReportUsingAlarmType
@@ -680,7 +672,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				codeName = getCodeName(lockCodes, codeID)
 				map.isStateChange = true // Non motorized locks, mark state changed since it can be unlocked multiple times
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 18: // Locked with keypad
@@ -693,7 +685,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			} else {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID as String, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 21: // Manually locked
@@ -808,11 +800,6 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 	}
 
 	if (map) {
-		if (map.data) {
-			map.data.lockName = deviceName
-		} else {
-			map.data = [ lockName: deviceName ]
-		}
 		result << createEvent(map)
 	}
 	result = result.flatten()
@@ -854,13 +841,12 @@ def zwaveEvent(UserCodeReport cmd) {
 			map.value = "$codeID $changeType"
 			map.isStateChange = true
 			map.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
-			map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
+			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 			if(!isMasterCode(codeID)) {
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			} else {
 				map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
 				map.data.notificationText = "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}"
-				map.data.lockName = deviceName
 			}
 		} else {
 			// We'll land here during scanning of codes
@@ -873,14 +859,14 @@ def zwaveEvent(UserCodeReport cmd) {
 			}
 			map.value = "$codeID $changeType"
 			map.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
-			map.data = [ codeName: codeName, lockName: deviceName ]
+			map.data = [ codeName: codeName ]
 		}
 	} else if(userIdStatus == 254 && isSchlageLock()) {
 		// This is code creation/updation error for Schlage locks.
 		// It should be OK to mark this as duplicate pin code error since in case the batteries are down, or lock is not in range,
 		// or wireless interference is there, the UserCodeReport will anyway not be received.
 		map = [ name: "codeChanged", value: "$codeID failed", descriptionText: "User code is not added", isStateChange: true,
-				data: [ lockName: deviceName, isCodeDuplicate: true] ]
+				data: [ isCodeDuplicate: true] ]
 	} else {
 		// We are using userIdStatus here because codeID = 0 is reported when user tries to set programming code as the user code
 		if (codeID == "0" && userIdStatus == UserCodeReport.USER_ID_STATUS_AVAILABLE_NOT_SET && isSchlageLock()) {
@@ -888,7 +874,7 @@ def zwaveEvent(UserCodeReport cmd) {
 			log.trace "[DTH] All user codes deleted for Schlage lock"
 			result << allCodesDeletedEvent()
 			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true,
-					data: [ lockName: deviceName, notify: true,
+					data: [ notify: true,
 							notificationText: "Deleted all user codes in $deviceName at ${location.name}"] ]
 			lockCodes = [:]
 			result << lockCodesEvent(lockCodes)
@@ -898,12 +884,11 @@ def zwaveEvent(UserCodeReport cmd) {
 				def codeName = getCodeName(lockCodes, codeID)
 				map.value = "$codeID deleted"
 				map.descriptionText = "Deleted \"$codeName\""
-				map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
+				map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
 			} else {
 				map.value = "$codeID unset"
 				map.displayed = false
-				map.data = [ lockName: deviceName ]
 			}
 		}
 	}
@@ -1425,7 +1410,7 @@ void nameSlot(codeSlot, codeName) {
 	def newCodeName = codeName ?: "Code $codeSlot"
 	lockCodes[codeSlot] = newCodeName
 	sendEvent(lockCodesEvent(lockCodes))
-	sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ lockName: deviceName, notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
+	sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
 			descriptionText: "Renamed \"$oldCodeName\" to \"$newCodeName\"", displayed: true, isStateChange: true)
 }
 
@@ -1642,8 +1627,7 @@ private def allCodesDeletedEvent() {
 				displayed: false, isStateChange: true)
 
 		def codeName = code
-		result << createEvent(name: "codeChanged", value: "$id deleted", data: [ codeName: codeName, lockName: deviceName,
-																				 notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
+		result << createEvent(name: "codeChanged", value: "$id deleted", data: [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
 				descriptionText: "Deleted \"$codeName\"",
 				displayed: true, isStateChange: true)
 		clearStateForSlot(id)

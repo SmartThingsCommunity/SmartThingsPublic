@@ -172,7 +172,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 			map.name = "coolingSetpoint"
 			break
 	}
-	map.value = convertTemperatureIfNeeded(cmd.scaledValue, cmd.scale ? 'F' : 'C', cmd.precision)
+	map.value = cmd.scaledValue
 	map.unit = temperatureScale
 	createEvent(map)
 }
@@ -198,14 +198,14 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 2) {
-			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+			def powerValue = device.currentValue("thermostatOperatingState") != "idle" ? Math.round(cmd.scaledMeterValue) : 0
+			createEvent(name: "power", value: powerValue, unit: "W")
 		}
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
-	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+	createEvent(name: "temperature", value: cmd.scaledSensorValue, unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -213,6 +213,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	//this device doesn't act like normal thermostat, it can support either 'cool' or 'heat' after configuration
 	if (cmd.parameterNumber == 59 && !state.isThermostatModeSet) {
 		state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
+		sendEvent([name: cmd.scaledConfigurationValue ? "heatingSetpoint" : "coolingSetpoint", value: 0, unit: temperatureScale, isStateChange: true])
 		state.isThermostatModeSet = true
 	}
 	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
@@ -277,17 +278,23 @@ def setCoolingSetpoint(setpoint) {
 }
 
 def updateSetpoint(setpoint, setpointType) {
-	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
-	setpoint = Math.max(Math.min(setpoint, maxSetpointTemperature), minSetpointTemperature)
+	def scale = temperatureScale == 'C' ? 0 : 1
 	[
-			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: setpointType, size: 2])),
+			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: scale, scaledValue: setpoint, setpointType: setpointType, size: 2])),
 			"delay 2000",
 			secure(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType))
 	]
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def configure() {
-	secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
+	[
+		secure(zwave.configurationV1.configurationSet(parameterNumber: 78, scaledConfigurationValue: temperatureScale == 'C' ? 0 : 1, size: 1)),
+		secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
+	]
 }
 
 def refresh() {

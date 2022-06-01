@@ -37,6 +37,11 @@ metadata {
 		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.0
 		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.1
 		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.0
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "MSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "b18d7e4e-3775-3606-85a6-14b63cd8a0e3"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "BSM-300Z", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "0b6ace5f-e2d8-3e34-9b2a-5662bc9e20e1"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB1", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "0b6ace5f-e2d8-3e34-9b2a-5662bc9e20e1"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB2", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "57bb4dc5-40ef-335f-8e60-cc63190cc73b"
+		fingerprint inClusters: "0000,0001,0003,0020", outClusters: "0003,0004,0006,0019", manufacturer: "ShinaSystem", model: "SBM300ZB3", deviceJoinName: "SiHAS Remote Control", mnmn: "SmartThingsCommunity", vid: "f3f3ab0e-82f5-36dd-839f-a048e1a3f8f9"
 	}
 
 	tiles {
@@ -90,11 +95,23 @@ def parseAttrMessage(description) {
 
 def getButtonEvent(descMap) {
 	if (descMap.commandInt == 1) {
-		getButtonResult("press")
-	}
-	else if (descMap.commandInt == 0) {
-		def button = buttonMap[device.getDataValue("model")][descMap.sourceEndpoint]
-		getButtonResult("release", button)
+		if (isShinaButton()) {
+			def button = descMap.sourceEndpoint.toInteger()
+			getButtonResult("double", button)
+		} else {
+			getButtonResult("press")
+		}	
+	} else if (descMap.commandInt == 0) {
+		if (isShinaButton()) {
+			def button = descMap.sourceEndpoint.toInteger()
+			getButtonResult("pushed", button)
+		} else {
+			def button = buttonMap[device.getDataValue("model")][descMap.sourceEndpoint]
+			getButtonResult("release", button)
+		}
+	} else if (descMap.commandInt == 2) {
+		def button = descMap.sourceEndpoint.toInteger()
+		getButtonResult("held", button)
 	}
 }
 
@@ -114,13 +131,18 @@ def getButtonResult(buttonState, buttonNumber = 1) {
 	} else if (buttonState == 'press') {
 		state.pressTime = now()
 		return event
-	}
+	} else if ((buttonState == 'double') || (buttonState == 'pushed') || (buttonState == 'held')) {
+		def descriptionText = getButtonName() + " ${buttonNumber} was ${buttonState}"
+		event = createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+		sendEventToChild(buttonNumber, event)
+		return createEvent(descriptionText: descriptionText)
+	} 
 }
 
 def sendEventToChild(buttonNumber, event) {
 	String childDni = "${device.deviceNetworkId}:$buttonNumber"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent(event)
+	child?.sendEvent(event)	
 }
 
 def getBatteryPercentageResult(rawValue) {
@@ -135,6 +157,9 @@ def getBatteryPercentageResult(rawValue) {
 		def minVolts = 2.1
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		if(pct <= 0) {
+			pct = 0.01
+		}
 		result.value = Math.min(100, (int)(pct * 100))
 		def linkText = getLinkText(device)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
@@ -161,6 +186,8 @@ def configure() {
 	if (isHeimanButton())
 		cmds += zigbee.writeAttribute(0x0000, 0x0012, DataType.BOOLEAN, 0x01) +
 		addHubToGroup(0x000F) + addHubToGroup(0x0010) + addHubToGroup(0x0011) + addHubToGroup(0x0012)
+	if (isShinaButton())
+		cmds += addHubToGroup(0x0000)
 	return cmds
 }
 
@@ -245,6 +272,8 @@ private getSupportedButtonValues() {
 		values = ["pushed"]
 	} else if (isAduroSmartRemote()) {
 		values = ["pushed"]
+	} else if (isShinaButton()) {
+		values = ["pushed","held","double"]
 	} else {
 		values = ["pushed", "held"]
 	}
@@ -256,7 +285,12 @@ private getModelNumberOfButtons() {[
 		"3450-L2" : 4,
 		"SceneSwitch-EM-3.0" : 4, 
 		"ADUROLIGHT_CSC" : 4,
-		"Adurolight_NCC" : 4
+		"Adurolight_NCC" : 4,
+		"BSM-300Z" : 1,
+		"MSM-300Z" : 4,
+		"SBM300ZB1" : 1,
+		"SBM300ZB2" : 2,
+		"SBM300ZB3" : 3
 ]}
 
 private getModelBindings(model) {
@@ -316,5 +350,6 @@ def isHeimanButton(){
 	device.getDataValue("model") == "SceneSwitch-EM-3.0"
 }
 
-
-
+private Boolean isShinaButton() {
+	((device.getDataValue("model") == "BSM-300Z") || (device.getDataValue("model") == "MSM-300Z") || (device.getDataValue("model") == "SBM300ZB1") || (device.getDataValue("model") == "SBM300ZB2") || (device.getDataValue("model") == "SBM300ZB3"))	
+}

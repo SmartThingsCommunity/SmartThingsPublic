@@ -29,8 +29,19 @@ metadata {
 
 		command "pause"
 
+		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA KADRILJ Blinds
 		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA Window Treatment" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000 //IKEA FYRTUR Blinds
+
+		// Yookee yooksmart
+		fingerprint manufacturer: "Yookee", model: "D10110", deviceJoinName: "Yookee Window Treatment"	// raw description 01 0104 0202 01 07 0000 0001 0003 0004 0005 0020 0102 02 0003 0019
+		fingerprint manufacturer: "yooksmart", model: "D10110", deviceJoinName: "yooksmart Window Treatment" // raw description 01 0104 0202 01 07 0000 0001 0003 0004 0005 0020 0102 02 0003 0019
+
+		// SMARTWINGS
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Smartwings", model: "WM25/L-Z", deviceJoinName: "Smartwings Window Treatment"
+
+		// SONOFF
+		fingerprint inClusters: "0000,0001,0003,0004,0020,0102,fc57", outClusters: "0019", manufacturer: "SONOFF", model: "ZBCurtain", deviceJoinName: "SONOFF Window Treatment"
 	}
 
 	preferences {
@@ -90,6 +101,12 @@ private List<Map> collectAttributes(Map descMap) {
 	return descMaps
 }
 
+def installed() {
+	log.debug "installed"
+
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description:- ${description}"
@@ -131,7 +148,7 @@ def parse(String description) {
 }
 
 def levelEventHandler(currentLevel) {
-	def lastLevel = device.currentValue("shadeLevel") ?: device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
+	def lastLevel = device.currentState("shadeLevel") ? device.currentValue("shadeLevel") : device.currentValue("level") // Try shadeLevel, if not use level and pass to logic below
 
 	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
 
@@ -164,7 +181,12 @@ def updateFinalState() {
 }
 
 def batteryPercentageEventHandler(batteryLevel) {
+	log.debug "batteryLevel: ${batteryLevel}"
+
 	if (batteryLevel != null) {
+		if (isYooksmartOrYookee()) {
+			batteryLevel = batteryLevel >> 1
+		}
 		batteryLevel = Math.min(100, Math.max(0, batteryLevel))
 		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%"])
 	}
@@ -241,12 +263,6 @@ def refresh() {
 	return cmds
 }
 
-def installed() {
-	log.debug "installed"
-
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
-}
-
 def configure() {
 	def cmds
 
@@ -275,7 +291,7 @@ def configure() {
 }
 
 def usesLocalGroupBinding() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings()
 }
 
 private def parseBindingTableMessage(description) {
@@ -306,15 +322,15 @@ private List readDeviceBindingTable() {
 }
 
 def supportsLiftPercentage() {
-	isIkeaKadrilj() || isIkeaFyrtur()
+	isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings() || isSonoff()
 }
 
 def shouldInvertLiftPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isSmartwings() || isSonoff()
 }
 
 def reportsBatteryPercentage() {
-	return isIkeaKadrilj() || isIkeaFyrtur()
+	return isIkeaKadrilj() || isIkeaFyrtur() || isYooksmartOrYookee() || isSmartwings() || isSonoff()
 }
 
 def isIkeaKadrilj() {
@@ -323,4 +339,16 @@ def isIkeaKadrilj() {
 
 def isIkeaFyrtur() {
 	device.getDataValue("model") == "FYRTUR block-out roller blind"
+}
+
+def isYooksmartOrYookee() {
+	device.getDataValue("model") == "D10110"
+}
+
+def isSmartwings() {
+	device.getDataValue("model") == "WM25/L-Z"
+}
+
+def isSonoff() {
+	device.getDataValue("manufacturer") == "SONOFF"
 }

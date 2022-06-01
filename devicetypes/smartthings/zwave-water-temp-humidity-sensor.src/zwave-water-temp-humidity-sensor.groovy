@@ -30,6 +30,8 @@ metadata {
 		fingerprint mfr:"0371", prod:"0002", model:"0013", deviceJoinName: "Aeotec Water Leak Sensor", mnmn: "SmartThings", vid: "aeotec-water-sensor-7-pro" //EU //Aeotec Water Sensor 7 Pro
 		fingerprint mfr:"0371", prod:"0102", model:"0013", deviceJoinName: "Aeotec Water Leak Sensor", mnmn: "SmartThings", vid: "aeotec-water-sensor-7-pro" //US //Aeotec Water Sensor 7 Pro
 		fingerprint mfr:"0371", prod:"0202", model:"0013", deviceJoinName: "Aeotec Water Leak Sensor", mnmn: "SmartThings", vid: "aeotec-water-sensor-7-pro" //AU //Aeotec Water Sensor 7 Pro
+		fingerprint mfr:"0371", prod:"0002", model:"0012", deviceJoinName: "Aeotec Water Leak Sensor", mnmn: "SmartThings", vid: "aeotec-water-sensor-7" //EU Aeotec Water Sensor 7
+		fingerprint mfr:"0371", prod:"0102", model:"0012", deviceJoinName: "Aeotec Water Leak Sensor", mnmn: "SmartThings", vid: "aeotec-water-sensor-7" //US Aeotec Water Sensor 7
 	}
 
 	tiles(scale: 2) {

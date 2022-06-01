@@ -116,9 +116,13 @@ private getWINDOWCOVERING_CMD_GOTOLIFTPERCENTAGE() {0x05}
 
 private getMIN_WINDOW_COVERING_VERSION() {1093}
 
+def getLastShadeLevel() {
+	device.currentState("shadeLevel") ? device.currentValue("shadeLevel") : (device.currentState("level") ? device.currentValue("level") : 0) // Try shadeLevel, if not use level, if not 0
+}
+
 //Custom command to increment blind position by 25 %
 def ShadesUp() {
-	def shadeValue = device.latestValue("shadeLevel") as Integer ?: device.latestValue("level") as Integer ?: 0
+	def shadeValue = lastShadeLevel as Integer
 
 	if (shadeValue < 100) {
 		shadeValue = Math.min(25 * (Math.round(shadeValue / 25) + 1), 100) as Integer
@@ -133,7 +137,7 @@ def ShadesUp() {
 
 //Custom command to decrement blind position by 25 %
 def ShadesDown() {
-	def shadeValue = device.latestValue("shadeLevel") as Integer ?: device.latestValue("level") as Integer ?: 0
+	def shadeValue = lastShadeLevel as Integer
 
 	if (shadeValue > 0) {
 		shadeValue = Math.max(25 * (Math.round(shadeValue / 25) - 1), 0) as Integer
@@ -150,7 +154,7 @@ def stop() {
 	log.info "stop()"
 	def shadeState = device.latestValue("windowShade")
 	if (shadeState == "opening" || shadeState == "closing") {
-		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 			sendEvent(name: "windowShade", value: "stopping")
 			return zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_STOP)
 		}
@@ -160,7 +164,7 @@ def stop() {
 		}
 	}
 	else {
-		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 			return zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)
 		}
 		else {
@@ -203,7 +207,7 @@ def setShadeLevel(value) {
 	sendEvent(name:"level", value: value, unit:"%", displayed: false)
 	sendEvent(name:"shadeLevel", value: value, unit:"%", displayed:true)
 
-	if ( i == 0) {
+	if (i == 0) {
 		sendEvent(name: "switch", value: "off")
 	}
 	else {
@@ -218,7 +222,7 @@ def setShadeLevel(value) {
 	}
 	//setWindowShade(i)
 
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING,WINDOWCOVERING_CMD_GOTOLIFTPERCENTAGE, zigbee.convertToHexString(100-i,2))
 	}
 	else {
@@ -230,7 +234,7 @@ def setShadeLevel(value) {
 def open() {
 	log.info "open()"
 	sendEvent(name: "windowShade", value: "opening")
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_OPEN)
 	}
 	else {
@@ -241,7 +245,7 @@ def open() {
 def close() {
 	log.info "close()"
 	sendEvent(name: "windowShade", value: "closing")
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_CLOSE)
 	}
 	else {
@@ -262,7 +266,7 @@ def ping(){
 
 //Set blind State based on position (which shows appropriate image)
 def setWindowShade(value) {
-	if ((value>0)&&(value<99)){
+	if ((value>0)&&(value<99)) {
 		sendEvent(name: "windowShade", value: "partially open", displayed:true)
 	}
 	else if (value >= 99) {
@@ -278,7 +282,7 @@ def refresh() {
 	log.debug "parse() refresh"
 	def cmds_refresh = null
 
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		cmds_refresh = zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)
 	}
 	else {
@@ -359,7 +363,7 @@ private Map parseReportAttributeMessage(String description) {
 		resultMap.name = "battery"
 		def batteryValue = Math.round((Integer.parseInt(descMap.value, 16))/2)
 		log.debug "parseDescriptionAsMap() --- Battery: $batteryValue"
-		if ((batteryValue >= 0)&&(batteryValue <= 100)){
+		if ((batteryValue >= 0)&&(batteryValue <= 100)) {
 			resultMap.value = batteryValue
 		}
 		else {
