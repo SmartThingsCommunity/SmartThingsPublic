@@ -112,7 +112,7 @@ def reload(){
     state.gpio = null;
 
     sendCommand("module", null, getModuleCompleted);
-    sendCommand("gpio", null, getGpioCompleted);
+    sendCommand("gpio", "all", getGpioCompleted);
 
     refresh();
 }
@@ -197,7 +197,7 @@ def getModuleDevices(moduleId){
 
     switch (moduleId){
 
-        case 0: // Sonoff Mini
+        
 	case 1: // Sonoff Basic
 
         // the next batch are mostly guesses if they work.  
@@ -249,7 +249,7 @@ def getModuleDevices(moduleId){
             }
             break;
 
-
+        case 0: // Template
 		case 18: // Generic (eg: Wemos D1 Mini)
 			// nothing to do, must read from gpio data.
 			break;
