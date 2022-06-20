@@ -155,19 +155,19 @@ def levelEventHandler(currentLevel) {
 				sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 			}
 		} else {
-        	if (device.getDataValue("manufacturer") == "NodOn"){
-            	if (priorLevel < currentLevel) {
-                    sendEvent([name:"windowShade", value: "closing"])
-                } else if (priorLevel > currentLevel) {
-                    sendEvent([name:"windowShade", value: "opening"])
-                }
-           	} else {
-                if (priorLevel < currentLevel) {
-                    sendEvent([name:"windowShade", value: "opening"])
-                } else if (priorLevel > currentLevel) {
-                    sendEvent([name:"windowShade", value: "closing"])
-                }
-            }
+        		if (device.getDataValue("manufacturer") == "NodOn"){
+            			if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+				} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		}
+			} else {
+                		if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+                		}
+            		}
 			runIn(1, "updateFinalState", [overwrite:true])
 		}
 	}
