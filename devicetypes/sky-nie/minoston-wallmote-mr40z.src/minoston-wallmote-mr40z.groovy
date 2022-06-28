@@ -40,25 +40,25 @@
 import groovy.transform.Field
 private static Map getCommandClassVersions() {
     [
-            0x20: 1,	// Basic                      //BasicReport
-            0x26: 3,	// Switch Multilevel (4)      //SwitchMultilevelReport
-            0x55: 1,	// Transport Service
-            0x59: 1,	// AssociationGrpInfo         //AssociationGroupInfoReport
-            0x5A: 1,	// DeviceResetLocally         //DeviceResetLocallyNotification
-            0x5B: 1,	// CentralScene (3)           //CentralSceneNotification
-            0x5E: 2,	// ZwaveplusInfo
-            0x6C: 1,	// Supervision                //SupervisionGet
-            0x70: 2,	// Configuration              //ConfigurationReport
-            0x72: 2,	// ManufacturerSpecific       //ManufacturerSpecificReport
-            0x73: 1,	// Powerlevel
-            0x7A: 2,	// Firmware Update Md (3)     //FirmwareMdReport
-            0x80: 1,	// Battery                    //BatteryReport
-            0x84: 2,	// WakeUp                     //WakeUpIntervalReport
-            0x85: 2,	// Association                //AssociationReport
-            0x86: 1,	// Version (2)                //VersionReport
-            0x87: 1,	// Indicator                  //IndicatorReport
-            0x8E: 2,	// MultiChannelAssociation (3)//MultiChannelAssociationReport
-            0x9F: 1 	// Security 2
+        0x20: 1,	// Basic                      //BasicReport
+        0x26: 3,	// Switch Multilevel (4)      //SwitchMultilevelReport
+        0x55: 1,	// Transport Service
+        0x59: 1,	// AssociationGrpInfo         //AssociationGroupInfoReport
+        0x5A: 1,	// DeviceResetLocally         //DeviceResetLocallyNotification
+        0x5B: 1,	// CentralScene (3)           //CentralSceneNotification
+        0x5E: 2,	// ZwaveplusInfo
+        0x6C: 1,	// Supervision                //SupervisionGet
+        0x70: 2,	// Configuration              //ConfigurationReport
+        0x72: 2,	// ManufacturerSpecific       //ManufacturerSpecificReport
+        0x73: 1,	// Powerlevel
+        0x7A: 2,	// Firmware Update Md (3)     //FirmwareMdReport
+        0x80: 1,	// Battery                    //BatteryReport
+        0x84: 2,	// WakeUp                     //WakeUpIntervalReport
+        0x85: 2,	// Association                //AssociationReport
+        0x86: 1,	// Version (2)                //VersionReport
+        0x87: 1,	// Indicator                  //IndicatorReport
+        0x8E: 2,	// MultiChannelAssociation (3)//MultiChannelAssociationReport
+        0x9F: 1 	// Security 2
     ]
 }
 
@@ -367,13 +367,13 @@ void zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 List<Map> getConfigParams() {
     return [
-            batteryReportThresholdParam,
-            lowBatteryAlarmReportParam,
-            ledIndicator1ColorParam,
-            ledIndicator2ColorParam,
-            ledIndicator3ColorParam,
-            ledIndicator4ColorParam,
-            ledIndicatorBrightnessParam
+        batteryReportThresholdParam,
+        lowBatteryAlarmReportParam,
+        ledIndicator1ColorParam,
+        ledIndicator2ColorParam,
+        ledIndicator3ColorParam,
+        ledIndicator4ColorParam,
+        ledIndicatorBrightnessParam
     ]
 }
 
@@ -429,13 +429,13 @@ private static setDefaultOption(options, defaultVal) {
 
 private static getLedColorOptions() {
     return [
-            "0":"White",
-            "1":"Purple",
-            "2":"Orange",
-            "3":"Cyan",
-            "4":"Red",
-            "5":"Green",
-            "6":"Blue"
+        "0":"White",
+        "1":"Purple",
+        "2":"Orange",
+        "3":"Cyan",
+        "4":"Red",
+        "5":"Green",
+        "6":"Blue"
     ]
 }
 
@@ -452,11 +452,11 @@ private static getBrightnessOptions() {
 
 private static getButtonAttributesMap() {
     [
-            0: "pushed",
-            1: "released",// Although "released" will be ignored by SmartThings, in order to maintain code consistency, the relevant code is retained here
-            2: "held",
-            3: "double",
-            4: "pushed_3x"
+        0: "pushed",
+        1: "released",// Although "released" will be ignored by SmartThings, in order to maintain code consistency, the relevant code is retained here
+        2: "held",
+        3: "double",
+        4: "pushed_3x"
     ]
 }
 
@@ -466,7 +466,7 @@ Integer getParamStoredValue(Integer paramNum, Integer defaultVal=null) {
 
 void refreshSyncStatus() {
     int changes = pendingChanges
-    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Change(s)<br>Tap Up x 7" : "Synced"), false)
+    sendEventIfNew("syncStatus", (changes ?  "${changes} Pending Change(s)<br>Tap Up x 5" : "Synced"), false)
 }
 
 int getPendingChanges() {
