@@ -149,17 +149,25 @@ def levelEventHandler(currentLevel) {
 		sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
 
 		if (currentLevel == 0 || currentLevel == 100) {
-			if (device.getDataValue("manufacturer") == "Third Reality, Inc"){
+			if (device.getDataValue("manufacturer") == "Third Reality, Inc" || device.getDataValue("manufacturer") == "NodOn"){
 				sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
 			} else {
 				sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 			}
 		} else {
-			if (priorLevel < currentLevel) {
-				sendEvent([name:"windowShade", value: "opening"])
-			} else if (priorLevel > currentLevel) {
-				sendEvent([name:"windowShade", value: "closing"])
-			}
+        		if (device.getDataValue("manufacturer") == "NodOn"){
+            			if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+				} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		}
+			} else {
+                		if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+                		}
+            		}
 			runIn(1, "updateFinalState", [overwrite:true])
 		}
 	}
