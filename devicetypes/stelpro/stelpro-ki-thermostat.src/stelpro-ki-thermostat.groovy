@@ -23,7 +23,6 @@ metadata {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Temperature Alarm"
-		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
 		capability "Thermostat Heating Setpoint"
