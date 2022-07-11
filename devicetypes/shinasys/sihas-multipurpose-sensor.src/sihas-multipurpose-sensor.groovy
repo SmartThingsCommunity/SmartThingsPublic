@@ -28,14 +28,15 @@ metadata {
         capability "Health Check"
         capability "Sensor"
         capability "Contact Sensor"
-        capability "afterguide46998.peopleCounter"
-        capability "afterguide46998.inOutDirection"
+        capability "afterguide46998.peopleCounterV2"
+        capability "afterguide46998.inOutDirectionV2"
+        capability "Momentary"
         
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
         fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
-        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "23d6139c-b108-3467-9ddb-6a177d6cc1df", ocfDeviceType: "x.com.st.d.sensor.motion"
+        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "c924b630-4647-39d6-897e-7597acededd7", ocfDeviceType: "x.com.st.d.sensor.motion"
     }
     preferences {
         section {
@@ -143,11 +144,12 @@ private Map getBatteryResult(rawValue) {
     if (!(rawValue == 0 || rawValue == 255)) {
         result.name = 'battery'
         result.translatable = true
-        def minVolts = 2.3
-        def maxVolts = 3.2
-
+        def minVolts = 2.2
+        def maxVolts = 3.1
+        
         if (isDSM300()) maxVolts = 3.0
-		
+        if (isCSM300()) minVolts = 1.9
+        
         def pct = (volts - minVolts) / (maxVolts - minVolts)
         def roundedPct = Math.round(pct * 100)
         if (roundedPct <= 0)
@@ -189,18 +191,21 @@ private Map getAnalogInputResult(value) {
     String descriptionText2 = "${device.displayName} : $inoutString"
     log.debug "[$fpc] = people: $pc, dir: $inout, $inoutString"
     
-    if((inout != "ready") && (prevInOut == inoutString)) {
+    String motionActive = pc ? "active" : "inactive"
+    sendEvent(name: "motion", value: motionActive, displayed: true, isStateChange: false)
+    
+    if((inoutString != "ready") && (prevInOut == inoutString)) {
         sendEvent(name: "inOutDir", value: "ready", displayed: true)
     }
 
-    sendEvent(name: "peopleCounter", value: pc, displayed: true, descriptionText: descriptionText1 )
- 
+    sendEvent(name: "inOutDir", value: inoutString, displayed: true, descriptionText: descriptionText2)
     return [
-        name           : 'inOutDir',
-        value          : inoutString,
-        descriptionText: descriptionText2,
+        name           : 'peopleCounter',
+        value          : pc,
+        descriptionText: descriptionText1,
         translatable   : true
     ]
+    
 }
 
 def setPeopleCounter(peoplecounter) {
@@ -209,6 +214,9 @@ def setPeopleCounter(peoplecounter) {
     zigbee.writeAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, pc)
 }
 
+def push() {
+    setPeopleCounter(0)
+}
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
