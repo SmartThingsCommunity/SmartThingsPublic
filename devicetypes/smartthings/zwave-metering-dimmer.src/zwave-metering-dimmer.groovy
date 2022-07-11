@@ -108,6 +108,30 @@ metadata {
 						range: "1..99",
 						defaultValue: 1
 				)
+                input(
+						title: "Set the MAX brightness level (Aeotec Nano Dimmer Only):",
+						description: "This may need to be adjusted when auto-detect does not set the appropriate level.",
+						name: "maxDimmingLevel",
+						type: "number",
+						range: "1..99",
+						defaultValue: 99
+				)
+                input(
+						title: "Set load detection mode (Aeotec Nano Dimmer Only):",
+						description: "Set the method for recognising load (0 = Never, 1 = On first power on, 2 = On power on).",
+						name: "loadDetectionMode",
+						type: "number",
+						range: "0..2",
+						defaultValue: 2
+				)
+                input(
+						title: "External switch mode for S1 (Aeotec Nano Dimmer Only):",
+						description: "Configure the external switch mode for S1 (0 = Unidentified, 1 = 2-state switch, 2 = 3-state switch, 3 = Momentary switch button, 4 = Auto identification).",
+						name: "externalSwitchMode",
+						type: "number",
+						range: "0..4",
+						defaultValue: 0
+				)
 			}
 	}
 }
@@ -306,9 +330,10 @@ def normalizeLevel(level) {
 
 def getAeotecNanoDimmerConfigurationCommands() {
 	def result = []
+
 	Integer minDimmingLevel = (settings.minDimmingLevel as Integer) ?: 1 // default value (parameter 131) for Aeotec Nano Dimmer
 
-	if (!state.minDimmingLevel) {
+    if (!state.minDimmingLevel) {
 		state.minDimmingLevel = 1 // default value (parameter 131) for Aeotec Nano Dimmer
 	}
 
@@ -316,6 +341,42 @@ def getAeotecNanoDimmerConfigurationCommands() {
 		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
 		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 131, size: 1, scaledConfigurationValue: minDimmingLevel))
 		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 131))
+	}
+
+    Integer maxDimmingLevel = (settings.maxDimmingLevel as Integer) ?: 99 // default value (parameter 132) for Aeotec Nano Dimmer
+
+    if (!state.maxDimmingLevel) {
+		state.maxDimmingLevel = 99 // default value (parameter 132) for Aeotec Nano Dimmer
+	}
+
+    if (!state.configured || (maxDimmingLevel != state.maxDimmingLevel)) {
+		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 132, size: 1, scaledConfigurationValue: maxDimmingLevel))
+		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 132))
+	}
+
+    Integer loadDetectionMode = (settings.loadDetectionMode as Integer) ?: 2 // default value (parameter 249) for Aeotec Nano Dimmer
+
+    if (!state.loadDetectionMode) {
+		state.loadDetectionMode = 2 // default value (parameter 249) for Aeotec Nano Dimmer
+	}
+
+    if (!state.configured || (loadDetectionMode != state.loadDetectionMode)) {
+		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 249, size: 1, scaledConfigurationValue: loadDetectionMode))
+		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 249))
+	}
+
+    Integer externalSwitchMode = (settings.externalSwitchMode as Integer) ?: 0 // default value (parameter 120) for Aeotec Nano Dimmer
+
+    if (!state.externalSwitchMode) {
+		state.externalSwitchMode = 0 // default value (parameter 120) for Aeotec Nano Dimmer
+	}
+
+    if (!state.configured || (externalSwitchMode != state.externalSwitchMode)) {
+		state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+		result << encap(zwave.configurationV1.configurationSet(parameterNumber: 120, size: 1, scaledConfigurationValue: externalSwitchMode))
+		result << encap(zwave.configurationV1.configurationGet(parameterNumber: 120))
 	}
 
 	return result
@@ -327,7 +388,18 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 			state.minDimmingLevel = cmd.scaledConfigurationValue
 			state.configured = true
 		}
-
+        if (cmd.parameterNumber == 132) {
+			state.maxDimmingLevel = cmd.scaledConfigurationValue
+			state.configured = true
+		}
+        if (cmd.parameterNumber == 249) {
+			state.loadDetectionMode = cmd.scaledConfigurationValue
+			state.configured = true
+		}
+        if (cmd.parameterNumber == 120) {
+			state.externalSwitchMode = cmd.scaledConfigurationValue
+			state.configured = true
+		}
 		log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
 	}
 
