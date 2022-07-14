@@ -12,12 +12,12 @@
  *	for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 import physicalgraph.zigbee.zcl.DataType
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name:"ZigBee Lock Without Codes", namespace:"smartthings", author:"SmartThings", vid:"generic-lock-2", mnmn:"SmartThings", runLocally:true, minHubCoreVersion:'000.022.00013', executeCommandsLocally:true) {
+	definition (name:"ZigBee Lock Without Codes", namespace:"smartthings", author:"SmartThings", vid:"generic-lock-2", mnmn:"SmartThings", runLocally:true, minHubCoreVersion:'000.022.00013', executeCommandsLocally:true, ocfDeviceType: "oic.d.smartlock") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Refresh"
@@ -25,9 +25,11 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
+		capability "Contact Sensor"
 
 		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock Door Lock" //Danalock V3 Smart Lock
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0500, 0101", outClusters: "0019", model: "E261-KR0B0Z0-HA", deviceJoinName: "C2O Door Lock", mnmn: "SmartThings", vid: "C2O-ZigBee-Lock" //C2O Lock
+		fingerprint profileId:"0104", inClusters:"0000, 0001, 0003, 0020,0101", outclusters:"0003,0004, 0019", manufacturer:"ShinaSystem", model:"DLM-300Z", deviceJoinName:"SiHAS Door Lock", vid:"8019e83a-2ddc-3720-a88c-3cf74186c3ce", mnmn:"SmartThingsCommunity" //SiHAS Door Lock
 
 	}
 
@@ -68,6 +70,7 @@ private getDOORLOCK_CMD_UNLOCK_DOOR() { 0x01 }
 private getDOORLOCK_RESPONSE_OPERATION_EVENT() { 0x20 }
 private getDOORLOCK_RESPONSE_PROGRAMMING_EVENT() { 0x21 }
 private getPOWER_ATTR_BATTERY_PERCENTAGE_REMAINING() { 0x0021 }
+private getDOORLOCK_ATTR_DOORSTATE() { 0x0003 }
 private getDOORLOCK_ATTR_LOCKSTATE() { 0x0000 }
 private getIAS_ATTR_ZONE_STATUS() { 0x0002 }
 
@@ -114,6 +117,8 @@ def refresh() {
 		cmds += zigbee.readAttribute(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS)
 	}
 
+	if (isSiHASLock()) cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE)
+
 	return cmds
 }
 
@@ -134,10 +139,10 @@ def initialize() {
 		cmds += zigbee.enrollResponse()
 		cmds += zigbee.configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
 	} else {
-		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null) 
+		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null)
 		cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,DataType.UINT8, 600, 21600, 0x01)
 		cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
-
+		if (isSiHASLock()) cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_DOORSTATE,DataType.ENUM8, 0, 3600, null)
 		cmds += refresh()
 	}
 
@@ -188,7 +193,7 @@ private def parseAttributeResponse(String description) {
 			responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 			responseMap.descriptionText = "Battery is at ${responseMap.value}%"
 		}
-		
+
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_LOCKSTATE) {
 		def value = Integer.parseInt(descMap.value, 16)
 		responseMap.name = "lock"
@@ -213,8 +218,18 @@ private def parseAttributeResponse(String description) {
 				with less info will be marked as not displayed
 			 */
 			log.debug "Lock attribute report received: ${responseMap.value}. Delaying event."
-			runIn(1, "delayLockEvent", [data : [map : responseMap]])
+			runIn(1, "delayLockEvent", [overwrite: true, forceForLocallyExecuting: true, data: [map: responseMap]])
 			return [:]
+		}
+	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_DOORSTATE) {
+		def value = Integer.parseInt(descMap.value, 16)
+		responseMap.name = "contact"
+		if (value == 0) {
+			responseMap.value = "open"
+			responseMap.descriptionText = "open state"
+		} else if (value == 1) {
+			responseMap.value = "closed"
+			responseMap.descriptionText = "closed state"
 		}
 	} else {
 		return null
@@ -305,4 +320,8 @@ private Boolean secondsPast(timestamp, seconds) {
 
 private boolean isC2OLock() {
 	device.getDataValue("model") == "E261-KR0B0Z0-HA"
+}
+
+private boolean isSiHASLock() {
+	device.getDataValue("model") == "DLM-300Z"
 }

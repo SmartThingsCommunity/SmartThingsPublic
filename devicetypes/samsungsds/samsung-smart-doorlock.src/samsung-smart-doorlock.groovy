@@ -194,7 +194,6 @@ private def parseAttributeResponse(String description) {
 		return null
 	}
 
-	responseMap.data = [ lockName: deviceName ]
 	result << createEvent(responseMap)
 	log.info "ZigBee DTH - parseAttributeResponse() returning with result:- $result"
 	return result
@@ -386,11 +385,6 @@ private def parseCommandResponse(String description) {
 	}
 
 	if (responseMap["value"]) {
-		if (responseMap.data) {
-			responseMap.data.lockName = deviceName
-		} else {
-			responseMap.data = [ lockName: deviceName ]
-		}
 		result << createEvent(responseMap)
 	}
 	if (result) {

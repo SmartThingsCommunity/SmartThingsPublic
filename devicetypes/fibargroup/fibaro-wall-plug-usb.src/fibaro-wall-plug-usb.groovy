@@ -46,6 +46,10 @@ def installed() {
 
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	parent.childReset()
 }
 

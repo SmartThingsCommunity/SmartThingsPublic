@@ -81,7 +81,7 @@ def parse(String description) {
 				map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
 				map.unit = "kWh"
 
-				def currentEnergy = map.value
+				def currentEnergy = zigbee.convertHexToInt(it.value)
 				def currentPowerConsumption = device.currentState("powerConsumption")?.value
 				Map previousMap = currentPowerConsumption ? new groovy.json.JsonSlurper().parseText(currentPowerConsumption) : [:]
 				def deltaEnergy = calculateDelta (currentEnergy, previousMap)
@@ -108,6 +108,10 @@ def off() {
 def on() {
 	def cmds = zigbee.on()
 	return cmds
+}
+
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
 }
 
 /**

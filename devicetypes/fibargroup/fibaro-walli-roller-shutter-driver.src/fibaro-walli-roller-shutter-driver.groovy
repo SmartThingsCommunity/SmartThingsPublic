@@ -295,6 +295,10 @@ def setShadeLevel(level) {
 	encap(zwave.switchMultilevelV3.switchMultilevelSet(value: Math.min(0x63, level)), 1)
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def refresh() {
 	sendHubCommand([
 			encap(zwave.switchMultilevelV3.switchMultilevelGet())

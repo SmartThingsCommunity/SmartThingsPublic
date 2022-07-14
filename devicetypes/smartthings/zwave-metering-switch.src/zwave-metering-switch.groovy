@@ -52,6 +52,10 @@ metadata {
 		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch" //US //Inovelli Switch Red Series
 		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
 		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
+		fingerprint mfr: "0312", prod: "FF00", model: "FF0E", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP21ZP
+		fingerprint mfr: "0312", prod: "FF00", model: "FF0F", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Smart Plug Meter, MP22ZP
+		fingerprint mfr: "0312", prod: "FF00", model: "FF11", deviceJoinName: "Minoston Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Power Meter Plug, ZW38M
+		fingerprint mfr: "0312", prod: "AC01", model: "4003", deviceJoinName: "New One Outlet", ocfDeviceType: "oic.d.smartplug" //Mini Power Meter Plug, N4003
 	}
 
 	// simulator metadata
@@ -179,7 +183,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	def value = (cmd.value ? "on" : "off")
 	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
 	if (evt.isStateChange) {
-		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
+		[evt, response(["delay 3000", encap(meterGet(scale: 2))])]
 	} else {
 		evt
 	}
@@ -189,7 +193,10 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 {
 	log.debug "Switch binary report: "+cmd
 	def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
+	[
+		createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value"),
+		response(["delay 3000", encap(meterGet(scale: 2))])
+	]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -207,20 +214,30 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
+def isEverspringOutlet() {
+	return zwaveInfo.mfr == "0060" && zwaveInfo.prod == "0004" && zwaveInfo.model == "000B"
+}
+
+def getDelay() {
+	if(isEverspringOutlet()){
+		return 1000
+	} else {
+		return 3000
+	}
+}
+
 def on() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
-	], 3000)
+		zwave.switchBinaryV1.switchBinaryGet()
+	], getDelay())
 }
 
 def off() {
 	encapSequence([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
-	], 3000)
+		zwave.switchBinaryV1.switchBinaryGet()
+	], getDelay())
 }
 
 /**
@@ -261,6 +278,8 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	} else if (zwaveInfo.mfr == "0154" && zwaveInfo.prod == "0003" && zwaveInfo.model == "000A") {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 25, size: 1, scaledConfigurationValue: 1))) //report every 1W change
+	} else if (zwaveInfo.mfr == "0371" && zwaveInfo.prod == "0103" && zwaveInfo.model == "0017") { //Aeotec Smart Switch 7 US / ZWA023-A
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 21, size: 2, scaledConfigurationValue: 2))) //report every 2W change
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
@@ -268,6 +287,10 @@ def configure() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	encapSequence([
 		meterReset(),
 		meterGet(scale: 0)

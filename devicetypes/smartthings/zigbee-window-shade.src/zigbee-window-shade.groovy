@@ -28,6 +28,10 @@ metadata {
 
 		command "pause"
 
+ 		// NodOn
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20", deviceJoinName: "NodOn Window Treatment"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "0019", manufacturer: "NodOn", model: "SIN-4-RS-20_PRO", deviceJoinName: "NodOn Window Treatment"
+
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "eZEX Window Treatment" // SY-IoT201-BD //SOMFY Blind Controller/eZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Window Treatment" //Wistar Curtain Motor(CMJ)
@@ -35,6 +39,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Window Treatment" //Smart Curtain Motor(DT82TV)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Glydea Ultra Curtain", deviceJoinName: "Somfy Window Treatment" //Somfy Glydea Ultra
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 30 WF Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 30 Zigbee LI-ION Pack
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0020, 0102", outClusters: "0003", manufacturer: "SOMFY", model: "Sonesse 40 Roller", deviceJoinName: "Somfy Window Treatment" // Somfy Sonesse 40
+		fingerprint inClusters: "0000,0001,0003,0004,0005,0102", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSB015BZ", deviceJoinName: "ThirdReality smart Blind" // ThirdReality
 	}
 
 	preferences {
@@ -131,9 +137,10 @@ def getLastLevel() {
 }
 
 def levelEventHandler(currentLevel) {
-	log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
+	def priorLevel = lastLevel
+	log.debug "levelEventHandle - currentLevel: ${currentLevel} priorLevel: ${priorLevel}"
 
-	if ((lastLevel == "undefined" || currentLevel == lastLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
+	if ((priorLevel == "undefined" || currentLevel == priorLevel) && state.invalidSameLevelEvent) { //Ignore invalid reports
 		log.debug "Ignore invalid reports"
 	} else {
 		state.invalidSameLevelEvent = true
@@ -142,13 +149,25 @@ def levelEventHandler(currentLevel) {
 		sendEvent(name: "level", value: currentLevel, unit: "%", displayed: false)
 
 		if (currentLevel == 0 || currentLevel == 100) {
-			sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
-		} else {
-			if (lastLevel < currentLevel) {
-				sendEvent([name:"windowShade", value: "opening"])
-			} else if (lastLevel > currentLevel) {
-				sendEvent([name:"windowShade", value: "closing"])
+			if (device.getDataValue("manufacturer") == "Third Reality, Inc" || device.getDataValue("manufacturer") == "NodOn"){
+				sendEvent(name: "windowShade", value: currentLevel == 0 ? "open" : "closed")
+			} else {
+				sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
 			}
+		} else {
+        		if (device.getDataValue("manufacturer") == "NodOn"){
+            			if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+				} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		}
+			} else {
+                		if (priorLevel < currentLevel) {
+                    			sendEvent([name:"windowShade", value: "opening"])
+                		} else if (priorLevel > currentLevel) {
+                    			sendEvent([name:"windowShade", value: "closing"])
+                		}
+            		}
 			runIn(1, "updateFinalState", [overwrite:true])
 		}
 	}
@@ -211,7 +230,7 @@ def pause() {
 	log.info "pause()"
 	def currentShadeStatus = device.currentValue("windowShade")
 
-	if (currentShadeStatus == "open" || currentShadeStatus == "closed") {
+	if (isSomfy() && (currentShadeStatus == "open" || currentShadeStatus == "closed")) {
 		sendEvent(name: "windowShade", value: currentShadeStatus)
 	} else {
 		zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
