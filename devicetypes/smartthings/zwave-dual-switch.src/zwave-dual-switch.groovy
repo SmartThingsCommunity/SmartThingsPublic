@@ -30,7 +30,7 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO Coolcam Switch 1" //NEO coolcam Light Switch 1
 		fingerprint mfr: "0312", prod: "C000", model: "C004", deviceJoinName: "EVA Switch 1" //EVA LOGIK Smart Plug 2CH 1
 		fingerprint mfr: "0312", prod: "FF00", model: "FF05", deviceJoinName: "Minoston Switch 1" //Minoston Smart Plug 2CH 1
-		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Evalogik Switch 1" //Evalogik Outdoor Smart Plug 2CH 1
+		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Outdoor Smart Plug 1" //Outdoor Smart Plug 2CH 1
 	}
 
 	// tile definitions
