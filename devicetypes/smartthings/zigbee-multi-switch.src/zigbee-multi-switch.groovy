@@ -101,6 +101,7 @@ metadata {
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z4", deviceJoinName: "SiHAS Switch 1"
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z5", deviceJoinName: "SiHAS Switch 1"
 		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z6", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "ISM300Z3", deviceJoinName: "SiHAS Switch 1"
 	}
 	// simulator metadata
 	simulator {
@@ -294,6 +295,7 @@ private getChildCount() {
 		case "ST-S350-ZB":
 		case "SBM300Z3":
 		case "HS6SW3A-W-EF-3.0":
+		case "ISM300Z3":
 			return 3
 		case "E220-KR4N0Z0-HA":
 		case "E220-KR4N0Z1-HA":
