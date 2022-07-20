@@ -270,12 +270,10 @@ def parse(String description) {
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
 					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
 					descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER ||
-					descMap.clusterInt == CLUSTER_WINDOW_COVERING && (!isThirdReality())) {
+					descMap.clusterInt == CLUSTER_WINDOW_COVERING || 
+					descMap.clusterInt == 0x0012) {
 				event = getButtonEvent(descMap)
-			} else if ((descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
-			    descMap.clusterInt == 0x0012 )&&(isThirdReality())) {
-				    event = getButtonEvent(descMap)
-				}
+			} 
 		}
 
 		def result = []
@@ -339,13 +337,6 @@ private Map getButtonEvent(Map descMap) {
 						? [state: "held", buttonNumber: REMOTE_BUTTONS.RIGHT]
 						: [state: "held", buttonNumber: REMOTE_BUTTONS.LEFT] },
 					 0x09: { [state: "", buttonNumber: 0] }]
-	]
-	
-	Map ThirdRealityButtonMapping = [
-			(zigbee.ONOFF_CLUSTER):
-					[0x01: { [state: "pushed", buttonNumber: REMOTE_BUTTONS.MIDDLE] }],
-			(zigbee.LEVEL_CONTROL_CLUSTER):
-					[0x01: { [state: "held", buttonNumber: REMOTE_BUTTONS.BOTTOM] }],
 	]
 
 	def buttonState = ""
