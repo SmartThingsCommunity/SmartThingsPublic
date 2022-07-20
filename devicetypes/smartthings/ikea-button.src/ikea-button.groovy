@@ -398,26 +398,17 @@ private Map getButtonEvent(Map descMap) {
 			}
 		}
 	} else if (isThirdReality()) {
-	    if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+	    if (descMap.clusterInt == 0x0012) {
 		    buttonNumber = 1
-			if (descMap.commandInt == 0x00) {
+			if (descMap.value == "0002") {
 				buttonState = "double"
-			} else if (descMap.commandInt == 0x01) {
+			} else if (descMap.value == "0001") {
 				buttonState = "pushed"
-			} else {
+			} else if (descMap.value == "0000") {
 				buttonState = "held"
 			}
 		}
-	} else if (descMap.clusterInt == 0x0012) {
-	    buttonNumber = 1
-		if (descMap.value == "0002" ) {
-		    buttonState = "double"
-		} else if (descMap.value == "0001") {
-		    buttonState = "pushed"
-		} else if (descMap.value == "0000") {
-		    buttonState = "held"
-		}
-	}
+	} 
 
 	if (buttonNumber != 0) {
 		// Create old style
