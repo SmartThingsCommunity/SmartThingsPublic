@@ -400,13 +400,13 @@ private Map getButtonEvent(Map descMap) {
 	} else if (isThirdReality()) {
 	    if (descMap.clusterInt == 0x0012) {
 		    buttonNumber = 1
-			if (descMap.value == "0002") {
-				buttonState = "double"
-			} else if (descMap.value == "0001") {
-				buttonState = "pushed"
-			} else if (descMap.value == "0000") {
-				buttonState = "held"
-			}
+		    if (descMap.value == "0002") {
+			buttonState = "double"
+		    } else if (descMap.value == "0001") {
+			buttonState = "pushed"
+		    } else if (descMap.value == "0000") {
+			buttonState = "held"
+		    }
 		}
 	} 
 
