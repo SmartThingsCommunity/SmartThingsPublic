@@ -27,7 +27,8 @@ metadata {
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", deviceId: "0101", manufacturer: "AduroSmart Eria", model: "AD-DimmableLight3001", deviceJoinName: "Eria Light" //Eria ZigBee Dimmable Bulb
-
+		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BDP3001", deviceJoinName: "Eria Switch" //Eria Zigbee Dimmable Plug
+		
 		// Aurora
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "LCBulb01UK", deviceJoinName: "AOne Dimmer Switch", ocfDeviceType: "oic.d.switch" //Aurora AOne Control Dimmer (120w)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003", manufacturer: "Aurora", model: "Dimmer", deviceJoinName: "AOne Dimmer Switch", ocfDeviceType: "oic.d.switch" //Aurora AOne Control Dimmer (320w)
