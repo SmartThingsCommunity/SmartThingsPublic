@@ -22,7 +22,7 @@ metadata {
         capability "Actuator"
         capability "Battery"
         capability "Button"
-        capability "Holdable Button"        
+        capability "Holdable Button"
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
@@ -147,7 +147,7 @@ private Map parseNonIasButtonMessage(Map descMap){
                     button = 2
                     break
             }
-        
+
             getButtonResult("release", button)
         }
     }
@@ -191,6 +191,9 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting, IAS CIE, and Bindings."
+    if (!device.currentState("supportedButtonValues")) {
+        sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+    }
     def cmds = []
     if (device.getDataValue("model") == "3450-L") {
         cmds << [
