@@ -32,7 +32,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF05", deviceJoinName: "Minoston Switch 1" //Minoston Smart Plug 2CH 1
 		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Evalogik Switch 1" //Evalogik Outdoor Smart Plug 2CH 1
         fingerprint mfr: "0312", prod: "AC01", model: "0097", deviceJoinName: "New One Switch 1" //New One Outdoor Smart Plug 2CH 1
-        fingerprint mfr: "0312", prod: "FF01", model: "FF97", deviceJoinName: "Minoston Switch 1" //Minoston Outdoor Smart Plug 2CH 1
+		fingerprint mfr: "0312", prod: "FF01", model: "FF97", deviceJoinName: "Minoston Switch 1" //Minoston Outdoor Smart Plug 2CH 1
 	}
 
 	// tile definitions
