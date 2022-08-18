@@ -23,7 +23,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Orvibo Moisture Sensor", namespace: "smartthings", author: "SmartThings", vid: "generic-leak", mnmn:"SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition(name: "Orvibo Moisture Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, vid: "generic-leak", mnmn:"SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Water Sensor"
