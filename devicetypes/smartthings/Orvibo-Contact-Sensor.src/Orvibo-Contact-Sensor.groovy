@@ -21,7 +21,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
+	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
