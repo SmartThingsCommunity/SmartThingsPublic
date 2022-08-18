@@ -18,7 +18,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
