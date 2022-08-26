@@ -35,6 +35,8 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "water", deviceJoinName: "Water Leak Sensor", mnmn: "SmartThings", vid: "smartthings-water-leak-IM6001"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-WTD03", deviceJoinName: "Sercomm Water Leak Sensor" //Sercomm Water Leak Detector
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500,0502", outClusters: "000A,0019", manufacturer: "frient A/S", model :"FLSZB-110", deviceJoinName: "frient Water Leak Sensor" // frient Water Leak Detector
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0006,0019", manufacturer:"Third Reality, Inc", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0006,0019", manufacturer:"THIRDREALITY", model:"3RWS18BZ", deviceJoinName: "ThirdReality Water Leak Sensor"		//ThirdReality WaterLeak Sensor
 	}
 
 	simulator {
@@ -218,7 +220,11 @@ private Map getBatteryPercentageResult(rawValue) {
 		result.name = 'battery'
 		result.translatable = true
 		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-		result.value = Math.round(rawValue / 2)
+		if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application.toInteger() <= 17) {
+			result.value = Math.round(rawValue)
+		} else {
+		        result.value = Math.round(rawValue / 2)
+		}
 	}
 
 	return result
