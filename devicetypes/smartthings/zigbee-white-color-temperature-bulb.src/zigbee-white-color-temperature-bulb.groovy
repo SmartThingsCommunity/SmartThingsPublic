@@ -34,6 +34,11 @@ metadata {
 		// Generic
 		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300", deviceJoinName: "Light" //Generic Color Temperature Light
 
+		// DuraGreen
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003, 0019", manufacturer: "DURAGREEN", model: "DG-CW-02", deviceJoinName: "DG Light" //DuraGreen Track Light
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003, 0019", manufacturer: "DURAGREEN", model: "DG-CW-01", deviceJoinName: "DG Light" //DuraGreen LED Strip
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003, 0019", manufacturer: "DURAGREEN", model: "DG-CCT-01", deviceJoinName: "DG Light" //DuraGreen Down Light
+
 		// ABL
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "Juno Connect", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001" //Wafer
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Juno", model: "ABL-LIGHT-Z-001", deviceJoinName: "Juno Connect", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
