@@ -48,6 +48,10 @@ metadata {
     }
 }
 
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
+}
+
 def handlePower(value) {
     sendEvent(name: "power", value: value)
 }

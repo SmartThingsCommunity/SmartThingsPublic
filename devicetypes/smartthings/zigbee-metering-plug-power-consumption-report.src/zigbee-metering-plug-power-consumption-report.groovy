@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Metering Plug Power Consumption Report", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings",  vid: "generic-switch-power-energy") {
+	definition (name: "Zigbee Metering Plug Power Consumption Report", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "Dawon",  vid: "STES-1-Dawon-Zigbee_Smart_Plug") {
 		capability "Energy Meter"
 		capability "Power Meter"
 		capability "Actuator"
@@ -81,7 +81,7 @@ def parse(String description) {
 				map.value = zigbee.convertHexToInt(it.value)/getEnergyDiv()
 				map.unit = "kWh"
 
-				def currentEnergy = map.value
+				def currentEnergy = zigbee.convertHexToInt(it.value)
 				def currentPowerConsumption = device.currentState("powerConsumption")?.value
 				Map previousMap = currentPowerConsumption ? new groovy.json.JsonSlurper().parseText(currentPowerConsumption) : [:]
 				def deltaEnergy = calculateDelta (currentEnergy, previousMap)
@@ -108,6 +108,10 @@ def off() {
 def on() {
 	def cmds = zigbee.on()
 	return cmds
+}
+
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
 }
 
 /**

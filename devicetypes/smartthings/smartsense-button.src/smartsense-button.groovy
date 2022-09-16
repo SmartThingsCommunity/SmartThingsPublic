@@ -136,7 +136,7 @@ def parse(String description) {
                 }
             } else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
                 map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
-            }
+            } 
         }
     } else if (map.name == "temperature") {
         if (tempOffset) {

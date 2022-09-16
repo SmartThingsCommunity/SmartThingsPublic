@@ -27,12 +27,24 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		// EZEX
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		// eZEX 1st Generation Switches
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z0-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z0-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "eZEX Switch 1"
+		// eZEX 2nd Generation Switches
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z1-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z1-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z1-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z1-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z1-HA", deviceJoinName: "eZEX Switch 1"
+		// eZEX 3rd Generation Switches
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z2-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z2-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z2-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z2-HA", deviceJoinName: "eZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z2-HA", deviceJoinName: "eZEX Switch 1"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Switch 1" //Orvibo 2 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo Switch 1" //Orvibo 3 Gang Switch 1
@@ -42,6 +54,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR Switch 1" //HONYAR 2 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW2A-W-EF-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS6SW3A-W-EF-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
 
 		// Dawon
 		fingerprint profileId: "0104", inClusters: "0000, 0002, 0004, 0003, 0006, 0009, 0019", manufacturer: "DAWON_DNS", model: "PM-S240-ZB", deviceJoinName: "Dawon Switch 1" //DAWOS DNS In-Wall Switch PM-S240-ZB
@@ -76,6 +90,18 @@ metadata {
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-005", deviceJoinName: "LELLKI Switch 1" //LELLKI 5 Gang Switch 1
 		// Raw Description 01 0104 0100 00 05 0000 0003 0004 0005 0006 01 0000
 		fingerprint manufacturer: "LELLKI", model: "JZ-ZB-006", deviceJoinName: "LELLKI Switch 1" //LELLKI 6 Gang Switch 1
+        
+		// NodOn
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, 1000, FC57", outClusters: "0003, 0006, 0019", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0007, 0008, 1000, FC57", outClusters: "0003, 0006, 0019", manufacturer: "NodOn", model: "SIN-4-2-20_PRO", deviceJoinName: "NodOn Light 1"
+        
+		// SiHAS Switch (2~6 Gang)
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z2", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z3", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z4", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z5", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "SBM300Z6", deviceJoinName: "SiHAS Switch 1"
+		fingerprint inClusters: "0000, 0003, 0006, 0019, ", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "ISM300Z3", deviceJoinName: "SiHAS Switch 1"
 	}
 	// simulator metadata
 	simulator {
@@ -128,7 +154,7 @@ def parse(String description) {
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
 	if (eventMap) {
-		if (eventDescMap && eventDescMap?.attrId == "0000") {//0x0000 : OnOff attributeId
+		if (eventDescMap && (eventDescMap?.attrId == "0000" || eventDescMap?.command == "0B")) {//0x0000 : OnOff attributeId, 0x0B : default response command
 			if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
 				sendEvent(eventMap)
 			} else {
@@ -145,7 +171,7 @@ def parse(String description) {
 	}
 }
 
-private void createChildDevices() {
+private void createChildDevices() {    
 	if (!childDevices) {
 		def x = getChildCount()
 		for (i in 2..x) {
@@ -253,21 +279,50 @@ private Boolean isOrvibo() {
 }
 
 private getChildCount() {
-	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494" || device.getDataValue("model") == "HY0003" || device.getDataValue("model") == "HY0097" || device.getDataValue("model") == "HS2SW3L-EFR-3.0" ) {
-		return 3
-	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
-		return 2
-	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA" || device.getDataValue("model") == "ZB-SW03" || device.getDataValue("model") == "JZ-ZB-003") {
-		return 3
-	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA" || device.getDataValue("model") == "ZB-SW04" || device.getDataValue("model") == "JZ-ZB-004") {
-		return 4
-	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA" || device.getDataValue("model") == "ZB-SW05" || device.getDataValue("model") == "JZ-ZB-005") {
-		return 5
-	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA" || device.getDataValue("model") == "ZB-SW06" || device.getDataValue("model") == "JZ-ZB-006") {
-		return 6 
-	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB" || device.getDataValue("model") == "PM-S350-ZB" || device.getDataValue("model") == "ST-S350-ZB") {
-		return 3
-	} else {
-		return 2
+	switch (device.getDataValue("model")) {
+		case "9f76c9f31b4c4a499e3aca0977ac4494":
+		case "HY0003":
+		case "HY0097":
+		case "HS2SW3L-EFR-3.0":
+		case "E220-KR3N0Z0-HA":
+		case "E220-KR3N0Z1-HA":
+		case "E220-KR3N0Z2-HA":
+		case "ZB-SW03":
+		case "JZ-ZB-003":
+		case "PM-S340-ZB":
+		case "PM-S340R-ZB":
+		case "PM-S350-ZB":
+		case "ST-S350-ZB":
+		case "SBM300Z3":
+		case "HS6SW3A-W-EF-3.0":
+		case "ISM300Z3":
+			return 3
+		case "E220-KR4N0Z0-HA":
+		case "E220-KR4N0Z1-HA":
+		case "E220-KR4N0Z2-HA":
+		case "ZB-SW04":
+		case "JZ-ZB-004":
+		case "SBM300Z4":
+			return 4
+		case "E220-KR5N0Z0-HA":
+		case "E220-KR5N0Z1-HA":
+		case "E220-KR5N0Z2-HA":
+		case "ZB-SW05":
+		case "JZ-ZB-005":
+		case "SBM300Z5":
+			return 5
+		case "E220-KR6N0Z0-HA":
+		case "E220-KR6N0Z1-HA":
+		case "E220-KR6N0Z2-HA":
+		case "ZB-SW06":
+		case "JZ-ZB-006":
+		case "SBM300Z6":
+			return 6
+		case "E220-KR2N0Z0-HA":
+		case "E220-KR2N0Z1-HA":
+		case "E220-KR2N0Z2-HA":
+		case "SBM300Z2":
+		default:
+			return 2
 	}
 }

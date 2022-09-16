@@ -25,9 +25,10 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", vid: "generic-siren-8", deviceJoinName: "Ozom Siren" // Ozom Siren - SRAC-23ZBS //Ozom Smart Siren
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", deviceJoinName: "HEIMAN Siren" //HEIMAN Smart Siren
+		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", mnmn: "SmartThings", vid: "generic-siren-8", deviceJoinName: "Ozom Siren" // Ozom Siren - SRAC-23ZBS //Ozom Smart Siren
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", mnmn: "SmartThings", vid: "generic-siren-8", deviceJoinName: "HEIMAN Siren" //HEIMAN Smart Siren
 		fingerprint manufacturer: "frient A/S", model :"SIRZB-110", deviceJoinName: "frient Siren", mnmn: "SmartThingsCommunity", vid: "33d3bbac-144c-3a31-b022-0fc5c74240a3" // frient Smart Siren, 2B 0104 0403 00 05 0000 0003 0502 0500 0001 02 000A 0019
+		fingerprint model: "ZBALRM", manufacturer: "Compacta", deviceJoinName: "Smartenit Alarm", mnmn: "SmartThings" // Raw Description: 01 0104 0403 00 07 0000 0001 0003 0015 0500 0502 0B05 00
 	}
 
 	tiles {
@@ -54,7 +55,9 @@ private getCOMMAND_DEFAULT_RESPONSE() { 0x0B }
 
 private getMODE_SIREN() { "13" }
 private getMODE_STROBE() { "04" }
+private getMODE_SMARTENIT_STROBE() { "DF" }
 private getMODE_BOTH() { "17" }
+private getMODE_SMARTENIT_BOTH() { "1A" }
 private getMODE_OFF() { "00" }
 private getSTROBE_DUTY_CYCLE() { "40" }
 private getSTROBE_LEVEL() { "03" }
@@ -160,7 +163,7 @@ def siren() {
 
 def strobe() {
 	log.debug "strobe()"
-	startCmd(ALARM_SIREN)
+	startCmd(ALARM_STROBE)
 }
 
 def startCmd(cmd) {
@@ -179,11 +182,23 @@ def startCmd(cmd) {
 		paramDutyCycle = BASIC_DUTY_CYCLE 
 		paramStrobeLevel = BASIC_LEVEL 
 	} else if (cmd == ALARM_STROBE) {
-		paramMode = isFrientSiren() ? FRIENT_MODE_SIREN : MODE_STROBE
+		if (isFrientSiren()) {
+			paramMode = FRIENT_MODE_SIREN
+		} else if (isCompactaSiren()) {
+			paramMode = MODE_SMARTENIT_STROBE
+		} else {
+			paramMode = MODE_STROBE
+		}
 		paramDutyCycle = isFrientSiren() ? BASIC_DUTY_CYCLE : STROBE_DUTY_CYCLE 
 		paramStrobeLevel = isFrientSiren() ? BASIC_LEVEL : STROBE_LEVEL 
 	} else if (cmd == ALARM_BOTH) {
-		paramMode = isFrientSiren() ? FRIENT_MODE_SIREN : MODE_BOTH
+		if (isFrientSiren()) {
+			paramMode = FRIENT_MODE_SIREN
+		} else if (isCompactaSiren()) {
+			paramMode = MODE_SMARTENIT_BOTH
+		} else {
+			paramMode = MODE_BOTH
+		}
 		paramDutyCycle = isFrientSiren() ? BASIC_DUTY_CYCLE : STROBE_DUTY_CYCLE 
 		paramStrobeLevel = isFrientSiren() ? BASIC_LEVEL : STROBE_LEVEL 
 	}
@@ -214,4 +229,8 @@ private isOzomSiren() {
 
 private Boolean isFrientSiren() {
 	device.getDataValue("manufacturer") == "frient A/S"
+}
+
+private Boolean isCompactaSiren() {
+	device.getDataValue("manufacturer") == "Compacta"
 }

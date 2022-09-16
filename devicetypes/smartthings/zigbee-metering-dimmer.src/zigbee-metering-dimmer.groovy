@@ -13,7 +13,7 @@
  */
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy", runLocally: true, executeCommandsLocally: true, genericHandler: "Zigbee", minHubCoreVersion: '000.019.00012') {
+	definition (name: "ZigBee Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch",  mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
 
 		capability "Actuator"
 		capability "Configuration"
@@ -100,6 +100,10 @@ def on() {
 
 def setLevel(value, rate = null) {
 	zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : [])
+}
+
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
 }
 
 /**

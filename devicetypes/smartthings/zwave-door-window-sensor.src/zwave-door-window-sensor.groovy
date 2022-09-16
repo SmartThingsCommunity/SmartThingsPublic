@@ -62,6 +62,10 @@ metadata {
 		fingerprint mfr: "0371", prod: "0002", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //EU //Aeotec Door/Window Sensor 7 Pro
 		fingerprint mfr: "0371", prod: "0102", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //US //Aeotec Door/Window Sensor 7 Pro
 		fingerprint mfr: "0371", prod: "0202", model: "000C", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //AU //Aeotec Door/Window Sensor 7 Pro
+		fingerprint mfr: "0371", prod: "0002", model: "000B", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //EU //Aeotec Door/Window Sensor 7 zw:Ss2a type:0701 mfr:0371 prod:0002 model:000B ver:1.01 zwv:7.12 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,70,71,84,7A
+		fingerprint mfr: "0371", prod: "0102", model: "000B", deviceJoinName: "Aeotec Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-5" //US //Aeotec Door/Window Sensor 7 zw:Ss2a type:0701 mfr:0371 prod:0102 model:000B ver:1.01 zwv:7.12 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,70,71,84,7A
+		//zw:Ss2a type:0701 mfr:027A prod:7000 model:E001 ver:1.05 zwv:7.13 lib:03 cc:5E,55,9F,6C sec:86,85,8E,59,72,5A,87,73,80,71,30,70,84,7A
+		fingerprint mfr: "027A", prod: "7000", model: "E001", deviceJoinName: "Zooz Open/Closed Sensor" //Zooz ZSE41 XS Open Close Sensor
 	}
 
 	// simulator metadata

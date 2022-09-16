@@ -1,8 +1,9 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-3") {  
+	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-3") {
 		capability "Window Shade"
+		capability "Window Shade Level"
 		capability "Window Shade Preset"
 		capability "Switch Level"
 		capability "Battery"
@@ -10,18 +11,18 @@ metadata {
 		capability "Health Check"
 		capability "Actuator"
 		capability "Configuration"
-		
+
 		// added in for Google Assistant Operability
-		capability "Switch"		
-		
+		capability "Switch"
+
 		//Custom Commandes to achieve 25% increment control
 		command "ShadesUp"
 		command "ShadesDown"
-		
+
 		// command to stop blinds
 		command "stop"
 		command "getversion"
-		
+
 		fingerprint profileID: "0104", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
 		fingerprint profileId: "0104", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
 		fingerprint endpointID: "01, C4", profileId: "0104, C25D", deviceId: "0202", inClusters: "0000, 0003, 0006, 0008, 0102, 0020, 0001", outClusters: "0019", manufacturer: "AXIS", model: "Gear", deviceJoinName: "AXIS Window Treatment" //AXIS Gear
@@ -36,7 +37,7 @@ metadata {
 		//Updated 2019-08-09 - minor changes and improvements, onoff state reporting fixed
 		//Updated 2019-11-11 - minor changes
 	}
-	
+
 	tiles(scale: 2) {
 		multiAttributeTile(name:"windowShade", type: "lighting", width: 3, height: 3) {
 			tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
@@ -44,10 +45,10 @@ metadata {
 				attributeState("partially open", label: 'Partially Open', action:"close", icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33", nextState: "closing")
 				attributeState("closed", label: 'Closed', action:"open",  icon:"http://i.imgur.com/mtHdMse.png", backgroundColor:"#bbbbdd", nextState: "opening")
 				attributeState("opening", label: 'Opening', action: "stop", icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ffcc33", nextState: "stopping")
-				attributeState("closing", label: 'Closing', action: "stop", icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#bbbbdd", nextState: "stopping") 
-				attributeState("stopping", label: 'Stopping',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
-				attributeState("stoppingNS", label: 'Stopping Not Supported',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
-				attributeState("unknown", label: 'Configuring.... Please Wait', icon:"http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
+				attributeState("closing", label: 'Closing', action: "stop", icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#bbbbdd", nextState: "stopping")
+				attributeState("stopping", label: 'Stopping',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777")
+				attributeState("stoppingNS", label: 'Stopping Not Supported',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777")
+				attributeState("unknown", label: 'Configuring.... Please Wait', icon:"http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777")
 			}
 			tileAttribute ("device.level", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "ShadesUp")
@@ -61,9 +62,9 @@ metadata {
 			state("closed", label:'Closed', action:"open", icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "opening")
 			state("opening", label: 'Opening', action: "stop", icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ffcc33", nextState: "stopping")
 			state("closing", label: 'Closing', action: "stop", icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#bbbbdd", nextState: "stopping")
-			state("stopping", label: 'Stopping',  icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777") 
-			state("stoppingNS", label: 'Stopping Not Supported',  icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777") 
-			state("unknown", label: 'Configuring', icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777") 
+			state("stopping", label: 'Stopping',  icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777")
+			state("stoppingNS", label: 'Stopping Not Supported',  icon: "http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777")
+			state("unknown", label: 'Configuring', icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor: "#ff7777")
 		}
 		controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height:2, width: 2, inactiveLabel: true) {
 			state("level", action:"switch level.setLevel")
@@ -86,7 +87,7 @@ metadata {
 		preferences {
 			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, required: false, displayDuringSetup: true, range:"1..100"
 		}
-		
+
 		main(["main"])
 		details(["windowShade", "mediumSlider", "contPause", "home", "version", "battery", "refresh"])
 	}
@@ -115,33 +116,37 @@ private getWINDOWCOVERING_CMD_GOTOLIFTPERCENTAGE() {0x05}
 
 private getMIN_WINDOW_COVERING_VERSION() {1093}
 
+def getLastShadeLevel() {
+	device.currentState("shadeLevel") ? device.currentValue("shadeLevel") : (device.currentState("level") ? device.currentValue("level") : 0) // Try shadeLevel, if not use level, if not 0
+}
+
 //Custom command to increment blind position by 25 %
 def ShadesUp() {
-	def shadeValue = device.latestValue("level") as Integer ?: 0 
-	
+	def shadeValue = lastShadeLevel as Integer
+
 	if (shadeValue < 100) {
 		shadeValue = Math.min(25 * (Math.round(shadeValue / 25) + 1), 100) as Integer
 	}
-	else { 
+	else {
 		shadeValue = 100
 	}
 	//sendEvent(name:"level", value:shadeValue, displayed:true)
-	setLevel(shadeValue)
+	setShadeLevel(shadeValue)
 	//sendEvent(name: "windowShade", value: "opening")
 }
 
 //Custom command to decrement blind position by 25 %
 def ShadesDown() {
-	def shadeValue = device.latestValue("level") as Integer ?: 0 
-	
+	def shadeValue = lastShadeLevel as Integer
+
 	if (shadeValue > 0) {
 		shadeValue = Math.max(25 * (Math.round(shadeValue / 25) - 1), 0) as Integer
 	}
-	else { 
+	else {
 		shadeValue = 0
 	}
 	//sendEvent(name:"level", value:shadeValue, displayed:true)
-	setLevel(shadeValue)
+	setShadeLevel(shadeValue)
 	//sendEvent(name: "windowShade", value: "closing")
 }
 
@@ -149,7 +154,7 @@ def stop() {
 	log.info "stop()"
 	def shadeState = device.latestValue("windowShade")
 	if (shadeState == "opening" || shadeState == "closing") {
-		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 			sendEvent(name: "windowShade", value: "stopping")
 			return zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_STOP)
 		}
@@ -159,12 +164,12 @@ def stop() {
 		}
 	}
 	else {
-		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
-			return zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)    
+		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
+			return zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)
 		}
 		else {
 			sendEvent(name: "windowShade", value: "stoppingNS")
-			return zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, [delay:5000])  
+			return zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, [delay:5000])
 		}
 	}
 }
@@ -176,42 +181,39 @@ def pause() {
 //Send Command through setLevel()
 def on() {
 	log.info "on()"
-	sendEvent(name: "windowShade", value: "opening")
 	sendEvent(name: "switch", value: "on")
-	
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
-		zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_OPEN)
-	}
-	else {
-		setLevel(100)
-	}
+	open()
 }
 
 //Send Command through setLevel()
 def off() {
 	log.info "off()"
-	sendEvent(name: "windowShade", value: "closing")
 	sendEvent(name: "switch", value: "off")
 	close()
-	//zigbee.off()
 }
 
 //Command to set the blind position (%) and log the event
 def setLevel(value, rate=null) {
 	log.info "setLevel ($value)"
-	
+
+	setShadeLevel(value)
+}
+
+def setShadeLevel(value) {
+	log.info "setShadeLevel ($value)"
 	Integer currentLevel = state.level
-	
+
 	def i = value as Integer
-	sendEvent(name:"level", value: value, displayed:true)
-	
-	if ( i == 0) {
+	sendEvent(name:"level", value: value, unit:"%", displayed: false)
+	sendEvent(name:"shadeLevel", value: value, unit:"%", displayed:true)
+
+	if (i == 0) {
 		sendEvent(name: "switch", value: "off")
 	}
 	else {
 		sendEvent(name: "switch", value: "on")
 	}
-	
+
 	if (i > currentLevel) {
 		sendEvent(name: "windowShade", value: "opening")
 	}
@@ -219,8 +221,8 @@ def setLevel(value, rate=null) {
 		sendEvent(name: "windowShade", value: "closing")
 	}
 	//setWindowShade(i)
-	
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING,WINDOWCOVERING_CMD_GOTOLIFTPERCENTAGE, zigbee.convertToHexString(100-i,2))
 	}
 	else {
@@ -232,28 +234,28 @@ def setLevel(value, rate=null) {
 def open() {
 	log.info "open()"
 	sendEvent(name: "windowShade", value: "opening")
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_OPEN)
 	}
 	else {
-		setLevel(100)
-	}     
+		setShadeLevel(100)
+	}
 }
 //Send Command through setLevel()
 def close() {
 	log.info "close()"
 	sendEvent(name: "windowShade", value: "closing")
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_CLOSE)
 	}
 	else {
-		setLevel(0)
+		setShadeLevel(0)
 	}
 }
 
 def presetPosition() {
 	log.info "presetPosition()"
-	setLevel(preset ?: state.preset ?: 50)
+	setShadeLevel(preset ?: state.preset ?: 50)
 }
 
 //Reporting of Battery & position levels
@@ -262,9 +264,9 @@ def ping(){
 	return refresh()
 }
 
-//Set blind State based on position (which shows appropriate image) 
+//Set blind State based on position (which shows appropriate image)
 def setWindowShade(value) {
-	if ((value>0)&&(value<99)){
+	if ((value>0)&&(value<99)) {
 		sendEvent(name: "windowShade", value: "partially open", displayed:true)
 	}
 	else if (value >= 99) {
@@ -279,32 +281,32 @@ def setWindowShade(value) {
 def refresh() {
 	log.debug "parse() refresh"
 	def cmds_refresh = null
-	
-	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
+
+	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 		cmds_refresh = zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)
 	}
 	else {
 		cmds_refresh = zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
 
 	}
-	
-	cmds_refresh = cmds_refresh + 
+
+	cmds_refresh = cmds_refresh +
 					zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
 					zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID)
-	
+
 	log.info "refresh() --- cmds: $cmds_refresh"
-	
+
 	return cmds_refresh
 }
 
 def getversion () {
 	//state.currentVersion = 0
-	sendEvent(name: "version", value: "Checking Version ... ")     
+	sendEvent(name: "version", value: "Checking Version ... ")
 	return zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID)
 }
 
 //configure reporting
-def configure() {   
+def configure() {
 	state.currentVersion = 0
 	sendEvent(name: "windowShade", value: "unknown")
 	log.debug "Configuring Reporting and Bindings."
@@ -316,33 +318,42 @@ def configure() {
 						zigbee.readAttribute(CLUSTER_ONOFF, ONOFF_ATTR_ONOFFSTATE) +
 						zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
 						zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY)
-						
-	def cmds = zigbee.configureReporting(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE, 0x20, 1, 3600, 0x00) + 
+
+	def cmds = zigbee.configureReporting(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE, 0x20, 1, 3600, 0x00) +
 				zigbee.configureReporting(CLUSTER_ONOFF, ONOFF_ATTR_ONOFFSTATE, 0x10, 1, 3600, 0x00) +
 				zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 1, 3600, 0x00) +
 				zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 1, 3600, 0x01)
-				
+
 	log.info "configure() --- cmds: $cmds"
 	return attrs_refresh + cmds
 }
 
 def parse(String description) {
 	log.trace "parse() --- description: $description"
-	
+
 	Map map = [:]
+
+	if (device.currentValue("shadeLevel") == null && device.currentValue("level") != null) {
+		sendEvent(name: "shadeLevel", value: device.currentValue("level"), unit: "%")
+	}
 
 	def event = zigbee.getEvent(description)
 	if (event && description?.startsWith('on/off')) {
 		log.trace "sendEvent(event)"
 		sendEvent(event)
 	}
-	
+
 	else if ((description?.startsWith('read attr -')) || (description?.startsWith('attr report -'))) {
 		map = parseReportAttributeMessage(description)
 		def result = map ? createEvent(map) : null
+
+		if (map.name == "level") {
+			result = [result, createEvent([name: "shadeLevel", value: map.value, unit: map.unit])]
+		}
+
 		log.debug "parse() --- returned: $result"
 		return result
-	}	
+	}
 }
 
 private Map parseReportAttributeMessage(String description) {
@@ -352,7 +363,7 @@ private Map parseReportAttributeMessage(String description) {
 		resultMap.name = "battery"
 		def batteryValue = Math.round((Integer.parseInt(descMap.value, 16))/2)
 		log.debug "parseDescriptionAsMap() --- Battery: $batteryValue"
-		if ((batteryValue >= 0)&&(batteryValue <= 100)){
+		if ((batteryValue >= 0)&&(batteryValue <= 100)) {
 			resultMap.value = batteryValue
 		}
 		else {
@@ -366,23 +377,27 @@ private Map parseReportAttributeMessage(String description) {
 		//Set icon based on device feedback for the  open, closed, & partial configuration
 		resultMap.value = levelValue
 		state.level = levelValue
+		resultMap.unit = "%"
+		resultMap.displayed = false
 		setWindowShade(levelValue)
 	}
 	else if (descMap.clusterInt == CLUSTER_LEVEL && descMap.attrInt == LEVEL_ATTR_LEVEL) {
 		//log.debug "parse() --- returned level :$state.currentVersion "
-		def currentLevel = state.level 
-		
+		def currentLevel = state.level
+
 		resultMap.name = "level"
 		def levelValue = Math.round(Integer.parseInt(descMap.value, 16))
 		def levelValuePercent = Math.round((levelValue/255)*100)
 		//Set icon based on device feedback for the  open, closed, & partial configuration
 		resultMap.value = levelValuePercent
 		state.level = levelValuePercent
-		
+		resultMap.unit = "%"
+		resultMap.displayed = false
+
 		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION) {
 			//Integer currentLevel = state.level
-			sendEvent(name:"level", value: levelValuePercent, displayed:true)
-			
+			sendEvent(name:"level", value: levelValuePercent, unit: "%", displayed: false)
+
 			if (levelValuePercent > currentLevel) {
 				sendEvent(name: "windowShade", value: "opening")
 			} else if (levelValuePercent < currentLevel) {
@@ -396,21 +411,21 @@ private Map parseReportAttributeMessage(String description) {
 	else if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_SWBUILDID) {
 		resultMap.name = "version"
 		def versionString = descMap.value
-		
+
 		StringBuilder output = new StringBuilder("")
 		StringBuilder output2 = new StringBuilder("")
-		
+
 		for (int i = 0; i < versionString.length(); i += 2) {
 			String str = versionString.substring(i, i + 2)
-			output.append((char) (Integer.parseInt(str, 16)))   
+			output.append((char) (Integer.parseInt(str, 16)))
 			if (i > 19) {
 				output2.append((char) (Integer.parseInt(str, 16)))
 			}
-		} 
-		
+		}
+
 		def current = Integer.parseInt(output2.toString())
 		state.currentVersion = current
-		resultMap.value = output.toString()   
+		resultMap.value = output.toString()
 	}
 	else {
 		log.debug "parseReportAttributeMessage() --- ignoring attribute"

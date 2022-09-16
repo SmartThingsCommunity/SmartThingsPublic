@@ -93,8 +93,9 @@ metadata {
     preferences {
         section {
             input("systemModes", "enum",
-                title: "Thermostat configured modes\nSelect the modes the thermostat has been configured for, as displayed on the thermostat",
-                description: "off, heat, cool", defaultValue: "3", required: true, multiple: false,
+                title: "Thermostat configured modes",
+                description: "Select the modes the thermostat has been configured for, as displayed on the thermostat",
+                defaultValue: "3", required: true, multiple: false,
                 options:["1":"off, heat",
                         "2":"off, cool",
                         "3":"off, heat, cool",
@@ -590,6 +591,8 @@ def setHeatingSetpoint(degrees) {
         state.heatingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "heatingSetpoint", value: device.currentValue("heatingSetpoint"), unit: getTemperatureScale())
     }
 }
 
@@ -599,6 +602,8 @@ def setCoolingSetpoint(degrees) {
         state.coolingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "coolingSetpoint", value: device.currentValue("coolingSetpoint"), unit: getTemperatureScale())
     }
 }
 
