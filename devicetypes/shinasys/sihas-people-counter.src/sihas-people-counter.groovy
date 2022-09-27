@@ -95,7 +95,7 @@ metadata {
 					required: false)
 			*/
             // english version
-            input (
+			input (
 					title: "Setting Description", 
 					description: "The settings below correspond to the V2 (TOF) version.", 
 					displayDuringSetup: false, 
@@ -283,8 +283,8 @@ def setFreeze(freezeSts) {
 		if ( version > 10 ) {
 			return setPeopleCounter(84)
 		} else {
-        	return zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)	
-        }
+			return zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)	
+		}
 	}
 	return null
 }
@@ -395,10 +395,10 @@ def configure() {
 def installed() {
 	log.info("installed")
 	sendEvent(name: "ledStatus", value:"true")
-    sendEvent(name: "transationInterval", value:"2")
-    sendEvent(name: "inFastStatus", value:"true")
-    sendEvent(name: "outFastStatus", value:"true")
-    sendEvent(name: "rfStatus", value:"false")
-    sendEvent(name: "rfPairing", value:"false")
-    sendEvent(name: "distanceInit", value:"false")
+	sendEvent(name: "transationInterval", value:"2")
+	sendEvent(name: "inFastStatus", value:"true")
+	sendEvent(name: "outFastStatus", value:"true")
+	sendEvent(name: "rfStatus", value:"false")
+	sendEvent(name: "rfPairing", value:"false")
+	sendEvent(name: "distanceInit", value:"false")
 }
