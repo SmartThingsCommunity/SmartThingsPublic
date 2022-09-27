@@ -28,15 +28,11 @@ metadata {
         capability "Health Check"
         capability "Sensor"
         capability "Contact Sensor"
-        capability "afterguide46998.peopleCounterV2"
-        capability "afterguide46998.inOutDirectionV2"
-        capability "Momentary"
         
         fingerprint inClusters: "0000,0001,0003,0020,0400,0402,0405,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "USM-300Z", deviceJoinName: "SiHAS MultiPurpose Sensor", mnmn: "SmartThings", vid: "generic-motion-6"
         fingerprint inClusters: "0000,0001,0003,0020,0406,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "OSM-300Z", deviceJoinName: "SiHAS Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion"
         fingerprint inClusters: "0000,0003,0402,0001,0405", outClusters: "0004,0003,0019", manufacturer: "ShinaSystem", model: "TSM-300Z", deviceJoinName: "SiHAS Temperature/Humidity Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor", ocfDeviceType: "oic.d.thermostat"
         fingerprint inClusters: "0000,0001,0003,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "DSM-300Z", deviceJoinName: "SiHAS Contact Sensor", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact"
-        fingerprint inClusters: "0000,0001,0003,000C,0020,0500", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "CSM-300Z", deviceJoinName: "SiHAS People Counter", mnmn: "SmartThingsCommunity", vid: "c924b630-4647-39d6-897e-7597acededd7", ocfDeviceType: "x.com.st.d.sensor.motion"
     }
     preferences {
         section {
@@ -48,13 +44,11 @@ metadata {
 
 private getILLUMINANCE_MEASUREMENT_CLUSTER() { 0x0400 }
 private getOCCUPANCY_SENSING_CLUSTER() { 0x0406 }
-private getANALOG_INPUT_BASIC_CLUSTER() { 0x000C }
 private getPOWER_CONFIGURATION_BATTERY_VOLTAGE_ATTRIBUTE() { 0x0020 }
 private getTEMPERATURE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getRALATIVE_HUMIDITY_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getILLUMINANCE_MEASUREMENT_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
 private getOCCUPANCY_SENSING_OCCUPANCY_ATTRIBUTE() { 0x0000 }
-private getANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE() { 0x0055 }
 
 private List<Map> collectAttributes(Map descMap) {
     List<Map> descMaps = new ArrayList<Map>()
@@ -148,7 +142,6 @@ private Map getBatteryResult(rawValue) {
         def maxVolts = 3.1
         
         if (isDSM300()) maxVolts = 3.0
-        if (isCSM300()) minVolts = 1.9
         
         def pct = (volts - minVolts) / (maxVolts - minVolts)
         def roundedPct = Math.round(pct * 100)
@@ -180,43 +173,7 @@ private Map getContactResult(value) {
 	]
 }
 
-private Map getAnalogInputResult(value) {
-    Float fpc = Float.intBitsToFloat(value.intValue())
-    def prevInOut = device.currentState('inOutDir')?.value
-    int pc = ((int)(fpc*10))/10 //people counter
-    int inout = ((int)(fpc*10).round(0))%10; // inout direction : .1 = in, .2 = out, .0 = ready
-    if(inout>2) inout = 2
-    String inoutString = ( (inout==1) ? "in" : (inout==2) ? "out":"ready")
-    String descriptionText1 = "${device.displayName} : $pc"
-    String descriptionText2 = "${device.displayName} : $inoutString"
-    log.debug "[$fpc] = people: $pc, dir: $inout, $inoutString"
-    
-    String motionActive = pc ? "active" : "inactive"
-    sendEvent(name: "motion", value: motionActive, displayed: true, isStateChange: false)
-    
-    if((inoutString != "ready") && (prevInOut == inoutString)) {
-        sendEvent(name: "inOutDir", value: "ready", displayed: true)
-    }
 
-    sendEvent(name: "inOutDir", value: inoutString, displayed: true, descriptionText: descriptionText2)
-    return [
-        name           : 'peopleCounter',
-        value          : pc,
-        descriptionText: descriptionText1,
-        translatable   : true
-    ]
-    
-}
-
-def setPeopleCounter(peoplecounter) {
-    int pc =  Float.floatToIntBits(peoplecounter);
-    log.debug "SetPeopleCounter = $peoplecounter"
-    zigbee.writeAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, pc)
-}
-
-def push() {
-    setPeopleCounter(0)
-}
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -246,10 +203,6 @@ def refresh() {
     if (isDSM300()) {
         refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)        
         refreshCmds += zigbee.enrollResponse()
-    }
-    
-    if (isCSM300()) {
-        refreshCmds += zigbee.readAttribute(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE)
     }
     
     return refreshCmds
@@ -289,10 +242,6 @@ def configure() {
         configCmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 0xffff, null)
     }
     
-    if (isCSM300()) {
-        configCmds += zigbee.configureReporting(ANALOG_INPUT_BASIC_CLUSTER, ANALOG_INPUT_BASIC_PRESENT_VALUE_ATTRIBUTE, DataType.FLOAT4, 1, 600, 1)
-    }
-
     return configCmds + refresh()
 }
 
@@ -310,8 +259,4 @@ private Boolean isOSM300() {
 
 private Boolean isDSM300() {
     device.getDataValue("model") == "DSM-300Z"
-}
-
-private Boolean isCSM300() {
-    device.getDataValue("model") == "CSM-300Z"
 }
