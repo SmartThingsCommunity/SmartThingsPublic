@@ -59,7 +59,7 @@ metadata {
                           ]
                        )
                    }
-                   valueTile("power", "device.inverter_power", width: 1, height: 1) {
+                   valueTile("power", "device.curPower", width: 1, height: 1) {
                      state("power", label: '${currentValue}W', unit:"W", 
                      //icon: "https://raw.githubusercontent.com/usirsiwal/smartthings-enlighten/master/enphase.jpg",
                        backgroundColors: [
@@ -129,7 +129,7 @@ def energyRefresh() {
         	log.debug "${resp.data}"
             def energy = resp.data.result.yieldtoday
             def energyLife = resp.data.result.yieldtotal
-            def currentPower = resp.data.result.inverter_power
+            def currentPower = resp.data.result.curPower
 			def systemSize = resp.data.size_w
 			def systemId = resp.data.system_id
 			def now=new Date()
@@ -144,9 +144,9 @@ def energyRefresh() {
 			log.debug "System Id ${system_id}"
             log.debug "Energy today ${energy}"
             log.debug "Energy life ${energyLife}"
-            log.debug "Current Power Level ${inverter_power}"
+            log.debug "Current Power Level ${curPower}"
 			log.debug "System Size ${systemSize}"
-			log.debug "Production Level ${currentPower}"
+			log.debug "Production Level ${curPower}"
 			log.debug "todayDay ${todayDay}"
 			
 			// If day has changed set today_max_day to new value
@@ -160,7 +160,7 @@ def energyRefresh() {
             // String.format("%5.2f", energyToday)
             delayBetween([sendEvent(name: 'energy', value: (energy))
                           ,sendEvent(name: 'energy_life', value: (energyLife))
-                          ,sendEvent(name: 'power', value: (inverter_power))
+                          ,sendEvent(name: 'power', value: (curPower))
 						  ,sendEvent(name: 'production_level', value: (String.format("%5.2f",productionLevel)))
 						  ,sendEvent(name: 'today_max_prod', value: (todayMaxProd))
 						  ,sendEvent(name: 'today_max_prod_str', value: (String.format("%5.2f",todayMaxProd)))
