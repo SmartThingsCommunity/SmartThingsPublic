@@ -121,7 +121,7 @@ def refresh() {
 def energyRefresh() {
   log.debug "Executing 'energyToday'"
 
-  def cmd = "https://region03eu5.fusionsolar.huawei.com/pvmswebsite/assets/build/index.html#/monitorLayout/station/overview";
+  def cmd = "https://region03eu5.fusionsolar.huawei.com/pvmswebsite/nologin/assets/build/index.html#/kiosk?kk=Qz3HaPPObuzs49yHcvvjhBzBw6PK0ayD";
   log.debug "Sending request cmd[${cmd}]"
 
  httpGet(cmd) {resp ->
