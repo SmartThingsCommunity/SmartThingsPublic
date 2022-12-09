@@ -129,7 +129,7 @@ def energyRefresh() {
         	log.debug "${resp.data}"
             def energy = resp.data.result.yieldtoday
             def energyLife = resp.data.result.yieldtotal
-            def currentPower = resp.data.result.curPower
+            def currentPower = resp.data.result.nco-kiosk-power
 			def systemSize = resp.data.size_w
 			def systemId = resp.data.system_id
 			def now=new Date()
