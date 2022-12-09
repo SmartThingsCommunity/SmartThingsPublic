@@ -59,7 +59,7 @@ metadata {
                           ]
                        )
                    }
-                   valueTile("power", "device.curPower", width: 1, height: 1) {
+                   valueTile("power", "device.power", width: 1, height: 1) {
                      state("power", label: '${currentValue}W', unit:"W", 
                      //icon: "https://raw.githubusercontent.com/usirsiwal/smartthings-enlighten/master/enphase.jpg",
                        backgroundColors: [
@@ -129,7 +129,7 @@ def energyRefresh() {
         	log.debug "${resp.data}"
             def energy = resp.data.result.yieldtoday
             def energyLife = resp.data.result.yieldtotal
-            def currentPower = resp.data.result.total_power
+            def currentPower = resp.data.result.power
 			def systemSize = resp.data.size_w
 			def systemId = resp.data.system_id
 			def now=new Date()
@@ -146,7 +146,7 @@ def energyRefresh() {
             log.debug "Energy life ${energyLife}"
             log.debug "Current Power Level ${curPower}"
 	    log.debug "System Size ${systemSize}"
-	    log.debug "Production Level ${curPower}"
+	    log.debug "Production Level ${power}"
 	    log.debug "todayDay ${todayDay}"
 			
 			// If day has changed set today_max_day to new value
