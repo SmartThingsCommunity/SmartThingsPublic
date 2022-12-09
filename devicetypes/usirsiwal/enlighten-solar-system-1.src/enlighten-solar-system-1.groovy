@@ -129,7 +129,7 @@ def energyRefresh() {
         	log.debug "${resp.data}"
             def energy = resp.data.result.yieldtoday
             def energyLife = resp.data.result.yieldtotal
-            def currentPower = resp.neteco.pvms.partials.main.io.realTimeStatus.stationStatus.curPower
+            def currentPower = resp.resp.data.result.curPower
 			def systemSize = resp.data.size_w
 			def systemId = resp.data.system_id
 			def now=new Date()
@@ -144,7 +144,8 @@ def energyRefresh() {
 			log.debug "System Id ${system_id}"
             log.debug "Energy today ${energy}"
             log.debug "Energy life ${energyLife}"
-            log.debug "Current Power Level ${curPower}"
+            log.debug "Current 
+		Level ${curPower}"
 			log.debug "System Size ${systemSize}"
 			log.debug "Production Level ${curPower}"
 			log.debug "todayDay ${todayDay}"
