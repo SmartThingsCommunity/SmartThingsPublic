@@ -141,14 +141,13 @@ def energyRefresh() {
             log.debug "todayMaxProd was ${todayMaxProd}"
 			
             
-			log.debug "System Id ${system_id}"
+	    log.debug "System Id ${system_id}"
             log.debug "Energy today ${energy}"
             log.debug "Energy life ${energyLife}"
-            log.debug "Current 
-		Level ${curPower}"
-			log.debug "System Size ${systemSize}"
-			log.debug "Production Level ${curPower}"
-			log.debug "todayDay ${todayDay}"
+            log.debug "Current Power Level ${curPower}"
+	    log.debug "System Size ${systemSize}"
+	    log.debug "Production Level ${curPower}"
+	    log.debug "todayDay ${todayDay}"
 			
 			// If day has changed set today_max_day to new value
 			if (today_max_day == null || today_max_day != todayDay) {
