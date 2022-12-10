@@ -129,7 +129,7 @@ def energyRefresh() {
         	log.debug "${resp.data}"
             def energy = resp.data.result.yieldtoday
             def energyLife = resp.data.result.yieldtotal
-            def currentPower = resp.data.result.power
+            def currentPower = resp.data.result.realTimePower
 			def systemSize = resp.data.size_w
 			def systemId = resp.data.system_id
 			def now=new Date()
@@ -160,7 +160,7 @@ def energyRefresh() {
             // String.format("%5.2f", energyToday)
             delayBetween([sendEvent(name: 'energy', value: (energy))
                           ,sendEvent(name: 'energy_life', value: (energyLife))
-                          ,sendEvent(name: 'power', value: (curPower))
+                          ,sendEvent(name: 'power', value: (realTimePower))
 						  ,sendEvent(name: 'production_level', value: (String.format("%5.2f",productionLevel)))
 						  ,sendEvent(name: 'today_max_prod', value: (todayMaxProd))
 						  ,sendEvent(name: 'today_max_prod_str', value: (String.format("%5.2f",todayMaxProd)))
