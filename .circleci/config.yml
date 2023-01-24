@@ -19,19 +19,19 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_DEV"
+      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_DEV" -PawsAccessKey="$S3_IAM_PREPROD_USERNAME" -PawsSecretKey="$S3_IAM_PREPROD_PASSWORD"
       - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace
   deploy-stage:
     <<: *defaults
     steps:
       - checkout
-      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_STAGE"
+      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_STAGE" -PawsAccessKey="$S3_IAM_PREPROD_USERNAME" -PawsSecretKey="$S3_IAM_PREPROD_PASSWORD"
       - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL_STAGE" --stacktrace
   deploy-accept:
     <<: *defaults
     steps:
       - checkout
-      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_ACCEPT"
+      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_ACCEPT" -PawsAccessKey="$S3_IAM_ACCEPTANCE_USERNAME" -PawsSecretKey="$S3_IAM_ACCEPTANCE_PASSWORD"
       - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL_ACCEPT" --stacktrace
 workflows:
   version: 2
