@@ -28,6 +28,8 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Deadbolt Lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0101", outClusters: "0019", manufacturer: "TOTEM", model: "H60/H90", deviceJoinName: "TOTEM Door Lock" //TOTEM Door lock
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,000A,0101", outClusters: "0019", manufacturer: "TOTEM", model: "P30", deviceJoinName: "TOTEM Door Lock" //TOTEM Door lock
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Lever Lock
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Door Lock" //Yale Push Button Deadbolt Lock
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Door Lock" //Yale Touch Screen Deadbolt Lock
