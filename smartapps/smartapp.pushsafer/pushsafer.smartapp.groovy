@@ -1,7 +1,7 @@
 /**
  *  Pushsafer
  *
- *  Copyright 2017 Kevin Siml / Pushsafer.com
+ *  Copyright 2023 Kevin Siml / Pushsafer.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -50,6 +50,13 @@ preferences
         input "Pushicon", "text", title: "Icon", required: false
         input "Pushsound", "text", title: "Sound", required: false
         input "Pushvibration", "text", title: "Vibration", required: false
+        input "PushPriority", "text", title: "Priority", required: false
+        input "PushRetry", "text", title: "Retry", required: false
+        input "PushExpire", "text", title: "Expire", required: false
+        input "PushConfirm", "text", title: "Confirm", required: false
+        input "PushAnswer", "text", title: "Answer", required: false
+        input "PushAnswerOptions", "text", title: "Answer Options", required: false
+        input "PushAnswerForce", "text", title: "Force Answer", required: false
     }
 }
 
@@ -119,17 +126,17 @@ def handler(evt) {
     {
         postBody['d'] = "$Pushdevice"
     }
-	
+
     if (Pushicon)
     {
         postBody['i'] = "$Pushicon"
     }
-	
+
     if (Pushsound)
     {
         postBody['s'] = "$Pushsound"
     }
-	
+
     if (Pushvibration)
     {
         postBody['v'] = "$Pushvibration"
@@ -139,22 +146,57 @@ def handler(evt) {
     {
         postBody['u'] = "$PushURL"
     }
-	
+
     if (PushURLtitle)
     {
         postBody['ut'] = "$PushURLtitle"
     }
-	
+
     if (Pushtitle)
     {
         postBody['t'] = "$Pushtitle"
     }
-	
+
     if (PushTime2Live)
     {
         postBody['l'] = "$PushTime2Live"
-    }	
-	
+    }
+
+    if (PushPriority)
+    {
+        postBody['pr'] = "$PushPriority"
+    }
+
+    if (PushRetry)
+    {
+        postBody['re'] = "$PushRetry"
+    }
+
+    if (PushExpire)
+    {
+        postBody['ex'] = "$PushExpire"
+    }
+
+    if (PushConfirm)
+    {
+        postBody['cr'] = "$PushConfirm"
+    }
+
+    if (PushAnswer)
+    {
+        postBody['a'] = "$PushAnswer"
+    }
+
+    if (PushAnswerOptions)
+    {
+        postBody['ao'] = "$PushAnswerOptions"
+    }
+
+    if (PushAnswerForce)
+    {
+        postBody['af'] = "$PushAnswerForce"
+    }
+
     // Prepare the package to be sent
     def params = [
         uri: "https://www.pushsafer.com/api",
@@ -163,7 +205,7 @@ def handler(evt) {
 
     log.debug postBody
     log.debug "Sending Pushsafer: Private/Alias key '${privatekey}'"
-	
+
     httpPost(params){
         response ->
             if(response.status != 200)
