@@ -35,8 +35,8 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2) {
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#00A0DC"
 			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
 		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 1, inactiveLabel: false) {
@@ -71,7 +71,7 @@ def off() {
 	'off'
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	"setLevel: $value"
 }
 

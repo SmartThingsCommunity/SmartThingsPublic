@@ -13,24 +13,25 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
+    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond", runLocally: true, minHubCoreVersion: "000.022.0002", executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller") {
         capability "Actuator"
         capability "Battery"
         capability "Button"
-        capability "Holdable Button"        
+        capability "Holdable Button"
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
+        capability "Health Check"
 
-        command "enrollResponse"
-
-        fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM LIGHTIFY Dimming Switch"
-        //fingerprint inClusters: "0000, 0001, 0003, 0020, 0500", outClusters: "0003,0019", manufacturer: "CentraLite", model: "3455-L", deviceJoinName: "Iris Care Pendant"
-        fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0402, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model: "3460-L", deviceJoinName: "Iris Smart Button"
-        fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob"
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM Button" //OSRAM LIGHTIFY Dimming Switch
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "CentraLite", model: "3130", deviceJoinName: "Centralite Button" //Centralite Zigbee Smart Switch
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0500", outClusters: "0003,0019", manufacturer: "CentraLite", model: "3455-L", deviceJoinName: "Iris Button" //Iris Care Pendant
+        fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0402, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model: "3460-L", deviceJoinName: "Iris Button" //Iris Smart Button
     }
 
     simulator {}
@@ -44,7 +45,7 @@ metadata {
     tiles {
         standardTile("button", "device.button", width: 2, height: 2) {
             state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-            state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#79b821"
+            state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
         }
 
         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
@@ -68,7 +69,7 @@ def parse(String description) {
     else {
         if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
             def descMap = zigbee.parseDescriptionAsMap(description)
-            if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
+            if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020 && descMap.value != null) {
                 event = getBatteryResult(zigbee.convertHexToInt(descMap.value))
             }
             else if (descMap.clusterInt == 0x0006 || descMap.clusterInt == 0x0008) {
@@ -108,7 +109,7 @@ private Map getBatteryResult(rawValue) {
         def minVolts = 2.1
         def maxVolts = 3.0
         def pct = (volts - minVolts) / (maxVolts - minVolts)
-        result.value = Math.min(100, (int) pct * 100)
+        result.value = Math.min(100, (int)(pct * 100))
         def linkText = getLinkText(device)
         result.descriptionText = "${linkText} battery was ${result.value}%"
         return result
@@ -146,7 +147,7 @@ private Map parseNonIasButtonMessage(Map descMap){
                     button = 2
                     break
             }
-        
+
             getButtonResult("release", button)
         }
     }
@@ -190,6 +191,9 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting, IAS CIE, and Bindings."
+    if (!device.currentState("supportedButtonValues")) {
+        sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+    }
     def cmds = []
     if (device.getDataValue("model") == "3450-L") {
         cmds << [
@@ -211,6 +215,9 @@ def configure() {
 private Map getButtonResult(buttonState, buttonNumber = 1) {
     if (buttonState == 'release') {
         log.debug "Button was value : $buttonState"
+        if(state.pressTime == null) {
+            return [:]
+        }
         def timeDiff = now() - state.pressTime
         log.info "timeDiff: $timeDiff"
         def holdPreference = holdTime ?: 1
@@ -241,6 +248,11 @@ private Map getButtonResult(buttonState, buttonNumber = 1) {
 
 def installed() {
     initialize()
+
+    // Initialize default states
+    device.currentValue("numberOfButtons")?.times {
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: it+1], displayed: false)
+    }
 }
 
 def updated() {
@@ -248,19 +260,28 @@ def updated() {
 }
 
 def initialize() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
     if ((device.getDataValue("manufacturer") == "OSRAM") && (device.getDataValue("model") == "LIGHTIFY Dimming Switch")) {
-        sendEvent(name: "numberOfButtons", value: 2)
+        sendEvent(name: "numberOfButtons", value: 2, displayed: false)
     }
-    else if ((device.getDataValue("manufacturer") == "CentraLite") &&
-            ((device.getDataValue("model") == "3455-L") || (device.getDataValue("model") == "3460-L"))) {
-        sendEvent(name: "numberOfButtons", value: 1)
-    }
-    else if ((device.getDataValue("manufacturer") == "CentraLite") && (device.getDataValue("model") == "3450-L")) {
-        sendEvent(name: "numberOfButtons", value: 4)
+    else if (device.getDataValue("manufacturer") == "CentraLite") {
+        if (device.getDataValue("model") == "3130") {
+            sendEvent(name: "numberOfButtons", value: 2, displayed: false)
+        }
+        else if ((device.getDataValue("model") == "3455-L") || (device.getDataValue("model") == "3460-L")) {
+            sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+        }
+        else if (device.getDataValue("model") == "3450-L") {
+            sendEvent(name: "numberOfButtons", value: 4, displayed: false)
+        }
+        else {
+            sendEvent(name: "numberOfButtons", value: 4, displayed: false)    //default case. can be changed later.
+        }
     }
     else {
         //default. can be changed
-        sendEvent(name: "numberOfButtons", value: 4)
+        sendEvent(name: "numberOfButtons", value: 4, displayed: false)
     }
 
 }

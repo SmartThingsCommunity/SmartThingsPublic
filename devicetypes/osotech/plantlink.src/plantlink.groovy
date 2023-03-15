@@ -24,6 +24,7 @@ import groovy.json.JsonBuilder
 metadata {
     definition (name: "PlantLink", namespace: "OsoTech", author: "Oso Technologies") {
         capability "Sensor"
+        capability "Health Check"
 
         command "setStatusIcon"
         command "setPlantFuelLevel"
@@ -35,7 +36,7 @@ metadata {
         attribute "linkBatteryLevel","string"
         attribute "installSmartApp","string"
 
-        fingerprint profileId: "0104", inClusters: "0000,0001,0B04"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0B04", deviceJoinName: "Plant Link Humidity Sensor"
     }
 
     simulator {
@@ -68,6 +69,16 @@ metadata {
         main "plantStatusTextTile"
         details(['plantStatusTextTile', "plantMoistureTile", "battery", "installSmartApp"])
     }
+}
+
+def updated() {
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def setStatusIcon(value){

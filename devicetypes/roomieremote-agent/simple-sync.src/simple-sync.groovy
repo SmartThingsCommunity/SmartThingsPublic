@@ -22,7 +22,7 @@ metadata
     {
 		standardTile("mainTile", "device.status", width: 1, height: 1, icon: "st.Entertainment.entertainment11")
         {
-        	state "default", label: "Simple Sync", icon: "st.Home.home2", backgroundColor: "#55A7FF"
+        	state "default", label: "Simple Sync", icon: "st.Home.home2", backgroundColor: "#00a0dc"
 		}
         
     	def detailTiles = ["mainTile"]

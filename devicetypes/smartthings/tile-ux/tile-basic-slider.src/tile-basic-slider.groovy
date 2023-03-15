@@ -64,7 +64,7 @@ def installed() {
 def parse(String description) {
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.debug "setting level to $value"
 	sendEvent(name:"level", value:value)
 }

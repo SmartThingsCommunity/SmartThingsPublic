@@ -21,7 +21,8 @@ definition(
     description: "Setup a schedule to be reminded to feed your pet. Purchase any SmartThings certified pet food feeder and install the Feed My Pet app, and set the time. You and your pet are ready to go. Your life just got smarter.",
     category: "Pets",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/dogfood_feeder.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/dogfood_feeder@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/dogfood_feeder@2x.png",
+    pausable: true
 )
 
 preferences {

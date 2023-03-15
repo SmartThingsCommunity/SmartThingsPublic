@@ -12,14 +12,15 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Motion", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Motion", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartSense_Motion") {
 		capability "Signal Strength"
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "013A", inClusters: "0000", outClusters: "0006"
-		fingerprint profileId: "FC01", deviceId: "013A"
+		fingerprint profileId: "0104", deviceId: "013A", inClusters: "0000", outClusters: "0006", deviceJoinName: "SmartThings Motion Sensor"
+		fingerprint profileId: "FC01", deviceId: "013A", deviceJoinName: "SmartThings Motion Sensor"
 	}
 
 	simulator {
@@ -30,8 +31,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 			}
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
@@ -41,6 +42,11 @@ metadata {
 		main "motion"
 		details(["motion", "battery"])
 	}
+}
+
+def installed() {
+	// device checks in every 2.5 minutes, but we'll give it the same checkinterval as our other devices
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 }
 
 def parse(String description) {

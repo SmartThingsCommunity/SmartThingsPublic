@@ -53,15 +53,15 @@ metadata {
 
 	tiles {
 		standardTile("inventory", "device.inventory", width: 2, height: 2){
-			state "goodEggs", label : "    ", unit : "" , icon:"st.quirky.egg-minder.quirky-egg-device", backgroundColor: "#53a7c0"
-			state "haveBadEgg", label : "    ", unit : "" , icon:"st.quirky.egg-minder.quirky-egg-device", backgroundColor: "#FF1919"
+			state "goodEggs", label : "    ", unit : "" , icon:"st.quirky.egg-minder.quirky-egg-device", backgroundColor: "#00A0DC"
+			state "haveBadEgg", label : "    ", unit : "" , icon:"st.quirky.egg-minder.quirky-egg-device", backgroundColor: "#e86d13"
 			state "noEggs", label : "    ", unit : "" , icon:"st.quirky.egg-minder.quirky-egg-device", backgroundColor: "#ffffff"
 		}
 		standardTile("totalEggs", "device.totalEggs", inactiveLabel: false){
 			state "totalEggs", label : '${currentValue}', unit : "" , icon:"st.quirky.egg-minder.quirky-egg-count", backgroundColor: "#53a7c0"
 		}
 		standardTile("freshEggs", "device.freshEggs", inactiveLabel: false){
-			state "freshEggs", label : '${currentValue}', unit : "" , icon:"st.quirky.egg-minder.quirky-egg-fresh", backgroundColor: "#53a7c0"
+			state "freshEggs", label : '${currentValue}', unit : "" , icon:"st.quirky.egg-minder.quirky-egg-fresh", backgroundColor: "#00A0DC"
 		}
 		standardTile("oldEggs", "device.oldEggs", inactiveLabel: false){
 			state "oldEggs", label : '${currentValue}', unit : "" , icon:"st.quirky.egg-minder.quirky-egg-expired", backgroundColor: "#53a7c0"

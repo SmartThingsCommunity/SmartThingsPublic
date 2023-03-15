@@ -28,7 +28,9 @@ definition(
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/withings.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
 	iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
-	oauth: true
+	oauth: true,
+	usesThirdPartyAuthentication: true,
+	pausable: false
 ) {
 	appSetting "consumerKey"
 	appSetting "consumerSecret"

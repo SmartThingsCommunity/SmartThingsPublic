@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
@@ -20,10 +20,9 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
-		fingerprint profileId: "FC01", deviceId: "0139"
-
-		attribute "status", "string"
+		fingerprint profileId: "FC01", deviceId: "0139", deviceJoinName: "Multipurpose Sensor"
 	}
 
 	simulator {
@@ -45,21 +44,20 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
 			}
 		}
 
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
@@ -81,6 +79,10 @@ metadata {
 		main(["contact", "acceleration", "temperature"])
 		details(["contact", "acceleration", "temperature", "battery"])
 	}
+}
+
+def updated() {
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description) {
@@ -113,17 +115,6 @@ private List parseSingleMessage(description) {
 	def results = []
 	results << createEvent(
 		name: "contact",
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	)
-
-	results << createEvent(
-		name: "status",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -298,19 +289,7 @@ private List getContactResult(part, description) {
 			linkText: linkText,
 			descriptionText: descriptionText,
 			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed:false
-	)
-
-	results << createEvent(
-			name: "status",
-			value: value,
-			unit: null,
-			linkText: linkText,
-			descriptionText: descriptionText,
-			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed: displayed(description, isStateChange)
+			isStateChange: isStateChange
 	)
 
 	results
@@ -340,9 +319,7 @@ private Map getTempResult(part, description) {
 	def temperatureScale = getTemperatureScale()
 	def value = zigbee.parseSmartThingsTemperatureValue(part, "temp: ", temperatureScale)
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def linkText = getLinkText(device)
 	def descriptionText = "$linkText was $value°$temperatureScale"

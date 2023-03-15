@@ -23,6 +23,7 @@ Works with:
 * **Switch** - can detect state (possible values: on/off)
 * **Switch Level** - represents current light level, usually 0-100 in percent
 * **Health Check** - indicates ability to get device health notifications
+* **Light** - indicates that the device belongs to Light category.
 
 ## Device Health
 

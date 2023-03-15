@@ -20,7 +20,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		fingerprint deviceId: "0x2101", inClusters: "0x60,0x31,0x70,0x84,0x85,0x80,0x72,0x77,0x86"
+		fingerprint deviceId: "0x2101", inClusters: "0x60,0x31,0x70,0x84,0x85,0x80,0x72,0x77,0x86", deviceJoinName: "HomeSeer Multipurpose Sensor"
 	}
 
 	simulator {
@@ -39,8 +39,8 @@ metadata {
 
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -69,7 +69,7 @@ metadata {
 	}
 
 	preferences {
-		input "intervalMins", "number", title: "Multisensor report  (minutes)", description: "Minutes between temperature/illuminance readings", defaultValue: 20, required: false, displayDuringSetup: true
+		input "intervalMins", "number", title: "Report Interval", description: "How often the device should report in minutes", defaultValue: 20, required: false, displayDuringSetup: true
 	}
 }
 

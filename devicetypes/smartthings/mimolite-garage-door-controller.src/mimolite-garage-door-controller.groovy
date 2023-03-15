@@ -36,13 +36,14 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Contact Sensor"
+		capability "Light"
 
 		attribute "powered", "string"
 
 		command "on"
 		command "off"
         
-        fingerprint deviceId: "0x1000", inClusters: "0x72,0x86,0x71,0x30,0x31,0x35,0x70,0x85,0x25,0x03"
+        fingerprint deviceId: "0x1000", inClusters: "0x72,0x86,0x71,0x30,0x31,0x35,0x70,0x85,0x25,0x03", deviceJoinName: "MimoLite Garage Door"
 	}
 
 	simulator {
@@ -53,16 +54,16 @@ metadata {
 	// UI tile definitions 
 	tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "doorClosed", label: "Closed", action: "on", icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821"
-            state "doorOpen", label: "Open", action: "on", icon: "st.doors.garage.garage-open", backgroundColor: "#ffa81e"
-            state "doorOpening", label: "Opening", action: "on", icon: "st.doors.garage.garage-opening", backgroundColor: "#ffa81e"
-            state "doorClosing", label: "Closing", action: "on", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffa81e"
-            state "on", label: "Actuate", action: "off", icon: "st.doors.garage.garage-closed", backgroundColor: "#53a7c0"
+			state "doorClosed", label: "Closed", action: "on", icon: "st.doors.garage.garage-closed", backgroundColor: "#00A0DC"
+            state "doorOpen", label: "Open", action: "on", icon: "st.doors.garage.garage-open", backgroundColor: "#e86d13"
+            state "doorOpening", label: "Opening", action: "on", icon: "st.doors.garage.garage-opening", backgroundColor: "#e86d13"
+            state "doorClosing", label: "Closing", action: "on", icon: "st.doors.garage.garage-closing", backgroundColor: "#00A0DC"
+            state "on", label: "Actuate", action: "off", icon: "st.doors.garage.garage-closed", backgroundColor: "#00A0DC"
 			state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
         standardTile("contact", "device.contact", inactiveLabel: false) {
-			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"

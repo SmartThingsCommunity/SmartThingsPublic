@@ -18,8 +18,8 @@
 //DEPRECATED - Using the generic DTH for this device. Users need to be moved before deleting this DTH
 
 metadata {
-	definition (name: "WeMo Bulb", namespace: "smartthings", author: "SmartThings") {
-	
+	definition (name: "WeMo Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+
     	capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -43,9 +43,9 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -57,7 +57,7 @@ metadata {
 		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
 			state "level", label: 'Level ${currentValue}%'
 		}
-		
+
 
 		main(["switch"])
 		details(["switch", "level", "levelSliderControl", "refresh"])
@@ -87,11 +87,11 @@ def parse(String description) {
     if (description?.startsWith("read attr")) {
     	log.debug description[-2..-1]
         def i = Math.round(convertHexToInt(description[-2..-1]) / 256 * 100 )
-        
+
 		sendEvent( name: "level", value: i )
     }
-    
-	
+
+
 }
 
 def on() {
@@ -113,7 +113,7 @@ def refresh() {
     ]
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.trace "setLevel($value)"
 	def cmds = []
 
@@ -136,16 +136,16 @@ def setLevel(value) {
 def configure() {
 
 	log.debug "Configuring Reporting and Bindings."
-	def configCmds = [	
-  
+	def configCmds = [
+
         //Switch Reporting
         "zcl global send-me-a-report 6 0 0x10 0 3600 {01}", "delay 500",
         "send 0x${device.deviceNetworkId} 1 1", "delay 1000",
-        
+
         //Level Control Reporting
         "zcl global send-me-a-report 8 0 0x20 5 3600 {0010}", "delay 200",
         "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
+
         "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
 		"zdo bind 0x${device.deviceNetworkId} 1 1 8 {${device.zigbeeId}} {}", "delay 500",
 	]

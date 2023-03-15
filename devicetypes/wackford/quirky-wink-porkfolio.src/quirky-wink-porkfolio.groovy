@@ -45,8 +45,8 @@ metadata {
 
 	tiles {
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2, canChangeIcon: true) {
-			state "inactive", label:'pig secure', icon:"st.motion.acceleration.inactive", backgroundColor:"#44b621"
-			state "active", label:'pig alarm', icon:"st.motion.acceleration.active", backgroundColor:"#FF1919"
+			state "inactive", label:'pig secure', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc"
+			state "active", label:'pig alarm', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC"
 		}
 		standardTile("balance", "device.balance", inactiveLabel: false, canChangeIcon: true) {
 			state "balance", label:'${currentValue}', unit:"", icon:"st.Food & Dining.dining18"
