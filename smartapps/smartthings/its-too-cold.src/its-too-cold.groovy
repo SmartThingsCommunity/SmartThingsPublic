@@ -13,6 +13,8 @@
  *  It's Too Cold
  *
  *  Author: SmartThings
+ *  Modified by: Corey Seliger
+ * 
  */
 definition(
     name: "It's Too Cold",
@@ -30,12 +32,13 @@ preferences {
 		input "temperatureSensor1", "capability.temperatureMeasurement"
 	}
 	section("When the temperature drops below...") {
-		input "temperature1", "number", title: "Temperature?"
+		input "thresholdTemperature", "number", title: "Temperature?"
 	}
     section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
             input "phone1", "phone", title: "Send a Text Message?", required: false
+            input "notificationInterval", "number", title: "Notification Interval", description: "Notification interval in minutes (0 for none)", defaultValue: "10", required: false
         }
     }
 	section("Turn on a heater...") {
@@ -44,40 +47,74 @@ preferences {
 }
 
 def installed() {
+	initialize()
 	subscribe(temperatureSensor1, "temperature", temperatureHandler)
 }
 
 def updated() {
 	unsubscribe()
+	initialize()
 	subscribe(temperatureSensor1, "temperature", temperatureHandler)
+}
+
+def initialize () {
+	// Define some variables that need to persist between events
+    state.isTooCold = false // Assume false initially, let handler decide later
+    state.lastSentNotice = 0 // The last time a notice (push/text) was sent.
+    state.eventStartTime = 0 // Useful for tracking last update, etc.
+}
+
+def getElapsedTime(startTime, currentTime) {
+	// Returns elapsed time in minutes
+	return ((currentTime - startTime) / (1000 * 60).toLong()).toLong()
 }
 
 def temperatureHandler(evt) {
 	log.trace "temperature: $evt.value, $evt"
 
-	def tooCold = temperature1
-	def mySwitch = settings.switch1
+	if (evt.doubleValue <= thresholdTemperature) {
+		// We are entering or continuing to handle an active event.
+		if (!state.isTooCold) {
+			// Handle a new event.
 
-	// TODO: Replace event checks with internal state (the most reliable way to know if an SMS has been sent recently or not).
-	if (evt.doubleValue <= tooCold) {
-		log.debug "Checking how long the temperature sensor has been reporting <= $tooCold"
+			// Set the state for the event
+			state.isTooCold = true
+			state.eventStartTime = now()
+			state.lastSentNotice = state.eventStartTime
 
-		// Don't send a continuous stream of text messages
-		def deltaMinutes = 10 // TODO: Ask for "retry interval" in prefs?
-		def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
-		def recentEvents = temperatureSensor1.eventsSince(timeAgo)?.findAll { it.name == "temperature" }
-		log.trace "Found ${recentEvents?.size() ?: 0} events in the last $deltaMinutes minutes"
-		def alreadySentSms = recentEvents.count { it.doubleValue <= tooCold } > 1
-
-		if (alreadySentSms) {
-			log.debug "SMS already sent within the last $deltaMinutes minutes"
-			// TODO: Send "Temperature back to normal" SMS, turn switch off
-		} else {
-			log.debug "Temperature dropped below $tooCold:  sending SMS and activating $mySwitch"
-			def tempScale = location.temperatureScale ?: "F"
+			// Notify the user
+			log.debug "Temperature dropped below $thresholdTemperature:  sending SMS and activating $switch1"
 			send("${temperatureSensor1.displayName} is too cold, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
+
+			// Attempt to do something about it.
 			switch1?.on()
+
+		} else {
+			// Handle a continuing event
+            def elapsedMinutes = getElapsedTime(state.eventStartTime, now())
+			if (notificationInterval > 0 && getElapsedTime(state.lastSentNotice, now()) >= notificationInterval) {
+				// Update our last update time and send a new update.
+				state.lastSentNotice = now()
+				send("${temperatureSensor1.displayName} continues to be too cold for $elapsedMinutes minutes, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
+			} else {
+				log.debug "Temperature continues below $thresholdTemperature ${evt.unit?:tempScale} for $elapsedMinutes minutes"
+            }
 		}
+	} else { 
+		if (state.isTooCold) {
+			// We are resolving an active event
+
+			// Shut off the switch
+			switch1?.off()
+
+			// Calculate some metrics and report back to the user
+			def elapsedMinutes = getElapsedTime(state.eventStartTime, now()) 
+			def minuteWord = elapsedMinutes != 1 ? "minutes" : "minute"
+			send("${temperatureSensor1.displayName} returned to normal after $elapsedMinutes $minuteWord, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
+
+			// Reset our metrics
+			initialize()
+		}  
 	}
 }
 
