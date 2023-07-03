@@ -1,0 +1,35 @@
+definition(
+    name: "turn on or off devices according to a master device",
+    namespace: "github-0822",
+    author: "github-0822",
+    description: "Turn on/off multiple devices according to the state of a master device",
+    category: "Convenience",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+)
+
+preferences {
+    input "masterDevice", "capability.switch", required: true, title: "Choose the master device"
+    input "devicesBeingControlled",  "capability.switch", multiple: true, required: true, title: "Choose the devices to be controlled"
+}
+
+def installed() {
+	initialize()
+}
+
+
+def initialize() {
+    subscribe(masterDevice, "switch", theswitchHandler) 
+}
+
+
+def theswitchHandler(evt) {
+    if(evt.value == "on"){
+		devicesBeingControlled.on()
+	}
+    if(evt.value == "off"){
+		devicesBeingControlled.off()
+	}
+    
+}
