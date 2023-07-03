@@ -80,6 +80,7 @@ private evaluate()
 {
 	if (sensor) {
 		def threshold = 1.0
+		def offset = 2.0
 		def tm = thermostat.currentThermostatMode
 		def ct = thermostat.currentTemperature
 		def currentTemp = sensor.currentTemperature
@@ -88,23 +89,23 @@ private evaluate()
 		if (tm in ["cool","auto"]) {
 			// air conditioner
 			if (currentTemp - coolingSetpoint >= threshold) {
-				thermostat.setCoolingSetpoint(ct - 2)
-				log.debug "thermostat.setCoolingSetpoint(${ct - 2}), ON"
+				thermostat.setCoolingSetpoint(ct - offset)
+				log.debug "thermostat.setCoolingSetpoint(${ct - offset}), ON"
 			}
-			else if (coolingSetpoint - currentTemp >= threshold && ct - thermostat.currentCoolingSetpoint >= threshold) {
-				thermostat.setCoolingSetpoint(ct + 2)
-				log.debug "thermostat.setCoolingSetpoint(${ct + 2}), OFF"
+			else if (coolingSetpoint - currentTemp >= threshold && ct - thermostat.currentCoolingSetpoint <= offset) {
+				thermostat.setCoolingSetpoint(ct + offset)
+				log.debug "thermostat.setCoolingSetpoint(${ct + offset}), OFF"
 			}
 		}
 		if (tm in ["heat","emergency heat","auto"]) {
 			// heater
 			if (heatingSetpoint - currentTemp >= threshold) {
-				thermostat.setHeatingSetpoint(ct + 2)
-				log.debug "thermostat.setHeatingSetpoint(${ct + 2}), ON"
+				thermostat.setHeatingSetpoint(ct + offset)
+				log.debug "thermostat.setHeatingSetpoint(${ct + offset}), ON"
 			}
-			else if (currentTemp - heatingSetpoint >= threshold && thermostat.currentHeatingSetpoint - ct >= threshold) {
-				thermostat.setHeatingSetpoint(ct - 2)
-				log.debug "thermostat.setHeatingSetpoint(${ct - 2}), OFF"
+			else if (currentTemp - heatingSetpoint >= threshold && thermostat.currentHeatingSetpoint - ct <= offset) {
+				thermostat.setHeatingSetpoint(ct - offset)
+				log.debug "thermostat.setHeatingSetpoint(${ct - offset}), OFF"
 			}
 		}
 	}
