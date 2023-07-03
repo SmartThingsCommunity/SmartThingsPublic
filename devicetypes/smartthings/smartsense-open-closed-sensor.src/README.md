@@ -4,7 +4,7 @@ Local Execution on V2 Hubs
 
 Works with: 
 
-* [Samsung SmartThings Open/Closed Sensor](https://shop.smartthings.com/#!/packs/smartsense-open-closed-sensor/)
+* [Samsung SmartThings Open/Closed Sensor (2014)](https://shop.smartthings.com/#!/packs/smartsense-open-closed-sensor/)
 
 ## Table of contents
 
@@ -36,7 +36,7 @@ One CR2 3V battery required.
 
 ## Troubleshooting
 
-If the sensor doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
-Pairing needs to be tried again by placing the sensor closer to the hub.
+If the Open/Close Sensor didn't connect to the Hub when you removed the pull-tab, it might be out of range. 
+Bring the sensor closer to the Hub and attempt to connect it again.
 Instructions related to pairing, resetting and removing the sensor from SmartThings can be found in the following link:
 * [SmartSense Open/Closed Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202836844-SmartSense-Open-Closed-Sensor)
