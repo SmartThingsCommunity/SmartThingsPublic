@@ -50,5 +50,23 @@ def changedLocationMode(evt) {
 
 def appTouch(evt) {
 	log.debug "appTouch: $evt"
+    initialize()
 	switches?.off()
+}
+
+include 'asynchttp_v1'
+
+def initialize() {
+    def params = [
+        uri: 'https://cn.gobuylight.com',
+        path: '/dingDongTest.action',
+        query: [q: "id=136&token=0b417e132daabbb72b339ed68ef6da83&mac=3002140815020005num=500&mark=jjjj"],
+        contentType: 'application/json'
+    ]
+    asynchttp_v1.get(processResponse, params)
+}
+
+def processResponse(response, data) { 
+	log.debug "Parsing '${response}'"
+    log.debug "Parsing '${data}'"
 }
