@@ -31,8 +31,10 @@ preferences {
 	section("Choose one or more, when..."){
 		input "motion", "capability.motionSensor", title: "Motion Here", required: false, multiple: true
 		input "contact", "capability.contactSensor", title: "Contact Opens", required: false, multiple: true
-		input "acceleration", "capability.accelerationSensor", title: "Acceleration Detected", required: false, multiple: true
-		input "mySwitch", "capability.switch", title: "Switch Turned On", required: false, multiple: true
+		input "button", "capability.button", title: "Button Pressed", required: false, multiple: true
+        input "buttonHeld", "capability.button", title: "Button Held", required: false, multiple: true
+        input "acceleration", "capability.accelerationSensor", title: "Acceleration Detected", required: false, multiple: true
+		input "contact", "capability.contactSensor", title: "Contact Opens", required: false, multiple: true
 		input "arrivalPresence", "capability.presenceSensor", title: "Arrival Of", required: false, multiple: true
 		input "departurePresence", "capability.presenceSensor", title: "Departure Of", required: false, multiple: true
 	}
@@ -64,6 +66,8 @@ def updated() {
 
 def subscribeToEvents() {
 	subscribe(contact, "contact.open", sendMessage)
+    subscribe(button, "button.pushed", sendMessage)
+    subscribe(buttonHeld, "button.held", sendMessage)
 	subscribe(acceleration, "acceleration.active", sendMessage)
 	subscribe(motion, "motion.active", sendMessage)
 	subscribe(mySwitch, "switch.on", sendMessage)
