@@ -476,7 +476,7 @@ def updateSetpoints() {
 		coolingSetpoint = data.targetCoolingSetpoint ? getTempInLocalScale(data.targetCoolingSetpoint, deviceScale) : coolingSetpoint
 		data = enforceSetpointLimits("coolingSetpoint", [targetValue: state.coolingSetpoint,
 				heatingSetpoint: heatingSetpoint, coolingSetpoint: coolingSetpoint])
-		data.targetHeatingSetpoint = data.targetHeatingSetpoint ?: heatingSetpoint
+		data.targetHeatingSetpoint = data.targetHeatingSetpoint ?: getTempInDeviceScale(heatingSetpoint, getTemperatureScale())
 	}
 	state.heatingSetpoint = null
 	state.coolingSetpoint = null
