@@ -56,6 +56,8 @@ def selectButton() {
 				options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
+            
+            label(title: "Label this SmartApp", required: false, defaultValue: "")
 		}
 
 		section([title: " ", mobileOnly:true]) {
