@@ -224,7 +224,8 @@ private Map getButtonResult(buttonState, buttonNumber = 1) {
         log.info "holdp1 : $holdPreference"
         holdPreference = (holdPreference as int) * 1000
         log.info "holdp2 : $holdPreference"
-        if (timeDiff > 10000) {         //timeDiff>10sec check for refresh sending release value causing actions to be executed
+        // Disabled below because it caused some presses to be skipped. The device driver can not use atomicState, but uses State which is unreliable for this driver.
+        if (false && (timeDiff > 10000)) {         //timeDiff>10sec check for refresh sending release value causing actions to be executed
             return [:]
         }
         else {
