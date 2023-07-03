@@ -25,7 +25,7 @@ metadata {
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
-		capability "Health Check"
+		//capability "Health Check"
 
 		// Fingerprints moved to "Inovelli 2-Channel Smart Plug MCD" for modern MCD experience.
 	}
