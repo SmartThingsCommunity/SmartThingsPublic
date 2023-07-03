@@ -198,7 +198,7 @@ private Map getBatteryResult(rawValue) {
 		result.name = 'battery'
 		result.translatable = true
 		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-		if (device.getDataValue("manufacturer") == "SmartThings") {
+		if (device.getDataValue("manufacturer") == "SmartThings" || device.getDataValue("manufacturer") == "CentraLite") {
 			volts = rawValue // For the batteryMap to work the key needs to be an int
 			def batteryMap = [28: 100, 27: 100, 26: 100, 25: 90, 24: 90, 23: 70,
 							  22: 70, 21: 50, 20: 50, 19: 30, 18: 30, 17: 15, 16: 1, 15: 0]
