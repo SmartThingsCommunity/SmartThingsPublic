@@ -88,7 +88,7 @@ def checkPresence() {
 }
 
 private send(msg) {
-    if (sendPushMessage != "No") {
+    if (sendPushMessage) {
         sendPush(msg)
     }
 
