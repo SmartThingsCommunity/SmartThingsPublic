@@ -28,12 +28,18 @@ preferences {
 	section("Control these contact sensors...") {
         input "contact", "capability.contactSensor", multiple:true, required:false
     }
+    section("Control these alarms...") {
+        input "alarms", "capability.alarm", multiple:true, required:false
+    }
+    section("Control these valves...") {
+        input "valves", "capability.valve", multiple:true, required:false
+    }
     section("Control these switch levels...") {
         input "switchlevels", "capability.switchLevel", multiple:true, required:false
     }
-/*    section("Control these thermostats...") {
+    section("Control these thermostats...") {
         input "thermostats", "capability.thermostat", multiple:true, required:false
-    }*/
+    }
     section("Control the color for these devices...") {
         input "colors", "capability.colorControl", multiple:true, required:false
     }
@@ -95,7 +101,12 @@ def initialize() {
 }
 
 private device(it, type) {
-	it ? [id: it.id, label: it.label, type: type] : null
+	if(type == "Thermostat"){
+    	it ? ([id: it.id, label: it.name, type: type]+ getThermostatStatus(it.id)) : null
+    }
+    else {
+		it ? [id: it.id, label: it.name, type: type] : null
+    }
 }
 
 //API Mapping
@@ -105,7 +116,6 @@ mappings {
       	GET: "getAllDevices"
    ]
   }
-  /*
   path("/thermostat/setcool/:id/:temp") {
     action: [
       GET: "setCoolTemp"
@@ -131,7 +141,6 @@ mappings {
       GET: "getThermostatStatus"
     ]
   }
-  */
   path("/light/dim/:id/:dim") {
     action: [
       GET: "setLevelStatus"
@@ -282,12 +291,34 @@ mappings {
       GET: "getSwitchStatus"
     ]
   }
+   path("/alarm/:id") {
+    action: [
+      GET: "getAlarmStatus"
+    ]
+  }
+  path("/alarm/mode/:id/:mode") {
+    action: [
+      GET: "setAlarmMode"
+    ]
+  }
+  path("/valve/:id") {
+    action: [
+      GET: "getValveStatus"
+    ]
+  }
+  path("/valve/mode/:id/:mode") {
+    action: [
+      GET: "setValveMode"
+    ]
+  }
 }
 
 //API Methods
 def getAllDevices() {
+	def valves_list = valves.collect{device(it,"Valve")}
+    def alarms_list = alarms.collect{device(it,"Alarm")}
     def locks_list = locks.collect{device(it,"Lock")}
-    /*def thermo_list = thermostats.collect{device(it,"Thermostat")}*/
+    def thermo_list = thermostats.collect{device(it,"Thermostat")}
     def colors_list = colors.collect{device(it,"Color")}
     def kelvin_list = kelvin.collect{device(it,"Kelvin")}
     def contact_list = contact.collect{device(it,"Contact Sensor")}
@@ -303,18 +334,67 @@ def getAllDevices() {
     def temp_list = temperature_sensors.collect{device(it,"Temperature")}
     def meters_list = meters.collect{device(it,"Power Meters")}
     def battery_list = batteries.collect{device(it,"Batteries")}
-    return outlets_list + kelvin_list + colors_list + switchlevels_list + smokes_list + contact_list + water_sensors_list + shades_list + garage_list + locks_list + presences_list + motions_list + switches_list + temp_list + meters_list + battery_list
+    return valves_list + alarms_list + thermo_list + outlets_list + kelvin_list + colors_list + switchlevels_list + smokes_list + contact_list + water_sensors_list + shades_list + garage_list + locks_list + presences_list + motions_list + switches_list + temp_list + meters_list + battery_list
 }
 
+//valves
+def getValveStatus() {
+	def device = valves.find{ it.id == params.id }
+    if (!device) {
+            httpError(404, "Device not found")
+        } else {
+        return [valve_current_mode:  device.currentValue('valve')]
+    	}
+}
+
+def setValveMode() {
+	def device = valves.find { it.id == params.id }
+        if (!device) {
+            httpError(404, "Device not found")
+        } else {
+        def mode = params.mode;
+            if(device.hasCommand(mode)) {
+            	device."$mode"();
+                return [result_action: "200"]
+            }
+            else {
+            	httpError(510, "Not supported!")
+            }
+       }
+}
+//alarms
+def getAlarmStatus() {
+	def device = alarms.find{ it.id == params.id }
+    if (!device) {
+            httpError(404, "Device not found")
+        } else {
+        return [alarm_current_mode:  device.currentValue('alarm')]
+    	}
+}
+
+def setAlarmMode() {
+	def device = alarms.find { it.id == params.id }
+        if (!device) {
+            httpError(404, "Device not found")
+        } else {
+        def mode = params.mode;
+            if(device.hasCommand(mode)) {
+            	device."$mode"();
+                return [result_action: "200"]
+            }
+            else {
+            	httpError(510, "Not supported!")
+            }
+       }
+}
 //thermostat
-/*
 def setCoolTemp() {
 	def device = thermostats.find { it.id == params.id }
         if (!device) {
             httpError(404, "Device not found")
         } else {
             if(device.hasCommand("setCoolingSetpoint")) {
-            	device.setCoolingSetpoint(params.temp.toInteger());
+            	device.setCoolingSetpoint(params.temp.toDouble());
                 return [result_action: "200"]
             }
             else {
@@ -328,7 +408,7 @@ def setHeatTemp() {
             httpError(404, "Device not found")
         } else {
             if(device.hasCommand("setHeatingSetpoint")) {
-            	device.setHeatingSetpoint(params.temp.toInteger());
+            	device.setHeatingSetpoint(params.temp.toDouble());
                 return [result_action: "200"]
             }
             else {
@@ -369,11 +449,51 @@ def getThermostatStatus() {
     if (!device) {
             httpError(404, "Device not found")
         } else {
-        	return [ThermostatOperatingState: device.currentValue('thermostatOperatingState'), ThermostatSetpoint: device.currentValue('thermostatSetpoint'), 
-            			ThermostatFanMode: device.currentValue('thermostatFanMode'), ThermostatMode: device.currentValue('thermostatMode')]
+        def can_heat = false;
+        def can_cool = false;
+        def cool_range = [];
+        def heat_range = [];
+        if(device.hasCommand("setCoolingSetpoint")) {
+        	can_cool = true;
+            cool_range = [CoolingSetpointRange: device.currentValue('coolingSetpointRange')];
+        }
+        if(device.hasCommand("setHeatingSetpoint")) {
+        	can_heat = true;
+            heat_range = [HeatingSetpointRange: device.currentValue('heatingSetpointRange')];
+        }
+        def supported_modes = [Supported_modes: device.currentValue('supportedThermostatFanModes')]
+ 
+        return [ThermostatOperatingState: device.currentValue('thermostatOperatingState'), ThermostatSetpoint: device.currentValue('thermostatSetpoint'), 
+           		ThermostatFanMode: device.currentValue('thermostatFanMode'), ThermostatMode: device.currentValue('thermostatMode'),
+                Can_heat: can_heat, Can_cool: can_cool] + supported_modes + cool_range + heat_range;
        	}
 }
-*/
+        
+def getThermostatStatus(id) {
+	def device = thermostats.find{ it.id == id }
+    if (!device) {
+            return [];
+        } else {
+        def can_heat = false;
+        def can_cool = false;
+        def cool_range = [];
+        def heat_range = [];
+        if(device.hasCommand("setCoolingSetpoint")) {
+        	can_cool = true;
+            cool_range = [CoolingSetpointRange: device.currentValue('coolingSetpointRange')];
+        }
+        if(device.hasCommand("setHeatingSetpoint")) {
+        	can_heat = true;
+            heat_range = [HeatingSetpointRange: device.currentValue('heatingSetpointRange')];
+        }
+        def supported_modes = [Supported_modes: device.currentValue('supportedThermostatFanModes')]
+ 
+        return [ThermostatOperatingState: device.currentValue('thermostatOperatingState'), ThermostatSetpoint: device.currentValue('thermostatSetpoint'), 
+           		ThermostatFanMode: device.currentValue('thermostatFanMode'), ThermostatMode: device.currentValue('thermostatMode'),
+                Can_heat: can_heat, Can_cool: can_cool] + supported_modes + cool_range + heat_range;
+       	}       
+}
+
 //light
 def turnOnLight() {
     def device = switches.find { it.id == params.id }
