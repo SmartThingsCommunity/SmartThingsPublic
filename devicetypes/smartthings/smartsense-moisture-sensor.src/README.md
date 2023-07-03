@@ -1,10 +1,11 @@
-# Smartsense Moisture Sensor
+# Samsung SmartThings Water Leak Sensor
 
 Local Execution on V2 Hubs
 
 Works with: 
 
-* [Samsung SmartThings Moisture Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-water-leak-sensor)
+* [Samsung SmartThings Water Leak Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-water-leak-sensor)
+* SmartSense Moisture Sensor (2014)
 
 ## Table of contents
 
@@ -35,11 +36,9 @@ One CR2 3V battery required.
 
 ## Troubleshooting
 
-If the sensor doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
-Pairing needs to be tried again by placing the sensor closer to the hub.
-Instructions related to pairing, resetting and removing the different sensors from SmartThings can be found in the following links
-for the different models:
-* [SmartSense Moisture Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202847044-SmartSense-Moisture-Sensor)
-* [Samsung SmartThings Water Leak Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/205957630)
+If the Moisture Sensor didn't connect to the Hub when you removed the pull-tab, it might be out of range. 
+Bring the sensor closer to the Hub and attempt to connect it again.
 Other troubleshooting tips are listed as follows:
+* [Samsung SmartThings Water Leak Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/205957630)
 * [Troubleshooting: Samsung SmartThings Water Leak Sensor won’t pair after removing pull-tab](https://support.smartthings.com/hc/en-us/articles/204966616-Troubleshooting-Samsung-SmartThings-device-won-t-pair-after-removing-pull-tab)
+* [SmartSense Moisture Sensor Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/202847044-SmartSense-Moisture-Sensor)
