@@ -112,6 +112,7 @@ def installed() {
 	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
+	response(zwave.meterV3.meterSupportedGet())
 }
 
 def updated() {

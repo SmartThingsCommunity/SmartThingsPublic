@@ -18,6 +18,8 @@ metadata {
 		capability "Switch Level"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Power Meter"
+		capability "Energy Meter"
 
 		fingerprint deviceId: "0x"
 		fingerprint deviceId: "0x3101"  // for z-wave certification, can remove these when sub-meters/window-coverings are supported
@@ -48,9 +50,15 @@ metadata {
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
 			state "level", action:"switch level.setLevel"
 		}
+		valueTile("power", "device.power", width: 1, height: 1) {
+			state "default", label:'${currentValue} W'
+		}
+		valueTile("energy", "device.energy", width: 1, height: 1) {
+			state "default", label:'${currentValue} kWh'
+		}
 
 		main "switch"
-		details (["switch", "switchOn", "switchOff", "levelSliderControl", "refresh"])
+		details (["switch", "switchOn", "switchOff", "levelSliderControl", "refresh", "power", "energy"])
 	}
 }
 
@@ -67,7 +75,8 @@ private getCommandClassVersions() {
 		0x70: 2,  // Configuration
 		0x84: 1,  // WakeUp
 		0x98: 1,  // Security 0
-		0x9C: 1   // Sensor Alarm
+		0x9C: 1,  // Sensor Alarm
+		0x32: 3   // Meter
 	]
 }
 
@@ -85,9 +94,29 @@ def parse(String description) {
 }
 
 def installed() {
+	if (zwaveInfo.cc?.contains("32")) {
+		response(zwave.meterV3.meterSupportedGet())
+	}
 	if (zwaveInfo.cc?.contains("84")) {
 		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
+}
+
+def handleMeterReport(cmd){
+	if (cmd.meterType == 1) {
+		if (cmd.scale == 0) {
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+		} else if (cmd.scale == 1) {
+			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+		} else if (cmd.scale == 2) {
+			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+		}
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
+	log.debug "v3 Meter report: "+cmd
+	handleMeterReport(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
