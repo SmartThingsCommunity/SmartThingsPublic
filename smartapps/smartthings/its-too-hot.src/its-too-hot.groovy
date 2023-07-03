@@ -12,13 +12,13 @@
  *
  *  It's Too Hot
  *
- *  Author: SmartThings
+ *  Author: SmartThings - zahir
  */
 definition(
     name: "It's Too Hot",
     namespace: "smartthings",
     author: "SmartThings",
-    description: "Monitor the temperature and when it rises above your setting get a notification and/or turn on an A/C unit or fan.",
+    description: "Monitor the temperature and when it rises above your setting get a notification and/or turn off underfloor heating.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/its-too-hot.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/its-too-hot@2x.png"
@@ -37,7 +37,7 @@ preferences {
             input "phone1", "phone", title: "Send a Text Message?", required: false
         }
     }
-	section("Turn on which A/C or fan...") {
+	section("Turn off which A/C or fan...") {
 		input "switch1", "capability.switch", required: false
 	}
 }
@@ -73,9 +73,9 @@ def temperatureHandler(evt) {
 			// TODO: Send "Temperature back to normal" SMS, turn switch off
 		} else {
 			log.debug "Temperature rose above $tooHot:  sending SMS and activating $mySwitch"
-			def tempScale = location.temperatureScale ?: "F"
+			def tempScale = location.temperatureScale ?: "C"
 			send("${temperatureSensor1.displayName} is too hot, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
-			switch1?.on()
+			switch1?.off()
 		}
 	}
 }
