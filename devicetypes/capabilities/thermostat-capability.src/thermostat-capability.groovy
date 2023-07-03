@@ -178,4 +178,3 @@ def fanCirculate() {
 def poll() {
 	null
 }
-
