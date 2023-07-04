@@ -21,6 +21,7 @@ metadata {
 		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Operating State"
 		capability "Thermostat Mode"
+		capability "Thermostat"
 		capability "Thermostat Fan Mode"
 		capability "Relative Humidity Measurement"
 		capability "Configuration"
