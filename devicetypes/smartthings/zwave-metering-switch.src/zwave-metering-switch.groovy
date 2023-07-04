@@ -281,6 +281,7 @@ def configure() {
 	} else if (zwaveInfo.mfr == "0371" && zwaveInfo.prod == "0103" && zwaveInfo.model == "0017") { //Aeotec Smart Switch 7 US / ZWA023-A
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 21, size: 2, scaledConfigurationValue: 2))) //report every 2W change
 	}
+	result << response(encap(meterReset()))
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
 	result
