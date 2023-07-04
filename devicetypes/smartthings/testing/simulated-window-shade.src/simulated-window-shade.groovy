@@ -16,11 +16,13 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "Simulated Window Shade", namespace: "smartthings/testing", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-window-shade") {
+	definition (name: "Simulated Window Shade", namespace: "smartthings/testing", author: "SmartThings", runLocally: false) {
 		capability "Actuator"
 		capability "Window Shade"
 		capability "Window Shade Preset"
-		//capability "Switch Level"
+		capability "Switch Level"
+		capability "Window Shade Level"
+		capability "Battery"
 
 		// Commands to use in the simulator
 		command "openPartially"
@@ -31,6 +33,18 @@ metadata {
 		command "opened"
 		command "closed"
 		command "unknown"
+
+		command "shadeLevel0"
+		command "shadeLevel1"
+		command "shadeLevel10"
+		command "shadeLevel50"
+		command "shadeLevel100"
+
+		command "batteryLevel0"
+		command "batteryLevel1"
+		command "batteryLevel10"
+		command "batteryLevel50"
+		command "batteryLevel100"
 	}
 
 	preferences {
@@ -39,6 +53,12 @@ metadata {
 				title: "Action Delay\n\nAn emulation for how long it takes the window shade to perform the requested action.",
 				description: "In seconds (1-120; default if empty: 5 sec)",
 				range: "1..120", displayDuringSetup: false)
+		}
+		section {
+			input "preset", "number",
+				title: "Preset position",
+				description: "Set the window shade preset position",
+				defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
 		}
 		section {
 			input("supportedCommands", "enum",
@@ -55,7 +75,8 @@ metadata {
 					"8": "<empty list>",
 					// For testing OCF/mobile client bugs
 					"9": "open, closed, pause",
-					"10": "open, closed, close, pause"
+					"10": "open, closed, close, pause",
+					"11": "plain text - not list"
 				]
 			)
 		}
@@ -71,9 +92,9 @@ metadata {
 				attributeState "closing", label:'${name}', action:"pause", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
 				attributeState "unknown", label:'${name}', action:"open", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"opening"
 			}
-			/*tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"setLevel"
-			}*/
+			tileAttribute ("device.windowShadeLevel", key: "SLIDER_CONTROL") {
+				attributeState "shadeLevel", action:"setShadeLevel"
+			}
 		}
 
 		valueTile("blank", "device.blank", width: 2, height: 2, decoration: "flat") {
@@ -141,12 +162,16 @@ private getSupportedCommandsMap() {
 		"8": [],
 		// For testing OCF/mobile client bugs
 		"9": ["open", "closed", "pause"],
-		"10": ["open", "closed", "close", "pause"]
+		"10": ["open", "closed", "close", "pause"],
+		"11": "open"
 	]
 }
 
 private getShadeActionDelay() {
 	(settings.actionDelay != null) ? settings.actionDelay : 5
+}
+private getShadePresetPos() {
+	(settings.presetPos != null) ? settings.presetPos : 50
 }
 
 def installed() {
@@ -154,6 +179,9 @@ def installed() {
 
 	updated()
 	opened()
+
+	shadeLevel100()
+	batteryLevel100()
 }
 
 def updated() {
@@ -161,11 +189,18 @@ def updated() {
 
 	def commands = (settings.supportedCommands != null) ? settings.supportedCommands : "2"
 
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(supportedCommandsMap[commands]))
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(supportedCommandsMap[commands]), isStateChange: true)
 }
 
 def parse(String description) {
 	log.debug "parse(): $description"
+}
+
+// Just a utility function to send level events; emulates a parse event that would contain the shade level
+private updateShadeLevel(level) {
+	log.debug "shadeLevel: ${level}"
+	sendEvent(name: "shadeLevel", value: level, unit: "%", isStateChange: true)
+	sendEvent(name: "level", value: level, unit: "%", isStateChange: true)	
 }
 
 // Capability commands
@@ -195,13 +230,30 @@ def pause() {
 
 def presetPosition() {
 	log.debug "presetPosition()"
-	if (device.currentValue("windowShade") == "open") {
-		closePartially()
-	} else if (device.currentValue("windowShade") == "closed") {
-		openPartially()
+
+	setShadeLevel(preset ?: 50)
+}
+
+def setShadeLevel(level) {
+	log.debug "setShadeLevel(${level})"
+	def normalizedLevel = Math.min(100, Math.max(0, level))
+	def lastLevel = device.currentValue("shadeLevel") ?: 100
+
+	// TODO: Update shade states; simulate opening or closing
+	updateShadeLevel(normalizedLevel)
+
+	if (normalizedLevel == 100) {
+		opened(false)
+	} else if (normalizedLevel > 0) {
+		partiallyOpen(false)
 	} else {
-		partiallyOpen()
+		closed(false)
 	}
+}
+
+def setLevel(level, rate = 0) {
+	log.debug "setLevel(${level})"
+	setShadeLevel(level)
 }
 
 // Custom test commands
@@ -218,9 +270,14 @@ def closePartially() {
 	runIn(shadeActionDelay, "partiallyOpen")
 }
 
-def partiallyOpen() {
+def partiallyOpen(updateLevel = true) {
 	log.debug "windowShade: partially open"
 	sendEvent(name: "windowShade", value: "partially open", isStateChange: true)
+	/* // Will check ramifications before uncommenting
+	if (updateLevel) {
+		updateShadeLevel(random() % 99)
+	}
+	*/
 }
 
 def opening() {
@@ -233,18 +290,71 @@ def closing() {
 	sendEvent(name: "windowShade", value: "closing", isStateChange: true)
 }
 
-def opened() {
+def opened(updateLevel = true) {
 	log.debug "windowShade: open"
 	sendEvent(name: "windowShade", value: "open", isStateChange: true)
+
+	if (updateLevel) {
+		updateShadeLevel(100)
+	}
 }
 
-def closed() {
+def closed(updateLevel = true) {
 	log.debug "windowShade: closed"
 	sendEvent(name: "windowShade", value: "closed", isStateChange: true)
+
+	if (updateLevel) {
+		updateShadeLevel(0)
+	}
 }
 
 def unknown() {
 	// TODO: Add some "fuzzing" logic so that this gets hit every now and then?
 	log.debug "windowShade: unknown"
 	sendEvent(name: "windowShade", value: "unknown", isStateChange: true)
+}
+
+def shadeLevel0() {
+	setShadeLevel(0)
+}
+
+def shadeLevel1() {
+	setShadeLevel(1)
+}
+
+def shadeLevel10() {
+	setShadeLevel(10)
+}
+
+def shadeLevel50() {
+	setShadeLevel(50)
+}
+
+def shadeLevel100() {
+	setShadeLevel(100)
+}
+
+def setBatteryLevel(level) {
+	log.debug "battery: ${level}"
+	sendEvent(name: "battery", value: level, unit: "%", isStateChange: true)
+}
+
+def batteryLevel0() {
+	setBatteryLevel(0)
+}
+
+def batteryLevel1() {
+	setBatteryLevel(1)
+}
+
+def batteryLevel10() {
+	setBatteryLevel(10)
+}
+
+def batteryLevel50() {
+	setBatteryLevel(50)
+}
+
+def batteryLevel100() {
+	setBatteryLevel(100)
 }
