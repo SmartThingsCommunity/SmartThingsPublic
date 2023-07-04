@@ -20,6 +20,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI Signal Repeater", deviceJoinName: "IKEA Repeater/Extender" //TRÅDFRI Signal Repeater
 		fingerprint profileId: "0104", inClusters: "0000, 0003", outClusters: "0019",  manufacturer: "Smartenit, Inc",  model: "ZB3RE", deviceJoinName: "Smartenit Repeater/Extender" //Smartenit Range Extender
 		fingerprint profileId: "0104", inClusters: "0000, 0003, DC00, FC01", manufacturer: "Rooms Beautiful",  model: "R001", deviceJoinName: "Rooms Beautiful Repeater/Extender" //Range Extender
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0B05", outClusters: "0001, 0003, ", manufacturer: "Keen Home Inc",  model: "GW02-001-MP-1.0", deviceJoinName: "Keen Home Smart Bridge" //Keen hub
 	}
 
 	tiles(scale: 2) {
