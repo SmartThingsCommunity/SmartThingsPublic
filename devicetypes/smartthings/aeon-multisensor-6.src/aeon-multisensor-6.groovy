@@ -33,9 +33,9 @@ metadata {
 		fingerprint mfr: "0086", prod: "0002", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //EU //Aeotec MultiSensor 6
 		fingerprint mfr: "0086", prod: "0102", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //US //Aeotec MultiSensor 6
 		fingerprint mfr: "0086", prod: "0202", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //AU //Aeotec MultiSensor 6
-		fingerprint mfr: "0371", prod: "0002", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (EU)
-		fingerprint mfr: "0371", prod: "0102", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (US)
-		fingerprint mfr: "0371", prod: "0202", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 7 (AU)
+		fingerprint mfr: "0371", prod: "0002", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", vid: "aeotec-multisensor-7" //Aeotec MultiSensor 7 (EU)
+		fingerprint mfr: "0371", prod: "0102", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", vid: "aeotec-multisensor-7" //Aeotec MultiSensor 7 (US)
+		fingerprint mfr: "0371", prod: "0202", model: "0018", deviceJoinName: "Aeotec Multipurpose Sensor", mnmn: "SmartThings", vid: "aeotec-multisensor-7" //Aeotec MultiSensor 7 (AU)
 	}
 
 	simulator {
