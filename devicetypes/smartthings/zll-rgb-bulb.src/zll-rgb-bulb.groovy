@@ -172,8 +172,8 @@ def configureAttributes() {
 		zigbee.levelConfig()
 
 	if (shouldUseHueSaturation()) {
-		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, DataType.UINT16, 1, 3600, 0x10)
-		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, DataType.UINT16, 1, 3600, 0x10)
+		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, DataType.UINT8, 1, 3600, 0x10)
+		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, DataType.UINT8, 1, 3600, 0x10)
 	} else {
 		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_X, DataType.UINT16, 1, 3600, 0x10)
 		commands += zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_Y, DataType.UINT16, 1, 3600, 0x10)
