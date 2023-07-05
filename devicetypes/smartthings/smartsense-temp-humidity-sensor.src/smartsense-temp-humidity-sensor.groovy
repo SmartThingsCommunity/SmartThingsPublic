@@ -216,7 +216,7 @@ def configure() {
 	} else if (isEWeLink()) {
 		return refresh() +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 3600, 7200, 0x10) +
-			zigbee.temperatureConfig(10, 7200, 50) +
+			zigbee.temperatureConfig(10, 600, 50) +
 			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 10, 7200, 300)
 	} else {
 		return refresh() +
