@@ -315,11 +315,15 @@ private List readDeviceBindingTable() {
 }
 
 def shouldInvertLiftPercentage() {
-	return isSomfy()
+	return isSomfy() || isQMotion()
 }
 
 def isSomfy() {
 	device.getDataValue("manufacturer") == "SOMFY"
+}
+
+def isQMotion() {
+	device.getDataValue("manufacturer") == "QMotion"
 }
 
 private getGLYDEA_MOVE_THRESHOLD() { 3 }
