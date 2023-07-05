@@ -21,8 +21,8 @@ definition(
 	author: "SmartThings",
 	description: "Play a sound or custom message through your Speaker when the mode changes or other events occur.",
 	category: "SmartThings Labs",
-	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/sonos@2x.png"
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/bon-voyage.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/bon-voyage%402x.png"
 )
 
 preferences {
@@ -75,8 +75,7 @@ def mainPage() {
 			ifUnset "timeOfDay", "time", title: "At a Scheduled Time", required: false
 		}
 		section{
-			input "actionType", "enum", title: "Action?", required: true, defaultValue: "Bell 1", options: [
-				"Custom Message",
+			input "actionType", "enum", title: "Action?", required: true, metadata: [values: ["Custom Message",
 				"Bell 1",
 				"Bell 2",
 				"Dogs Barking",
@@ -88,7 +87,7 @@ def mainPage() {
 				"Smartthings detected smoke",
 				"Someone is arriving",
 				"Piano",
-				"Lightsaber"]
+				"Lightsaber"]]
 			input "message","text",title:"Play this message", required:false, multiple: false
 		}
 		section {
@@ -276,6 +275,7 @@ private takeAction(evt) {
 
 	log.trace "takeAction()"
 
+    
 	if (song) {
 		sonos.playSoundAndTrack(state.sound.uri, state.sound.duration, state.selectedSong, volume)
 	}
@@ -371,41 +371,43 @@ private getTimeLabel()
 // TODO - End Centralize
 
 private loadText() {
-	switch ( actionType) {
-		case "Bell 1":
+	log.info "Here"
+    log.trace actionType
+	switch (actionType) {
+		case "1":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/bell1.mp3", duration: "10"]
 			break;
-		case "Bell 2":
+		case "2":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/bell2.mp3", duration: "10"]
 			break;
-		case "Dogs Barking":
+		case "3":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/dogs.mp3", duration: "10"]
 			break;
-		case "Fire Alarm":
+		case "4":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/alarm.mp3", duration: "17"]
 			break;
-		case "The mail has arrived":
+		case "5":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/the+mail+has+arrived.mp3", duration: "1"]
 			break;
-		case "A door opened":
+		case "6":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/a+door+opened.mp3", duration: "1"]
 			break;
-		case "There is motion":
+		case "7":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/there+is+motion.mp3", duration: "1"]
 			break;
-		case "Smartthings detected a flood":
+		case "8":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/smartthings+detected+a+flood.mp3", duration: "2"]
 			break;
-		case "Smartthings detected smoke":
+		case "9":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/smartthings+detected+smoke.mp3", duration: "1"]
 			break;
-		case "Someone is arriving":
+		case "10":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/someone+is+arriving.mp3", duration: "1"]
 			break;
-		case "Piano":
+		case "11":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/piano2.mp3", duration: "10"]
 			break;
-		case "Lightsaber":
+		case "12":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/lightsaber.mp3", duration: "10"]
 			break;
 		case "Custom Message":
