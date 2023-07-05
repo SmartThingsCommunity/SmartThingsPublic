@@ -3,7 +3,8 @@
  *
  */
 metadata {
-    definition (name: "Fibaro Single Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy") {
+    definition (name: "Fibaro Single Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy",
+            runLocally: true, minHubCoreVersion: '000.033.0001', executeCommandsLocally: true) {
         capability "Switch"
         capability "Energy Meter"
         capability "Power Meter"
@@ -240,7 +241,6 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
         case 0: sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]); break;
         case 2: sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"]); break;
     }
-    multiStatusEvent("${(device.currentValue("power") ?: "0.0")} W | ${(device.currentValue("energy") ?: "0.00")} kWh")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
