@@ -37,7 +37,7 @@ metadata {
     }
 
     preferences {
-        input "zipCode", "text", title: "Zip Code (optional)", required: false
+        input "zipCode", "text", title: "USA Zip Code (optional)", required: false
         input "stationId", "text", title: "Personal Weather Station ID (optional)", required: false
     }
 
