@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings, Inc.
+ *  Copyright 2016 Samsung Electronics Co., LTD.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -27,7 +27,7 @@ metadata {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 		}
@@ -35,7 +35,7 @@ metadata {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute("device.level", key: "SECONDARY_CONTROL") {
@@ -59,7 +59,7 @@ metadata {
 			tileAttribute("device.switch", key: "SECONDARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'…', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'…', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'…', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute("device.level", key: "VALUE_CONTROL") {
@@ -124,7 +124,7 @@ def off() {
 	sendEvent(name: "switch", value: "off")
 }
 
-def setLevel(percent) {
+def setLevel(percent, rate = null) {
 	log.debug "setLevel: ${percent}, this"
 	sendEvent(name: "level", value: percent)
 }

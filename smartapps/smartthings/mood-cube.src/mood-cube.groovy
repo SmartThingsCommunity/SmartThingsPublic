@@ -1,7 +1,7 @@
 /**
  *  Mood Cube
  *
- *  Copyright 2014 SmartThings, Inc.
+ *  Copyright 2014 Samsung Electronics Co., LTD.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -24,7 +24,8 @@ definition(
 	description: "Set your lighting by rotating a cube containing a SmartSense Multi",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-LightUpMyWorld.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-LightUpMyWorld@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-LightUpMyWorld@2x.png",
+	pausable: true
 )
 
 /**********

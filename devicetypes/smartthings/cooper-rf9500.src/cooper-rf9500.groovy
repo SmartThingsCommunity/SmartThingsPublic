@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com") {
+	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Button"
@@ -85,7 +85,7 @@ def leveldown() {
     	setLevel(curlevel - 10)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.trace "setLevel($value)"
 	sendEvent(name: "level", value: value)
 }

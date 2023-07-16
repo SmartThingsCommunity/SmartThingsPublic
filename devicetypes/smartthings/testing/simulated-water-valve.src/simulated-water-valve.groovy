@@ -16,6 +16,7 @@ metadata {
 		capability "Actuator"
 		capability "Valve"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	// tile definitions
@@ -34,8 +35,25 @@ metadata {
 }
 
 def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+
 	sendEvent(name: "contact", value: "closed")
 }
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
 
 def open() {
 	sendEvent(name: "contact", value: "open")

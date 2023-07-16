@@ -17,7 +17,7 @@ metadata {
 		capability "Relative Humidity Measurement"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0009,0402,0405"
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0009,0402,0405", deviceJoinName: "Temperature Sensor"
 	}
 
 	// simulator metadata

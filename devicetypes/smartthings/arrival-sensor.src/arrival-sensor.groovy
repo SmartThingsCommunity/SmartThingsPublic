@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 /**
  *  Copyright 2015 SmartThings
  *
@@ -12,17 +14,18 @@
  *
  */
 metadata {
-	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Tone"
 		capability "Actuator"
 		capability "Signal Strength"
 		capability "Presence Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
-		fingerprint profileId: "FC01", deviceId: "019A"
-		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000,0003", outClusters: "0003"
-		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000", outClusters: "0006"
+		fingerprint profileId: "FC01", deviceId: "019A", deviceJoinName: "SmartThings Presence Sensor"
+		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000,0003", outClusters: "0003", deviceJoinName: "SmartThings Presence Sensor"
+		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000", outClusters: "0006", deviceJoinName: "SmartThings Presence Sensor"
 	}
 
 	simulator {
@@ -109,6 +112,11 @@ def beep() {
 		"delay 200",
 		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
 	]
+}
+
+def installed() {
+	// Arrival sensors only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 }
 
 def parse(String description) {

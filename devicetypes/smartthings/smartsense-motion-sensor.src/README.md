@@ -5,6 +5,7 @@ Local Execution on V2 Hubs
 Works with: 
 
 * [Samsung SmartThings Motion Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-motion-sensor)
+* [Bosch Motion Detector](https://us.boschsecurity.com/en/products/intrusionalarmsystems/detectorsandaccessories/motionpir/radionpirzbwirelessmotion/radionpirzbwirelessmotion_products_56178)
 
 ## Table of contents
 
