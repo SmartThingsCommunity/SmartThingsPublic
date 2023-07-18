@@ -25,8 +25,6 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		attribute "status", "string"
-		attribute "door", "string"
 	}
 
 	simulator {
@@ -48,17 +46,11 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening"
-				attributeState "open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing"
-				attributeState "opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#e86d13"
-				attributeState "closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#00A0DC"
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
 			}
-		}
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
 		}
 		standardTile("acceleration", "device.acceleration", decoration: "flat", width: 2, height: 2) {
 			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC")
@@ -74,13 +66,12 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main(["status", "contact", "acceleration"])
-		details(["status", "contact", "acceleration", "temperature", "3axis", "battery"])
+		main(["contact", "acceleration"])
+		details(["contact", "acceleration", "temperature", "3axis", "battery"])
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 	}
 }
 
@@ -218,14 +209,10 @@ private List parseOrientationMessage(String description) {
 
 	if (absValueZ > 825) {
 		results << createEvent(name: "contact", value: "open", unit: "")
-		results << createEvent(name: "status", value: "open", unit: "")
-		results << createEvent(name: "door", value: "open", unit: "")
 		log.debug "STATUS: open"
 	}
 	else if (absValueZ < 100) {
 		results << createEvent(name: "contact", value: "closed", unit: "")
-		results << createEvent(name: "status", value: "closed", unit: "")
-		results << createEvent(name: "door", value: "closed", unit: "")
 		log.debug "STATUS: closed"
 	}
 
@@ -279,9 +266,7 @@ private getTempResult(part, description) {
 	def temperatureScale = getTemperatureScale()
 	def value = zigbee.parseSmartThingsTemperatureValue(part, "temp: ", temperatureScale)
 	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
+		value = new BigDecimal((value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 	}
 	def linkText = getLinkText(device)
 	def descriptionText = "$linkText was $value°$temperatureScale"

@@ -2,7 +2,7 @@
  *	Fibaro Dimmer 2
  */
 metadata {
-	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
+	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Energy Meter"
@@ -15,9 +15,12 @@ metadata {
 		command "clearError"
 
 		attribute "errorMode", "string"
+		attribute "scene", "string"
+		attribute "multiStatus", "string"
 
-		fingerprint mfr: "010F", prod: "0102", model: "2000"
-		fingerprint mfr: "010F", prod: "0102", model: "1000"
+		fingerprint mfr: "010F", prod: "0102", model: "2000", deviceJoinName: "Fibaro Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "1000", deviceJoinName: "Fibaro Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "3000", deviceJoinName: "Fibaro Dimmer Switch"
 	}
 
 	tiles (scale: 2) {
@@ -29,7 +32,7 @@ metadata {
 				attributeState "turningOff", label:'Turning Off', action:"on", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dimmer/dimmer50.png", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
-				attributeState("combinedMeter", label:'${currentValue}')
+				attributeState("multiStatus", label:'${currentValue}')
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
@@ -65,18 +68,9 @@ metadata {
 	}
 
 	preferences {
-		input (
-				title: "Fibaro Dimmer 2 ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2017/02/d2_icon.png",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGD-212/FGD-212-EN-T-v1.3.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
@@ -103,14 +97,24 @@ def off() { encap(zwave.basicV1.basicSet(value: 0)) }
 
 def setLevel(level, rate = null ) {
 	logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
+	level = Math.max(Math.min(level, 99), 0)
+	if (level == 0) {
+		sendEvent(name: "switch", value: "off")
+	} else {
+		sendEvent(name: "switch", value: "on")
+	}
 	if (rate == null) {
-		encap(zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0))
+		encap(zwave.basicV1.basicSet(value: level))
 	} else {
 		encap(zwave.switchMultilevelV3.switchMultilevelSet(value: (level > 0) ? level-1 : 0, dimmingDuration: rate))
 	}
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	logging("${device.displayName} - Executing reset()","info")
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()
@@ -142,13 +146,13 @@ def installed(){
 }
 
 def configure(){
-	  sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
+	sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
 }
 
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
-	runIn(3, "syncStart")
+	runIn(3, "syncStart", [overwrite: true, forceForLocallyExecuting: true])
 	state.lastUpdated = now()
 }
 
@@ -157,7 +161,10 @@ def syncStart() {
 	parameterMap().each {
 		if(settings."$it.key" != null) {
 			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-			if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
+			// this parameter (38) is not supported on some earlier firmware versions, so we'll mark it as already synced
+			if ("$it.key" == "levelCorrection" && (!zwaveInfo.ver || (zwaveInfo.ver as float) <= REDUCED_CONFIGURATION_VERSION)) {
+				state."$it.key".state = "synced"
+			} else if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
 				state."$it.key".value = settings."$it.key" as Integer
 				state."$it.key".state = "notSynced"
 				syncNeeded = true
@@ -184,10 +191,10 @@ private syncNext() {
 		}
 	}
 	if (cmds) {
-		runIn(10, "syncCheck")
+		runIn(10, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(cmds,1000)
 	} else {
-		runIn(1, "syncCheck")
+		runIn(1, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
@@ -254,7 +261,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	logging("${device.displayName} - SwitchMultilevelReport received, value: ${cmd.value}","info")
 	sendEvent(name: "switch", value: (cmd.value > 0) ? "on" : "off")
-	sendEvent(name: "level", value: (cmd.value > 0) ? cmd.value+1 : 0)
+	sendEvent(name: "level", value: (cmd.value == 99) ? 100 : cmd.value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -378,6 +385,30 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
+	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 private logging(text, type = "debug") {
 	if (settings.logging == "true") {
 		log."$type" text
@@ -410,7 +441,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")
@@ -437,6 +468,8 @@ private List intToParam(Long value, Integer size = 1) {
 private Map cmdVersions() {
 	[0x5E: 1, 0x86: 1, 0x72: 2, 0x59: 1, 0x73: 1, 0x22: 1, 0x31: 5, 0x32: 3, 0x71: 3, 0x56: 1, 0x98: 1, 0x7A: 2, 0x20: 1, 0x5A: 1, 0x85: 2, 0x26: 3, 0x8E: 2, 0x60: 3, 0x70: 2, 0x75: 2, 0x27: 1]
 }
+
+private getREDUCED_CONFIGURATION_VERSION() {3.04}
 
 private parameterMap() {[
 		[key: "autoStepTime", num: 6, size: 2, type: "enum", options: [
@@ -483,5 +516,5 @@ private parameterMap() {[
 				2: "control mode selected automatically (based on auto-calibration)"
 		], def: "2", min: 0, max: 2 , title: "Load control mode", descr: "This parameter allows to set the desired load control mode. The device automatically adjusts correct control mode, but the installer may force its change using this parameter."],
 		[key: "levelCorrection", num: 38, size: 2, type: "number", def: 255, min: 0, max: 255 , title: "Brightness level correction for flickering loads",
-		 descr: "Correction reduces spontaneous flickering of some capacitive load (e.g. dimmable LEDs) at certain brightness levels in 2-wire installation. In countries using ripple-control, correction may cause changes in brightness. In this case it is necessary to disable correction or adjust time of correction for flickering loads. (1-254 – duration of correction in seconds. For further information please see the manual)"]
+		 descr: "[Only supported on device versions > $REDUCED_CONFIGURATION_VERSION] Correction reduces spontaneous flickering of some capacitive load (e.g. dimmable LEDs) at certain brightness levels in 2-wire installation. In countries using ripple-control, correction may cause changes in brightness. In this case it is necessary to disable correction or adjust time of correction for flickering loads. (1-254 – duration of correction in seconds. For further information please see the manual)"]
 ]}

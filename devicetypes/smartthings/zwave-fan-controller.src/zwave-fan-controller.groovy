@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan") {
+	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan", genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Switch"
 		capability "Fan Speed"
@@ -27,10 +27,11 @@ metadata {
 		command "raiseFanSpeed"
 		command "lowerFanSpeed"
 
-		fingerprint mfr: "001D", prod: "1001", model: "0334", deviceJoinName: "Leviton 3-Speed Fan Controller"
-		fingerprint mfr: "0063", prod: "4944", model: "3034", deviceJoinName: "GE In-Wall Smart Fan Control"
-		fingerprint mfr: "0063", prod: "4944", model: "3131", deviceJoinName: "GE In-Wall Smart Fan Control"
-		fingerprint mfr: "0039", prod: "4944", model: "3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
+		fingerprint mfr: "001D", prod: "0038", model: "0002", deviceJoinName: "Leviton Fan", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Fan_Controller_4_Speed" //Leviton 4-Speed Fan Controller
+		fingerprint mfr: "001D", prod: "1001", model: "0334", deviceJoinName: "Leviton Fan" //Leviton 3-Speed Fan Controller
+		fingerprint mfr: "0063", prod: "4944", model: "3034", deviceJoinName: "GE Fan" //GE In-Wall Smart Fan Control
+		fingerprint mfr: "0063", prod: "4944", model: "3131", deviceJoinName: "GE Fan" //GE In-Wall Smart Fan Control
+		fingerprint mfr: "0039", prod: "4944", model: "3131", deviceJoinName: "Honeywell Fan" //Honeywell Z-Wave Plus In-Wall Fan Speed Control
 	}
 
 	simulator {
@@ -102,32 +103,92 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 	fanEvents(cmd)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
+	log.debug "received hail from device"
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def fanEvents(physicalgraph.zwave.Command cmd) {
-	def value = (cmd.value ? "on" : "off")
-	def result = [createEvent(name: "switch", value: value)]
-	result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-	result << createEvent(name: "fanSpeed", value: cmd.value/33)
+	def rawLevel = cmd.value as int
+	def result = []
+
+	if (0 <= rawLevel && rawLevel <= 100) {
+		def value = (rawLevel ? "on" : "off")
+		result << createEvent(name: "switch", value: value)
+		result << createEvent(name: "level", value: rawLevel == 99 ? 100 : rawLevel, displayed: false)
+
+		def fanLevel = 0
+
+		if (has4Speeds()) {
+			fanLevel = getFanSpeedFor4SpeedDevice(rawLevel)
+		} else {
+			fanLevel = getFanSpeedFor3SpeedDevice(rawLevel)
+		}
+		result << createEvent(name: "fanSpeed", value: fanLevel)
+	}
+
 	return result
 }
 
 def on() {
-	setLevel(0xFF)
+	state.lastOnCommand = now()
+	delayBetween([
+			zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF).format(),
+			zwave.switchMultilevelV1.switchMultilevelGet().format()
+		], 5000)
 }
 
 def off() {
-	setLevel(0x00)
+	delayBetween([
+			zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00).format(),
+			zwave.switchMultilevelV1.switchMultilevelGet().format()
+		], 1000)
 }
 
-def setLevel(value) {
-	log.debug "setLevel >> value: $value"
+def getDelay() {
+	// the leviton is comparatively well-behaved, but the GE and Honeywell devices are not
+	zwaveInfo.mfr == "001D" ? 2000 : 5000
+}
+
+def setLevel(value, rate = null) {
+	def cmds = []
+	def timeNow = now()
+
+	if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
+		// because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
+		log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
+		cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
+	}
+
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
-	sendEvent(name: "switch", value: level > 0 ? "on" : "off")
-	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	log.debug "setLevel >> value: $level"
+
+	cmds << delayBetween([
+				zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(),
+				zwave.switchMultilevelV1.switchMultilevelGet().format()
+			], 5000)
+
+	return cmds
 }
 
 def setFanSpeed(speed) {
-	setLevel(speed * 33)
+	if (speed as Integer == 0) {
+		off()
+	} else if (speed as Integer == 1) {
+		low()
+	} else if (speed as Integer == 2) {
+		medium()
+	} else if (speed as Integer == 3) {
+		high()
+	} else if (speed as Integer == 4) {
+		max()
+	}
 }
 
 def raiseFanSpeed() {
@@ -139,15 +200,19 @@ def lowerFanSpeed() {
 }
 
 def low() {
-	setFanSpeed(1)
+	setLevel(has4Speeds() ? 25 : 32)
 }
 
 def medium() {
-	setFanSpeed(2)
+	setLevel(has4Speeds() ? 50 : 66)
 }
 
 def high() {
-	setFanSpeed(3)
+	setLevel(has4Speeds() ? 75 : 99)
+}
+
+def max() {
+	setLevel(99)
 }
 
 def refresh() {
@@ -158,3 +223,37 @@ def ping() {
 	refresh()
 }
 
+def getFanSpeedFor3SpeedDevice(rawLevel) {
+	// The GE, Honeywell, and Leviton 3-Speed Fan Controller treat 33 as medium, so account for that
+	if (rawLevel == 0) {
+		return 0
+	} else if (1 <= rawLevel && rawLevel <= 32) {
+		return 1
+	} else if (33 <= rawLevel && rawLevel <= 66) {
+		return 2
+	} else if (67 <= rawLevel && rawLevel <= 100) {
+		return 3
+	}
+}
+
+def getFanSpeedFor4SpeedDevice(rawLevel) {
+	if (rawLevel == 0) {
+		return 0
+	} else if (1 <= rawLevel && rawLevel <= 25) {
+		return 1
+	} else if (26 <= rawLevel && rawLevel <= 50) {
+		return 2
+	} else if (51 <= rawLevel && rawLevel <= 75) {
+		return 3
+	} else if (76 <= rawLevel && rawLevel <= 100) {
+		return 4
+	}
+}
+
+def has4Speeds() {
+	isLeviton4Speed()
+}
+
+def isLeviton4Speed() {
+	(zwaveInfo?.mfr == "001D" && zwaveInfo?.prod == "0038" && zwaveInfo?.model == "0002")
+}

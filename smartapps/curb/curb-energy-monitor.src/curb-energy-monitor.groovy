@@ -26,7 +26,9 @@ definition(
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
-    singleInstance: true
+    singleInstance: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
 ) {
     appSetting "clientId"
     appSetting "clientSecret"
@@ -81,10 +83,14 @@ def initialize() {
 
     def curbCircuits = getCurbCircuits()
     log.debug "Found devices: ${curbCircuits}"
-
+    log.debug settings
     runEvery1Minute(getPowerData)
-    runEvery1Hour(getKwhData)
-
+    if (settings.energyInterval=="Hour" || settings.energyInterval == "Half Hour" || settings.energyInterval == "Fifteen Minutes")
+    {
+      runEvery1Minute(getKwhData)
+    } else {
+      runEvery1Hour(getKwhData)
+    }
 }
 
 def uninstalled() {
@@ -110,6 +116,13 @@ def authPage() {
                     options: state.locations
 
                 )
+                input(
+                  name: "energyInterval",
+                  type: "enum",
+                  title: "Energy Interval",
+                  options: ["Billing Period", "Day", "Hour", "Half Hour", "Fifteen Minutes"],
+                  defaultValue: "Hour"
+                  )
             }
         }
     } else {
@@ -232,9 +245,17 @@ def getPowerData(create=false) {
 
 def getKwhData() {
   log.debug "Getting kwh data at ${settings.curbLocation} with token: ${state.authToken}"
+  def url = "/api/aggregate/${settings.curbLocation}/"
+
+  if (settings.energyInterval == "Hour"){ url = url + "1h/m"}
+  if (settings.energyInterval == "Billing Period"){ url = url + "billing/h"}
+  if (settings.energyInterval == "Half Hour"){ url = url + "30m/m"}
+  if (settings.energyInterval == "Day"){ url = url + "24h/h"}
+  if (settings.energyInterval == "Fifteen Minutes"){ url = url + "15m/m"}
+	log.debug "KWH FOR: ${url}"
     def params = [
         uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${settings.curbLocation}/billing/h",
+        path: url,
         headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]

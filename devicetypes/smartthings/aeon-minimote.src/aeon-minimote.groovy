@@ -1,5 +1,4 @@
 import groovy.json.JsonOutput
-import groovy.json.JsonOutput
 
 /**
  *  Copyright 2015 SmartThings
@@ -15,7 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,8 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
+		fingerprint mfr: "0086", prod: "0001", model:"0003", deviceJoinName: "Aeon Remote Control"
 	}
 
 	simulator {
@@ -77,10 +75,10 @@ def buttonEvent(button, held) {
 		log.error "Child device $childDni not found"
 	}
 	if (held) {
-		child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
+		if (child) child.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
+		if (child) child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -122,34 +120,41 @@ def configure() {
 
 def installed() {
 	initialize()
-	createChildDevices()
+	if (!childDevices) {
+		createChildDevices()
+	}
 }
 
 def updated() {
 	initialize()
 	if (!childDevices) {
 		createChildDevices()
-	}
-	else if (device.label != state.oldLabel) {
+	} else if (device.label != state.oldLabel) {
 		childDevices.each {
 			def segs = it.deviceNetworkId.split("/")
 			def newLabel = "${device.displayName} button ${segs[-1]}"
 			it.setLabel(newLabel)
 		}
 		state.oldLabel = device.label
+	} else {
+		childDevices.each {
+			it.sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
+		}
 	}
 }
 
 def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
 	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+	sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
 }
 
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..4) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
+		def child = addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+		child.sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
 	}
 }

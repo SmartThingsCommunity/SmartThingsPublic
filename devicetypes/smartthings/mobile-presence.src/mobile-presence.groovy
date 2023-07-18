@@ -17,12 +17,15 @@
 metadata {
 	definition (name: "Mobile Presence", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.mobile.presence") {
 		capability "Presence Sensor"
+		capability "Occupancy Sensor"
 		capability "Sensor"
 	}
 
 	simulator {
 		status "present": "presence: 1"
 		status "not present": "presence: 0"
+		status "occupied": "occupancy: 1"
+		status "unoccupied": "occupancy: 0"
 	}
 
 	tiles {
@@ -36,8 +39,30 @@ metadata {
 }
 
 def parse(String description) {
-	def name = parseName(description)
 	def value = parseValue(description)
+
+	/*
+	 * When 'not present' event received (left case)
+	 *     -> If occupancy value is not 'unoccupied', occupancy value should be 'unoccupied' before posting 'not present'
+	 * When 'occupied' event received (inside case)
+	 *     -> If presence value is not 'present', presence value should be 'present' before posting 'occupied'
+	 */
+	switch(value) {
+		case "not present":
+        	if (device.currentState("occupancy") != "unoccupied") sendEvent(generateEvent("occupancy: 0"))
+            break
+        case "occupied":
+        	if (device.currentState("presence") != "present") sendEvent(generateEvent("presence: 1"))
+            break
+	}
+
+    sendEvent(generateEvent(description))
+}
+
+private generateEvent(String description) {
+	log.debug "description: $description"
+	def value = parseValue(description)
+	def name = parseName(description)
 	def linkText = getLinkText(device)
 	def descriptionText = parseDescriptionText(linkText, value, description)
 	def handlerName = getState(value)
@@ -54,14 +79,16 @@ def parse(String description) {
 		isStateChange: isStateChange,
 		displayed: displayed(description, isStateChange)
 	]
-	log.debug "Parse returned $results.descriptionText"
-	return results
+	log.debug "GenerateEvent returned $results.descriptionText"
 
+	return results
 }
 
 private String parseName(String description) {
 	if (description?.startsWith("presence: ")) {
 		return "presence"
+	} else if (description?.startsWith("occupancy: ")) {
+		return "occupancy"
 	}
 	null
 }
@@ -70,6 +97,8 @@ private String parseValue(String description) {
 	switch(description) {
 		case "presence: 1": return "present"
 		case "presence: 0": return "not present"
+		case "occupancy: 1": return "occupied"
+		case "occupancy: 0": return "unoccupied"
 		default: return description
 	}
 }
@@ -78,6 +107,8 @@ private parseDescriptionText(String linkText, String value, String description) 
 	switch(value) {
 		case "present": return "{{ linkText }} has arrived"
 		case "not present": return "{{ linkText }} has left"
+		case "occupied": return "{{ linkText }} is inside"
+		case "unoccupied": return "{{ linkText }} is away"
 		default: return value
 	}
 }
@@ -86,6 +117,8 @@ private getState(String value) {
 	switch(value) {
 		case "present": return "arrived"
 		case "not present": return "left"
+		case "occupied": return "inside"
+		case "unoccupied": return "away"
 		default: return value
 	}
 }

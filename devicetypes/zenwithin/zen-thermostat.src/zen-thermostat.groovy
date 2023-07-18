@@ -15,6 +15,11 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Thermostat"
+        capability "Thermostat Heating Setpoint"
+        capability "Thermostat Cooling Setpoint"
+        capability "Thermostat Operating State"
+        capability "Thermostat Mode"
+        capability "Thermostat Fan Mode"
 
         command "setpointUp"
         command "setpointDown"
@@ -23,7 +28,7 @@ metadata {
         // To please some of the thermostat SmartApps
         command "poll"
 
-        fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
+        fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat" //Zen Thermostat
     }
 
     tiles {
@@ -88,8 +93,9 @@ metadata {
     preferences {
         section {
             input("systemModes", "enum",
-                title: "Thermostat configured modes\nSelect the modes the thermostat has been configured for, as displayed on the thermostat",
-                description: "off, heat, cool", defaultValue: "3", required: true, multiple: false,
+                title: "Thermostat configured modes",
+                description: "Select the modes the thermostat has been configured for, as displayed on the thermostat",
+                defaultValue: "3", required: true, multiple: false,
                 options:["1":"off, heat",
                         "2":"off, cool",
                         "3":"off, heat, cool",
@@ -561,7 +567,7 @@ def alterSetpoint(raise, targetValue = null, setpoint = null) {
                 unit: locationScale, eventType: "ENTITY_UPDATE")//, displayed: false)
         def data = [targetHeatingSetpoint:heatingSetpoint, targetCoolingSetpoint:coolingSetpoint]
         // Use runIn to reduce chances UI is toggling the value
-        runIn(5, "updateSetpoints", [data: data, overwrite: true])
+        runIn(3, "updateSetpoints", [data: data, overwrite: true])
     }
 }
 
@@ -585,6 +591,8 @@ def setHeatingSetpoint(degrees) {
         state.heatingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "heatingSetpoint", value: device.currentValue("heatingSetpoint"), unit: getTemperatureScale())
     }
 }
 
@@ -594,6 +602,8 @@ def setCoolingSetpoint(degrees) {
         state.coolingSetpoint = degrees.toDouble()
         // Use runIn to enable both setpoints to be changed if a routine/SA changes heating/cooling setpoint at the same time
         runIn(2, "updateSetpoints", [overwrite: true])
+    } else {
+        sendEvent(name: "coolingSetpoint", value: device.currentValue("coolingSetpoint"), unit: getTemperatureScale())
     }
 }
 
@@ -617,10 +627,12 @@ def updateSetpoints() {
 def updateSetpoints(data) {
     def cmds = []
     if (data.targetHeatingSetpoint) {
+        sendEvent(name: "heatingSetpoint", value: getTempInLocalScale(data.targetHeatingSetpoint, "C"), unit: getTemperatureScale())
         cmds += zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_OCCUPIED_HEATING_SETPOINT, typeINT16,
                 hexString(Math.round(data.targetHeatingSetpoint*100.0), 4))
     }
     if (data.targetCoolingSetpoint) {
+        sendEvent(name: "coolingSetpoint", value: getTempInLocalScale(data.targetCoolingSetpoint, "C"), unit: getTemperatureScale())
         cmds += zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_OCCUPIED_COOLING_SETPOINT, typeINT16,
                 hexString(Math.round(data.targetCoolingSetpoint*100.0), 4))
     }

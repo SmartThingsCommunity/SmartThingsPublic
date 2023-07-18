@@ -23,7 +23,7 @@ metadata {
 
 		command "reset"
 
-		fingerprint deviceId: "0x1104", inClusters: "0x26,0x32,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86", outClusters: "0x82"
+		fingerprint deviceId: "0x1104", inClusters: "0x26,0x32,0x27,0x2C,0x2B,0x70,0x85,0x72,0x86", outClusters: "0x82", deviceJoinName: "Aeon Dimmer Switch"
 	}
 
 	simulator {
@@ -106,6 +106,12 @@ def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevel
 	result
 }
 
+def createEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
 	def result = [item1]
 
@@ -171,6 +177,10 @@ def refresh() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	return [
 		zwave.meterV2.meterReset().format(),
 		zwave.meterV2.meterGet().format()

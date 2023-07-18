@@ -1,0 +1,22 @@
+#!/bin/bash
+
+ERROR_COUNT=0
+while IFS= read -r DTH; do
+  echo "Verifying $DTH"
+  ERRORS=$(groovyc $DTH 2>&1 | grep ".groovy:")
+  # echo $ERRORS
+  IMPORTANT_ERRORS=$(echo $ERRORS | grep -v "unable")
+  if [[ ${#IMPORTANT_ERRORS} -eq 0 ]]; then
+    echo "No disqualifying compilation errors found"
+  else
+    echo "$DTH failed to compile, run groovyc on your source file for the full error: $ERRORS"
+    ERROR_COUNT=$((ERROR_COUNT + 1))
+  fi
+  echo "======================================================================="
+done < <(git diff --cached --name-only | grep .*.groovy)
+
+if [[ $ERROR_COUNT -gt 0 ]]; then
+  echo "rejected" && exit 1
+else
+  exit 0
+fi

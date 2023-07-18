@@ -14,9 +14,10 @@
  *
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Zigbee") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -25,15 +26,27 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Contact Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Micro Door Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Door/Window Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S", deviceJoinName: "Open/Closed Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300", deviceJoinName: "Open/Closed Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Open/Closed Sensor" //Iris Contact Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Open/Closed Sensor" //Centralite Micro Door Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Contact Sensor-A", deviceJoinName: "SYLVANIA Open/Closed Sensor" //Sylvania SMART+ Contact and Temperature Smart Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Open/Closed Sensor" //Visonic Door/Window Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Open/Closed Sensor", mnmn: "SmartThings", vid: "ecolink-door-sensor" //Ecolink Door/Window Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "DWZB1-ECO", deviceJoinName: "Ecolink Open/Closed Sensor", mnmn: "SmartThings", vid: "ecolink-door-sensor" //Ecolink Door/Window Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Open/Closed Sensor" //Iris Contact Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Bosch Open/Closed Sensor" //Bosch multi-sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Megaman", model: "MS601/z1", deviceJoinName: "INGENIUM Open/Closed Sensor" //INGENIUM ZB Magnetic ON/OFF Sensor
+		//AduroSmart
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.1
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.0
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Sercomm Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" //Sercomm Door Window Sensor
+		//Dawon
+		fingerprint inClusters: "0000, 0003, 0006, 0500", outClusters: "0003, 0019", manufacturer: "DAWON_DNS", model: "SS-B100-ZB", deviceJoinName: "Dawon Signal Interlock", mnmn: "0AIg", vid: "dawon-zigbee-signal-interlock2"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "frient A/S", model :"WISZB-120", deviceJoinName: "frient Open/Closed Sensor"
+		fingerprint manufacturer: "frient A/S", model :"WISZB-121", deviceJoinName: "frient Open/Closed Sensor", mnmn: "SmartThingsCommunity", vid: "aaca16c3-fade-3cb3-b742-e2237f4ffd76" // Raw description: 23 0104 0402 00 06 0000 0001 0003 000F 0020 0500 02 000A 0019
+		//Smartenit
+		fingerprint manufacturer: "Compacta", model :"ZBWDS", deviceJoinName: "Smartenit Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" // Raw description: 01 0104 0000 00 04 0000 0001 0003 0007 01 0006
 	}
 
 	simulator {
@@ -41,8 +54,7 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "-100..100", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -55,15 +67,15 @@ metadata {
 
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label: '${currentValue}°',
-					backgroundColors: [
-							[value: 31, color: "#153591"],
-							[value: 44, color: "#1e9cbb"],
-							[value: 59, color: "#90d2a7"],
-							[value: 74, color: "#44b621"],
-							[value: 84, color: "#f1d801"],
-							[value: 95, color: "#d04e00"],
-							[value: 96, color: "#bc2323"]
-					]
+				backgroundColors: [
+					[value: 31, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				]
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
@@ -78,6 +90,17 @@ metadata {
 	}
 }
 
+private getIAS_ZONE_TYPE_ATTRIBUTE() { 0x0001 }
+private getIAS_ZONE_TYPE_CONTACT_SWITCH_ATTRIBUTE_VALUE() { 0x0015 }
+private getIAS_ZONE_TYPE_WATER_SENSOR_ATTRIBUTE_VALUE() { 0x002A }
+private getTEMPERATURE_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
+private getBATTERY_VOLTAGE_VALUE_ATTRIBUTE() { 0x0020 }
+private getPOLL_CONTROL_CLUSTER() { 0x0020 }
+private getCHECK_IN_INTERVAL_ATTRIBUTE() { 0x0000 }
+private getFAST_POLL_TIMEOUT_ATTRIBUTE() { 0x0003 }
+private getSET_LONG_POLL_INTERVAL_CMD() { 0x02 }
+private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
+
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -87,9 +110,9 @@ def parse(String description) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
 			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
@@ -99,11 +122,19 @@ def parse(String description) {
 				} else {
 					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == IAS_ZONE_TYPE_ATTRIBUTE && isBoschRadionMultiSensor()) {
+				if (Integer.parseInt(descMap.value, 16) == IAS_ZONE_TYPE_CONTACT_SWITCH_ATTRIBUTE_VALUE) {
+					//multi-sensor is in contact or tilt detector mode - both act as contact sensor so no action is necessary
+				} else if (Integer.parseInt(descMap.value, 16) == IAS_ZONE_TYPE_WATER_SENSOR_ATTRIBUTE_VALUE) {
+					//multi-sensor is in water detector mode, DTH should be changed to water sensor DTH
+					log.debug "Changing DTH type to: SmartSense Moisture Sensor"
+					setDeviceType("SmartSense Moisture Sensor")
+				}
 			}
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
-			map.value = (int) map.value + (int) tempOffset
+			map.value = new BigDecimal((map.value as float) + (tempOffset as float)).setScale(1, BigDecimal.ROUND_HALF_UP)
 		}
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
@@ -134,7 +165,7 @@ private Map getBatteryResult(rawValue) {
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
-		def minVolts = 2.1
+		def minVolts = isFrientSensor() ? 2.3 : 2.1
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
@@ -153,9 +184,9 @@ private Map getContactResult(value) {
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [
-			name           : 'contact',
-			value          : value,
-			descriptionText: descriptionText
+		name           : 'contact',
+		value          : value,
+		descriptionText: descriptionText
 	]
 }
 
@@ -168,10 +199,10 @@ def ping() {
 
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURED_VALUE_ATTRIBUTE) +
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE_ATTRIBUTE) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
-	return refreshCmds + zigbee.enrollResponse()
+	return refreshCmds
 }
 
 def configure() {
@@ -180,8 +211,40 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-
+	def cmds = refresh() +
+		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
+		zigbee.batteryConfig() +
+		zigbee.temperatureConfig(30, 60 * 30) +
+		zigbee.enrollResponse()
+	if (isEcolink()) {
+		cmds += configureEcolink()
+	} else if (isBoschRadionMultiSensor()) {
+		cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, IAS_ZONE_TYPE_ATTRIBUTE)
+	} else if (isFrientSensor()) {
+		cmds += zigbee.configureReporting(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000, DataType.INT16, 30, 60 * 30, 0x64, [destEndpoint: 0x26])
+	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) // send refresh cmds as part of config
+	return cmds
+}
+
+private configureEcolink() {
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+	def enrollCmds = zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTRIBUTE, DataType.UINT32, 0x00001C20) + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
+		zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTRIBUTE, DataType.UINT16, 0x0028) + zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B1040000")
+
+	return zigbee.addBinding(POLL_CONTROL_CLUSTER) + refresh() + enrollCmds
+}
+
+private Boolean isEcolink() {
+	device.getDataValue("manufacturer") == "Ecolink"
+}
+
+private Boolean isBoschRadionMultiSensor() {
+	device.getDataValue("manufacturer") == "Bosch" && device.getDataValue("model") == "RFMS-ZBMS"
+}
+
+private Boolean isFrientSensor() {
+	device.getDataValue("manufacturer") == "frient A/S"
 }

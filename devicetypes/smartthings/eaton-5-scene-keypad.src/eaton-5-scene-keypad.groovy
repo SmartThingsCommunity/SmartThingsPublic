@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
+	definition(name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings", mcdSync: true, mnmn: "SmartThings", vid: "SmartThings-smartthings-Eaton_5-Scene_Keypad") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
@@ -20,7 +20,7 @@ metadata {
 		capability "Switch"
 
 		//zw:L type:0202 mfr:001A prod:574D model:0000 ver:2.05 zwv:2.78 lib:01 cc:87,77,86,22,2D,85,72,21,70
-		fingerprint mfr: "001A", prod: "574D", model: "0000", deviceJoinName: "Eaton 5-Scene Keypad"
+		fingerprint mfr: "001A", prod: "574D", model: "0000", deviceJoinName: "Eaton Switch" //Eaton 5-Scene Keypad
 	}
 
 	tiles(scale: 2) {
@@ -61,6 +61,7 @@ def installed() {
 
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "switch", value: "off")
 
 	runIn(52, "initialize", [overwrite: true])
 	// Wait for set up to finish and process before proceeding to initialization
@@ -319,13 +320,15 @@ private updateLocalSwitchState(childId, state) {
 private addChildSwitches() {
 	for (i in 2..5) {
 		String childDni = "${device.deviceNetworkId}/$i"
-		def child = childDevices.find { it.deviceNetworkId == childDni }
-		addChildDevice("Child Switch", childDni, null, [
-			completedSetup: true,
-			label         : "$device.displayName Switch $i",
-			isComponent   : true,
-			componentName : "switch$i",
-			componentLabel: "Switch $i"
-		])
+		def child = addChildDevice("Child Switch",
+				childDni,
+				device.hubId,
+				[completedSetup: true,
+				 label         : "$device.displayName Switch $i",
+				 isComponent   : true,
+				 componentName : "switch$i",
+				 componentLabel: "Switch $i"
+				])
+		child.sendEvent(name: "switch", value: "off")
 	}
 }

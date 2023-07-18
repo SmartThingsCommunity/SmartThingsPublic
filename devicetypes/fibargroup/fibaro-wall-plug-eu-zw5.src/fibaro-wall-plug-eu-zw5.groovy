@@ -12,8 +12,8 @@ metadata {
 
 		command "reset"
 		
-		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug EU ZW5"
-		fingerprint deviceId: "0x1001", inClusters:"0x5E,0x22,0x59,0x56,0x7A,0x32,0x71,0x73,0x31,0x85,0x70,0x72,0x5A,0x8E,0x25,0x86"
+		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Outlet" //Fibaro Wall Plug EU ZW5
+		fingerprint mfr: "010F", prod: "0602", deviceJoinName: "Fibaro Outlet"
 
 	}
 
@@ -45,28 +45,19 @@ metadata {
 	}
 
 	preferences {
-
-		input (
-				title: "Fibaro Wall Plug EU ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2017/02/wp_icon.png",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGWPEF-102/FGWPEF-102-EN-A-v2.0.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
 			)
-
+			def defVal = it.def as Integer
+			def descrDefVal = it.options ? it.options.get(defVal) : defVal
 			input (
 					name: it.key,
 					title: null,
-					description: "Default: $it.def" ,
+					description: "$descrDefVal",
 					type: it.type,
 					options: it.options,
 					range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
@@ -89,6 +80,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	def cmds = []
 	cmds << zwave.meterV3.meterReset()
 	cmds << zwave.meterV3.meterGet(scale: 0)
@@ -295,6 +290,12 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 private logging(text, type = "debug") {
 	if (settings.logging == "true") {
 		log."$type" text
@@ -314,7 +315,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")

@@ -39,13 +39,17 @@ metadata {
                     ]
             }
             tileAttribute ("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState "energy", label:'${currentValue} kWh this billing period'
+                attributeState "energy", label:'${currentValue} kWh'
             }
         }
         main(["power"])
 
         details(["power"])
     }
+}
+
+def resetEnergyMeter() {
+	log.debug "resetEnergyMeter: not implemented"
 }
 
 def handlePower(value) {

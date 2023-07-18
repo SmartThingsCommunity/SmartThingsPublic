@@ -19,7 +19,7 @@ metadata {
 		capability "Switch"
 
 		//zw:S type:0100 mfr:001A prod:4243 model:0000 ver:3.01 zwv:3.67 lib:01 cc:72,77,86,85 ccOut:26
-		fingerprint mfr: "001A", prod: "4243", model: "0000", deviceJoinName: "Eaton Anyplace Switch"
+		fingerprint mfr: "001A", prod: "4243", model: "0000", deviceJoinName: "Eaton Switch" //Eaton Anyplace Switch
 	}
 
 	tiles {

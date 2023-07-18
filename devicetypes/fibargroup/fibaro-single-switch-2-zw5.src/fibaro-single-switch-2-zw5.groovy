@@ -14,8 +14,9 @@ metadata {
 
         command "reset"
 
-        fingerprint mfr: "010F", prod: "0403", model: "2000"
-        fingerprint mfr: "010F", prod: "0403", model: "1000"
+        fingerprint mfr: "010F", prod: "0403", model: "3000", deviceJoinName: "Fibaro Switch"
+        fingerprint mfr: "010F", prod: "0403", model: "2000", deviceJoinName: "Fibaro Switch"
+        fingerprint mfr: "010F", prod: "0403", model: "1000", deviceJoinName: "Fibaro Switch"
      }
 
     tiles (scale: 2) {
@@ -44,27 +45,19 @@ metadata {
     }
 
     preferences {
-        input (
-                title: "Fibaro Single Switch 2 ZW5 manual",
-                description: "Tap to view the manual.",
-                image: "http://manuals.fibaro.com/wp-content/uploads/2016/08/switch2_icon.jpg",
-                url: "http://manuals.fibaro.com/content/manuals/en/FGS-2x3/FGS-2x3-EN-T-v1.2.pdf",
-                type: "href",
-                element: "href"
-        )
-
         parameterMap().each {
             input (
-                    title: "${it.num}. ${it.title}",
+                    title: "${it.title}",
                     description: it.descr,
                     type: "paragraph",
                     element: "paragraph"
             )
-
+            def defVal = it.def as Integer
+            def descrDefVal = it.options ? it.options.get(defVal) : defVal
             input (
                     name: it.key,
                     title: null,
-                    description: "Default: $it.def" ,
+                    description: "$descrDefVal",
                     type: it.type,
                     options: it.options,
                     range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
@@ -82,7 +75,7 @@ private getPrefsFor(String name) {
     parameterMap().findAll( {it.key.contains(name)} ).each {
         input (
                 name: it.key,
-                title: "${it.num}. ${it.title}",
+                title: "${it.title}",
                 description: it.descr,
                 type: it.type,
                 options: it.options,
@@ -102,6 +95,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
     def cmds = []
     cmds << zwave.meterV3.meterReset()
     cmds << zwave.meterV3.meterGet(scale: 0)
@@ -111,6 +108,7 @@ def reset() {
 
 def refresh() {
     def cmds = []
+    cmds << zwave.switchBinaryV1.switchBinaryGet()
     cmds << zwave.meterV3.meterGet(scale: 0)
     cmds << zwave.meterV3.meterGet(scale: 2)
     encapSequence(cmds,1000)
@@ -124,6 +122,7 @@ def ping() {
 def installed(){
     log.debug "installed()"
     sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    response(refresh())
 }
 
 //Configuration and synchronization
@@ -307,6 +306,31 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+    if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+        // Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+        cmd.parameter = cmd.parameter.drop(2)
+        // Updated Command Class/Command now with the remaining bytes
+        cmd.commandClass = cmd.parameter[0]
+        cmd.command = cmd.parameter[1]
+        cmd.parameter = cmd.parameter.drop(2)
+    }
+    def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
+    if (encapsulatedCommand) {
+        logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
+        // this device sometimes sends events encapsulated.
+        if (cmd.sourceEndPoint as Integer == 0) zwaveEvent(encapsulatedCommand)
+        else log.warn "Received a multichannel event from an unsupported channel"
+    } else {
+        log.warn "Unable to extract MultiChannel command from $cmd"
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+    // Handles all Z-Wave commands we aren't interested in
+    log.debug "Unhandled: ${cmd.toString()}"
+    [:]
+}
 
 private logging(text, type = "debug") {
     if (settings.logging == "true" || type == "warn") {
@@ -339,7 +363,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
     if (zwaveInfo.zw.contains("s")) {
         secEncap(cmd)
-    } else if (zwaveInfo.cc.contains("56")){
+    } else if (zwaveInfo?.cc?.contains("56")){
         crcEncap(cmd)
     } else {
         logging("no encapsulation supported for command: $cmd","info")

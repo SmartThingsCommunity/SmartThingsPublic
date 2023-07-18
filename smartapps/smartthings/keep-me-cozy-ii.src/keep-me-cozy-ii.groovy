@@ -111,7 +111,9 @@ private evaluate()
 	else {
 		thermostat.setHeatingSetpoint(heatingSetpoint)
 		thermostat.setCoolingSetpoint(coolingSetpoint)
-		thermostat.poll()
+		if (thermostat.hasCommand("poll")) {
+			thermostat.poll()
+		}
 	}
 }
 

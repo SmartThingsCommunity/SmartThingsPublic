@@ -16,15 +16,20 @@
  *	Date: 2013-12-02
  */
 metadata {
-	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012',
+			executeCommandsLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Mode"
+		capability "Thermostat Fan Mode"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0201,0202,0204,0B05", outClusters: "000A, 0019"
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", deviceJoinName: "Centralite Thermostat"
 	}
 
 	// simulator metadata

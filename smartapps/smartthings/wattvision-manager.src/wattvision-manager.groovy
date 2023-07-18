@@ -171,7 +171,7 @@ def wattvisionURL(senorId, startDate, endDate) {
 	}
 
 	def diff = endDate.getTime() - startDate.getTime()
-	if (diff > 259200000) { // 3 days in milliseconds
+	if (diff > 10800000) { // 3 hours in milliseconds
 		// Wattvision only allows pulling 3 hours of data at a time
 		startDate = new Date(hours: endDate.hours - 3)
 	} else if (diff < 10000) { // 10 seconds in milliseconds

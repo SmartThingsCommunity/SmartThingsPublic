@@ -12,8 +12,8 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1401", model: "2000"
-		fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x55, 0x98, 0x9F, 0x22, 0x56, 0x7A, 0x6C", outClusters: "0x86, 0x25, 0x85, 0x8E, 0x59, 0x72, 0x5A, 0x73, 0x32, 0x70, 0x6C, 0x71, 0x75, 0x60"
+		fingerprint mfr: "010F", prod: "1401", model: "2000", deviceJoinName: "Fibaro Outlet"
+		fingerprint mfr: "010F", prod: "1401", deviceJoinName: "Fibaro Outlet"
 
 	}
 
@@ -46,19 +46,9 @@ metadata {
 	}
 
 	preferences {
-
-		input (
-				title: "Fibaro Wall Plug manual",
-				description: "Tap to view the manual.",
-				image: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/wallPlugUS/plug_us_blue.png",
-				//url: "http://manuals.fibaro.com/content/manuals/en/FGWPEF-102/FGWPEF-102-EN-A-v2.0.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
-					title: "${it.num}. ${it.title}",
+					title: "${it.title}",
 					description: it.descr,
 					type: "paragraph",
 					element: "paragraph"
@@ -105,6 +95,10 @@ def off() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	def cmds = []
 	cmds << [zwave.meterV3.meterReset(), 1]
 	cmds << [zwave.meterV3.meterGet(scale: 0), 1]
@@ -241,8 +235,10 @@ private createChildDevices() {
 	addChildDevice(
 			"Fibaro Wall Plug USB",
 			"${device.deviceNetworkId}-2",
-			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
+			device.hubId,
+			[completedSetup: true,
+			 label: "${device.displayName} (CH2)",
+			 isComponent: false]
 	)
 }
 
@@ -403,6 +399,14 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy 
 
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
 	if (encapsulatedCommand) {
 		logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
@@ -410,6 +414,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {
@@ -449,7 +459,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")

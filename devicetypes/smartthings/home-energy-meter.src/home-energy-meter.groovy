@@ -21,8 +21,8 @@ metadata {
 
 		command "reset"
 
-		fingerprint deviceId: "0x3103", inClusters: "0x32"
-		fingerprint inClusters: "0x32"
+		fingerprint deviceId: "0x3103", inClusters: "0x32", deviceJoinName: "Energy Monitor"
+		fingerprint inClusters: "0x32", deviceJoinName: "Energy Monitor"
 	}
 
 	// simulator metadata
@@ -101,6 +101,10 @@ def poll() {
 }
 
 def reset() {
+	resetEnergyMeter()
+}
+
+def resetEnergyMeter() {
 	delayBetween([
 		zwave.meterV2.meterReset().format(),
 		zwave.meterV2.meterGet(scale: 0).format()

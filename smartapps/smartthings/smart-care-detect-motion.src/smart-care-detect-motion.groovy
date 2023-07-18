@@ -32,10 +32,10 @@ preferences {
 }
 
 def disclaimerPage() {
-	def disclaimerText = "SMARTTHINGS INC. SMART CARE SUPPLEMENTAL TERMS AND DISCLAIMER\n" +
-			"SmartThings Inc. is not an emergency medical response service of any kind and does not provide " +
+	def disclaimerText = "Samsung Electronics Co., LTD. SMART CARE SUPPLEMENTAL TERMS AND DISCLAIMER\n" +
+			"Samsung Electronics Co., LTD. is not an emergency medical response service of any kind and does not provide " +
 			"medical or health-related advice, which should be obtained from qualified medical personnel. " +
-			"SmartThings Inc., the contents of the app (such as text, graphics, images, videos, data and "+
+			"Samsung Electronics Co., LTD., the contents of the app (such as text, graphics, images, videos, data and "+
 			"information contained therein) and such materials obtained from third parties are provided for " +
 			"information purposes only and are not substitutes for professional medical advice, diagnosis, " +
 			"examination, or treatment by a health care provider. If you think you or a loved one has a medical " +
@@ -49,12 +49,12 @@ def disclaimerPage() {
 			"avoid, or delay obtaining medical or health-related advice " +
 			"relating to treatment or standard of care because of information contained in or transmitted through the app. "+
 			"RELIANCE ON ANY INFORMATION PROVIDED BY THE APP OR OTHER THIRD-PARTY PLATFORMS IS SOLELY AT YOUR OWN RISK.\n\n" + 
-			"While SmartThings Inc. strives to make the information on the app as timely and accurate as possible, " + 
-			"SmartThings Inc. makes no claims, promises, or guarantees about the accuracy, completeness, " + 
-			"or adequacy of the content or information on the app. SmartThings Inc. expressly disclaims liability for any errors "+
+			"While Samsung Electronics Co., LTD. strives to make the information on the app as timely and accurate as possible, " + 
+			"Samsung Electronics Co., LTD. makes no claims, promises, or guarantees about the accuracy, completeness, " + 
+			"or adequacy of the content or information on the app. Samsung Electronics Co., LTD. expressly disclaims liability for any errors "+
 			"and omissions in content or for the availability of content on the app. " +
-			"SmartThings Inc. will not be liable for any losses, injuries, or damages arising from the display " +
-			"or use of content on the app. SMARTTHINGS INC., ITS OFFICERS, " +
+			"Samsung Electronics Co., LTD. will not be liable for any losses, injuries, or damages arising from the display " +
+			"or use of content on the app. Samsung Electronics Co., LTD., ITS OFFICERS, " +
 			"EMPLOYEES AND AGENTS DO NOT ACCEPT LIABILITY HOWEVER ARISING, INCLUDING LIABILITY FOR NEGLIGENCE, " +
 			"FOR ANY LOSS RESULTING FROM THE USE OF OR RELIANCE UPON THE INFORMATION AND/OR SERVICES AT ANY TIME."
 

@@ -18,14 +18,21 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.018.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
+		
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "MS01", deviceJoinName: "eWeLink Motion Sensor" //eWeLink Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0500,FC57", outClusters: "0003,0019", manufacturer: "eWeLink", model: "SNZB-03P", deviceJoinName: "eWeLink Motion Sensor" //eWeLink Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor" //Orvibo Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "Megaman", model: "PS601/z1", deviceJoinName: "INGENIUM Motion Sensor" //INGENIUM ZB PIR Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001", outClusters: "0019", manufacturer: "HEIMAN", model: "PIRSensor-N", deviceJoinName: "HEIMAN Motion Sensor" //HEIMAN Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RMS16BZ", deviceJoinName: "ThirdReality Motion Sensor" //ThirdReality Motion Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0001, 0500", outClusters: "0019", manufacturer: "THIRDREALITY", model: "3RMS16BZ", deviceJoinName: "ThirdReality Motion Sensor" //ThirdReality Motion Sensor
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
@@ -50,25 +57,36 @@ metadata {
 		details(["motion","battery", "refresh"])
 	}
 }
+
 def stopMotion() {
 	log.debug "motion inactive"
 	sendEvent(getMotionResult(false))
 }
+
 def installed(){
 	log.debug "installed"
 	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 }
+
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
-	if(!map){
+	ZoneStatus zs
+	if (!map) {
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
-			motionHandler(description);
+			zs = zigbee.parseZoneStatus(description)
+			map = parseIasMessage(zs)
 		} else {
-			map = batteyHandler(description);
+			def descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
+				map = batteyHandler(description)
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+				log.debug "parseDescriptionAsMap: $descMap.value"
+				zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = parseIasMessage(zs)
+			}
 		}
 	}
 	log.debug "Parse returned $map"
@@ -78,40 +96,54 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
+
 	return result
 }
+
 def batteyHandler(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value && descMap?.attrInt == 0x0021) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	}
-	return map;
+	return map
 }
-def motionHandler(String description){
-	//inactive
-	def isActive = zigbee.translateStatusZoneType19(description)
-	if (isActive) {
-		def timeout = 3
-		log.debug "Stopping motion in ${timeout} seconds"
-		runIn(timeout, stopMotion)
+
+def parseIasMessage(ZoneStatus zs) {
+	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
+	if (!supportsRestoreNotify()) {
+		if (motionActive) {
+			def timeout = 20
+			log.debug "Stopping motion in ${timeout} seconds"
+			runIn(timeout, stopMotion)
+		}
 	}
+	return getMotionResult(motionActive)
 }
-def parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	return  getMotionResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+
+def supportsRestoreNotify() {
+	return (getDataValue("manufacturer") == "eWeLink") || (getDataValue("manufacturer") == "Third Reality, Inc")
 }
+
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
+	def manufacturer = getDataValue("manufacturer")
+	def application = getDataValue("application")
+
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		result.value = Math.round(rawValue / 2)
+		if ((manufacturer == "Third Reality, Inc" || manufacturer == "THIRDREALITY") && application.toInteger() <= 17) {
+			result.value = Math.round(rawValue)
+		} else {
+			result.value = Math.round(rawValue / 2)
+		}
 		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 	return result
 }
+
 def getMotionResult(value) {
 	def descriptionText = value ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
@@ -121,6 +153,7 @@ def getMotionResult(value) {
 			translatable	: true
 	]
 }
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -128,14 +161,25 @@ def ping() {
 	log.debug "ping "
 	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
+
 def refresh() {
 	log.debug "Refreshing Values"
 	return  zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 					zigbee.enrollResponse()
 }
+
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) + refresh()
+	def manufacturer = getDataValue("manufacturer")
+	if (manufacturer == "eWeLink") {
+		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+		return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 3600, 7200, 0x10) + refresh()
+	} else if (manufacturer == "Third Reality, Inc") {
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+	} else {
+		sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+		return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) + refresh()
+
+	}
 }

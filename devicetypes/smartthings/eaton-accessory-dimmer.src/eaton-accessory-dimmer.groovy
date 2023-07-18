@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Eaton Accessory Dimmer", namespace: "smartthings", author: "SmartThings", mnmm: "SmartThings", vid: "generic-dimmer", ocfDeviceType: "oic.d.light") {
+	definition(name: "Eaton Accessory Dimmer", namespace: "smartthings", author: "SmartThings", mnmm: "SmartThings", vid: "generic-dimmer", ocfDeviceType: "oic.d.switch") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
@@ -22,7 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Light"
 
-		fingerprint mfr: "001A", prod: "4441", model: "0000", deviceJoinName: "Eaton RF Accessory Dimmer"
+		fingerprint mfr: "001A", prod: "4441", model: "0000", deviceJoinName: "Eaton Dimmer Switch" //Eaton RF Accessory Dimmer
 	}
 
 	simulator {
