@@ -186,6 +186,7 @@ private saveStates(params) {
 	getDeviceCapabilities()
 
 	lights.each {light ->
+    	light.refresh()
 		def type = state.lightCapabilities[light.id]
 
 		updateSetting("onoff_${sceneId}_${light.id}", light.currentValue("switch") == "on")
@@ -205,15 +206,14 @@ private restoreStates(sceneId) {
 	log.trace "restoreStates($sceneId)"
 	getDeviceCapabilities()
 
-	lights.each {light ->
+	lights.each { light ->
 		def type = state.lightCapabilities[light.id]
 
-		def isOn = settings."onoff_${sceneId}_${light.id}" == "true" ? true : false
+		def isOn = settings."onoff_${sceneId}_${light.id}"
 		log.debug "${light.displayName} is '$isOn'"
-		if (isOn) {
+		if (isOn == "true") {
 			light.on()
-		}
-		else {
+		} else if (isOn == "false") {
 			light.off()
 		}
 
@@ -290,46 +290,34 @@ private getLevels() {
 }
 
 private getOrientation(xyz=null) {
-	final threshold = 250
-
 	def value = xyz ?: cube.currentValue("threeAxis")
-
-	def x = Math.abs(value.x) > threshold ? (value.x > 0 ? 1 : -1) : 0
-	def y = Math.abs(value.y) > threshold ? (value.y > 0 ? 1 : -1) : 0
-	def z = Math.abs(value.z) > threshold ? (value.z > 0 ? 1 : -1) : 0
+    
+    def asbX = Math.abs(value.x)
+    def asbY = Math.abs(value.y)
+    def asbZ = Math.abs(value.z)
+    def max = Math.max(Math.max(asbX, asbY), asbZ)
 
 	def orientation = 0
-	if (z > 0) {
-		if (x == 0 && y == 0) {
+    if (max == asbX) {
+    	if (value.x > 0) {
 			orientation = 1
-		}
-	}
-	else if (z < 0) {
-		if (x == 0 && y == 0) {
+        } else {
 			orientation = 2
-		}
-	}
-	else {
-		if (x > 0) {
-			if (y == 0) {
-				orientation = 3
-			}
-		}
-		else if (x < 0) {
-			if (y == 0) {
-				orientation = 4
-			}
-		}
-		else {
-			if (y > 0) {
-				orientation = 5
-			}
-			else if (y < 0) {
-				orientation = 6
-			}
-		}
-	}
-
+        }
+    } else if (max == asbY) {
+    	if (value.y > 0) {
+			orientation = 3
+        } else {
+			orientation = 4
+        }
+    } else if (max == asbZ) {
+        if (value.z > 0) {
+			orientation = 5
+        } else {
+			orientation = 6
+        }
+    }
+	
 	orientation
 }
 
@@ -337,6 +325,3 @@ private sceneName(num) {
 	final names = ["UNDEFINED","One","Two","Three","Four","Five","Six"]
 	settings."sceneName${num}" ?: "Scene ${names[num]}"
 }
-
-
-
